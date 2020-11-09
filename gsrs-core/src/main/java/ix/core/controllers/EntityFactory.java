@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ix.core.search.ArgumentAdapter.*;
 
 public class EntityFactory {
     private static final String RESPONSE_TYPE_PARAMETER = "type";
@@ -547,14 +546,14 @@ public class EntityFactory {
 //            return field (inst, field);
 //    }
     
-    public static class ErrorResponse{
-    	public int status;
-    	public String message;
-    	public ErrorResponse(int status, String message){
-    		this.status=status;
-    		this.message=message;
-    	}
-    }
+//    public static class ErrorResponse{
+////    	public int status;
+////    	public String message;
+////    	public ErrorResponse(int status, String message){
+////    		this.status=status;
+////    		this.message=message;
+////    	}
+////    }
     
     
     //Prime candidate for rewrite with EntityWrapper

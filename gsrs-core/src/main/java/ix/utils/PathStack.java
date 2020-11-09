@@ -1,7 +1,6 @@
-package ix.core.search.text;
+package ix.utils;
 
-import ix.utils.ExecutionStack;
-import org.apache.commons.lang3.StringUtils;
+
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -85,8 +84,20 @@ public class PathStack implements ExecutionStack<String>{
 
 	//Pretty lazy, really ... but don't optimize it
 	public String toPath() {
-		return  toPath(p->!StringUtils.isNumeric( p));
+		return  toPath(p->!isNumeric( p));
 
+	}
+	private static boolean isNumeric(CharSequence cs) {
+		if (cs == null || cs.length() == 0) {
+			return false;
+		}
+		int sz = cs.length();
+		for (int i = 0; i < sz; i++) {
+			if (Character.isDigit(cs.charAt(i)) == false) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public String toPath(Predicate<String> predicate) {

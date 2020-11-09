@@ -3012,7 +3012,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		org.apache.lucene.document.Field.Store store = Store.NO;
 
 		if(indexableValue.isDirectIndexField()){
-			fields.accept(indexableValue.getDirectIndexableField());
+			fields.accept((IndexableField) indexableValue.getDirectIndexableField());
 			return;
 		}
 

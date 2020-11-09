@@ -3,6 +3,7 @@ package ix.core.search.text;
 
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.utils.PathStack;
 import org.apache.lucene.document.LongField;
 //import org.apache.lucene.document.LongPoint;
 //import org.apache.lucene.document.StoredField;

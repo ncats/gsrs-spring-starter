@@ -6,6 +6,7 @@
     <modules>
         <module>gsrs-spring-boot-autoconfigure</module>
         <module>gsrs-spring-boot-starter</module>
+        <module>gsrs-core</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -15,7 +16,7 @@
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
 

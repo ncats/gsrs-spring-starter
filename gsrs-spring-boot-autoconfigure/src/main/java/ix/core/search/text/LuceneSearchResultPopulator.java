@@ -5,6 +5,7 @@ import gsrs.repository.GsrsRepository;
 import ix.core.search.LazyList;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
+import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
@@ -12,6 +13,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 /**
  * Takes the TopDocs and IndexSearcher from a lucene index, 
@@ -69,7 +71,7 @@ class LuceneSearchResultPopulator {
 				//and that can cause a problem
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
 				try {
-					Key k = Key.of(doc);
+					Key k = keyOf(doc);
 					result.addNamedCallable(new EntityFetcher(k, gsrsRepository));
 				} catch (Exception e) {
 					System.out.println("Record:" + i + " of " + hits.scoreDocs.length);
@@ -81,6 +83,24 @@ class LuceneSearchResultPopulator {
 			this.last=i;
 		}
 	}
+//TODO katzelda Nov 2020: copied factory method from EntityInfo
+//	 For lucene document
+		public static Key keyOf(Document doc) throws Exception {
+			// TODO: This should be moved to somewhere more Abstract, probably
+			String kind = doc.getField(TextIndexer.FIELD_KIND).stringValue();
+			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
+			if(ei.hasIdField()){
+				if (ei.hasLongId()) {
+					Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
+					return new Key(ei, id);
+				} else {
+					String id = doc.getField(ei.getInternalIdField()).stringValue();
+					return new Key(ei, id);
+				}
+			}else{
+				throw new NoSuchElementException("Entity:" + kind + " has no ID field");
+			}
+		}
 
 	private static class EntityFetcher implements LazyList.NamedCallable<Key, Object>{
 		private Key key;

@@ -630,6 +630,7 @@ public class Util {
 		public Map<T,V> build(){
 			return this._map;
 		}
+
 		public static <T,V> MapBuilder<T,V> putNew(T t, V v){
 			MapBuilder<T,V> mapBuilder= new MapBuilder<>();
 			return mapBuilder.put(t, v);

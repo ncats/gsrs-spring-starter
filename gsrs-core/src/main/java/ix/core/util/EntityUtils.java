@@ -19,14 +19,14 @@ import ix.core.SingleParent;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
 import ix.core.models.*;
-import ix.core.search.text.PathStack;
+import ix.utils.PathStack;
 import ix.core.search.text.ReflectingIndexerAware;
 import ix.core.util.pojopointer.*;
 
 import ix.utils.LinkedReferenceSet;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.document.Document;
+//import org.apache.lucene.document.Document;
 
 import org.reflections.Reflections;
 
@@ -2563,7 +2563,7 @@ public class EntityUtils {
 		private EntityInfo<?> kind;
 		private Object _id; 
 
-		private Key(EntityInfo<?> k, Object id) {
+		public Key(EntityInfo<?> k, Object id) {
 			this.kind = k;
 			this._id = id;
 		}
@@ -2641,23 +2641,7 @@ public class EntityUtils {
 			return new Key(meta, id);
 		}
 
-		// For lucene document
-		public static Key of(Document doc) throws Exception {
-			// TODO: This should be moved to somewhere more Abstract, probably
-			String kind = doc.getField(FIELD_KIND).stringValue();
-			EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
-			if(ei.hasIdField()){
-				if (ei.hasLongId()) {
-					Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
-					return new Key(ei, id);
-				} else {
-					String id = doc.getField(ei.getInternalIdField()).stringValue();
-					return new Key(ei, id);
-				}
-			}else{
-				throw new NoSuchElementException("Entity:" + kind + " has no ID field");
-			}
-		}
+
 
 		// For EntityWrapper (weird place for this, I know)
 		public static Key of(EntityWrapper ew) throws NoSuchElementException {

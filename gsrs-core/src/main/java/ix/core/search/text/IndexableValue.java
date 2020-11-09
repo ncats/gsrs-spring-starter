@@ -1,6 +1,5 @@
 package ix.core.search.text;
 
-import org.apache.lucene.index.IndexableField;
 
 import java.util.regex.Pattern;
 
@@ -20,8 +19,13 @@ public interface IndexableValue {
 	default boolean isDirectIndexField(){
 		return false;
 	}
-	
-	default IndexableField getDirectIndexableField(){
+	/**
+	 * Get the raw org.apache.lucene.index.IndexableField object,
+	 * the return value is Object to avoid dependency on lucene.
+	 * @return the raw org.apache.lucene.index.IndexableField object or null
+	 * if {@link #isDirectIndexField()} is {@code false}.
+	 */
+	default Object getDirectIndexableField(){
 		return null;
 	}
 	
@@ -125,7 +129,8 @@ public interface IndexableValue {
 				return me.isDirectIndexField();
 			}
 
-			public  IndexableField getDirectIndexableField() {
+
+			public  Object getDirectIndexableField() {
 				return me.getDirectIndexableField();
 			}
 
@@ -233,7 +238,7 @@ public interface IndexableValue {
 				return me.isDirectIndexField();
 			}
 
-			public  IndexableField getDirectIndexableField() {
+			public  Object getDirectIndexableField() {
 				return me.getDirectIndexableField();
 			}
 
