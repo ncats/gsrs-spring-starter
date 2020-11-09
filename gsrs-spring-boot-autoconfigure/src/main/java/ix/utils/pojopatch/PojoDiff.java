@@ -11,7 +11,6 @@ import com.flipkart.zjsonpatch.DiffFlags;
 import com.flipkart.zjsonpatch.JsonDiff;
 import com.flipkart.zjsonpatch.JsonPatch;
 import ix.core.controllers.EntityFactory;
-import ix.core.models.Keyword;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.utils.Util;
 
@@ -1115,9 +1114,9 @@ public class PojoDiff {
 		private static <T> int getObjectWithID(Collection<T> c, String id){
 
 			return findFirstPositionMatching(c, (t)-> {
-				if(t instanceof Keyword){
-					Keyword k = (Keyword) t;
-					if(id != null && Objects.equals(id, k.getValue())){
+				if(id!=null && t instanceof PojoDiffAware){
+					PojoDiffAware k = (PojoDiffAware) t;
+					if( k.pojoDiffEquivalentIdTo(id)){
 						return true;
 					}
 				}

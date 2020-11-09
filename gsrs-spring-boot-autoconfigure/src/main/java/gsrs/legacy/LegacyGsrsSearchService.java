@@ -2,7 +2,6 @@ package gsrs.legacy;
 
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.repository.GsrsRepository;
-import ix.core.models.ETag;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;

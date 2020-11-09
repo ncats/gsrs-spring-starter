@@ -20,6 +20,7 @@ import ix.core.controllers.EntityFactory.EntityMapper;
 
 import ix.core.models.*;
 import ix.core.search.text.PathStack;
+import ix.core.search.text.ReflectingIndexerAware;
 import ix.core.util.pojopointer.*;
 
 import ix.utils.LinkedReferenceSet;
@@ -34,7 +35,6 @@ import gov.nih.ncats.common.Tuple;
 
 import javax.persistence.*;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
@@ -47,7 +47,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -634,12 +633,12 @@ public class EntityUtils {
 			return this.ei.getInternalIdField();
 		}
 
-		public Stream<Keyword> streamMethodKeywordFacets() {
-			return this.ei.getKeywordFacetMethods()
+		public Stream<ReflectingIndexerAware> streamMethodReflectingIndexerAwares() {
+			return this.ei.getIndexableAwareMethods()
 					.stream()
 					.map(m->m.getValue(this._k))
 					.filter(Optional::isPresent)
-					.map(o->(Keyword)o.get());
+					.map(o->(ReflectingIndexerAware)o.get());
 		}
 
 		public Optional<String> getChangeReason() {
@@ -1132,7 +1131,7 @@ public class EntityUtils {
 					.map(k->k.toString());
 		}
 
-		public List<MethodMeta> getKeywordFacetMethods() {
+		public List<MethodMeta> getIndexableAwareMethods() {
 			return this.keywordFacetMethods;
 		}
 
@@ -1233,7 +1232,7 @@ public class EntityUtils {
 
 			this.keywordFacetMethods = methods.stream()
 					.filter(m->m.isGetter())
-					.filter(m->m.getType().isAssignableFrom(Keyword.class))
+					.filter(m-> ReflectingIndexerAware.class.isAssignableFrom(m.getType()))
 					.filter(m->m.getIndexable()!=null)
 					.collect(Collectors.toList());
 			

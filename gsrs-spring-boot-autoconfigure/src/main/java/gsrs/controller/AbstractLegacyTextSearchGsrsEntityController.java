@@ -2,7 +2,6 @@ package gsrs.controller;
 
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.models.ETag;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -131,30 +130,11 @@ SearchRequest req = builder
 
 
         //even if list is empty we want to return an empty list not a 404
-        return new ResponseEntity<>(saveAsEtag(results, result, request), HttpStatus.OK);
+        return new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
     }
 
-    private static ETag saveAsEtag(List<Object> results, SearchResult result, HttpServletRequest request) {
-        final ETag etag = new ETag.Builder()
-                .fromRequest(request)
-                .options(result.getOptions())
-                .count(results.size())
-                .total(result.getCount())
-
-                .sha1OfRequest(request, "q", "facet")
-                .build();
-
-//        if(request().queryString().get("export") ==null) {
-//            etag.save();
-//        }
-        etag.setContent(results);
-        etag.setSponosredResults(result.getSponsoredMatches());
-        etag.setFacets(result.getFacets());
-        etag.setFieldFacets(result.getFieldFacets());
-        etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
+    protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
 
 
-        return etag;
-    }
 
 }

@@ -1,15 +1,13 @@
 package ix.core.search.text;
 
-import ix.core.models.Keyword;
+
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.pojopointer.PojoPointer;
 import org.apache.lucene.document.LongField;
 //import org.apache.lucene.document.LongPoint;
 //import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
-import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -56,15 +54,16 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 				}); //
 	
 
-				if(ew.getEntityClass().equals(Keyword.class)){
-					if(path.getDepth()>0){
+				if(ReflectingIndexerAware.class.isAssignableFrom(ew.getEntityClass()) && path.getDepth()>0){
+
 						try{
-							toAdd.accept(new IndexableValueFromRaw(path.getFirst(), ew.at(PojoPointer.fromJsonPointer("/term")).map(ew1->ew1.getRawValue().toString()).orElse(null), path.toPath()));
+							ReflectingIndexerAware.class.cast(ew.getValue()).index(path, toAdd);
+//							toAdd.accept(new IndexableValueFromRaw(path.getFirst(), ew.at(PojoPointer.fromJsonPointer("/term")).map(ew1->ew1.getRawValue().toString()).orElse(null), path.toPath()));
 						}catch(Exception e){
 							//this shouldn't be possible, but being defensive
 							e.printStackTrace();
 						}
-					}
+
 
 				}
 
@@ -82,9 +81,10 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 					});
 				}); //Dynamic Facets
 				
-				ew.streamMethodKeywordFacets().forEach(kw -> {
-					path.pushAndPopWith(kw.label, () -> {
-						toAdd.accept(new IndexableValueFromRaw(kw.label, kw.getValue(), path.toPath()).dynamic().suggestable());
+				ew.streamMethodReflectingIndexerAwares().forEach(kw -> {
+					path.pushAndPopWith(kw.getEmbeddedIndexFieldName(), () -> {
+						kw.index(path, toAdd);
+//						toAdd.accept(new IndexableValueFromRaw(kw.label, kw.getValue(), path.toPath()).dynamic().suggestable());
 					});
 				}); //Method keywords
 	

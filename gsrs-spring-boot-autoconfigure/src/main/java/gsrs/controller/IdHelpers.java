@@ -7,7 +7,7 @@ public enum IdHelpers implements IdHelper {
     /**
      * An ID that is a only digits.
      */
-    NUMBER("[0-9]+", "^\\d*[a-zA-Z][a-zA-Z\\d]*"),
+    NUMBER("[0-9]+", "\\D+"),
     STRING_NO_WHITESPACE("\\S+"),
     /**
      * An ID that is a UUID.

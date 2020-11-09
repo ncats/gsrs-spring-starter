@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ix.core.models.ETag;
+
 
 import ix.core.search.FieldedQueryFacet.MATCH_TYPE;
 
@@ -471,11 +471,11 @@ public class SearchResultContext {
 	 * This does not help cache the actual results,
 	 * it is just meant to preserve the recoverability
 	 * of a keyed {@link SearchResultContext}. This is
-	 * similar to the idea of the {@link ETag}. 
+	 * similar to the idea of the ETag
 	 * </p>
 	 * 
 	 * <p>
-	 * TODO: integrate this with the {@link ETag},
+	 * TODO: integrate this with the ETag
 	 * probably retiring this completely.
 	 * </p>
 	 * 

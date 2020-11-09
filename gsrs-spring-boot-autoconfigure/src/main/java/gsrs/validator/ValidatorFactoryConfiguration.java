@@ -20,6 +20,11 @@ public class ValidatorFactoryConfiguration {
     private String example;
 
     public List<ValidatorFactoryService.ValidatorConfig> getValidatorConfigByContext(String context){
+        if(validators ==null){
+            //nothing set
+            return Collections.emptyList();
+        }
+        System.out.println("found validators!");
         return validators.getOrDefault(context, Collections.emptyList());
     }
 }
