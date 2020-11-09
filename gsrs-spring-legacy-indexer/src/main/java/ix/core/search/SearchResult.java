@@ -1,15 +1,11 @@
 package ix.core.search;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
 
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.search.text.TextIndexer.Facet;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
-
-import ix.utils.Util.QueryStringManipulator;
 
 
 import java.lang.ref.SoftReference;

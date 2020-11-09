@@ -12,7 +12,6 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;

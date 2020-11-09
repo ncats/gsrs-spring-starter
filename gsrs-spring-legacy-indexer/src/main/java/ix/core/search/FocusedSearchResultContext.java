@@ -1,7 +1,5 @@
 package ix.core.search;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 

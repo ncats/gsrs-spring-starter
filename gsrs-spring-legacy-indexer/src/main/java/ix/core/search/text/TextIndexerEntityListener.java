@@ -1,6 +1,5 @@
 package ix.core.search.text;
 
-import gsrs.indexer.IndexValueMakerFactory;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 

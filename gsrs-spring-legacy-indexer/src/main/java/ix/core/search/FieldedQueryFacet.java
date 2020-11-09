@@ -1,22 +1,10 @@
 package ix.core.search;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.FieldNameDecorator;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityInfo;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**

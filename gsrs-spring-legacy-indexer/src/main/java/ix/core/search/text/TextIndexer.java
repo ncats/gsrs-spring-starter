@@ -3,7 +3,6 @@ package ix.core.search.text;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -33,7 +32,6 @@ import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.*;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.facet.*;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
@@ -3009,7 +3007,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		// Used to be configurable, now just always NO
 		// for all cases we use.
-		org.apache.lucene.document.Field.Store store = Store.NO;
+		org.apache.lucene.document.Field.Store store = NO;
 
 		if(indexableValue.isDirectIndexField()){
 			fields.accept((IndexableField) indexableValue.getDirectIndexableField());

@@ -1,10 +1,8 @@
 package ix.core.search.text;
 
-import ix.core.util.EntityUtils.EntityWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
