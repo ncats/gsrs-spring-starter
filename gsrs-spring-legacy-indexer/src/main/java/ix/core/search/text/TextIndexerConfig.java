@@ -16,11 +16,11 @@ import java.util.function.Supplier;
 @Component
 @Data
 public class TextIndexerConfig {
-    @Value("#{new Boolean('${ix.textindex.enabled: true}')}")
+    @Value("#{new Boolean('${ix.textindex.enabled:true}')}")
     private boolean enabled = true;
-    @Value("#{new Boolean('${ix.textindex.fieldsuggest: true}')}")
+    @Value("#{new Boolean('${ix.textindex.fieldsuggest:true}')}")
     private boolean fieldsuggest;
-    @Value("#{new Boolean('${ix.textindex.shouldLog: false}')}")
+    @Value("#{new Boolean('${ix.textindex.shouldLog:false}')}")
     private boolean shouldLog;
 //    private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
 
