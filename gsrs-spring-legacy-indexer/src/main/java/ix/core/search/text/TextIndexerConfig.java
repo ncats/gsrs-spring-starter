@@ -24,7 +24,7 @@ public class TextIndexerConfig {
     private boolean shouldLog;
 //    private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
 
-    @Value("#{new Integer('${ix.fetchWorkerCount: 4}')}")
+    @Value("#{new Integer('${ix.fetchWorkerCount:4}')}")
     private int fetchWorkerCount = 4;
     @Value("${ix.index.deepfields:}")
     private List<String> deepFields = new ArrayList<>();

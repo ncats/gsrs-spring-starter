@@ -22,7 +22,7 @@ public class TextIndexerFactory {
     private ConcurrentMap<File, TextIndexer> indexers = new ConcurrentHashMap<>();
 
     private Map<String, Boolean> deepKindMap = new ConcurrentHashMap<>();
-    @Value("${ix.home}")
+    @Value("${ix.home : ginas.ix}")
     private String defaultDir;
     @Autowired
     private TextIndexerConfig textIndexerConfig;
