@@ -3,7 +3,7 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import gsrs.GsrsManualDirtyMaker;
+import gsrs.model.AbstractGsrsManualDirtyEntity;
 import ix.core.util.EntityUtils.EntityWrapper;
 
 import javax.persistence.MappedSuperclass;
@@ -12,8 +12,8 @@ import java.util.*;
 import java.util.Map.Entry;
 
 @MappedSuperclass
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public abstract class BaseModel implements GsrsManualDirtyMaker {
+//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public abstract class BaseModel extends AbstractGsrsManualDirtyEntity {
 
 	/**
 	 * An implementation
@@ -115,23 +115,7 @@ public abstract class BaseModel implements GsrsManualDirtyMaker {
 //	    setMatchContextProperty(IxCache.getMatchingContextByContextID(contextId, k));
 //	}
 
-    @JsonIgnore
-    @Transient
-    private Set<String> dirtyFields = new HashSet<>();
 
-    @Override
-    public Set<String> getDirtyFields() {
-        return dirtyFields;
-    }
-    @Override
-    public void setIsDirty(String field) {
-        this.dirtyFields.add(Objects.requireNonNull(field));
-    }
-
-    @Override
-    public void clearDirtyFields() {
-        dirtyFields.clear();
-    }
 
 
 }

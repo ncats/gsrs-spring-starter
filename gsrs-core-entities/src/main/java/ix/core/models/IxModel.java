@@ -20,7 +20,6 @@ import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @MappedSuperclass
-@EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, TextIndexerEntityListener.class})
 @Getter
 @Setter
 public class IxModel extends BaseModel {

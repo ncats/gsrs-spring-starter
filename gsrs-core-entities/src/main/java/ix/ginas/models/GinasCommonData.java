@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * common to all including UUID, and audit information.
  */
 @MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
+//@EntityListeners(AuditingEntityListener.class)
 public class GinasCommonData extends BaseModel implements GinasAccessControlled, ForceUpdatableModel {
     static public final String REFERENCE = "GInAS Reference";
     static public final String TAG = "GInAS Tag";
