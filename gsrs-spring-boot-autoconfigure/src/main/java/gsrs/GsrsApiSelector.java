@@ -20,7 +20,6 @@ public class GsrsApiSelector implements ImportSelector {
 
         List<Class> componentsToInclude = new ArrayList<>();
         componentsToInclude.add(GsrsWebConfig.class);
-
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(TextIndexerFactory.class);

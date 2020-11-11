@@ -1,13 +1,16 @@
 package gsrs.validator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.util.CachedSupplier;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.ginas.utils.validation.ValidatorPlugin;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ClassUtils;
 
 
 import java.util.Collections;
@@ -23,13 +26,13 @@ public class ValidatorFactoryService {
     public static class ValidatorConfig{
 
 
-        private Class validatorClass;
+        private String validatorClass;
         /**
          * Additional parameters to initialize in your instance returned by
          * {@link #getValidatorClass()}.
          */
         private Map<String, Object> parameters;
-        private Class newObjClass;
+        private String newObjClass;
 //        private Substance.SubstanceDefinitionType type;
         private METHOD_TYPE methodType;
 
@@ -49,6 +52,18 @@ public class ValidatorFactoryService {
                 return name();
             }
         }
+        @JsonIgnore
+        private final CachedSupplier<Class> validatorSupplier = CachedSupplier.runOnce(()->loadClass(validatorClass));
+        @JsonIgnore
+        private final CachedSupplier<Class> newObjSupplier = CachedSupplier.runOnce(()->loadClass(newObjClass));
+
+        private Class<?> loadClass(String className) {
+            try {
+                return ClassUtils.forName(className, ClassUtils.getDefaultClassLoader());
+            } catch (ClassNotFoundException e) {
+               throw new IllegalStateException(e);
+            }
+        }
 
         public Map<String, Object> getParameters() {
             return parameters;
@@ -63,14 +78,14 @@ public class ValidatorFactoryService {
         public ValidatorPlugin newValidatorPlugin(ObjectMapper mapper)  {
 
             if(parameters ==null){
-                return (ValidatorPlugin) mapper.convertValue(Collections.emptyMap(), validatorClass);
+                return (ValidatorPlugin) mapper.convertValue(Collections.emptyMap(), validatorSupplier.get());
 
             }
-            return (ValidatorPlugin) mapper.convertValue(parameters, validatorClass);
+            return (ValidatorPlugin) mapper.convertValue(parameters, validatorSupplier.get());
 
         }
         public final  <T> boolean meetsFilterCriteria(T obj, ValidatorFactoryService.ValidatorConfig.METHOD_TYPE methodType){
-            if(!newObjClass.isAssignableFrom(obj.getClass())){
+            if(!newObjSupplier.get().isAssignableFrom(obj.getClass())){
                 return false;
             }
 //            if(obj instanceof Substance){

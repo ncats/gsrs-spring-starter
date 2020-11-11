@@ -3,6 +3,7 @@ package gsrs.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.RegisteredFunctionProperties;
+
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.springUtils.AutowireHelper;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Import;
 //can't do component scan in autoconfiguration so manually import our components
 @Import(value = {AutowireHelper.class, GsrsControllerConfiguration.class,
         ValidatorFactoryService.class, ValidatorFactoryConfiguration.class,
+        ValidatorFactoryService.class,
         JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class})
 public class GsrsApiAutoConfiguration {
 

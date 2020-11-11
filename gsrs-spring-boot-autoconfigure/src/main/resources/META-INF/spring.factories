@@ -1,1 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=gsrs.autoconfigure.GsrsApiAutoConfiguration
+#defaults to hocon application.conf
+#org.springframework.boot.env.PropertySourceLoader=com.github.zeldigas.spring.env.HoconPropertySourceLoader

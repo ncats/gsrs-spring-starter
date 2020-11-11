@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( {GsrsEntitiesConfiguration.class, GsrsJpaEntitySelector.class})
+@Import( { GsrsEntitiesConfiguration.class, GsrsJpaEntitySelector.class})
 //@EnableJpaRepositories(basePackages = {"gsrs", "gov.nih.ncats"})
 public @interface EnableGsrsJpaEntities {
 }
