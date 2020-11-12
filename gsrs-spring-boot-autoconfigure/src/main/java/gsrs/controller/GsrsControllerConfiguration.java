@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.context.request.WebRequest;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -104,6 +105,27 @@ public class GsrsControllerConfiguration {
         int status = overrideErrorCodeIfNeeded(500, queryParameters);
         return new ResponseEntity<>( getError(t, status), HttpStatus.valueOf(status));
 
+    }
+    public ResponseEntity<Object> handleError(Throwable t, WebRequest request) {
+        int status = overrideErrorCodeIfNeeded(500, request);
+        return new ResponseEntity<>( getError(t, status), HttpStatus.valueOf(status));
+
+    }
+    public HttpStatus getHttpStatusFor(HttpStatus origStatus, Map<String, String> queryParameters) {
+        int code = origStatus.value();
+        int newCode = overrideErrorCodeIfNeeded(code, queryParameters);
+        if(code == newCode){
+            return origStatus;
+        }
+        return HttpStatus.valueOf(newCode);
+    }
+    public HttpStatus getHttpStatusFor(HttpStatus origStatus, WebRequest request) {
+        int code = origStatus.value();
+        int newCode = overrideErrorCodeIfNeeded(code, request);
+        if(code == newCode){
+            return origStatus;
+        }
+        return HttpStatus.valueOf(newCode);
     }
 
     @Data

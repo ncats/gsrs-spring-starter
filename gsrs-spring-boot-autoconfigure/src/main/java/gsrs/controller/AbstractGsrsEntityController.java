@@ -255,13 +255,13 @@ public abstract class AbstractGsrsEntityController<T, I> {
 //        }
 //    }
     @PostGsrsRestApiMapping()
-    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson) throws IOException {
+    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson, @RequestParam Map<String, String> queryParameters) throws IOException {
         T newEntity = fromNewJson(newEntityJson);
 
         Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
         ValidationResponse<T> resp = validator.validate(newEntity, null);
         if(resp!=null && !resp.isValid()){
-            return new ResponseEntity<>(resp, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(resp,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
         }
         return new ResponseEntity<>(create(newEntity), HttpStatus.CREATED);
 
@@ -321,7 +321,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return resp;
 
     }
-        @PutGsrsRestApiMapping()
+    @PutGsrsRestApiMapping()
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
