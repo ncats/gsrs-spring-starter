@@ -4,7 +4,7 @@ package gsrs.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.validator.AbstractGsrsValidatorFactory;
+import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
@@ -51,7 +51,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @Autowired
-    private AbstractGsrsValidatorFactory<T> validatorFactoryService;
+    private GsrsValidatorFactory validatorFactoryService;
 
     @Autowired
     private ObjectMapper mapper;
@@ -71,7 +71,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
     @PostConstruct
     private void initValidator(){
-        validatorFactory = CachedSupplier.runOnce(()->validatorFactoryService.newFactory(mapper));
+        validatorFactory = CachedSupplier.runOnce(()->validatorFactoryService.newFactory(context));
     }
 
     /**

@@ -22,7 +22,6 @@ public class ValidatorFactoryConfiguration {
             //nothing set
             return Collections.emptyList();
         }
-        System.out.println("found validators!");
         return validators.getOrDefault(context, Collections.emptyList());
     }
 }
