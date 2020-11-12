@@ -339,3 +339,35 @@ gsrs.validators.vocabularies = [
 ]
 ```
 
+### Gsrs-core-entities
+To add support for GSRS core entities you need to have these gsrs maven dependencies:
+```xml
+ <dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-boot-starter</artifactId>
+    <version>${gsrs.version}</version>
+</dependency>
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-legacy-indexer</artifactId>
+    <version>${gsrs.version}</version>
+</dependency>
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-core-entities</artifactId>
+    <version>${gsrs.version}</version>
+</dependency>
+``` 
+Then in your main `@SpringBootApplication` annotated class, in addition to `EnableGsrsApi` as described above,
+add these lines:
+```java
+@EnableGsrsJpaEntities
+@EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+```
+
+The EntityScan and EnableJpaRepositories need to list all the base packages to scan. 
+ The packages listed here are the ones to scan from the starter.  Hopefully this is a temporarly solution
+ until those packages can be autoscanned by the starter.
+ 
+ Please also add your own packages to those lists.
