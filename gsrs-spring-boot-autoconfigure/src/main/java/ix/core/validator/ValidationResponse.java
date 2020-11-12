@@ -5,18 +5,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.models.BeanViews;
 import ix.core.validator.ValidationMessage.MESSAGE_TYPE;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@Data
 public class ValidationResponse<T> {
 	private final List<ValidationMessage> validationMessages = new ArrayList<>();
 	private boolean valid = true;
 	private T newObject;
-	
 
+	public ValidationResponse(){}
 	@JsonCreator
 	public ValidationResponse(@JsonProperty("validationMessages") List<ValidationMessage> validationMessages,
 	@JsonProperty("valid") boolean valid){
@@ -40,18 +41,7 @@ public class ValidationResponse<T> {
 					.sorted()
 					.collect(Collectors.toList());
 	}
-	
-	public void setInvalid(){
-		this.valid=false;
-	}
-	
-	public void setValid(){
-		this.valid=true;
-	}
-	
-	public boolean isValid(){
-		return valid;
-	}
+
 	
 	public boolean hasProblem(){
 	    return this.getValidationMessages()
@@ -67,14 +57,14 @@ public class ValidationResponse<T> {
 	
 	
 	@JsonView(BeanViews.Full.class)
-	public T getNewObect(){
+	public T getNewObject(){
 		return newObject;
 	}
 	
 	
 	public static <K> ValidationResponse<K> VALID_VALIDATION_RESPONSE(K obj){
 		ValidationResponse<K> vr=new ValidationResponse<K>(obj);
-		vr.setValid();
+		vr.setValid(true);
 		vr.addValidationMessage(new ValidationMessage(){
 			@Override
 			public String getMessage() {

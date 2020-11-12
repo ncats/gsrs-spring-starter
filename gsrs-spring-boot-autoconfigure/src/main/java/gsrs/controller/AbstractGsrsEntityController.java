@@ -4,7 +4,8 @@ package gsrs.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.validator.ValidatorFactoryService;
+import gsrs.validator.AbstractGsrsValidatorFactory;
+import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
@@ -50,7 +51,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @Autowired
-    private ValidatorFactoryService validatorFactoryService;
+    private AbstractGsrsValidatorFactory<T> validatorFactoryService;
 
     @Autowired
     private ObjectMapper mapper;
@@ -70,7 +71,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
     @PostConstruct
     private void initValidator(){
-        validatorFactory = CachedSupplier.runOnce(()->validatorFactoryService.newFactory(context, mapper));
+        validatorFactory = CachedSupplier.runOnce(()->validatorFactoryService.newFactory(mapper));
     }
 
     /**
@@ -257,7 +258,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson) throws IOException {
         T newEntity = fromNewJson(newEntityJson);
 
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, ValidatorFactoryService.ValidatorConfig.METHOD_TYPE.CREATE);
+        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
         ValidationResponse<T> resp = validator.validate(newEntity, null);
         if(resp!=null && !resp.isValid()){
             return new ResponseEntity<>(resp, HttpStatus.BAD_REQUEST);
@@ -300,23 +301,24 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
      */
     @PostGsrsRestApiMapping("/@validate")
-    public ResponseEntity<Object> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
+    public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
         I id = getIdFrom(updatedEntity);
-        Optional<T> opt = get(id);
+
+        Optional<T> opt = id==null? Optional.empty() : get(id);
         Validator<T> validator;
         if(opt.isPresent()){
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), ValidatorFactoryService.ValidatorConfig.METHOD_TYPE.UPDATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), ValidatorConfig.METHOD_TYPE.UPDATE);
 
         }else{
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, ValidatorFactoryService.ValidatorConfig.METHOD_TYPE.CREATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
 
         }
         ValidationResponse<T> resp = validator.validate(updatedEntity, opt.orElse(null));
 
         //always send 200 even if validation has errors?
-        return new ResponseEntity<>(resp, HttpStatus.OK);
+        return resp;
 
     }
         @PutGsrsRestApiMapping()
@@ -331,7 +333,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
         T oldEntity = opt.get();
 
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorFactoryService.ValidatorConfig.METHOD_TYPE.CREATE);
+        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.CREATE);
         ValidationResponse<T> resp = validator.validate(updatedEntity, oldEntity);
         if(resp!=null && !resp.isValid()){
             return new ResponseEntity<>(resp, HttpStatus.BAD_REQUEST);

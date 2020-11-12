@@ -51,12 +51,12 @@ public class ValidationResponseBuilder<T> implements ValidatorCallback {
 
     @Override
     public void setValid() {
-        resp.setValid();
+        resp.setValid(true);
     }
 
     @Override
     public void setInvalid() {
-        resp.setInvalid();
+        resp.setValid(false);
     }
 
     @Override

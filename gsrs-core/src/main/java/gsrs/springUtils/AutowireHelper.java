@@ -24,6 +24,10 @@ public class AutowireHelper implements ApplicationContextAware {
 //        System.out.println("after autowire " + bean);
     }
 
+
+    public ClassLoader getClassLoader(){
+        return applicationContext.getClassLoader();
+    }
     public static AutowireHelper getInstance() {
         return instance;
     }
