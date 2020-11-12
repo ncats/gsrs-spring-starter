@@ -1,6 +1,15 @@
 # GSRS 3.0 
 
-This is a GSRS implementation using Spring Boot 2
+This is a GSRS API implementation using a Spring Boot 2 starter package.
+
+## GSRS Modules
+The GSRS Spring Starter also works with a few other GSRS modules.  Each of the listed modules builds
+upon the ones listed before it.  Clients do not need to use all of these modules.
+
+* `gsrs-spring-boot-starter` The main starter package that autoconfigures GSRS related spring configuration.
+* `gsrs-spring-legacy-indexer` Code to support the Legacy GSRS indexer code
+* `gsrs-core-entities` GSRS data model  and JPA entities  of the common oft-used classes 
+        that can be used by many microservices that aren't specific to one microservice.
 
 ## Attempt at maintaining Backwards Compatibility
 
@@ -15,20 +24,13 @@ or at least similar enough that the same JSON parsing code in the client does no
 While the backend GSRS is substantially different between version 2 and 3, customized
 GSRS code should have an easy migration path thanks to Spring's Dependency Injection. 
 
-## How to Run
-This is a Spring Boot application and can be run using the provided maven wrapper like so:
-```
-./mvnw spring-boot:run
-```
-
-Or from inside your IDE, you can run the main method on the Application class in the gsrs package.
 ## Configuration File
 
 To maintain backwards compatibility with previous version of GSRS,
 The configuration file is in HOCON format and by default 
 will look for `application.conf`.
-
-Default configuration is in the `gsrs-core.conf` file so your `application.conf`
+### gsrs-core.conf
+Default configuration is in the `gsrs-core.conf` file which is inside the starter so your `application.conf`
 should start with:
 ```
 include "gsrs-core.conf"
@@ -36,17 +38,171 @@ include "gsrs-core.conf"
 #put your customization and overrides here:
 ```
 
-## Creating your GSRS Controller
+### How to tell SpringBoot to use HOCON
+To tell Spring Boot to automatically look for your `application.conf` you can add to your `META-INF/spring.factories`
+file this line:
+
+```
+org.springframework.boot.env.PropertySourceLoader=com.github.zeldigas.spring.env.HoconPropertySourceLoader
+```
+
+which will tell Spring-Boot on start up to look for `application.conf` in HOCON format.
+This is recommended because otherwise all `ConfigurationProperties` will have to override the property factory.
+
+## How to Use Starter Package
+To use this starter package to make your Spring Boot Application Entity GSRS API compatible
+is to add the starter dependency to your maven pom like this:
+
+```xml
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-boot-starter</artifactId>
+    <version>${gsrs.version}</version>
+</dependency>
+
+```
+
+
+### Enabling GSRS API
+Add the annotation `@EnableGsrsApi` to your spring boot Application class  This will add all the configurations
+needed to get the standard GSRS REST API routes set up.  This annotation has some fields that can be overridden
+and will be explained below.
+
+### GSRS REST API Controller
 GSRS uses a standardized API for fetching, updating, validating and loading entity data.
 
 To make sure the routes are formatted correctly and that all entities follow the same API contract, the GSRS Controller that creates these standardized routes
-is an abstract class, `AbstractGsrsEntityController`. You need to extend this class and implement the few abstract methods
+is an abstract class, `gsrs.controllerAbstractGsrsEntityController<T,I>` Where the generic type `T` 
+is the entity type and the generic type `I` is the type for that entity's Id.. You need to extend this class and implement the few abstract methods
 to hook in your own entity.
 
+Please note that there are several subclasses of `AbstractGsrsEntityController` which add even more route methods
+so you will probably not be extending this class directly but you can.
+
+In order to take advantage of the GSRS standard API, your controller needs to both extend this class
+and add the annotation `gsrs.controller.GsrsRestApiController`.  The  `@GsrsRestApiController` annotation
+requires 2 fields to be set: `context` which is the part of the API path pattern that will
+ map to this controller and `idHelper`. 
+ 
+```java
+@GsrsRestApiController(context = MyController.CONTEXT, idHelper = IdHelpers.NUMBER)
+public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
+ 
+  public static final String CONTEXT = "myContext";
+
+  public MyController(){
+      super(CONTEXT);
+  }
+  //.. implement methods here
+}
+```
+
+#### Context
+  The `context` variable is used to uniquely define your entity.  
+  The Standard GSRS API path will use the pattern `api/v1/$context` to map routes to your controller. 
+  Other GSRS classes will also use the context to help map configuration properties.
+  
+  In addition to supplying the context in the annotation, you currently also need to provide the context String
+  to the `AbstractGsrsEntityController` constructor. It is recommended that you make a public static final field
+  for your context and reference that field in both the annotation and the constructor to avoid the risk of typos or
+  getting the 2 places out of sync.
+  
+#### IdHelper
+  Different entities have different types for the ID. `IdHelper` is an interface to help `GsrsRestApiController`
+  figure out how to make the route patterns for your particular ID type. Common ID types are 
+  provided for you in the enum `IdHelpers` but it is also possible to make a custom implementation.
+   
+  
 ### Indexing
+GSRS can leverage text indexing of entity fields to provide additional search capabilities.  Three steps are required
+to add Text Indexing from the GSRS starter:
+ 1. Specify the IndexingType in the `@EanableGsrsApi` annotation to add the appropriate configurations.
+ 1. Extend the appropriate subclass of `AbstractGsrsEntityController` to add the extra GSRS routes to use the text search functions.
+ 1. Add the appropriate annotations to your entity POJOs and/or write additional component classes to tell spring how to 
+ populate your index.  Each IndexType will be different and are explained below:
+ 
+#### Legacy Text Indexing
 To maintain backwards compatibility with GSRS 2, a special controller that follows the GSRS 2 Lucene based TextIndexer
-can be used instead if you want to use this, extend `AbstractLegacyTextSearchGsrsEntityController` which is a subclass of 
+is `AbstractLegacyTextSearchGsrsEntityController` which is a subclass of 
 `AbstractGsrsEntityController` that adds the text search routes.
+
+By default, `EnableGsrsApi` uses this indexerType but you can also explicitly set it:
+```java
+@EnableGsrsApi(indexerType = EnableGsrsApi.IndexerType.LEGACY)
+```
+
+You will also need to add an additional dependency to your maven pom:
+
+```xml
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-legacy-indexer</artifactId>
+    <version>${gsrs.version}</version>
+</dependency>
+```
+
+#### TextIndexer @Indexable annotations
+The legacy TextIndexer can use reflection to automatically index entities using the `@Indexable` annotation on an entity's
+fields and/or public getters. By default, if a field is public it will be indexed.
+
+#### IndexValueMaker
+The `ix.core.search.text.IndexableValue<T>` interface is used to create additional data to the index document in abstract
+way.  The primary method for this interface is 
+```java
+void createIndexableValues(T entity, Consumer<IndexableValue> consumer) ;
+``` 
+
+Any new items to add to the index should be given to the consumer.  There are multiple `IndexableValue` 
+implementations to make it easier to make many different basic types of indexed records.
+
+Right now IndexValueMaker classes will automatically be added to Spring if you add the `@Component` annotation to
+ your implementation class but this will probably change in the near future to a list in the conf file
+ so users could enable/disable indexValueMakers more easily.
+ 
+ 
+#### ReflectingIndexerAware interface
+Your entity or an object embedded in your entity may also implement the `ReflectingIndexerAware` interface which
+is defined as 
+```java
+public interface ReflectingIndexerAware {
+    void index(PathStack currentPathStack, Consumer<IndexableValue> consumer);
+    String getEmbeddedIndexFieldName();
+}
+``` 
+The built in Entity Indexer using reflection will call those method as well to add any other built in IndexableValues.
+
+
+#### Adding TextIndexing Related REST API Methods
+To start leveraging this TextIndexing in your API you need to implement a `LegacyGsrsSearchService<T>` for your entity
+which helps ties the index to the entity repository. Make sure it is annotated as a `@Service` so it can be
+dependency injected.
+
+```java
+@Service
+public class MyLegacySearcher extends LegacyGsrsSearchService<MyEntity> {
+
+    @Autowired
+    public LegacyBookSearcher(MyEntityRepository repository) {
+        super(MyEntity.class, repository);
+    }
+}
+```
+#### Search Results as GSRS ETags
+If you are using `gsrs-core-entities`, then change your Controller to use the `AbstractGsrsEntityController` subclass `EtagLegacySearchEntityController`
+which not only adds all the search related REST calls but also integrates with the GSRS data model.
+
+#### No Indexing
+To not use any indexing in GSRS, set the IndexType to `IndexerType.NONE` like this:
+```java
+@EnableGsrsApi(indexerType = EnableGsrsApi.IndexerType.NONE)
+```
+
+Your GSRS controllers should then only extend the basic `AbstractGsrsEntityController` class so no text indexing
+routes are added.
+
+
+
+To add support for
 
 ### GSRS Controller Annotations
 

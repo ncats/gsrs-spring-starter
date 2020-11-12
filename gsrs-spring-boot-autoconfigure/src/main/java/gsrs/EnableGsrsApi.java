@@ -13,12 +13,31 @@ import java.lang.annotation.Target;
 @Import( GsrsApiSelector.class)
 public @interface EnableGsrsApi {
 
-
+    /**
+     * The way Entities are Text Indexed performed by the GSRS API Controller.
+     * Unfortunately due to classpath issues and different incompatible versions
+     * of classes, only one `IndexerType` is allowed per microservice.
+     * This means all GSRSApiController implementations
+     * must all use the same Indexer Type or #NONE.
+     */
     enum IndexerType{
+        /**
+         * Use the same Text Indexer used
+         * by the legacy pre-Spring version of GSRS which
+         * uses @Indexable annotation and IndexValueMakers
+         * to populate a Lucene 4 index.
+         */
         LEGACY,
+        /**
+         * No indexing will be done.
+         */
         NONE
         ;
     }
 
+    /**
+     * The {@link IndexerType} to use by default uses {@link IndexerType#LEGACY}.
+     * @return
+     */
     IndexerType indexerType() default IndexerType.LEGACY;
 }

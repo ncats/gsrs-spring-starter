@@ -53,9 +53,6 @@ public abstract class AbstractGsrsEntityController<T, I> {
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
-    @Autowired
-    private ObjectMapper mapper;
-
 
     private final String context;
 
