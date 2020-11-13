@@ -39,7 +39,7 @@ public class ValidatorFactory {
         return plugins.entrySet().stream()
                 .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType) && e.getKey().supports(newValue, oldValue, methodType))
                 .map(e -> (Validator<T>) e.getKey())
-                .peek(v -> System.out.println("running validator : " + v))
+//                .peek(v -> System.out.println("running validator : " + v))
                 .reduce(Validator.emptyValid(), Validator::combine);
     }
 
