@@ -1174,7 +1174,30 @@ public class EntityUtils {
 
 			// ixFields.add(new FacetField(DIM_CLASS, kind));
 			dyna = (DynamicFacet) cls.getAnnotation(DynamicFacet.class);
-			fields = Arrays.stream(cls.getFields())
+//			fields = Arrays.stream(cls.getFields())
+//					.map(f2 -> new FieldMeta(f2, dyna))
+//					.peek(f -> {
+//						if (f.isId()) {
+//							idField = f;
+//						} else if (f.isDynamicFacetLabel()) {
+//							dynamicLabelField = f;
+//						} else if (f.isDynamicFacetValue()) {
+//							dynamicValueField = f;
+//						}
+//						if (f.isDataVersion()) {
+//							versionField = f;
+//						}
+//						if (f.isDataValidationFlag()){
+//							validatedField = f;
+//						}
+//						if (f.isChangeReason()){
+//							this.changeReasonField=f;
+//						}
+//					})
+//					.collect(Collectors.toList());
+
+			//katzelda Nov 2020: also check non-public fields
+			fields = findPublicAndOtherIndexableFields(cls).stream()
 					.map(f2 -> new FieldMeta(f2, dyna))
 					.peek(f -> {
 						if (f.isId()) {
@@ -1195,8 +1218,6 @@ public class EntityUtils {
 						}
 					})
 					.collect(Collectors.toList());
-
-			
 			
 
 			methods = Arrays.stream(cls.getMethods()).map(m2 -> new MethodMeta(m2)).peek(m -> {
@@ -1226,9 +1247,9 @@ public class EntityUtils {
 			uniqueColumnFields = fields.stream()
 					.filter(f -> f.isUniqueColumn())
 					.collect(Collectors.toList());
-			
+			//TODO why do we remove the id field?
 			fields.removeIf(f->f.isId());
-			
+
 
 			this.keywordFacetMethods = methods.stream()
 					.filter(m->m.isGetter())
@@ -1345,7 +1366,42 @@ public class EntityUtils {
 //			}
 		}
 
+		private static void findPublicAndOtherIndexableFields(Class<?> c, Consumer<Field> fields){
+			for(Field f : c.getDeclaredFields()){
+				int modifiers = f.getModifiers();
+				if(Modifier.isPublic(modifiers)){
+					fields.accept(f);
+				}else if(f.getAnnotation(Indexable.class) !=null || f.getAnnotation(Id.class) !=null){
+					f.setAccessible(true);
+					fields.accept(f);
+				}
 
+
+			}
+			if(Object.class != c.getSuperclass()){
+				findPublicAndOtherIndexableFields(c.getSuperclass(), fields);
+			}
+		}
+
+		/**
+		 * Finds all fields that should be considered for indexing including:
+		 * <ul>
+		 *     <li>all public fields in this class and parent classes</li>
+		 *     <li>non-public fields in this class or parent classes that have annotations of:
+		 *     	<ul>
+		 *     	    <li>{@link Indexable}</li>
+		 *     	    <li>{@link Id}</li>
+		 *     	</ul>
+		 *     </li>
+		 * </ul>
+		 * @param c
+		 * @return
+		 */
+		private static List<Field> findPublicAndOtherIndexableFields(Class<?> c){
+			List<Field> list = new ArrayList<>();
+			findPublicAndOtherIndexableFields(c, list::add);
+			return list;
+		}
 
 		public EntityInfo<?> getInherittedRootEntityInfo() {
 			return ancestorInherit;
