@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Extension to AbstractGsrsEntityController that adds support for the legacy TextIndexer
@@ -28,8 +29,12 @@ import java.util.Optional;
  * @param <I>
  */
 public abstract class AbstractLegacyTextSearchGsrsEntityController<T, I> extends AbstractGsrsEntityController<T,I> {
-    public AbstractLegacyTextSearchGsrsEntityController(String context) {
-        super(context);
+
+    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
+        super(context, idHelper);
+    }
+    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
+        super(context, idPattern);
     }
 
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)

@@ -7,13 +7,16 @@ import ix.core.search.SearchResult;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLegacyTextSearchGsrsEntityController<T,I> {
 
-    public EtagLegacySearchEntityController(String context) {
-        super(context);
+    public EtagLegacySearchEntityController(String context, Pattern pattern) {
+        super(context, pattern);
     }
-
+    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
+        super(context, idHelper);
+    }
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);

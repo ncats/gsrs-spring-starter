@@ -1,5 +1,8 @@
 package gsrs.controller;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * {@link IdHelper} is a way to programactically
  * set the regular expressions for entity IDs in GSRS routes.
@@ -25,6 +28,15 @@ public interface IdHelper {
      * @return a String regex, can not be null or empty.
      */
     String getRegexAsString();
+
+    /**
+     * Get the Regex for the Id as a {@link Pattern}
+     * so that a Matcher of that pattern {@link Matcher#matches()}
+     * return {@code true} only if the String matches the id pattern.
+     * @return
+     */
+    Pattern getPattern();
+
     /**
      * Return a regular expression to mean "not an ID". Often
      * there are multiple routes with similar paths

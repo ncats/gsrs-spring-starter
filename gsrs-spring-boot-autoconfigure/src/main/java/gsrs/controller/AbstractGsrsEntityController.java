@@ -31,7 +31,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *  Abstract GSRS Controller that generates all the
@@ -56,14 +59,29 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
     private final String context;
 
-    private CachedSupplier<ValidatorFactory> validatorFactory;
+    private final Pattern idPattern;
 
+    private CachedSupplier<ValidatorFactory> validatorFactory;
     /**
      * Create a new GSRS Controller with the given context.
-     * @param context
+     * @param context the context for the routes of this controller.
+     * @param idHelper the {@link IdHelper} to match an ID.  This will be used to determine
+     *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+     * @throws NullPointerException if any parameters are null.
      */
-    public AbstractGsrsEntityController(String context) {
-        this.context = context;
+    public AbstractGsrsEntityController(String context, IdHelper idHelper) {
+        this(context, idHelper.getPattern());
+    }
+    /**
+     * Create a new GSRS Controller with the given context.
+     * @param context the context for the routes of this controller.
+     * @param idPattern the {@link Pattern} to match an ID.  This will be used to determine
+     *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+     * @throws NullPointerException if any parameters are null.
+     */
+    public AbstractGsrsEntityController(String context, Pattern idPattern) {
+        this.context = Objects.requireNonNull(context, "context can not be null");
+        this.idPattern = Objects.requireNonNull( idPattern, "id pattern can not be null");
     }
 
     @PostConstruct
@@ -345,17 +363,35 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return new ResponseEntity<>(update(oldEntity), HttpStatus.OK);
     }
 
-    @GetGsrsRestApiMapping(value={"/{id:$ID}/**", "({id:$ID})/**" })
+    @GetGsrsRestApiMapping(value={"/{id}/**", "({id})/**" })
     public ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
-        Optional<T> opt = get(parseIdFromString(id));
-        return returnOnySpecifiedFieldPartFor(opt, queryParameters, request);
+        return returnOnySpecifiedFieldPartFor(getEntityBySomeIdentifier(id), queryParameters, request);
     }
 
-    @GetGsrsRestApiMapping(value={"/{id:$NOT_ID}/**", "({id:$NOT_ID})/**" })
-    public ResponseEntity<Object> getFieldByFlex(@PathVariable String someKindOfId, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
-        Optional<T> opt = flexLookup(someKindOfId);
-        return returnOnySpecifiedFieldPartFor(opt, queryParameters, request);
+    private Optional<T> getEntityBySomeIdentifier(String id) {
+        Optional<T> opt;
+        if(isId(id)) {
+            opt = get(parseIdFromString(id));
+        }else {
+            opt = flexLookup(id);
+        }
+        return opt;
     }
+    private Optional<I> getEntityIdOnlyBySomeIdentifier(String id) {
+        Optional<I> opt;
+        if(isId(id)) {
+            opt = Optional.ofNullable(parseIdFromString(id));
+        }else {
+            opt = flexLookupIdOnly(id);
+        }
+        return opt;
+    }
+
+    private boolean isId(String s){
+        Matcher idMatch = idPattern.matcher(s);
+        return idMatch.matches();
+    }
+
     private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) {
         if(!opt.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -430,42 +466,25 @@ public abstract class AbstractGsrsEntityController<T, I> {
         }
     }
 
-    @GetGsrsRestApiMapping(value = {"/{id:$ID}", "({id:$ID})"})
+    @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
-        Optional<T> obj = get(parseIdFromString(id));
+        Optional<T> obj = getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             return new ResponseEntity<>(obj.get(), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-    @GetGsrsRestApiMapping(value = {"/{id:$NOT_ID}", "({id:$NOT_ID})"} )
-    public ResponseEntity<Object> getByFlexId(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
-        Optional<T> obj = flexLookup(id);
-        if(obj.isPresent()){
-            return new ResponseEntity<>(obj.get(), HttpStatus.OK);
-        }
-        return gsrsControllerConfiguration.handleNotFound(queryParameters);
-    }
-    @DeleteGsrsRestApiMapping(value = {"/{id:$ID}", "({id:$ID})"})
+
+    @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
-        I parsedId = parseIdFromString(id);
-        return deleteEntity(parsedId);
-    }
-
-    private ResponseEntity<Object> deleteEntity(I parsedId) {
-        delete(parsedId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @DeleteGsrsRestApiMapping(value = {"/{id:$NOT_ID}", "({id:$NOT_ID})"} )
-    public ResponseEntity<Object> deleteByFlexId(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
-        Optional<I> idOptional = flexLookupIdOnly(id);
+        Optional<I> idOptional = getEntityIdOnlyBySomeIdentifier(id);
         if(idOptional.isPresent()){
-
-            return deleteEntity(idOptional.get());
+            delete(idOptional.get());
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
+
 //TODO katzelda October 2020 : for now delay work on modern hibernate search use legacy lucene
 
 //    @Data

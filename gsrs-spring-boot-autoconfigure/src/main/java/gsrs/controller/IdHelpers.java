@@ -1,5 +1,7 @@
 package gsrs.controller;
 
+import java.util.regex.Pattern;
+
 /**
  * Common implementations of {@link IdHelpers}.
  */
@@ -12,7 +14,7 @@ public enum IdHelpers implements IdHelper {
     /**
      * An ID that is a UUID.
      */
-    UUID( "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+    UUID( "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
             //I don't think lookaheads with curly braces are supported in Java 8?
             // so for now just make a a-z0-9 check that's not the exact length as uuid
 //            "(?![a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9])"
@@ -22,12 +24,15 @@ public enum IdHelpers implements IdHelper {
     CUSTOM(".*")
     ;
 
-    private final String regex;
+    private final String regexAsString;
+    private final Pattern pattern;
+
     private final String notRegex;
 
     IdHelpers(String regex, String notRegex) {
-        this.regex = regex;
+        this.regexAsString = regex;
         this.notRegex = notRegex;
+        pattern = Pattern.compile("^"+regexAsString+"$");
     }
     IdHelpers(String regex) {
         this(regex, ".+");
@@ -35,7 +40,12 @@ public enum IdHelpers implements IdHelper {
 
     @Override
     public String getRegexAsString() {
-        return regex;
+        return regexAsString;
+    }
+
+    @Override
+    public Pattern getPattern() {
+        return pattern;
     }
 
     @Override
@@ -44,7 +54,7 @@ public enum IdHelpers implements IdHelper {
     }
 
     public String replaceId(String input, String idLiteral){
-        return input.replace(idLiteral, regex);
+        return input.replace(idLiteral, regexAsString);
     }
     public String replaceInverseId(String input, String idLiteral){
         return input.replace(idLiteral, notRegex);
