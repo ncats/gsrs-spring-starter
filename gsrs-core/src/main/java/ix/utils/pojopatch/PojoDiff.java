@@ -175,7 +175,7 @@ public class PojoDiff {
 				try{
 					String path=jsn.at("/path").asText();
 					String old=oldAndNew[0].at(path).toString();
-					c.oldValue=old;
+					c.setOldValue(old);
 				}catch(Exception e){
 					e.printStackTrace();
 				}

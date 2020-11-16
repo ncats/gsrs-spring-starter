@@ -26,6 +26,23 @@ public class URIPojoPointerParser {
 	public static URIPojoPointerParser getInstance(){
 		return instance;
 	}
+
+	public LambdaParseRegistry getLambdaParseRegistry() {
+		return lambdaParseRegistry;
+	}
+
+	public void setLambdaParseRegistry(LambdaParseRegistry lambdaParseRegistry) {
+		this.lambdaParseRegistry = lambdaParseRegistry;
+	}
+
+	/**
+	 * Should Only be called by test utilities.
+	 * @param instance
+	 */
+	public static void setInstance(URIPojoPointerParser instance) {
+		URIPojoPointerParser.instance = instance;
+	}
+
 	/**
 	 * This is an annoying bridge so that
 	 * all the code from the G-SRS 2.x branch
@@ -106,7 +123,7 @@ public class URIPojoPointerParser {
 
 					final String key = parse("_" + lambdaString, 0).get().v();
 
-					Optional<Function<String, ? extends PojoPointer>> pojoPointerParser = lambdaParseRegistry
+					Optional<Function<String, ? extends PojoPointer>> pojoPointerParser = lambdaParseRegistry==null? Optional.empty() : lambdaParseRegistry
 							.getPojoPointerParser(key);
 					if(!pojoPointerParser.isPresent()){
 						throw new IllegalArgumentException("unknown function " + key);

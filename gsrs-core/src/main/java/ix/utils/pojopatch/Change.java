@@ -1,14 +1,18 @@
 package ix.utils.pojopatch;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Builder;
+import lombok.Data;
 
+@Builder
+@Data
 public  class Change{
-		public String path;
-		public String op;
-		public Object oldValue;
-		public Object newValue;
-		public Object oldContainer;
-		public String from;
+		private String path;
+		private String op;
+		private Object oldValue;
+		private Object newValue;
+		private Object oldContainer;
+		private String from;
 		
 		public Change(String path, String op, Object oldValue, Object newValue, Object oldContainer, String from){
 			this.path=path;

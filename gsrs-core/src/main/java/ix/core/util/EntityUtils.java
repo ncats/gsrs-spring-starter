@@ -1378,7 +1378,7 @@ public class EntityUtils {
 
 
 			}
-			if(Object.class != c.getSuperclass()){
+			if(c.getSuperclass() !=null){
 				findPublicAndOtherIndexableFields(c.getSuperclass(), fields);
 			}
 		}

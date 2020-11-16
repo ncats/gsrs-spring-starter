@@ -68,19 +68,21 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			map.put("limit", LongBasedLambdaArgumentParser.of("limit", (p) -> new LimitPath(p)));
 			map.put("skip", LongBasedLambdaArgumentParser.of("skip", (p) -> new SkipPath(p)));
 
-			for(Map<String, Object> m : registeredFunctionProperties.getRegisteredfunctions()){
-				try{
-					String className = (String) m.get("class");
-					Class<?> c = ClassUtils.forName(className, null);
-					RegisteredFunction rf = (RegisteredFunction) c.getDeclaredConstructor().newInstance();
-					AutowireHelper.getInstance().autowire(rf);
+			if(registeredFunctionProperties !=null) {
+				for (Map<String, Object> m : registeredFunctionProperties.getRegisteredfunctions()) {
+					try {
+						String className = (String) m.get("class");
+						Class<?> c = ClassUtils.forName(className, null);
+						RegisteredFunction rf = (RegisteredFunction) c.getDeclaredConstructor().newInstance();
+						AutowireHelper.getInstance().autowire(rf);
 
-					LambdaArgumentParser p = rf.getFunctionURIParser();
-					System.out.println("Found special Function:" + p.getKey());
-					map.put(p.getKey(), p);
-					registeredFunctions.add(rf);
-				}catch(Exception e){
-					e.printStackTrace();
+						LambdaArgumentParser p = rf.getFunctionURIParser();
+						System.out.println("Found special Function:" + p.getKey());
+						map.put(p.getKey(), p);
+						registeredFunctions.add(rf);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
 

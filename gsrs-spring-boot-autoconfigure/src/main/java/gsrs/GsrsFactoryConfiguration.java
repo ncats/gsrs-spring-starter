@@ -1,5 +1,7 @@
-package gsrs.validator;
+package gsrs;
 
+import gsrs.entityProcessor.EntityProcessorConfig;
+import gsrs.validator.ValidatorConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -10,12 +12,19 @@ import java.util.Map;
 @Component
 @ConfigurationProperties("gsrs")
 @Data
-public class ValidatorFactoryConfiguration {
+public class GsrsFactoryConfiguration {
 
     private Map<String, List<ValidatorConfig>> validators;
-//    private Map<String, Object> validators;
+    private Map<String, List<EntityProcessorConfig>> entityprocessors;
 
-    private String example;
+
+    public List<EntityProcessorConfig> getEntityProcessorConfigByContext(String context){
+        if(validators ==null){
+            //nothing set
+            return Collections.emptyList();
+        }
+        return entityprocessors.getOrDefault(context, Collections.emptyList());
+    }
 
     public List<ValidatorConfig> getValidatorConfigByContext(String context){
         if(validators ==null){
