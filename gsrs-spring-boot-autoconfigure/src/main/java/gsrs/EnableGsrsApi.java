@@ -34,17 +34,34 @@ public @interface EnableGsrsApi {
         ;
     }
 
+    /**
+     * The way {@link ix.core.EntityProcessor}s are detected by this starter package.
+     * Only {@link ix.core.EntityProcessor}s that are detected by the Detector implementation
+     * will be called when entities CRUD operations are performed.
+     */
     enum EntityProcessorDetector {
+        /**
+         * Use a configuration file to list which {@link ix.core.EntityProcessor}
+         * implementations to use.
+         */
         CONF,
+        /**
+         * Add any {@link ix.core.EntityProcessor} discovered by the Spring component scan,
+         * this means that EntityProcessor classes must be annotated with @Component.
+         */
         COMPONENT_SCAN
         ;
     }
 
     /**
      * The {@link IndexerType} to use by default uses {@link IndexerType#LEGACY}.
-     * @return
+     * @return the {@link IndexerType} can not be null.
      */
     IndexerType indexerType() default IndexerType.LEGACY;
 
+    /**
+     * The {@link EntityProcessorDetector} to use, by default uses {@link EntityProcessorDetector#CONF}.
+     * @return the {@link EntityProcessorDetector} can not be null.
+     */
     EntityProcessorDetector entityProcessorDetector() default EntityProcessorDetector.CONF;
 }

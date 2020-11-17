@@ -256,7 +256,58 @@ public class MyIndexValueMaker implements IndexValueMaker<Foo>{
 GSRS uses the `ix.core.EntityProcessor<T>` interface to provide hooks for
 JPA pre and post hooks when an Entity's data is changed in the database.
 
-To add an implementation just annotate your class as a `@Component` so it gets picked up by the Spring component scan:
+#### Detecting EntityProcessors
+There are multiple ways that EntityProcessors can be detected by GSRS. Each one has different pros and cons.
+To choose which detector to use, set the field `entityProcessorDetector` in the `@EnableGsrsApi` annotation.
+
+##### CONF
+This is the current default Detector.  Only Entity Processors that are explicitly listed in the application.conf file
+with the property `gsrs.entiryprocessors` will be used.
+
+```
+gsrs.entityprocessors = [
+   {
+        "class" = "com.example.domain.MyEntity",
+   		"processor" = "com.example.entityProcessor.MyEntityProcessor"
+   },
+   {
+        "class" = "com.example.domain.MyEntity",
+   		"processor" = "com.example.entityProcessor.MyEntityProcessor2"
+   },
+   {
+        "class" = "com.example.domain.MyOtherEntity",
+   		"processor" = "com.example.entityProcessor.CompletelyDifferentProcessor"
+   },
+]
+```
+
+and in your java Spring Application class:
+
+```java
+@EnableGsrsApi(indexerType = ...,
+                entityProcessorDetector = EntityProcessorDetector.CONF)
+```
+
+Listing the processors has several advantages including having an easy way to see exactly which processors are to be used
+and allows for different configurations to turn on or off EntityProcessors by adding or removing items from the list.
+You may also list an entityProcessor class multiple times with different parameters (see next section).
+
+###### Customized parameters of EntityProcessors
+
+To keep backwards compatibility with GSRS 2.x EntityProcessors, the config option allows for an optional
+`with` field of a JSON Map and an constructor that takes a `Map` of additional parameters 
+if the entityProcessor supports customized instances.
+
+##### COMPONENT_SCAN
+
+Another option is to use Spring's component scan mechanism to find all EntityProcessor implementations.
+
+```java
+@EnableGsrsApi(indexerType = ...,
+                entityProcessorDetector = EnableGsrsApi.EntityProcessorDetector.COMPONENT_SCAN)
+```
+
+Then to add an implementation just annotate your EntityProcessor class as a `@Component` so it gets picked up by the Spring component scan:
   
   ```java
 @Component
@@ -264,6 +315,10 @@ public class MyEntityProcessor implements EntityProcessor<Foo>{
      ...
 } 
 ```
+
+This is easier to quickly add new EntityProcessors but the downside is you can't disable EntityProcessors
+without removing the class from component scan or removing the `@Component` annotation.  
+Another downside is each commponent can only be instantiated once.
 
 ### Custom Validators
 Entities can have multiple custom validators.  
