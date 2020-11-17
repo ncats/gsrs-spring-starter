@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -15,16 +16,18 @@ import java.util.Map;
 public class GsrsFactoryConfiguration {
 
     private Map<String, List<ValidatorConfig>> validators;
-    private Map<String, List<EntityProcessorConfig>> entityprocessors;
+    private List<EntityProcessorConfig> entityProcessors;
 
 
-    public List<EntityProcessorConfig> getEntityProcessorConfigByContext(String context){
-        if(validators ==null){
+    public List<EntityProcessorConfig> getEntityProcessors(){
+        if(entityProcessors ==null){
             //nothing set
             return Collections.emptyList();
         }
-        return entityprocessors.getOrDefault(context, Collections.emptyList());
+        return new ArrayList<>(entityProcessors);
     }
+
+
 
     public List<ValidatorConfig> getValidatorConfigByContext(String context){
         if(validators ==null){

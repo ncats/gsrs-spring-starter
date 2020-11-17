@@ -1,6 +1,5 @@
 package gsrs;
 
-import gsrs.controller.GsrsWebConfig;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -35,9 +34,17 @@ public @interface EnableGsrsApi {
         ;
     }
 
+    enum EntityProcessorDetector {
+        CONF,
+        COMPONENT_SCAN
+        ;
+    }
+
     /**
      * The {@link IndexerType} to use by default uses {@link IndexerType#LEGACY}.
      * @return
      */
     IndexerType indexerType() default IndexerType.LEGACY;
+
+    EntityProcessorDetector entityProcessorDetector() default EntityProcessorDetector.CONF;
 }

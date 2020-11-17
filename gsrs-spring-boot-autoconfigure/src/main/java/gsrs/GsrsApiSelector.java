@@ -1,6 +1,9 @@
 package gsrs;
 
 import gsrs.controller.GsrsWebConfig;
+import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
+import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
+import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
@@ -29,6 +32,17 @@ public class GsrsApiSelector implements ImportSelector {
 
             }
         }
-        return componentsToInclude.stream().map(Class::getName).toArray(i-> new String[i]);
+        EnableGsrsApi.EntityProcessorDetector entityProcessorDetector = attributes.getEnum("entityProcessorDetector");
+
+        switch(entityProcessorDetector){
+            case COMPONENT_SCAN:
+                componentsToInclude.add(BasicEntityProcessorConfiguration.class);
+                break;
+            case CONF:
+                componentsToInclude.add(ConfigBasedEntityProcessorConfiguration.class);
+                break;
+        }
+        return componentsToInclude.stream().map(Class::getName)
+                .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
     }
 }

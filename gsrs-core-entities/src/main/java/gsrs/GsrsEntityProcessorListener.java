@@ -4,6 +4,7 @@ import ix.core.EntityProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.*;
 
 @Slf4j
@@ -11,7 +12,10 @@ public class GsrsEntityProcessorListener {
 
     @Autowired
     private EntityProcessorFactory epf;
-
+    @PostConstruct
+    public void debug(){
+        System.out.println("entityProcessorFactory = " + epf.getClass());
+    }
     @PreUpdate
     public void preUpdate(Object o){
         try {
