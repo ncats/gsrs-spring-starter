@@ -82,7 +82,8 @@ so you will probably not be extending this class directly but you can.
 In order to take advantage of the GSRS standard API, your controller needs to both extend this class
 and add the annotation `gsrs.controller.GsrsRestApiController`.  The  `@GsrsRestApiController` annotation
 requires 2 fields to be set: `context` which is the part of the API path pattern that will
- map to this controller and `idHelper`. 
+ map to this controller and `idHelper`. The AbstractControllerClass currently also needs these fields
+ and should be passed via the constructor.  Future revisions may remove this duplication. 
  
 ```java
 @GsrsRestApiController(context = MyController.CONTEXT, idHelper = IdHelpers.NUMBER)
@@ -91,7 +92,7 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
   public static final String CONTEXT = "myContext";
 
   public MyController(){
-      super(CONTEXT);
+      super(CONTEXT, IdHelpers.NUMBER);
   }
   //.. implement methods here
 }
@@ -143,10 +144,13 @@ You will also need to add an additional dependency to your maven pom:
 
 #### TextIndexer @Indexable annotations
 The legacy TextIndexer can use reflection to automatically index entities using the `@Indexable` annotation on an entity's
-fields and/or public getters. By default, if a field is public it will be indexed.
+fields and/or public getters. By default, if a field is public it will be indexed.  If a field
+is not public, then the field must be annotated with either `@Indexable` or `@javax.persistance.Id`
+for it to be indexed.  If the entity has any superclasses, any inherited fields that meet
+these indexing criteria are also indexed.
 
 #### IndexValueMaker
-The `ix.core.search.text.IndexableValue<T>` interface is used to create additional data to the index document in abstract
+The `ix.core.search.text.IndexableValue<T>` interface is used to add additional data to the index document in abstract
 way.  The primary method for this interface is 
 ```java
 void createIndexableValues(T entity, Consumer<IndexableValue> consumer) ;
@@ -201,14 +205,11 @@ Your GSRS controllers should then only extend the basic `AbstractGsrsEntityContr
 routes are added.
 
 
-
-To add support for
-
 ### GSRS Controller Annotations
 
 Your concrete controller class that extends the abstract GSRSEntityController must be annotated with
 `@GsrsRestApiController` along with setting the fields for `context` and `idHelper`
-The abstract controller constructor also takes the context as a String so a good practice 
+The abstract controller constructor also takes the the same parameters so a good practice 
 is to make your context a public static final String so you can reference it in both places
 so they always match.
 
@@ -219,7 +220,7 @@ public class CvController extends AbstractLegacyTextSearchGsrsEntityController<C
 
     
     public CvController() {
-        super(CONTEXT);
+        super(CONTEXT, IdHelpers.NUMBER);
     }
 
     @Autowired
@@ -268,15 +269,15 @@ with the property `gsrs.entiryprocessors` will be used.
 gsrs.entityprocessors = [
    {
         "class" = "com.example.domain.MyEntity",
-   		"processor" = "com.example.entityProcessor.MyEntityProcessor"
+        "processor" = "com.example.entityProcessor.MyEntityProcessor"
    },
    {
         "class" = "com.example.domain.MyEntity",
-   		"processor" = "com.example.entityProcessor.MyEntityProcessor2"
+        "processor" = "com.example.entityProcessor.MyEntityProcessor2"
    },
    {
         "class" = "com.example.domain.MyOtherEntity",
-   		"processor" = "com.example.entityProcessor.CompletelyDifferentProcessor"
+        "processor" = "com.example.entityProcessor.CompletelyDifferentProcessor"
    },
 ]
 ```
