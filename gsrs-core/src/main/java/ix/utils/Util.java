@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -43,10 +44,12 @@ public class Util {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1944.0 Safari/537.36"
     };
     //TODO katzelda October 2020 : removing cache related stuff for now
-    /*
-    public static CachedSupplier<Long> TIME_RESOLUTION_MS=
-    		ConfigHelper.supplierOf("ix.tokenexpiretime",(long)(3600*1000*24));
-*/
+    //FIXME katzelda Sept 2019 turn this into a property if needed ?
+//    public static CachedSupplier<Long> TIME_RESOLUTION_MS=
+//    		ConfigHelper.supplierOf("ix.tokenexpiretime",(long)(3600*1000*24));
+
+    public static CachedSupplier<Long> TIME_RESOLUTION_MS = CachedSupplier.of( ()-> 3600L*1000L*24L);
+
     private static int BUFFER_SIZE = 8192; //8K
 
     static Random rand = new Random ();
@@ -382,7 +385,7 @@ public class Util {
     }
 
     //TODO katzelda October 2020 : commenting out cache related stuff that will be handled elsewhere
-    /*
+
     public static long getCanonicalCacheTimeStamp(){
     	long TIMESTAMP= TimeUtil.getCurrentTimeMillis();
         return (long) Math.floor(TIMESTAMP/getTimeResolutionMS());
@@ -391,8 +394,11 @@ public class Util {
     public static long getTimeResolutionMS(){
     	return TIME_RESOLUTION_MS.get().longValue();
     }
-    */
-    
+
+    public static String generateSalt() {
+        return Util.encrypt(TimeUtil.getCurrentDate().toString(), String.valueOf(Math.random()));
+    }
+
 
     
 

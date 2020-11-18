@@ -10,4 +10,5 @@ public interface PrincipalRepository extends GsrsRepository<Principal, Long> {
     Principal findDistinctByUsernameIgnoreCase(String username);
 
 
+
 }

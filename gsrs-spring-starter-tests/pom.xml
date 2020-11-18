@@ -9,9 +9,22 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>gsrs-core-entities</artifactId>
+    <artifactId>gsrs-spring-starter-tests</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-boot-starter</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
@@ -19,35 +32,33 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-core-test/artifactId>
+            <artifactId>gsrs-core-entities</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <optional>true</optional>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core-test</artifactId>
+            <version>${gsrs.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+        </dependency>
 
     </dependencies>
-
 </project>
