@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EnableConfigurationProperties
 @EnableGsrsApi(indexerType = EnableGsrsApi.IndexerType.LEGACY,
-                entityProcessorDetector = EnableGsrsApi.EntityProcessorDetector.COMPONENT_SCAN)
+                entityProcessorDetector = EnableGsrsApi.EntityProcessorDetector.CUSTOM)
 @EnableGsrsJpaEntities
 @SpringBootApplication
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )

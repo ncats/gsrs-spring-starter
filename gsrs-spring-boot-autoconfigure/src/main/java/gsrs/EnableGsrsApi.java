@@ -49,7 +49,22 @@ public @interface EnableGsrsApi {
          * Add any {@link ix.core.EntityProcessor} discovered by the Spring component scan,
          * this means that EntityProcessor classes must be annotated with @Component.
          */
-        COMPONENT_SCAN
+        COMPONENT_SCAN,
+        /**
+         * You must provide an `EntityProcessorFactory` Bean in your Spring Configuration.
+         * <pre>
+         *     {@code
+         *     @Configuration
+         *     public class MyConfig {
+         *         @Bean
+         *         public EntityProcessorFactory entityProcessorFactory() {
+         *             // create new EntityProcessorFactory instance here
+         *         }
+         *     }
+         *     }
+         * </pre>
+         */
+        CUSTOM
         ;
     }
 

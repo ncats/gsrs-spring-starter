@@ -321,6 +321,9 @@ This is easier to quickly add new EntityProcessors but the downside is you can't
 without removing the class from component scan or removing the `@Component` annotation.  
 Another downside is each commponent can only be instantiated once.
 
+##### CUSTOM EntityProcessorFactory
+  By selecting `CUSTOM`, you must provide your own `EntityProcessorFactory` Bean definition in your Spring Configuration.
+
 ### Custom Validators
 Entities can have multiple custom validators.  
 

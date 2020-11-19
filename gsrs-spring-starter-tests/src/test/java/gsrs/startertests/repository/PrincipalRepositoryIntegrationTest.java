@@ -1,46 +1,25 @@
 package gsrs.startertests.repository;
 
 
-import gsrs.AuditConfig;
-import gsrs.BasicEntityProcessorFactory;
-import gsrs.EntityProcessorFactory;
-import gsrs.GsrsFactoryConfiguration;
+
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.ClearAuditorRule;
-import gsrs.startertests.ClearTextIndexerRule;
-import gsrs.startertests.GsrsSpringApplication;
+import gsrs.startertests.*;
 import ix.core.models.Principal;
-import ix.core.search.text.Lucene4IndexServiceFactory;
-import ix.core.search.text.TextIndexerConfig;
-import ix.core.search.text.TextIndexerFactory;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ContextConfiguration(classes = {GsrsSpringApplication.class, PrincipalRepository.class,
-        GsrsFactoryConfiguration.class,
-        BasicEntityProcessorFactory.class, TextIndexerFactory.class, TextIndexerConfig.class,
-        Lucene4IndexServiceFactory.class})
-
-@DataJpaTest
+@GsrsJpaTest
 @ActiveProfiles("test")
-@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
 public class PrincipalRepositoryIntegrationTest {
 //    @TestConfiguration
 //    public static class Config{

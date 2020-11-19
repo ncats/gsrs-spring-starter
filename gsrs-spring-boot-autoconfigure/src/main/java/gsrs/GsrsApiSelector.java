@@ -41,6 +41,7 @@ public class GsrsApiSelector implements ImportSelector {
             case CONF:
                 componentsToInclude.add(ConfigBasedEntityProcessorConfiguration.class);
                 break;
+            default: break;
         }
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);

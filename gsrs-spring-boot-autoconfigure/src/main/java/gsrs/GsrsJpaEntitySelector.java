@@ -10,7 +10,7 @@ public class GsrsJpaEntitySelector implements ImportSelector {
         return new String[]{
                 GsrsEntitiesConfiguration.class.getName(),
                 AuditConfig.class.getName(),
-                BasicEntityProcessorFactory.class.getName(),
+//                BasicEntityProcessorFactory.class.getName(),
                 GsrsEntityProcessorListener.class.getName(),
         };
     }

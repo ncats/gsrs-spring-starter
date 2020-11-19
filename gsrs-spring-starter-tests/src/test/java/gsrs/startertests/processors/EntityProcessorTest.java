@@ -1,13 +1,12 @@
 package gsrs.startertests.processors;
 
 import gsrs.AuditConfig;
+import gsrs.EntityProcessorFactory;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 
 import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.ClearAuditorRule;
-import gsrs.startertests.ClearTextIndexerRule;
-import gsrs.startertests.GsrsEntityTestConfiguration;
+import gsrs.startertests.*;
 import ix.core.EntityProcessor;
 
 import lombok.Data;
@@ -17,7 +16,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -31,11 +35,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@DataJpaTest
-@ContextConfiguration
+@GsrsJpaTest
 @ActiveProfiles("test")
-@Import({GsrsEntityTestConfiguration.class, EntityProcessorTest.MyEntityProcessor.class, ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
-
+@Import(EntityProcessorTest.MyConfig.class)
 public class EntityProcessorTest {
     @Data
     @Entity
@@ -47,7 +49,13 @@ public class EntityProcessorTest {
         private String foo;
     }
 
-
+    @Configuration
+    public static class MyConfig {
+        @Bean
+        public EntityProcessorFactory entityProcessorFactory() {
+            return new TestEntityProcessorFactory(new MyEntityProcessor());
+        }
+    }
 
 
     private static List<String> list = new ArrayList<>();

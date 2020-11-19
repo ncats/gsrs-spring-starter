@@ -19,7 +19,6 @@ public class ConfigBasedEntityProcessorFactory extends AbstractEntityProcessorFa
     @Override
     protected void registerEntityProcessor(Consumer<EntityProcessor> registar) {
         List<EntityProcessorConfig> eps = config.getEntityProcessors();
-        System.out.println("here!!!!");
         if(eps !=null){
             for(EntityProcessorConfig config: eps){
                 try {
