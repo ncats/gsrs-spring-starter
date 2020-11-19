@@ -13,6 +13,10 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.annotation.*;
 
+/**
+ * Annotation for a  GSRS JPA Test.  This sets up some common GSRS configurations
+ * ontop of {@link DataJpaTest} such as clearing GSRS audit info, and text indexing etc.
+ */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

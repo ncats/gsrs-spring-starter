@@ -2,6 +2,7 @@ package gsrs.startertests;
 
 import gsrs.EntityProcessorFactory;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.indexer.IndexValueMakerFactory;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -24,6 +25,13 @@ public class GsrsEntityTestConfiguration {
     @Order(Ordered.LOWEST_PRECEDENCE)
     public EntityProcessorFactory entityProcessorFactory(){
         return new TestEntityProcessorFactory();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @Order(Ordered.LOWEST_PRECEDENCE)
+    public IndexValueMakerFactory indexValueMakerFactory(){
+        return new TestIndexValueMakerFactory();
     }
 
 }

@@ -3,10 +3,7 @@ package gsrs.startertests.indexValueMaker;
 import gsrs.AuditConfig;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.ClearAuditorRule;
-import gsrs.startertests.ClearTextIndexerRule;
-import gsrs.startertests.GsrsEntityTestConfiguration;
-import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.*;
 import gsrs.startertests.processors.EntityProcessorTest;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
@@ -15,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,10 +28,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @GsrsJpaTest
-@Import( IndexValueMakerFactoryTest.MyIndexValueMaker.class)
-
+@Import(IndexValueMakerFactoryTest.MyConfig.class)
 public class IndexValueMakerFactoryTest {
 
+    @TestConfiguration
+    static class MyConfig{
+        @Bean
+        public IndexValueMakerFactory indexValueMakerFactory(){
+            return new TestIndexValueMakerFactory(new MyIndexValueMaker());
+        }
+    }
     @Autowired
     private IndexValueMakerFactory factory;
 
