@@ -10,6 +10,9 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
@@ -39,6 +42,8 @@ public class GsrsEntityTestConfiguration {
     public IndexValueMakerFactory defaultIndexValueMakerFactory(){
         return new TestIndexValueMakerFactory();
     }
+
+
 
 }
 
