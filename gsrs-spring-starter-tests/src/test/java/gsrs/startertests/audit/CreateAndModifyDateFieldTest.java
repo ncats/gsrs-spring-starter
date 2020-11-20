@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class CreateAndModifyUserFieldTest {
+public class CreateAndModifyDateFieldTest {
     @Entity
     @Data
     public static class MyEntity extends AbstractGsrsEntity {
