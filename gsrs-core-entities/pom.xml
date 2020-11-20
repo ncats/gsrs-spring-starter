@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-core-test/artifactId>
+            <artifactId>gsrs-core-test</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
         <dependency>

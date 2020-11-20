@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
                 indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CUSTOM)
 @EnableGsrsJpaEntities
 @SpringBootApplication
-@EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+//@EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 @EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 @Import(GsrsEntityTestConfiguration.class)
 public class GsrsSpringApplication {

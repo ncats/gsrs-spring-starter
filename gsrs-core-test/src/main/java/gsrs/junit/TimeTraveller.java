@@ -54,6 +54,30 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimeTraveller implements BeforeEachCallback, AfterEachCallback {
 
+    public static class TimeCoordinate{
+        private long millis;
+
+        public static TimeCoordinate from(long millis){
+            return new TimeCoordinate(millis);
+        }
+        private TimeCoordinate(long millis){
+            this.millis = millis;
+        }
+        public long asMillis(){
+            return millis;
+        }
+
+        public Date asDate(){
+            return new Date(millis);
+        }
+
+        public LocalDate asLocalDate(){
+            return TimeUtil.asLocalDate(asDate());
+        }
+        public LocalDateTime asLocalDateTime(){
+            return TimeUtil.asLocalDateTime(asDate());
+        }
+    }
     /**
      * initial time we set to at constructor time
      * and jump to each call to {@link #beforeEach(ExtensionContext)} ()}.
@@ -205,6 +229,17 @@ public class TimeTraveller implements BeforeEachCallback, AfterEachCallback {
     public Optional<Date> getWhereWeWereDate(){
         if(hasJumped) {
             return Optional.of( new Date(whereWeWere));
+        }
+        return Optional.empty();
+    }
+
+    public TimeCoordinate getWhereWeAre(){
+        return TimeCoordinate.from(whereWeAre);
+    }
+
+    public Optional<TimeCoordinate> getWhereWeWere(){
+        if(hasJumped){
+            return Optional.of(TimeCoordinate.from(whereWeWere));
         }
         return Optional.empty();
     }

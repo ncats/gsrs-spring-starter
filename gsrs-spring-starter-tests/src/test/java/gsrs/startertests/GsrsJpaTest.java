@@ -4,6 +4,7 @@ import gsrs.AuditConfig;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.repository.PrincipalRepository;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.models.Principal;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -25,13 +26,10 @@ import java.lang.annotation.*;
 @Inherited
 @ContextConfiguration(classes = {GsrsSpringApplication.class, PrincipalRepository.class,
         GsrsFactoryConfiguration.class, GsrsEntityTestConfiguration.class,
-
+        Principal.class,
         Lucene4IndexServiceFactory.class})
 @DirtiesContext
 @DataJpaTest
-//this dirties context makes us recreate the h2 database after each method (and any other context related thing)
-//this not only wipes out the loaded data but resets all auto increment counters.
-//without this even if we remove all entities from the repository after each test, the ids wouldn't reset back to 1
 @Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
 public @interface GsrsJpaTest {
     /**
