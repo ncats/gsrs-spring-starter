@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -27,13 +28,15 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@GsrsJpaTest
+@GsrsJpaTest(classes =GsrsSpringApplication.class)
+
 @Import(IndexValueMakerFactoryTest.MyConfig.class)
 public class IndexValueMakerFactoryTest {
 
     @TestConfiguration
     static class MyConfig{
         @Bean
+        @Primary
         public IndexValueMakerFactory indexValueMakerFactory(){
             return new TestIndexValueMakerFactory(new MyIndexValueMaker());
         }

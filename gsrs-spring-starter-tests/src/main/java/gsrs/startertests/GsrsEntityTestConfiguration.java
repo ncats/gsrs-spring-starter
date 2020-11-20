@@ -15,28 +15,30 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.test.context.ContextConfiguration;
 
 @TestConfiguration
-@Import( {GsrsFactoryConfiguration.class,
-         TextIndexerFactory.class, TextIndexerConfig.class,
+@ContextConfiguration(classes= {GsrsFactoryConfiguration.class,
+        TextIndexerFactory.class, TextIndexerConfig.class,
         Lucene4IndexServiceFactory.class})
-
+@Order
 public class GsrsEntityTestConfiguration {
 
 
 
     @Bean
-    @ConditionalOnMissingBean
     @Order(Ordered.LOWEST_PRECEDENCE)
-    public EntityProcessorFactory entityProcessorFactory(){
+    @ConditionalOnMissingBean
+    public EntityProcessorFactory defaultEntityProcessorFactory(){
         return new TestEntityProcessorFactory();
     }
 
     @Bean
-    @ConditionalOnMissingBean
     @Order(Ordered.LOWEST_PRECEDENCE)
-    public IndexValueMakerFactory indexValueMakerFactory(){
+    @ConditionalOnMissingBean
+    public IndexValueMakerFactory defaultIndexValueMakerFactory(){
         return new TestIndexValueMakerFactory();
     }
 
 }
+

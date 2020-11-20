@@ -24,13 +24,18 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@ContextConfiguration(classes = {GsrsSpringApplication.class, PrincipalRepository.class,
-        GsrsFactoryConfiguration.class, GsrsEntityTestConfiguration.class,
-        Principal.class,
-        Lucene4IndexServiceFactory.class})
+@ContextConfiguration
 @DirtiesContext
 @DataJpaTest
-@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
+@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class,
+//        PrincipalRepository.class,
+
+        GsrsFactoryConfiguration.class,
+//        TextIndexerFactory.class, TextIndexerConfig.class,
+//        Lucene4IndexServiceFactory.class,
+        Principal.class,
+        Lucene4IndexServiceFactory.class,
+        GsrsEntityTestConfiguration.class})
 public @interface GsrsJpaTest {
     /**
      * The dirties context tells the test
@@ -45,4 +50,7 @@ public @interface GsrsJpaTest {
      */
     @AliasFor(annotation = DirtiesContext.class, attribute = "classMode")
     DirtiesContext.ClassMode dirtyMode() default DirtiesContext.ClassMode.AFTER_CLASS;
+
+    @AliasFor(annotation = ContextConfiguration.class)
+    Class[] classes() default {};
 }

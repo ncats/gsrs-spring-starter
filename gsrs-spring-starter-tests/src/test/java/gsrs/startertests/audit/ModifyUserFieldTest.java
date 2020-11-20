@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@GsrsJpaTest(classes = GsrsSpringApplication.class, dirtyMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 @Import(ModifyUserFieldTest.MyConfig.class)
 public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
@@ -43,6 +44,7 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Configuration
     public static class MyConfig {
         @Bean
+        @Primary
         public EntityProcessorFactory entityProcessorFactory() {
 
             return new TestEntityProcessorFactory(new SetCreatedBy());

@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -27,7 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@GsrsJpaTest
+@GsrsJpaTest(classes =GsrsSpringApplication.class)
 @ActiveProfiles("test")
 @Import(EntityProcessorTest.MyConfig.class)
 public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
@@ -44,6 +45,7 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Configuration
     public static class MyConfig {
         @Bean
+        @Primary
         public EntityProcessorFactory entityProcessorFactory() {
             return new TestEntityProcessorFactory(new MyEntityProcessor());
         }

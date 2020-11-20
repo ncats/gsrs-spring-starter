@@ -18,7 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 @EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
-@Import(GsrsEntityTestConfiguration.class)
+//@Import(GsrsEntityTestConfiguration.class)
 public class GsrsSpringApplication {
 
     public static void main(String[] args) {
