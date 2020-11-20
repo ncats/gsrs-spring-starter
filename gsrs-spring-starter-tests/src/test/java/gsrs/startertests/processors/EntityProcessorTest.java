@@ -1,30 +1,22 @@
 package gsrs.startertests.processors;
 
-import gsrs.AuditConfig;
 import gsrs.EntityProcessorFactory;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
 import ix.core.EntityProcessor;
 
 import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -38,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @GsrsJpaTest
 @ActiveProfiles("test")
 @Import(EntityProcessorTest.MyConfig.class)
-public class EntityProcessorTest {
+public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Data
     @Entity
     public static class MyEntity extends AbstractGsrsEntity {
@@ -71,13 +63,6 @@ public class EntityProcessorTest {
     @Autowired
     private PrincipalRepository principalRepository;
 
-    @Autowired
-    @RegisterExtension
-    ClearTextIndexerRule clearTextIndexerRule;
-
-    @Autowired
-    @RegisterExtension
-    ClearAuditorRule clearAuditorRule;
 
     @Test
     public void persist(){

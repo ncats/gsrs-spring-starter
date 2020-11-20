@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 @Import(ModifyUserFieldTest.MyConfig.class)
-public class ModifyUserFieldTest {
+public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @Configuration
     public static class MyConfig {
@@ -91,14 +91,6 @@ public class ModifyUserFieldTest {
     @Autowired
     private TestEntityManager entityManager;
 
-
-    @Autowired
-    @RegisterExtension
-    ClearTextIndexerRule clearTextIndexerRule;
-
-    @Autowired
-    @RegisterExtension
-    ClearAuditorRule clearAuditorRule;
 
     @Autowired
     private PrincipalRepository principalRepository;

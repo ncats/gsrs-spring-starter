@@ -1,6 +1,5 @@
 package gsrs.startertests.audit;
 
-import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 import gsrs.startertests.*;
@@ -8,7 +7,6 @@ import ix.core.models.Principal;
 import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.annotation.CreatedBy;
@@ -21,8 +19,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
-import java.time.LocalDate;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,23 +26,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 
-public class CreateUserFieldTest {
+public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
-
-    @RegisterExtension
-    public TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1985, 10, 21));
 
     @Autowired
     private TestEntityManager entityManager;
-
-
-    @Autowired
-    @RegisterExtension
-    ClearTextIndexerRule clearTextIndexerRule;
-
-    @Autowired
-    @RegisterExtension
-    ClearAuditorRule clearAuditorRule;
 
     @Autowired
     private PrincipalRepository principalRepository;

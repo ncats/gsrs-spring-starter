@@ -21,13 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @GsrsJpaTest
 @ActiveProfiles("test")
 public class PrincipalRepositoryIntegrationTest {
-//    @TestConfiguration
-//    public static class Config{
-//        @Bean
-//        public EntityProcessorFactory entityProcessorFactory(){
-//            return new BasicEntityProcessorFactory();
-//        }
-//    }
 
     @Autowired
     private TestEntityManager entityManager;

@@ -2,8 +2,7 @@ package gsrs.startertests.audit;
 
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
-import gsrs.startertests.ClearAuditorRule;
-import gsrs.startertests.ClearTextIndexerRule;
+import gsrs.startertests.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.GsrsJpaTest;
 import lombok.Data;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class CreateAndModifyDateFieldTest {
+public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Data
     public static class MyEntity extends AbstractGsrsEntity {
@@ -44,19 +43,10 @@ public class CreateAndModifyDateFieldTest {
     }
 
     @RegisterExtension
-    public TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1985, 10, 21));
+    protected TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1985, 10, 21));
 
     @Autowired
-    private TestEntityManager entityManager;
-
-
-    @Autowired
-    @RegisterExtension
-    ClearTextIndexerRule clearTextIndexerRule;
-
-    @Autowired
-    @RegisterExtension
-    ClearAuditorRule clearAuditorRule;
+    protected TestEntityManager entityManager;
 
     @Test
     public void intialCreationShouldSetCreateDateAndLastModifiedToSameValue(){
