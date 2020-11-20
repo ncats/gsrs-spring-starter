@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @GsrsJpaTest(classes =GsrsSpringApplication.class)
-
 @Import(IndexValueMakerFactoryTest.MyConfig.class)
 public class IndexValueMakerFactoryTest {
 

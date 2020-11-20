@@ -430,3 +430,100 @@ The EntityScan and EnableJpaRepositories need to list all the base packages to s
  until those packages can be autoscanned by the starter.
  
  Please also add your own packages to those lists.
+ 
+ 
+ ## Testing 
+   There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
+   
+   ```xml
+<dependency>
+      <groupId>gov.nih.ncats</groupId>
+      <artifactId>gsrs-spring-starter-tests</artifactId>
+      <version>${gsrs.version}</version>
+      <scope>test</scope>
+  </dependency>
+   ```
+
+This module contains helper classes and annotations to work with the GSRS Spring Boot Starter.
+
+### GsrsJpaTest
+The `@GsrsJpaTest` annotation is like Spring Boot's `@DataJpaTest` except it adds support for
+GSRS related configuration and classes.
+
+#### AbstractGsrsJpaEntityJunit5Test
+`AbstractGsrsJpaEntityJunit5Test` is an abstract Junit 5 class that registers
+ JUnit 5 extensions (in JUnit 4 jargon, "Rules") to clear out any audit information and clean up the text indexer.
+ 
+#### classes field
+The `classes` field should be used to add your configuration classes such as your SpringApplication class an any additional
+test configuration classes you need for your test to work.
+
+#### dirtyMode
+This will set the DirtiesContext.ClassMode which is used by JPA tests to know when
+a database should be rebuilt.  This should be preferred over truncating the database or calling
+`repository.clear()` because those options don't reset generated sequence counts like autoincrement ids.
+
+```java
+@GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+public class MyTest extends AbstractGsrsJpaEntityJunit5Test{
+  //... test code goes here
+}
+```
+
+### Tests with Custom IndexValueMakers
+By default, `@GsrsJpaTest` will replace the usual code that finds your IndexValueMakers,
+the `IndexValueMakerFactory` implementation with a test version, `TestIndexValueMakerFactory`.
+If you don't override this Bean, it will not find any IndexValueMakers.  You can use a custom Configuration to add your
+own TestIndexValueMakerFactory instance which passes along the IndexValueMakers to use in the test:
+
+```java
+
+@GsrsJpaTest(classes =MySpringApplication.class)
+@Import(IndexValueMakerFactoryTest.MyConfig.class)
+public class IndexValueMakerFactoryTest {
+
+    @TestConfiguration
+    static class MyConfig{
+        @Bean
+        @Primary
+        public IndexValueMakerFactory indexValueMakerFactory(){
+            return new TestIndexValueMakerFactory(new MyIndexValueMaker());
+        }
+    }
+
+  // ... tests that test myIndexValueMaker works as expected
+```
+
+Note that the IndexValueMakerFactory Bean is annotated with `@Primary` this is in case 
+the configuration accidentally loads the default bean first it will prefer your factory implementation
+when injecting dependencies. 
+
+### Tests with Custom EntityProcessors
+By default, `@GsrsJpaTest` will replace the usual code that finds your EntityProcessors,
+the `EntityProcessorFactory` implementation with a test version, `TestEntityProcessorFactory`.
+If you don't override this Bean, it will not find any EntityProcessors.  You can use a custom Configuration to add your
+own TestEntityProcessorFactory instance which passes along the EntityProcessors to use in the test:
+
+```java
+
+@GsrsJpaTest(classes =GsrsSpringApplication.class)
+@ActiveProfiles("test")
+@Import(EntityProcessorTest.MyConfig.class)
+public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
+
+    @TestConfiguration
+     static class MyConfig {
+        @Bean
+        @Primary
+        public EntityProcessorFactory entityProcessorFactory() {
+            return new TestEntityProcessorFactory(new MyEntityProcessor());
+        }
+    }
+
+  // ... tests that test myIndexValueMaker works as expected
+```
+
+Note that the EntityProcessorFactory Bean is annotated with `@Primary` this is in case 
+the configuration accidentally loads the default bean first it will prefer your factory implementation
+when injecting dependencies. 
+

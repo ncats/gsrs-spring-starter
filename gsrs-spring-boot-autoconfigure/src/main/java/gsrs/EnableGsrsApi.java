@@ -47,7 +47,7 @@ public @interface EnableGsrsApi {
          *     @Configuration
          *     public class MyConfig {
          *         @Bean
-         *         public IndexValueMakerFactory entityProcessorFactory() {
+         *         public IndexValueMakerFactory indexValueMakerFactory() {
          *             // create new IndexValueMakerFactory instance here
          *         }
          *     }
