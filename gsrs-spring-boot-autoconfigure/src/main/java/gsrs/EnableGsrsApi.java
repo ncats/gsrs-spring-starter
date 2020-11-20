@@ -34,6 +34,30 @@ public @interface EnableGsrsApi {
         ;
     }
 
+    enum IndexValueMakerDetector{
+        /**
+         * Add any {@link ix.core.search.text.IndexValueMaker} discovered by the Spring component scan,
+         * this means that IndexValueMaker classes must be annotated with @Component.
+         */
+        COMPONENT_SCAN,
+        /**
+         * You must provide an {@link gsrs.indexer.IndexValueMakerFactory} Bean in your Spring Configuration.
+         * <pre>
+         *     {@code
+         *     @Configuration
+         *     public class MyConfig {
+         *         @Bean
+         *         public IndexValueMakerFactory indexValueMakerFactory() {
+         *             // create new IndexValueMakerFactory instance here
+         *         }
+         *     }
+         *     }
+         * </pre>
+         */
+        CUSTOM
+        ;
+    }
+
     /**
      * The way {@link ix.core.EntityProcessor}s are detected by this starter package.
      * Only {@link ix.core.EntityProcessor}s that are detected by the Detector implementation
@@ -49,7 +73,22 @@ public @interface EnableGsrsApi {
          * Add any {@link ix.core.EntityProcessor} discovered by the Spring component scan,
          * this means that EntityProcessor classes must be annotated with @Component.
          */
-        COMPONENT_SCAN
+        COMPONENT_SCAN,
+        /**
+         * You must provide an `EntityProcessorFactory` Bean in your Spring Configuration.
+         * <pre>
+         *     {@code
+         *     @Configuration
+         *     public class MyConfig {
+         *         @Bean
+         *         public EntityProcessorFactory entityProcessorFactory() {
+         *             // create new EntityProcessorFactory instance here
+         *         }
+         *     }
+         *     }
+         * </pre>
+         */
+        CUSTOM
         ;
     }
 
@@ -64,4 +103,9 @@ public @interface EnableGsrsApi {
      * @return the {@link EntityProcessorDetector} can not be null.
      */
     EntityProcessorDetector entityProcessorDetector() default EntityProcessorDetector.CONF;
+    /**
+     * The {@link IndexValueMakerDetector} to use, by default uses {@link IndexValueMakerDetector#COMPONENT_SCAN}.
+     * @return the {@link IndexValueMakerDetector} can not be null.
+     */
+    IndexValueMakerDetector indexValueMakerDetector() default IndexValueMakerDetector.COMPONENT_SCAN;
 }

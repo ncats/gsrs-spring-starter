@@ -12,10 +12,10 @@ public class GsrsEntityProcessorListener {
 
     @Autowired
     private EntityProcessorFactory epf;
-    @PostConstruct
-    public void debug(){
-        System.out.println("entityProcessorFactory = " + epf.getClass());
-    }
+//    @PostConstruct
+//    public void debug(){
+//        System.out.println("entityProcessorFactory = " + epf.getClass());
+//    }
     @PreUpdate
     public void preUpdate(Object o){
         try {

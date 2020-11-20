@@ -559,7 +559,6 @@ public class EntityUtils {
 		}
 		
 		public Stream<Tuple<MethodOrFieldMeta,Optional<Object>>> fieldsAndValues(){
-			System.out.println("Getting values for:"  + getKind());
 			return fields().map(m->Tuple.of(m, m.getValue(this.getValue())));
 		}
 		

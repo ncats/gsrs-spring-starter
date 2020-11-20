@@ -3,8 +3,8 @@ package gsrs;
 import gsrs.controller.GsrsWebConfig;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
-import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
-import gsrs.indexer.IndexValueMakerFactory;
+import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
+import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -27,12 +27,21 @@ public class GsrsApiSelector implements ImportSelector {
             case LEGACY: {
                 componentsToInclude.add(TextIndexerFactory.class);
                 componentsToInclude.add(TextIndexerConfig.class);
-                componentsToInclude.add(IndexValueMakerFactory.class);
+//                componentsToInclude.add(ComponentScanIndexValueMakerFactory.class);
                 componentsToInclude.add(Lucene4IndexServiceFactory.class);
 
             }
         }
+        EnableGsrsApi.IndexValueMakerDetector indexValueMakerDetector = attributes.getEnum("indexValueMakerDetector");
+        switch (indexValueMakerDetector){
+            case COMPONENT_SCAN:
+                componentsToInclude.add(ComponentScanIndexValueMakerConfiguration.class);
+                break;
+            default: break;
+        }
+
         EnableGsrsApi.EntityProcessorDetector entityProcessorDetector = attributes.getEnum("entityProcessorDetector");
+
 
         switch(entityProcessorDetector){
             case COMPONENT_SCAN:
@@ -41,6 +50,7 @@ public class GsrsApiSelector implements ImportSelector {
             case CONF:
                 componentsToInclude.add(ConfigBasedEntityProcessorConfiguration.class);
                 break;
+            default: break;
         }
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);

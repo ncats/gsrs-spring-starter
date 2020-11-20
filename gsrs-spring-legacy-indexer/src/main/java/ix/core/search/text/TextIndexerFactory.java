@@ -1,5 +1,6 @@
 package ix.core.search.text;
 
+import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.indexer.IndexValueMakerFactory;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class TextIndexerFactory {
     private ConcurrentMap<File, TextIndexer> indexers = new ConcurrentHashMap<>();
 
     private Map<String, Boolean> deepKindMap = new ConcurrentHashMap<>();
-    @Value("${ix.home : ginas.ix}")
+    @Value("${ix.home:ginas.ix}")
     private String defaultDir;
     @Autowired
     private TextIndexerConfig textIndexerConfig;
@@ -35,8 +36,7 @@ public class TextIndexerFactory {
 
     private TextIndexer defaultIndexer;
 
-    @PostConstruct
-    private void init(){
+    private final CachedSupplier<Void> initializer = CachedSupplier.runOnce(()->{
         // this logic was taken from the static init method of the Play G-SRS TextIndexer and moved to a new factory
         //so it could be used with dependency injection
 
@@ -56,9 +56,15 @@ public class TextIndexerFactory {
                 .collect(Collectors.toSet());
 
         defaultIndexer = getInstance(new File(defaultDir));
+        return null;
+    });
+    @PostConstruct
+    private void init(){
+        initializer.getSync();
     }
 
     public TextIndexer getInstance(File baseDir){
+
         return indexers.computeIfAbsent(baseDir, dir -> {
             try {
                 return new TextIndexer(dir, indexerServiceFactory, indexerServiceFactory.createForDir(dir), textIndexerConfig,indexValueMakerFactory,  this::isDeepKind);
@@ -75,6 +81,7 @@ public class TextIndexerFactory {
     }
 
     public TextIndexer getDefaultInstance(){
+        initializer.getSync();
         return defaultIndexer;
     }
 }

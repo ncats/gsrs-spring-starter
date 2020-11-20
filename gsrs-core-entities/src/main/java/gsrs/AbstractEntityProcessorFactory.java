@@ -1,5 +1,6 @@
 package gsrs;
 
+import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.CombinedEntityProcessor;
 import ix.core.EntityProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
     private Map<Class, List<EntityProcessor>> processorMapByClass = new ConcurrentHashMap<>();
     private Map<Class, EntityProcessor> cache = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void init(){
+    private final CachedSupplier<Void> initializer = CachedSupplier.runOnce(()->{
         //entityProcessors field may be null if there's no EntityProcessor to inject
         registerEntityProcessor(ep -> {
             Class entityClass = ep.getEntityClass();
@@ -28,6 +28,11 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
                 processorMapByClass.computeIfAbsent(entityClass, k -> new ArrayList<>()).add(ep);
             }
         });
+        return null;
+    });
+    @PostConstruct
+    public void init(){
+        initializer.get();
 
     }
 
@@ -37,6 +42,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
 
     @Override
     public EntityProcessor getCombinedEntityProcessorFor(Object o){
+        initializer.get();
         Class entityClass = o.getClass();
         return cache.computeIfAbsent(entityClass, k-> {
             Map<EntityProcessor, Object> list = new IdentityHashMap<>();
