@@ -12,6 +12,7 @@ import org.springframework.core.annotation.Order;
 public class BasicEntityProcessorConfiguration {
     @Bean
     @Primary
+    @ConditionalOnMissingBean
     public EntityProcessorFactory entityProcessorFactory(){
         return new BasicEntityProcessorFactory();
     }

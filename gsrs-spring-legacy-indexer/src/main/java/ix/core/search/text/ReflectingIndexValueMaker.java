@@ -82,7 +82,10 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 					});
 				}); //Dynamic Facets
 				
-				ew.streamMethodReflectingIndexerAwares().forEach(kw -> {
+				ew.streamMethodReflectingIndexerAwares()
+						.filter(r ->r.getEmbeddedIndexFieldName() !=null)
+						.forEach(kw -> {
+
 					path.pushAndPopWith(kw.getEmbeddedIndexFieldName(), () -> {
 						kw.index(path, toAdd);
 //						toAdd.accept(new IndexableValueFromRaw(kw.label, kw.getValue(), path.toPath()).dynamic().suggestable());

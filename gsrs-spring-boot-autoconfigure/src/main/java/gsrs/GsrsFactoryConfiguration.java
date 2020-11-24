@@ -18,6 +18,7 @@ public class GsrsFactoryConfiguration {
     private Map<String, List<ValidatorConfig>> validators;
     private List<EntityProcessorConfig> entityProcessors;
 
+    private boolean createUnknownUsers= false;
 
     public List<EntityProcessorConfig> getEntityProcessors(){
         if(entityProcessors ==null){

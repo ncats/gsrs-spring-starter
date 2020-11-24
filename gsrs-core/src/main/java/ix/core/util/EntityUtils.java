@@ -1246,7 +1246,8 @@ public class EntityUtils {
 			uniqueColumnFields = fields.stream()
 					.filter(f -> f.isUniqueColumn())
 					.collect(Collectors.toList());
-			//TODO why do we remove the id field?
+
+
 			fields.removeIf(f->f.isId());
 
 
@@ -1255,7 +1256,9 @@ public class EntityUtils {
 					.filter(m-> ReflectingIndexerAware.class.isAssignableFrom(m.getType()))
 					.filter(m->m.getIndexable()!=null)
 					.collect(Collectors.toList());
-			
+
+			keywordFacetMethods.stream().forEach(methods::remove);
+
 			
 
 			seqFields = Stream.concat(fields.stream(), methods.stream())
