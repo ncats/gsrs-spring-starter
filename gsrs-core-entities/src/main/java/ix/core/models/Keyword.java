@@ -59,7 +59,10 @@ public class Keyword extends Value implements ReflectingIndexerAware {
     //katzelda Nov 2020: these methods for new ReflectingIndexerAware interface were added so we dont hardcode Keyword into indexer
     @Override
     public void index(PathStack currentPathStack, Consumer<IndexableValue> consumer) {
-        consumer.accept(new IndexableValueFromRaw(this.label, this.getValue(), currentPathStack.toPath()).dynamic().suggestable());
+        if(label ==null){
+            return;
+        }
+        consumer.accept(new IndexableValueFromRaw( this.label, this.getValue(), currentPathStack.toPath()).dynamic().suggestable());
 
     }
 

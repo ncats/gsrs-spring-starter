@@ -8,6 +8,7 @@ import ix.core.models.Principal;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
@@ -27,6 +28,7 @@ import java.lang.annotation.*;
 @ContextConfiguration
 @DirtiesContext
 @DataJpaTest
+
 @Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class,
 //        PrincipalRepository.class,
 
@@ -53,4 +55,10 @@ public @interface GsrsJpaTest {
 
     @AliasFor(annotation = ContextConfiguration.class)
     Class[] classes() default {};
+
+    @AliasFor(
+            annotation = ImportAutoConfiguration.class,
+            attribute = "exclude"
+    )
+    Class<?>[] excludeAutoConfiguration() default {};
 }
