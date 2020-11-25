@@ -1,12 +1,16 @@
 package gsrs.assertions;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -18,7 +22,7 @@ public final class MatchesExample<T> extends TypeSafeMatcher<T> {
     private final T expected;
     private Map<String, Object> expectedValues;
 
-    private Map<String, Object> mismatchedFields;
+    private List<MismatchField> mismatchedFields;
 
 
     public MatchesExample(T expected) {
@@ -38,48 +42,69 @@ public final class MatchesExample<T> extends TypeSafeMatcher<T> {
     }
 
 
+    @Data
+    @AllArgsConstructor
+    public static class MismatchField{
+        private String fieldName;
+        private Object actual, expected;
+    }
 
-
-    public static Map<String, Object> getMismatchedFields(Object bean, Map<String, Object> expectedValues) {
+    public static List<MismatchField> getMismatchedFields(Object bean, Map<String, Object> expectedValues) {
         try {
-            Map<String, Object> map = new HashMap<>();
-            Arrays.asList(Introspector.getBeanInfo(bean.getClass(), Object.class)
+            List<MismatchField> mismatchFields = new ArrayList<>();
+            BeanInfo beanInfo = Introspector.getBeanInfo(bean.getClass(), Object.class);
+
+            Arrays.asList(beanInfo
                     .getPropertyDescriptors())
                     .stream()
                     // filter out properties with setters only
                     .filter(pd -> Objects.nonNull(pd.getReadMethod()) && expectedValues.containsKey(pd.getName()))
                     .forEach(pd -> { // invoke method to get value
                         try {
-                            Object value = pd.getReadMethod().invoke(bean);
-                            if (!expectedValues.get(pd.getName()).equals(value)) {
-                                map.put(pd.getName(), value);
+
+                            Method readMethod = pd.getReadMethod();
+                            //set accessible so we can invoke it if it's a private getter
+                            //or more likely a non-public class
+                            readMethod.setAccessible(true);
+                            Object value = readMethod.invoke(bean);
+                            Object o = expectedValues.get(pd.getName());
+                            if (!o.equals(value)) {
+                                mismatchFields.add(new MismatchField(pd.getName(), value, o));
+
                             }
                         } catch (Exception e) {
+                            e.printStackTrace();
                             // add proper error handling here
                         }
                     });
-            return map;
+            return mismatchFields;
         } catch (IntrospectionException e) {
             // and here, too
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
     }
     public static Map<String, Object> getNonNullFieldValues(Object bean) {
         try {
             Map<String, Object> map = new HashMap<>();
-            Arrays.asList(Introspector.getBeanInfo(bean.getClass(), Object.class)
+            BeanInfo beanInfo = Introspector.getBeanInfo(bean.getClass(), Object.class);
+            Arrays.asList(beanInfo
                     .getPropertyDescriptors())
                     .stream()
                     // filter out properties with setters only
                     .filter(pd -> Objects.nonNull(pd.getReadMethod()))
                     .forEach(pd -> { // invoke method to get value
                         try {
-                            Object value = pd.getReadMethod().invoke(bean);
+                            Method readMethod = pd.getReadMethod();
+                            //set accessible so we can invoke it if it's a private getter
+                            //or more likely a non-public class
+                            readMethod.setAccessible(true);
+                            Object value = readMethod.invoke(bean);
                             if (value != null) {
                                 map.put(pd.getName(), value);
                             }
                         } catch (Exception e) {
                             // add proper error handling here
+                            e.printStackTrace();
                         }
                     });
             return map;
@@ -97,6 +122,6 @@ public final class MatchesExample<T> extends TypeSafeMatcher<T> {
 
     @Override
     public void describeTo(Description description) {
-        description.appendText("non null getters return same non-null values");
+        description.appendText("non null getters return same non-null values: " + mismatchedFields);
     }
 }
