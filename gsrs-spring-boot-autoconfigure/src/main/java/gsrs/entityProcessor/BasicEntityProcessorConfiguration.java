@@ -13,6 +13,7 @@ public class BasicEntityProcessorConfiguration {
     @Bean
     @Primary
     @ConditionalOnMissingBean
+    @Order
     public EntityProcessorFactory entityProcessorFactory(){
         return new BasicEntityProcessorFactory();
     }

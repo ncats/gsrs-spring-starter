@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.service.GsrsEntityService;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
@@ -55,7 +56,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @Autowired
-    private AbstractGsrsEntityService<T, I> entityService;
+    private GsrsEntityService<T, I> entityService;
 
 //    /**
 //     * Create a new GSRS Controller with the given context.
@@ -89,7 +90,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return gsrsControllerConfiguration;
     }
 
-    public AbstractGsrsEntityService<T, I> getEntityService() {
+    public GsrsEntityService<T, I> getEntityService() {
         return entityService;
     }
 
@@ -222,7 +223,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
                      @RequestParam Map<String, String> queryParameters){
 
 
-        Page<T> page = entityService.page(skip, top,parseSortFromOrderParam(order));
+        Page<T> page = entityService.page(new OffsetBasedPageRequest(skip, top,parseSortFromOrderParam(order)));
 
         return new ResponseEntity<>(new PagedResult(page), HttpStatus.OK);
     }

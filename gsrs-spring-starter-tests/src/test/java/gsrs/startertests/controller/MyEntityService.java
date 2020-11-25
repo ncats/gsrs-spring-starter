@@ -8,6 +8,7 @@ import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.service.AbstractGsrsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -86,8 +87,8 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     }
 
     @Override
-    public Page page(long offset, long numOfRecords, Sort sort) {
-        return repository.findAll(new OffsetBasedPageRequest(offset, numOfRecords, sort));
+    public Page page(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     @Override

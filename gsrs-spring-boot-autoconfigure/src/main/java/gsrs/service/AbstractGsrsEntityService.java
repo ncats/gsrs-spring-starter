@@ -2,9 +2,7 @@ package gsrs.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.IdHelper;
-import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationResponse;
@@ -12,27 +10,23 @@ import ix.core.validator.Validator;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
-import lombok.Builder;
-import lombok.Data;
-import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class AbstractGsrsEntityService<T,I> {
+/**
+ * Abstract implementation of {@link GsrsEntityService} to reduce most
+ * of the boilerplate of creating a {@link GsrsEntityService}.
+ * @param <T> the entity type.
+ * @param <I> the type for the entity's ID.
+ */
+public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityService<T, I> {
 
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
@@ -42,11 +36,24 @@ public abstract class AbstractGsrsEntityService<T,I> {
     private final Pattern idPattern;
 
     private CachedSupplier<ValidatorFactory> validatorFactory;
-
+    /**
+     * Create a new GSRS Entity Service with the given context.
+     * @param context the context for the routes of this controller.
+     * @param idPattern the {@link Pattern} to match an ID.  This will be used to determine
+     *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+     * @throws NullPointerException if any parameters are null.
+     */
     public AbstractGsrsEntityService(String context, Pattern idPattern) {
         this.context = context;
         this.idPattern = idPattern;
     }
+    /**
+    * Create a new GSRS Entity Service with the given context.
+    * @param context the context for the routes of this controller.
+    * @param idHelper the {@link IdHelper} to match an ID.  This will be used to determine
+    *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+    * @throws NullPointerException if any parameters are null.
+    */
     public AbstractGsrsEntityService(String context, IdHelper idHelper) {
         this(context, Pattern.compile("^"+idHelper.getRegexAsString() +"$"));
     }
@@ -127,12 +134,6 @@ public abstract class AbstractGsrsEntityService<T,I> {
     protected abstract T create(T t);
 
     /**
-     * Get the number of entities in your data repository.
-     * @return a number &ge;0.
-     */
-    public abstract long count();
-
-    /**
      * Get the entity from your data repository with the given id.
      * @param id the id to use to look up the entity.
      * @return an Optional that is empty if there is no entity with the given id;
@@ -147,40 +148,6 @@ public abstract class AbstractGsrsEntityService<T,I> {
      */
     public abstract I parseIdFromString(String idAsString);
 
-
-    /**
-     * Fetch an entity from the data repository using a unique
-     * identifier that isn't the entity's ID.
-     *
-     * @param someKindOfId a String that isn't the ID of the entity.
-     * @return an Optional that is empty if there is no entity with the given id;
-     *  or an Optional that has the found entity.
-     */
-    public abstract Optional<T> flexLookup(String someKindOfId);
-
-    /**
-     * Get the Class of the Entity.
-     * @return a Class; will never be {@code null}.
-     */
-    public abstract Class<T> getEntityClass();
-
-    /**
-     * Return a {@link Page} of entities from the repository using the
-     * given offset, num records and sort order.
-     * @param offset the number of records to start at ( 0-based).
-     * @param numOfRecords the number of records to include in the page.
-     * @param sort the {@link Sort} to use.
-     * @return the Page from the repository.
-     *
-     * @see OffsetBasedPageRequest
-     */
-    public abstract Page page(long offset, long numOfRecords, Sort sort);
-
-    /**
-     * Remove the given entity from the repository.
-     * @param id the id of the entity to delete.
-     */
-    public abstract void delete(I id);
 
     /**
      * Get the ID from the entity.
@@ -199,6 +166,7 @@ public abstract class AbstractGsrsEntityService<T,I> {
     protected abstract T update(T t);
 
 
+    @Override
     public  CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException {
         T newEntity = fromNewJson(newEntityJson);
 
@@ -212,39 +180,26 @@ public abstract class AbstractGsrsEntityService<T,I> {
             return builder
                     .build();
         }
-        return builder.createdEntity(persist(newEntity))
+        return builder.createdEntity(transactionalPersist(newEntity))
                                 .created(true)
                                 .build();
 
     }
 
-
+    /**
+     * Persist the given entity inside a transaction.
+     * This method should NOT be overridden by client code
+     * and is only here so Spring AOP can subclass it to make it transactional.
+     * @param newEntity the entity to persist.
+     * @return the persisted entity.
+     * @implSpec delegates to {@link #create(Object)} inside a {@link Transactional}.
+     */
     @Transactional
-    protected T persist(T newEntity){
+    protected T transactionalPersist(T newEntity){
         return create(newEntity);
     }
 
-    @Data
-    @Builder
-    public static class CreationResult<T>{
-        private boolean created;
-        private ValidationResponse<T> validationResponse;
-        private T createdEntity;
-    }
-
-    @Data
-    @Builder
-    public static class UpdateResult<T>{
-        public enum STATUS{
-            NOT_FOUND,
-            UPDATED,
-            ERROR;
-        }
-        private STATUS status;
-        private ValidationResponse<T> validationResponse;
-        private T updatedEntity;
-    }
-
+    @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
@@ -278,12 +233,20 @@ public abstract class AbstractGsrsEntityService<T,I> {
         //match 200 status of old GSRS
         return builder.build();
     }
-
+    /**
+     * Update the given entity inside a transaction.
+     * This method should NOT be overridden by client code
+     * and is only here so Spring AOP can subclass it to make it transactional.
+     * @param entity the entity to update.
+     * @return the persisted entity.
+     * @implSpec delegates to {@link #update(Object)} inside a {@link Transactional}.
+     */
     @Transactional
     protected T transactionalUpdate(T entity){
         return update(entity);
     }
 
+    @Override
     public ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
@@ -310,6 +273,7 @@ public abstract class AbstractGsrsEntityService<T,I> {
         return idMatch.matches();
     }
 
+    @Override
     public Optional<T> getEntityBySomeIdentifier(String id) {
         Optional<T> opt;
         if(isId(id)) {
@@ -319,6 +283,7 @@ public abstract class AbstractGsrsEntityService<T,I> {
         }
         return opt;
     }
+    @Override
     public Optional<I> getEntityIdOnlyBySomeIdentifier(String id) {
         Optional<I> opt;
         if(isId(id)) {
@@ -355,4 +320,14 @@ public abstract class AbstractGsrsEntityService<T,I> {
         }
         return Optional.of(getIdFrom(opt.get()));
     }
+
+    /**
+     * Fetch an entity from the data repository using a unique
+     * identifier that isn't the entity's ID.
+     *
+     * @param someKindOfId a String that isn't the ID of the entity.
+     * @return an Optional that is empty if there is no entity with the given id;
+     *  or an Optional that has the found entity.
+     */
+    public abstract Optional<T> flexLookup(String someKindOfId);
 }
