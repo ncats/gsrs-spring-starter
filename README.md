@@ -79,6 +79,8 @@ to hook in your own entity.
 Please note that there are several subclasses of `AbstractGsrsEntityController` which add even more route methods
 so you will probably not be extending this class directly but you can.
 
+
+
 In order to take advantage of the GSRS standard API, your controller needs to both extend this class
 and add the annotation `gsrs.controller.GsrsRestApiController`.  The  `@GsrsRestApiController` annotation
 requires 2 fields to be set: `context` which is the part of the API path pattern that will
@@ -90,10 +92,6 @@ requires 2 fields to be set: `context` which is the part of the API path pattern
 public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
  
   public static final String CONTEXT = "myContext";
-
-  public MyController(){
-      super(CONTEXT, IdHelpers.NUMBER);
-  }
   //.. implement methods here
 }
 ```
@@ -218,17 +216,6 @@ so they always match.
 public class CvController extends AbstractLegacyTextSearchGsrsEntityController<ControlledVocabulary, Long> {
     public static final String  CONTEXT = "vocabularies";
 
-    
-    public CvController() {
-        super(CONTEXT, IdHelpers.NUMBER);
-    }
-
-    @Autowired
-    private ControlledVocabularyRepository repository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
 // ... implement abstract methods
 
 }
@@ -238,6 +225,31 @@ public class CvController extends AbstractLegacyTextSearchGsrsEntityController<C
 The root part of the entity routes is also `api/v1/` followed by a String GSRS calls the `context`.  The Context
 is what will differentiate your entity routes from all the other entities. 
 
+#### GsrsEntityService
+The Controller accepts the GSRS standard REST API calls and then delegates to a `GsrsEntityService` which handles all the business logic,
+ validation and interaction with the entity repositories.  To help you, there is an `AbstractGsrsEntityService` abstract class 
+ that handles most of the boilerplate code for you, you just have to implement a few methods to hook into your repository.
+ 
+ ```java 
+@Service
+public class ControlledVocabularyEntityService extends AbstractGsrsEntityService<ControlledVocabulary, Long> {
+    public static final String  CONTEXT = "vocabularies";
+
+
+    public ControlledVocabularyEntityService() {
+        super(CONTEXT,  IdHelpers.NUMBER);
+    } 
+```
+The constructor takes the same context and idHelper as described in the controller above.
+
+Note that your EntityService concrete class should be annotated as a `@Service` so it can be autowired into the controller.
+
+ The advantage of splitting the work into separate controller and service classes is that
+ the Service class decouples the business logic from the controller. Therefore, we can change the 
+ controller without touching the business logic, allow for multiple ways software can interact with a `GSRSEntityService`
+ and finally to ease testing by being able to test the business logic without the need for standing up a full
+ server/controller and to test the controller with a mock service.
+ 
 ## Customizations:
 
 ### Custom IndexValueMakers
