@@ -566,3 +566,19 @@ Note that the EntityProcessorFactory Bean is annotated with `@Primary` this is i
 the configuration accidentally loads the default bean first it will prefer your factory implementation
 when injecting dependencies. 
 
+### GSRS Hamcrest Matchers
+GSRS test module contains some helper Hamcrest Matchers
+
+#### MatchesExample
+ Compares the given Example object with the Object under Test but only compares the getter methods
+ that return non-null values.  This lets you create intent revealing example objects setting only the
+ fields that matter for the test.
+ 
+##### MatchingIgnore
+the `@MatchingIgnore` annotation can be put on a getter method so that the MatchesExample matcher will ignore
+the field even if it doesn't return a non-null value. This is often used to annotate transient or jsonIgnoreable
+fields.
+
+##### Explicitly Ignore a Field
+The MatchesExample matcher has a `ignoreField(String)` method to explicitly tell the matcher to ignore specific fields.
+
