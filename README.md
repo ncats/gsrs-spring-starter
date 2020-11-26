@@ -10,6 +10,7 @@ upon the ones listed before it.  Clients do not need to use all of these modules
 * `gsrs-spring-legacy-indexer` Code to support the Legacy GSRS indexer code
 * `gsrs-core-entities` GSRS data model  and JPA entities  of the common oft-used classes 
         that can be used by many microservices that aren't specific to one microservice.
+* `gsrs-spring-starter-tests` Test helper classes 
 
 ## Attempt at maintaining Backwards Compatibility
 
@@ -483,6 +484,27 @@ public class MyTest extends AbstractGsrsJpaEntityJunit5Test{
 ```
 
 ### Tests with Custom IndexValueMakers
+The test classes and annotations disucssed in this section are in the `gsrs-spring-starter-tests` module
+```xml
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-starter-tests</artifactId>
+    <version>${gsrs.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+#### AbstractGsrsJpaEntityJunit5Test
+`AbstractGsrsJpaEntityJunit5Test` is an abstract Test class that autoregisters some
+ GSRS Junit 5 Extensions (what Junit 4 called "Rules")
+to automatically reset the legacy text indexer and JPA Audit information.  This also changes
+the property for `ix.home` which is used by the LegacyTextIndexer to
+make the TextIndexer write the index to a temporary folder for each test instead of the 
+location specified in the config file.
+
+#### JPA Data Tests with @GsrsJpaTest
+`@GsrsJpaTest` is an extension of `@JpaDataTest` that adds common GSRS Test Configurations for support
+for EntityProcessors and TextIndexers etc. 
+##### Tests with Custom IndexValueMakers
 By default, `@GsrsJpaTest` will replace the usual code that finds your IndexValueMakers,
 the `IndexValueMakerFactory` implementation with a test version, `TestIndexValueMakerFactory`.
 If you don't override this Bean, it will not find any IndexValueMakers.  You can use a custom Configuration to add your
@@ -510,7 +532,7 @@ Note that the IndexValueMakerFactory Bean is annotated with `@Primary` this is i
 the configuration accidentally loads the default bean first it will prefer your factory implementation
 when injecting dependencies. 
 
-### Tests with Custom EntityProcessors
+##### Tests with Custom EntityProcessors
 By default, `@GsrsJpaTest` will replace the usual code that finds your EntityProcessors,
 the `EntityProcessorFactory` implementation with a test version, `TestEntityProcessorFactory`.
 If you don't override this Bean, it will not find any EntityProcessors.  You can use a custom Configuration to add your
