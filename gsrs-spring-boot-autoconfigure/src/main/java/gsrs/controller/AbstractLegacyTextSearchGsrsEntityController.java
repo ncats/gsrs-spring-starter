@@ -30,12 +30,12 @@ import java.util.regex.Pattern;
  */
 public abstract class AbstractLegacyTextSearchGsrsEntityController<T, I> extends AbstractGsrsEntityController<T,I> {
 
-    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
-        super(context, idHelper);
-    }
-    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
-        super(context, idPattern);
-    }
+//    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
+//        super(context, idHelper);
+//    }
+//    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
+//        super(context, idPattern);
+//    }
 
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
     public ResponseEntity forceFullReindex(){
@@ -49,7 +49,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<T, I> extends
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  HttpServletRequest request) throws ParseException, IOException {
         SearchOptions so = new SearchOptions.Builder()
-                .kind(getEntityClass())
+                .kind(getEntityService().getEntityClass())
                 .top(Integer.MAX_VALUE) // match Play GSRS
                 .fdim(10)
                 .fskip(0)
@@ -97,7 +97,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<T, I> extends
                                            @RequestParam Map<String, String> queryParameters){
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(query.orElse(null))
-                .kind(getEntityClass());
+                .kind(getEntityService().getEntityClass());
 
         top.ifPresent( t-> builder.top(t));
         skip.ifPresent( t-> builder.skip(t));

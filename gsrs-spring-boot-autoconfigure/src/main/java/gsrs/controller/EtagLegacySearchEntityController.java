@@ -1,22 +1,20 @@
 package gsrs.controller;
 
-import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.repository.GsrsRepository;
+
 import ix.core.models.ETag;
 import ix.core.search.SearchResult;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLegacyTextSearchGsrsEntityController<T,I> {
 
-    public EtagLegacySearchEntityController(String context, Pattern pattern) {
-        super(context, pattern);
-    }
-    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
-        super(context, idHelper);
-    }
+//    public EtagLegacySearchEntityController(String context, Pattern pattern) {
+//        super(context, pattern);
+//    }
+//    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
+//        super(context, idHelper);
+//    }
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);
@@ -31,7 +29,7 @@ public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLega
 
                 .sha1OfRequest(request, "q", "facet")
                 .build();
-
+            //TODO add save and export support
 //        if(request().queryString().get("export") ==null) {
 //            etag.save();
 //        }

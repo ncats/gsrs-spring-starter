@@ -2,21 +2,23 @@ package gsrs.startertests.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.controller.AbstractGsrsEntityController;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.controller.OffsetBasedPageRequest;
+import gsrs.service.AbstractGsrsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@GsrsRestApiController(context= MyController.CONTEXT)
-public class MyController extends AbstractGsrsEntityController<MyEntity, UUID> {
+@Service
+public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     public static final String CONTEXT = "myEntity";
 
 
@@ -24,7 +26,7 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, UUID> {
     @Autowired
     private MyEntityRepository repository;
 
-    public MyController(){
+    public MyEntityService(){
         super(CONTEXT, IdHelpers.UUID);
     }
 
@@ -59,43 +61,43 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, UUID> {
     }
 
     @Override
-    protected long count() {
+    public long count() {
         return repository.count();
     }
 
     @Override
-    protected Optional<MyEntity> get(UUID id) {
+    public Optional<MyEntity> get(UUID id) {
         return Optional.ofNullable(repository.getOne(id));
     }
 
     @Override
-    protected UUID parseIdFromString(String idAsString) {
+    public UUID parseIdFromString(String idAsString) {
         return UUID.fromString(idAsString);
     }
 
     @Override
-    protected Optional<MyEntity> flexLookup(String someKindOfId) {
+    public Optional<MyEntity> flexLookup(String someKindOfId) {
 
         return Optional.ofNullable(repository.findDistinctByFoo(someKindOfId));
     }
 
     @Override
-    protected Class<MyEntity> getEntityClass() {
+    public Class<MyEntity> getEntityClass() {
         return MyEntity.class;
     }
 
     @Override
-    protected Page page(long offset, long numOfRecords, Sort sort) {
-        return repository.findAll(new OffsetBasedPageRequest(offset, numOfRecords, sort));
+    public Page page(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     @Override
-    protected void delete(UUID id) {
+    public void delete(UUID id) {
         repository.deleteById(id);
     }
 
     @Override
-    protected UUID getIdFrom(MyEntity entity) {
+    public UUID getIdFrom(MyEntity entity) {
         return entity.getUuid();
     }
 

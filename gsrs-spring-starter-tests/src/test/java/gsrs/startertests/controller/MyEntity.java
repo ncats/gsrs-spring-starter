@@ -1,7 +1,10 @@
 package gsrs.startertests.controller;
 
 import gsrs.model.AbstractGsrsEntity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -14,6 +17,9 @@ import java.util.UUID;
 
 @Entity
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 class MyEntity extends AbstractGsrsEntity {
     @Id
     @GeneratedValue

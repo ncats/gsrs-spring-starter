@@ -10,6 +10,7 @@ upon the ones listed before it.  Clients do not need to use all of these modules
 * `gsrs-spring-legacy-indexer` Code to support the Legacy GSRS indexer code
 * `gsrs-core-entities` GSRS data model  and JPA entities  of the common oft-used classes 
         that can be used by many microservices that aren't specific to one microservice.
+* `gsrs-spring-starter-tests` Test helper classes 
 
 ## Attempt at maintaining Backwards Compatibility
 
@@ -79,10 +80,13 @@ to hook in your own entity.
 Please note that there are several subclasses of `AbstractGsrsEntityController` which add even more route methods
 so you will probably not be extending this class directly but you can.
 
+
+
 In order to take advantage of the GSRS standard API, your controller needs to both extend this class
 and add the annotation `gsrs.controller.GsrsRestApiController`.  The  `@GsrsRestApiController` annotation
 requires 2 fields to be set: `context` which is the part of the API path pattern that will
- map to this controller and `idHelper`. The AbstractControllerClass currently also needs these fields
+ map to this controller and `idHelper`. The `AbstractGsrsEntityService` class (see more about it below)
+  currently also needs these fields
  and should be passed via the constructor.  Future revisions may remove this duplication. 
  
 ```java
@@ -90,10 +94,6 @@ requires 2 fields to be set: `context` which is the part of the API path pattern
 public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
  
   public static final String CONTEXT = "myContext";
-
-  public MyController(){
-      super(CONTEXT, IdHelpers.NUMBER);
-  }
   //.. implement methods here
 }
 ```
@@ -113,7 +113,11 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
   figure out how to make the route patterns for your particular ID type. Common ID types are 
   provided for you in the enum `IdHelpers` but it is also possible to make a custom implementation.
    
-  
+### GsrsRestApiRequestMapping
+GSRS includes custom RequestMapping annotations that will automatically add the `api/v$version/$context` prefixes
+to controller routes.  There are annotations for each of the HTTP verbs such as `@GetGsrsRestApiMapping` and
+`@PostGsrsRestApiMapping` etc.
+
 ### Indexing
 GSRS can leverage text indexing of entity fields to provide additional search capabilities.  Three steps are required
 to add Text Indexing from the GSRS starter:
@@ -209,7 +213,7 @@ routes are added.
 
 Your concrete controller class that extends the abstract GSRSEntityController must be annotated with
 `@GsrsRestApiController` along with setting the fields for `context` and `idHelper`
-The abstract controller constructor also takes the the same parameters so a good practice 
+The `AbstractEntityService` constructor (see more about it below) also takes the the same parameters so a good practice 
 is to make your context a public static final String so you can reference it in both places
 so they always match.
 
@@ -217,17 +221,6 @@ so they always match.
 @GsrsRestApiController(context =CvController.CONTEXT,  idHelper = IdHelpers.NUMBER)
 public class CvController extends AbstractLegacyTextSearchGsrsEntityController<ControlledVocabulary, Long> {
     public static final String  CONTEXT = "vocabularies";
-
-    
-    public CvController() {
-        super(CONTEXT, IdHelpers.NUMBER);
-    }
-
-    @Autowired
-    private ControlledVocabularyRepository repository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
 // ... implement abstract methods
 
@@ -238,6 +231,31 @@ public class CvController extends AbstractLegacyTextSearchGsrsEntityController<C
 The root part of the entity routes is also `api/v1/` followed by a String GSRS calls the `context`.  The Context
 is what will differentiate your entity routes from all the other entities. 
 
+#### GsrsEntityService
+The Controller accepts the GSRS standard REST API calls and then delegates to a `GsrsEntityService` which handles all the business logic,
+ validation and interaction with the entity repositories.  To help you, there is an `AbstractGsrsEntityService` abstract class 
+ that handles most of the boilerplate code for you, you just have to implement a few methods to hook into your repository.
+ 
+ ```java 
+@Service
+public class ControlledVocabularyEntityService extends AbstractGsrsEntityService<ControlledVocabulary, Long> {
+    public static final String  CONTEXT = "vocabularies";
+
+
+    public ControlledVocabularyEntityService() {
+        super(CONTEXT,  IdHelpers.NUMBER);
+    } 
+```
+The constructor takes the same context and idHelper as described in the controller above.
+
+Note that your EntityService concrete class should be annotated as a `@Service` so it can be autowired into the controller.
+
+ The advantage of splitting the work into separate controller and service classes is that
+ the Service class decouples the business logic from the controller. Therefore, we can change the 
+ controller without touching the business logic, allow for multiple ways software can interact with a `GSRSEntityService`
+ and finally to ease testing by being able to test the business logic without the need for standing up a full
+ server/controller and to test the controller with a mock service.
+ 
 ## Customizations:
 
 ### Custom IndexValueMakers
@@ -471,6 +489,27 @@ public class MyTest extends AbstractGsrsJpaEntityJunit5Test{
 ```
 
 ### Tests with Custom IndexValueMakers
+The test classes and annotations disucssed in this section are in the `gsrs-spring-starter-tests` module
+```xml
+<dependency>
+    <groupId>gov.nih.ncats</groupId>
+    <artifactId>gsrs-spring-starter-tests</artifactId>
+    <version>${gsrs.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+#### AbstractGsrsJpaEntityJunit5Test
+`AbstractGsrsJpaEntityJunit5Test` is an abstract Test class that autoregisters some
+ GSRS Junit 5 Extensions (what Junit 4 called "Rules")
+to automatically reset the legacy text indexer and JPA Audit information.  This also changes
+the property for `ix.home` which is used by the LegacyTextIndexer to
+make the TextIndexer write the index to a temporary folder for each test instead of the 
+location specified in the config file.
+
+#### JPA Data Tests with @GsrsJpaTest
+`@GsrsJpaTest` is an extension of `@JpaDataTest` that adds common GSRS Test Configurations for support
+for EntityProcessors and TextIndexers etc. 
+##### Tests with Custom IndexValueMakers
 By default, `@GsrsJpaTest` will replace the usual code that finds your IndexValueMakers,
 the `IndexValueMakerFactory` implementation with a test version, `TestIndexValueMakerFactory`.
 If you don't override this Bean, it will not find any IndexValueMakers.  You can use a custom Configuration to add your
@@ -498,7 +537,7 @@ Note that the IndexValueMakerFactory Bean is annotated with `@Primary` this is i
 the configuration accidentally loads the default bean first it will prefer your factory implementation
 when injecting dependencies. 
 
-### Tests with Custom EntityProcessors
+##### Tests with Custom EntityProcessors
 By default, `@GsrsJpaTest` will replace the usual code that finds your EntityProcessors,
 the `EntityProcessorFactory` implementation with a test version, `TestEntityProcessorFactory`.
 If you don't override this Bean, it will not find any EntityProcessors.  You can use a custom Configuration to add your
