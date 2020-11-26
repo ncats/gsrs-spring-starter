@@ -85,7 +85,8 @@ so you will probably not be extending this class directly but you can.
 In order to take advantage of the GSRS standard API, your controller needs to both extend this class
 and add the annotation `gsrs.controller.GsrsRestApiController`.  The  `@GsrsRestApiController` annotation
 requires 2 fields to be set: `context` which is the part of the API path pattern that will
- map to this controller and `idHelper`. The AbstractControllerClass currently also needs these fields
+ map to this controller and `idHelper`. The `AbstractGsrsEntityService` class (see more about it below)
+  currently also needs these fields
  and should be passed via the constructor.  Future revisions may remove this duplication. 
  
 ```java
@@ -112,7 +113,11 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
   figure out how to make the route patterns for your particular ID type. Common ID types are 
   provided for you in the enum `IdHelpers` but it is also possible to make a custom implementation.
    
-  
+### GsrsRestApiRequestMapping
+GSRS includes custom RequestMapping annotations that will automatically add the `api/v$version/$context` prefixes
+to controller routes.  There are annotations for each of the HTTP verbs such as `@GetGsrsRestApiMapping` and
+`@PostGsrsRestApiMapping` etc.
+
 ### Indexing
 GSRS can leverage text indexing of entity fields to provide additional search capabilities.  Three steps are required
 to add Text Indexing from the GSRS starter:
@@ -208,7 +213,7 @@ routes are added.
 
 Your concrete controller class that extends the abstract GSRSEntityController must be annotated with
 `@GsrsRestApiController` along with setting the fields for `context` and `idHelper`
-The abstract controller constructor also takes the the same parameters so a good practice 
+The `AbstractEntityService` constructor (see more about it below) also takes the the same parameters so a good practice 
 is to make your context a public static final String so you can reference it in both places
 so they always match.
 
