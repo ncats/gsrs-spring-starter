@@ -20,11 +20,11 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <gsrs.version>0.0.14-SNAPSHOT</gsrs.version>
+        <gsrs.version>0.0.15-SNAPSHOT</gsrs.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>0.0.14-SNAPSHOT</version>
+    <version>0.0.15-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
 

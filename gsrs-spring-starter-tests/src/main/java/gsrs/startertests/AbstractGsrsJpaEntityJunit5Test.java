@@ -1,12 +1,15 @@
 package gsrs.startertests;
 
 
+import gsrs.AuditConfig;
+import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.File;
@@ -18,6 +21,7 @@ import java.io.File;
  * make the TextIndexer write the index to a temporary folder for each test.
  */
 @ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit5Test.Initializer.class)
+@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
 public abstract class AbstractGsrsJpaEntityJunit5Test {
 
 

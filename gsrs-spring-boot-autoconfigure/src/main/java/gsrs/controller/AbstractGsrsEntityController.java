@@ -2,19 +2,11 @@ package gsrs.controller;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
-import gsrs.validator.GsrsValidatorFactory;
-import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
-import ix.core.validator.Validator;
-import ix.ginas.utils.validation.ValidatorFactory;
-import ix.utils.pojopatch.PojoDiff;
-import ix.utils.pojopatch.PojoPatch;
 import lombok.Data;
 //import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
 //import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
@@ -28,15 +20,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 /**
  *  Abstract GSRS Controller that generates all the

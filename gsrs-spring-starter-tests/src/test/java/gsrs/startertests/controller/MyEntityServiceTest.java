@@ -32,8 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 //@ContextConfiguration(classes = {GsrsSpringApplication.class})
 @ActiveProfiles("test")
 @GsrsJpaTest(classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class})
-@Import({MyEntity.class, MyEntityService.class,
-         GsrsValidatorFactory.class})
+@Import({MyEntity.class, MyEntityService.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 //@Import({ClearAuditorRule.class , ClearTextIndexerRule.class, AuditConfig.class, AutowireHelper.class,  TextIndexerEntityListener.class})
 //@Transactional
