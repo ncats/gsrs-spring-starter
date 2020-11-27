@@ -16,7 +16,8 @@ public class TestGsrsValidatorFactory implements GsrsValidatorFactory {
     }
 
     public TestGsrsValidatorFactory setValidatorsForContext(String context, ValidatorConfig...validatorConfigs){
-        validators.put(context, Arrays.asList(validatorConfigs));
+        //wrap the list in a new arrayList so we can add more later if asked
+        validators.put(context, new ArrayList<>(Arrays.asList(validatorConfigs)));
         return this;
     }
 
@@ -27,5 +28,10 @@ public class TestGsrsValidatorFactory implements GsrsValidatorFactory {
     @Override
     public ValidatorFactory newFactory(String context) {
         return new ValidatorFactory(getValidatorsForContext(context), objectMapper);
+    }
+
+    public TestGsrsValidatorFactory addValidator(String context, ValidatorConfig config){
+        validators.computeIfAbsent(context, k-> new ArrayList<>()).add(config);
+        return this;
     }
 }

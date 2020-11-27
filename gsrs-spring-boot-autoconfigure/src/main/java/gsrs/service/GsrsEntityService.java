@@ -25,6 +25,8 @@ import java.util.Optional;
  * @param <I>
  */
 public interface GsrsEntityService<T, I> {
+
+    String getContext();
     /**
      * Get the number of entities in your data repository.
      * @return a number &ge;0.

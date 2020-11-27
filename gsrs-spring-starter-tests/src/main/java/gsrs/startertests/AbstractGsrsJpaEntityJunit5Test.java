@@ -21,7 +21,7 @@ import java.io.File;
  * make the TextIndexer write the index to a temporary folder for each test.
  */
 @ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit5Test.Initializer.class)
-@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class})
+@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class, ResetAllCacheSupplierExtension.class})
 public abstract class AbstractGsrsJpaEntityJunit5Test {
 
 

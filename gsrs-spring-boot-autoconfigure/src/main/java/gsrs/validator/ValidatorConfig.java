@@ -5,12 +5,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.ginas.utils.validation.ValidatorPlugin;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.Map;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ValidatorConfig {
 
 

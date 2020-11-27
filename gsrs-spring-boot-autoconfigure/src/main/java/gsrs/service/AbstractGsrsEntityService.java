@@ -16,6 +16,7 @@ import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,8 +45,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @throws NullPointerException if any parameters are null.
      */
     public AbstractGsrsEntityService(String context, Pattern idPattern) {
-        this.context = context;
-        this.idPattern = idPattern;
+        this.context = Objects.requireNonNull(context, "context can not be null");
+        this.idPattern = Objects.requireNonNull(idPattern, "ID pattern can not be null");
     }
     /**
     * Create a new GSRS Entity Service with the given context.
@@ -58,10 +59,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         this(context, Pattern.compile("^"+idHelper.getRegexAsString() +"$"));
     }
 
+    @Override
+    public String getContext() {
+        return context;
+    }
+
     @PostConstruct
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
-        validatorFactory = CachedSupplier.runOnce(()->validatorFactoryService.newFactory(context));
+        validatorFactory = CachedSupplier.of(()->validatorFactoryService.newFactory(context));
     }
 
     /**

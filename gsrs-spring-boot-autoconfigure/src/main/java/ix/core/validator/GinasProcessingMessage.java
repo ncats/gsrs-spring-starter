@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+
 @Slf4j
 @InheritanceTypeIdResolver.DefaultInstance
 public class GinasProcessingMessage implements ValidationMessage {
@@ -43,7 +45,21 @@ public class GinasProcessingMessage implements ValidationMessage {
 	public String toString(){
 		return messageType + ": " + message;
 	}
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof GinasProcessingMessage)) return false;
+		GinasProcessingMessage that = (GinasProcessingMessage) o;
+		return messageType == that.messageType &&
+				Objects.equals(message, that.message);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(messageType, message);
+	}
+
 	public static GinasProcessingMessage ERROR_MESSAGE(String msg){
 		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg);
 	}

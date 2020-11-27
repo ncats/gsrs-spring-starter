@@ -31,7 +31,7 @@ import java.lang.annotation.*;
 @DataJpaTest
 @Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class,
 //        PrincipalRepository.class,
-
+        ResetAllCacheSupplierExtension.class,
         GsrsFactoryConfiguration.class,
 //        TextIndexerFactory.class, TextIndexerConfig.class,
 //        Lucene4IndexServiceFactory.class,
