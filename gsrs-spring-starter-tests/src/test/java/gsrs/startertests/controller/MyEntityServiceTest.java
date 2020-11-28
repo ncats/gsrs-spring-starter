@@ -7,6 +7,7 @@ import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.ResetIndexValueMakerFactoryBeforeEachExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,14 +25,10 @@ import static gsrs.assertions.GsrsMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-//@ContextConfiguration(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class, MockMvc.class})
-//@ContextConfiguration(classes = {GsrsSpringApplication.class})
+
 @ActiveProfiles("test")
 @GsrsJpaTest(classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class})
 @Import({MyEntity.class, MyEntityService.class})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-//@Import({ClearAuditorRule.class , ClearTextIndexerRule.class, AuditConfig.class, AutowireHelper.class,  TextIndexerEntityListener.class})
-//@Transactional
 public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
@@ -40,12 +37,15 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @RegisterExtension
     TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1955, 11, 05));
 
+    @RegisterExtension
+    ResetIndexValueMakerFactoryBeforeEachExtension resetIndexValueMakerFactory = new ResetIndexValueMakerFactoryBeforeEachExtension();
+
     private JacksonTester<MyEntity> json;
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     public void setup() {
-        IndexValueMakerFactory.INDEX_VALUE_MAKER_INTIALIZATION_GROUP.resetCache();
+
         JacksonTester.initFields(this, objectMapper);
     }
     @Test

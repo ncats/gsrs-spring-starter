@@ -2,12 +2,13 @@ package gsrs.startertests.jupiter;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.startertests.GsrsJpaTest;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.boot.test.context.TestComponent;
 
 /**
- * Calls  {@link CachedSupplier#resetAllCaches()} before each JUnit 5 test is run.
+ * Calls  {@link CachedSupplier#resetAllCaches()} before all the JUnit 5 tests are run.
  * If called from a test class that extends {@link AbstractGsrsJpaEntityJunit5Test}
  * or from an annotated class with {@link GsrsJpaTest} annotation,
  * you can autowire it:
@@ -15,7 +16,7 @@ import org.springframework.boot.test.context.TestComponent;
  * {@code
  * @Autowired
  * @RegisterExtension
- * ResetAllCacheSupplierExtension resetAllCacheSupplierExtension;
+ * ResetAllCacheSupplierBeforeAllExtension resetAllCacheSupplierExtension;
  * }
  * </pre>
  *
@@ -24,17 +25,17 @@ import org.springframework.boot.test.context.TestComponent;
  * <pre>
  *  {@code
  *  @RegisterExtension
- *  ResetAllCacheSupplierExtension resetAllCacheSupplierExtension = new ResetAllCacheSupplierExtension();
+ *  ResetAllCacheSupplierBeforeAllExtension resetAllCacheSupplierExtension = new ResetAllCacheSupplierBeforeAllExtension();
  *  }
  *  </pre>
  *
  *
  */
 @TestComponent
-public class ResetAllCacheSupplierExtension implements BeforeEachCallback {
+public class ResetAllCacheSupplierBeforeAllExtension implements BeforeAllCallback {
 
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
+    public void beforeAll(ExtensionContext extensionContext) throws Exception {
         CachedSupplier.resetAllCaches();
     }
 }

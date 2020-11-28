@@ -1,8 +1,11 @@
-package gsrs.startertests.jupiter;
+package gsrs.startertests.junit4;
 
 
 import gsrs.AuditConfig;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.jupiter.ClearTextIndexerExtension;
+import gsrs.startertests.jupiter.*;
+import org.junit.Rule;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,18 +18,16 @@ import org.springframework.test.context.ContextConfiguration;
 import java.io.File;
 
 /**
- * Abstract class that autoregisters some GSRS Junit 5 Extensions (what Junit 4 called "Rules")
- * such as {@link ClearTextIndexerExtension} and {@link ClearAuditorBeforeEachExtension}.  This also changes
+ * Abstract class that autoregisters some GSRS Junit 4 Rules
+ * such as {@link ClearTextIndexerRule} and {@link ClearAuditorRule}.  This also changes
  * the property for `ix.home` which is used by the LegacyTextIndexer to
  * make the TextIndexer write the index to a temporary folder for each test.
  */
-@ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit5Test.Initializer.class)
-@Import({ClearAuditorBeforeEachExtension.class , ClearTextIndexerExtension.class,  AuditConfig.class, AutowireHelper.class,
-//        ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
-//        ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
-//        ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class
+@ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit4Test.Initializer.class)
+@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class,
+
 })
-public abstract class AbstractGsrsJpaEntityJunit5Test {
+public abstract class AbstractGsrsJpaEntityJunit4Test {
 
 
     @TempDir
@@ -34,12 +35,12 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
 
 
     @Autowired
-    @RegisterExtension
-    protected ClearTextIndexerExtension clearTextIndexerRule;
+    @Rule
+    protected ClearTextIndexerRule clearTextIndexerRule;
 
     @Autowired
-    @RegisterExtension
-    protected ClearAuditorBeforeEachExtension clearAuditorRule;
+    @Rule
+    public ClearAuditorRule clearAuditorRule;
 
     static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override

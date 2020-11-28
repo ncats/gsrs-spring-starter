@@ -8,6 +8,7 @@ import gsrs.repository.PrincipalRepository;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.ResetAllEntityProcessorBeforeEachExtension;
 import ix.core.EntityProcessor;
 import ix.core.models.Principal;
 import lombok.Data;
@@ -75,6 +76,9 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @RegisterExtension
     public TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1985, 10, 21));
 
+    @RegisterExtension
+    public ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
+
     @Autowired
     private TestEntityManager entityManager;
 
@@ -88,7 +92,7 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     private Long id;
     @BeforeEach
     public void addUserToRepo(){
-        EntityProcessorFactory.ENTITY_PROCESSOR_FACTORY_INITIALIZER_GROUP.resetCache();
+
         entityProcessorFactory.clearAll();
         entityProcessorFactory.addEntityProcessor(new SetCreatedBy());
         principalRepository.save(new Principal("myUser", null));

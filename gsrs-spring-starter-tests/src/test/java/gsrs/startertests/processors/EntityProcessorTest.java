@@ -52,9 +52,9 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     }
 
-    @Autowired
     @RegisterExtension
-    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension;
+    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
+
     @Autowired
     private TestEntityManager entityManager;
 
