@@ -1,14 +1,11 @@
 package gsrs.startertests.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.AuditConfig;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
-import gsrs.validator.GsrsValidatorFactory;
-import ix.core.search.text.TextIndexerEntityListener;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,9 +14,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
-import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +23,11 @@ import static gsrs.assertions.GsrsMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-//@ContextConfiguration(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class, MockMvc.class})
-//@ContextConfiguration(classes = {GsrsSpringApplication.class})
+
 @ActiveProfiles("test")
 @GsrsJpaTest(classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class})
-@Import({MyEntity.class, MyEntityService.class,
-         GsrsValidatorFactory.class})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-//@Import({ClearAuditorRule.class , ClearTextIndexerRule.class, AuditConfig.class, AutowireHelper.class,  TextIndexerEntityListener.class})
-//@Transactional
-public class MyEntityServiceTest {
+@Import({MyEntity.class, MyEntityService.class})
+public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private MyEntityService myEntityService;

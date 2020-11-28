@@ -1,22 +1,19 @@
 package gsrs.startertests.processors;
 
-import gsrs.EntityProcessorFactory;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 
 import gsrs.startertests.*;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.ResetAllEntityProcessorBeforeEachExtension;
 import ix.core.EntityProcessor;
 
 import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -31,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @GsrsJpaTest(classes =GsrsSpringApplication.class)
 @ActiveProfiles("test")
-@Import(EntityProcessorTest.MyConfig.class)
 public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Data
     @Entity
@@ -43,22 +39,20 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
         private String foo;
     }
 
-    @TestConfiguration
-    static class MyConfig {
-        @Bean
-        @Primary
-        public EntityProcessorFactory entityProcessorFactory() {
-            return new TestEntityProcessorFactory(new MyEntityProcessor());
-        }
-    }
+
 
 
     private static List<String> list = new ArrayList<>();
 
     @BeforeEach
     public void clearList(){
+        entityProcessorFactory.setEntityProcessors(new MyEntityProcessor());
         list.clear();
+
     }
+
+//    @RegisterExtension
+//    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
 
     @Autowired
     private TestEntityManager entityManager;
@@ -67,6 +61,8 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
     private PrincipalRepository principalRepository;
 
 
+    @Autowired
+    private TestEntityProcessorFactory entityProcessorFactory;
     @Test
     public void persist(){
         MyEntity sut = new MyEntity();

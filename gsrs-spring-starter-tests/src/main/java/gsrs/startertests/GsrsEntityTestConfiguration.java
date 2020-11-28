@@ -6,6 +6,7 @@ import gsrs.autoconfigure.GsrsApiAutoConfiguration;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
 import gsrs.indexer.IndexValueMakerFactory;
+import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -48,6 +49,11 @@ public class GsrsEntityTestConfiguration {
     }
 
 
-
+    @Bean
+    @Order
+    @ConditionalOnMissingBean
+    public GsrsValidatorFactory defaultValidatorFactory(){
+        return new TestGsrsValidatorFactory();
+    }
 }
 

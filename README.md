@@ -463,15 +463,85 @@ The EntityScan and EnableJpaRepositories need to list all the base packages to s
    ```
 
 This module contains helper classes and annotations to work with the GSRS Spring Boot Starter.
+### JUnit Abstract Test Classes
+The Test Starter comes with abstract JUnit test classes to fill in common boiler plate test set up for GSRS Data Tests.
+There are versions of each one and helper classes for both JUnit 4 in the `gsrs.startertests.junit4` package
+and JUnit 5 in `gsrs.startertests.jupiter` package.
+#### JUnit 4 Support
+There are several built in JUnit Rules and abstract test classes that use at least some of them:
+##### AbstractGsrsJpaEntityJunit4Test
+`AbstractGsrsJpaEntityJunit4Test` is an abstract Junit 4 class that registers
+ JUnit 4 Rules to clear out any audit information and clean up the text indexer.
+ 
+##### JUnit 4 Rules
+GSRS uses the `ncats-common` library which has support for resetting initialization routines 
+which is sometimes needed in tests.  Several JUnit 4 Rules have been written
+to reset only certain parts of the GSRS codebase to allow client code fine grain control
+of what to re-initialize and when.
+All the following JUnit Rule classes can be created in as a member field and annotated
+ with the `@Rule` JUnit 4 annotation to be run before each test, or it can be created as a static field
+ and annotated with `@ClassRule` annotation to be run once before any of the  tests have been run.
+  
+##### ResetAllCacheSuppliersRule
+This is the Reset everything and should be used with care or if you are not sure what needs to be reset.
+##### ResetAllEntityProcessorsRule
+This will reset only EntityProcessorFactory and if used in conjunction with AbstractGsrsJpaEntityJunit4Test
+or a Configuration that creates the `TestEntityProcessorFactory` Bean, will reset that so the next test can change
+which EntityProcessors will get picked up.
+ 
+##### ResetAllEntityServicesRule
+This will reset only classes that extend `AbstractGsrsEntityService` class 
+and will reset that so the next test can change
+which how the entityService registers things like Validators.
 
+##### ResetIndexValueMakerFactoryRule
+This will reset only IndexValueMakerFactory and if used in conjunction 
+with AbstractGsrsJpaEntityJunit4Test
+or a Configuration that creates the `TestIndexValueMakerFactory` Bean, 
+will reset that so the next test can change
+which IndexValueMakers will get picked up.
+
+#### JUnit 5 Support
+JUnit 5 helper classes are located in the package `gsrs.startertests.jupiter`.
+
+##### AbstractGsrsJpaEntityJunit5Test
+`AbstractGsrsJpaEntityJunit5Test` is an abstract Junit 5 class that registers
+ JUnit 5 extensions (in JUnit 4 jargon, "Rules") to clear out any audit information and clean up the text indexer.
+ 
+##### JUnit 5 GSRS Extensions
+ Unlike Junit 4 Rules which could be applied either before each test or on all the test in a test class,
+ JUnit 5 Extensions must implement different interfaces for each step in the lifecycle, so there are multiple versions
+ of each "Reseter" Extension.  For example, the extensions to reset all the CacheSuppliers include:
+ `ResetAllCacheSupplierBeforeAllExtension` and `ResetAllCacheSupplierBeforeEachExtension`. 
+ Other Extensions follow similar naming patterns.
+ 
+ ##### ResetAllCacheSuppliersBeforeXXXExtension
+ This is the Reset everything and should be used with care or if you are not sure what needs to be reset.
+ ##### ResetAllEntityProcessorsBeforeXXXExtension
+ This will reset only EntityProcessorFactory and if used in conjunction with AbstractGsrsJpaEntityJunit5Test
+ or a Configuration that creates the `TestEntityProcessorFactory` Bean, will reset that so the next test can change
+ which EntityProcessors will get picked up.
+ Note that if you call `TestEntityProcessors#addEntityProcessor()` 
+ or `TestEntityProcessors#setEntityProcessors()` in either your test or in a `@BeforeEach` method
+ then the processor will reset itself so you don't need use this extension.
+  
+ ##### ResetAllEntityServicesBeforeXXXExtension
+ This will reset only classes that extend `AbstractGsrsEntityService` class 
+ and will reset that so the next test can change
+ which how the entityService registers things like Validators.
+ 
+ ##### ResetIndexValueMakerFactoryBeforeXXXExtension
+ This will reset only IndexValueMakerFactory and if used in conjunction 
+ with AbstractGsrsJpaEntityJunit5Test
+ or a Configuration that creates the `TestIndexValueMakerFactory` Bean, 
+ will reset that so the next test can change
+ which IndexValueMakers will get picked up.
+ 
 ### GsrsJpaTest
 The `@GsrsJpaTest` annotation is like Spring Boot's `@DataJpaTest` except it adds support for
 GSRS related configuration and classes.
 
-#### AbstractGsrsJpaEntityJunit5Test
-`AbstractGsrsJpaEntityJunit5Test` is an abstract Junit 5 class that registers
- JUnit 5 extensions (in JUnit 4 jargon, "Rules") to clear out any audit information and clean up the text indexer.
- 
+
 #### classes field
 The `classes` field should be used to add your configuration classes such as your SpringApplication class an any additional
 test configuration classes you need for your test to work.
@@ -540,7 +610,22 @@ when injecting dependencies.
 ##### Tests with Custom EntityProcessors
 By default, `@GsrsJpaTest` will replace the usual code that finds your EntityProcessors,
 the `EntityProcessorFactory` implementation with a test version, `TestEntityProcessorFactory`.
-If you don't override this Bean, it will not find any EntityProcessors.  You can use a custom Configuration to add your
+If you don't override this Bean, it will not find any EntityProcessors.  
+
+There are two ways to add your own EntityProcessors to get picked up by your test:
+1. You can Inject the instance use the add/clear methods on `TestEntityProcessorFactory` to add the ones you want for each particular test:
+```java
+    @Autowired
+    private TestEntityProcessorFactory entityProcessorFactory;
+
+    @BeforeEach
+    public void initialzeProcessors(){
+        entityProcessorFactory.setEntityProcessors(new MyEntityProcessor());
+
+    }
+
+```
+2. You can use a custom Configuration to add your
 own TestEntityProcessorFactory instance which passes along the EntityProcessors to use in the test:
 
 ```java
@@ -565,4 +650,20 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
 Note that the EntityProcessorFactory Bean is annotated with `@Primary` this is in case 
 the configuration accidentally loads the default bean first it will prefer your factory implementation
 when injecting dependencies. 
+
+### GSRS Hamcrest Matchers
+GSRS test module contains some helper Hamcrest Matchers
+
+#### MatchesExample
+ Compares the given Example object with the Object under Test but only compares the getter methods
+ that return non-null values.  This lets you create intent revealing example objects setting only the
+ fields that matter for the test.
+ 
+##### MatchingIgnore
+the `@MatchingIgnore` annotation can be put on a getter method so that the MatchesExample matcher will ignore
+the field even if it doesn't return a non-null value. This is often used to annotate transient or jsonIgnoreable
+fields.
+
+##### Explicitly Ignore a Field
+The MatchesExample matcher has a `ignoreField(String)` method to explicitly tell the matcher to ignore specific fields.
 

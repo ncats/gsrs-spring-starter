@@ -1,13 +1,11 @@
 package gsrs.startertests;
 
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 @SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class})
-
-class GsrsSpringApplicationTests {
+class GsrsSpringApplicationTests extends AbstractGsrsJpaEntityJunit5Test {
 
 
     @Test

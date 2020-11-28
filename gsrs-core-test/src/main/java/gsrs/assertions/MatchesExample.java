@@ -1,5 +1,6 @@
 package gsrs.assertions;
 
+import gsrs.model.MatchingIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.hamcrest.BaseMatcher;
@@ -14,6 +15,12 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
+ * Matches the given example object by going through the getters
+ * and comparing only the getter return values that don't return {@code null}.
+ * Some fields may be ignored even if they don't return null by either
+ * annotating the getter method on the Bean with {@link MatchingIgnore}
+ * or by explicitly mentioning the bean field name
+ * with {@link #ignoreField(String)}.
  *
  * @param <T>
  */
@@ -92,15 +99,18 @@ public final class MatchesExample<T> extends TypeSafeMatcher<T> {
                     .stream()
                     // filter out properties with setters only
                     .filter(pd -> Objects.nonNull(pd.getReadMethod()))
+//                    .filter(pd-> pd.)
                     .forEach(pd -> { // invoke method to get value
                         try {
                             Method readMethod = pd.getReadMethod();
                             //set accessible so we can invoke it if it's a private getter
                             //or more likely a non-public class
                             readMethod.setAccessible(true);
-                            Object value = readMethod.invoke(bean);
-                            if (value != null) {
-                                map.put(pd.getName(), value);
+                            if(readMethod.getAnnotation(MatchingIgnore.class) ==null) {
+                                Object value = readMethod.invoke(bean);
+                                if (value != null) {
+                                    map.put(pd.getName(), value);
+                                }
                             }
                         } catch (Exception e) {
                             // add proper error handling here

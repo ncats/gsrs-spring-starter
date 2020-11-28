@@ -2,7 +2,7 @@ package gsrs.startertests.audit;
 
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
-import gsrs.startertests.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.GsrsJpaTest;
 import lombok.Data;
 import org.junit.jupiter.api.Test;

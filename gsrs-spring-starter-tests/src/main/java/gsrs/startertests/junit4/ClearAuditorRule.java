@@ -1,17 +1,14 @@
-package gsrs.startertests;
-
+package gsrs.startertests.junit4;
 
 import gsrs.AuditConfig;
 import ix.core.models.Principal;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.rules.ExternalResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.AuditorAware;
-
 /**
- * Junit 5 Extension that before each tests will clear the cache
+ * Junit 4 Rule that before each tests will clear the cache
  * of the auditor Bean.
  *
  * Use like this in your class:
@@ -35,15 +32,12 @@ import org.springframework.data.domain.AuditorAware;
  */
 @TestComponent
 @Import( AuditConfig.class)
-public class ClearAuditorRule implements BeforeEachCallback {
-
+public class ClearAuditorRule extends ExternalResource {
     @Autowired
     private AuditorAware<Principal> auditor;
 
-
-
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
+    protected void before() throws Throwable {
         ((AuditConfig.SecurityAuditor)auditor).clearCache();
     }
 }

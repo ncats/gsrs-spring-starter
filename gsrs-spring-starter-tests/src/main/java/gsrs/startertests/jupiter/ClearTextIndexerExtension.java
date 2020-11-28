@@ -1,4 +1,4 @@
-package gsrs.startertests;
+package gsrs.startertests.jupiter;
 
 import gov.nih.ncats.common.io.IOUtil;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.TestComponent;
 import java.io.File;
 
 @TestComponent
-public class ClearTextIndexerRule implements BeforeEachCallback {
+public class ClearTextIndexerExtension implements BeforeEachCallback {
     @Value("${ix.home}")
     private String dir;
 

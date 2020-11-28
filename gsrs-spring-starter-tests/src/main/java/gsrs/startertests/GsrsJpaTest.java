@@ -2,13 +2,10 @@ package gsrs.startertests;
 
 import gsrs.AuditConfig;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.repository.PrincipalRepository;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.jupiter.*;
 import ix.core.models.Principal;
 import ix.core.search.text.Lucene4IndexServiceFactory;
-import ix.core.search.text.TextIndexerConfig;
-import ix.core.search.text.TextIndexerFactory;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
@@ -29,9 +26,10 @@ import java.lang.annotation.*;
 @ContextConfiguration
 @DirtiesContext
 @DataJpaTest
-@Import({ClearAuditorRule.class , ClearTextIndexerRule.class,  AuditConfig.class, AutowireHelper.class,
+@Import({ClearAuditorBeforeEachExtension.class , ClearTextIndexerExtension.class,  AuditConfig.class, AutowireHelper.class,
 //        PrincipalRepository.class,
-
+//        ResetAllCacheSupplierBeforeEachExtension.class,
+//        ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
         GsrsFactoryConfiguration.class,
 //        TextIndexerFactory.class, TextIndexerConfig.class,
 //        Lucene4IndexServiceFactory.class,

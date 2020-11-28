@@ -25,6 +25,7 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
     @Transient
     private Set<String> dirtyFields = new HashSet<>();
 
+    @MatchingIgnore
     @Override
     public Set<String> getDirtyFields() {
         return dirtyFields;

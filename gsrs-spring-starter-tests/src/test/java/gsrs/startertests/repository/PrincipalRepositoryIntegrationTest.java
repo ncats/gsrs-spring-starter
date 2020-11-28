@@ -6,6 +6,7 @@ import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.startertests.*;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Principal;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @GsrsJpaTest
 @ActiveProfiles("test")
-public class PrincipalRepositoryIntegrationTest {
+public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private TestEntityManager entityManager;

@@ -1,6 +1,7 @@
 package gsrs.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.controller.OffsetBasedPageRequest;
 import ix.core.validator.ValidationResponse;
 import lombok.Builder;
@@ -25,6 +26,17 @@ import java.util.Optional;
  * @param <I>
  */
 public interface GsrsEntityService<T, I> {
+    /**
+     * A {@link CachedSupplierGroup} for all CachedSuppliers used by EntityServices
+     * that should be reset all together at particular times (for example at the before a
+     * tests).
+     */
+    CachedSupplierGroup ENTITY_SERVICE_INTIALIZATION_GROUP = new CachedSupplierGroup();
+    /**
+     * Get the API Context for this Entity Service.
+     * @return the Context; should never be null or empty;
+     */
+    String getContext();
     /**
      * Get the number of entities in your data repository.
      * @return a number &ge;0.

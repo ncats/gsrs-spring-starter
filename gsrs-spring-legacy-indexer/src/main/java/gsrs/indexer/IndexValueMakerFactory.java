@@ -1,10 +1,17 @@
 package gsrs.indexer;
 
+import gov.nih.ncats.common.util.CachedSupplierGroup;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.ReflectingIndexValueMaker;
 import ix.core.util.EntityUtils;
 
 public interface IndexValueMakerFactory {
+    /**
+     * A {@link CachedSupplierGroup} for all CachedSuppliers used by IndexValueMakerFactories
+     * that should be reset all together at particular times (for example at the before a
+     * tests).
+     */
+    CachedSupplierGroup INDEX_VALUE_MAKER_INTIALIZATION_GROUP = new CachedSupplierGroup();
     /**
      * Create a IndexValueMaker that contains all the registered
      * IndexValueMakers that apply to the given passed in entity object.

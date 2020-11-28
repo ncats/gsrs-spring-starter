@@ -5,6 +5,7 @@ import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerFactory;
+import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -52,6 +53,11 @@ public class GsrsApiSelector implements ImportSelector {
                 break;
             default: break;
         }
+
+        //TODO make something other than CONF based validator?
+        componentsToInclude.add(ConfigBasedValidatorFactoryConfiguration.class);
+
+
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
     }
