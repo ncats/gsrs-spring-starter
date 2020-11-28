@@ -521,6 +521,9 @@ JUnit 5 helper classes are located in the package `gsrs.startertests.jupiter`.
  This will reset only EntityProcessorFactory and if used in conjunction with AbstractGsrsJpaEntityJunit5Test
  or a Configuration that creates the `TestEntityProcessorFactory` Bean, will reset that so the next test can change
  which EntityProcessors will get picked up.
+ Note that if you call `TestEntityProcessors#addEntityProcessor()` 
+ or `TestEntityProcessors#setEntityProcessors()` in either your test or in a `@BeforeEach` method
+ then the processor will reset itself so you don't need use this extension.
   
  ##### ResetAllEntityServicesBeforeXXXExtension
  This will reset only classes that extend `AbstractGsrsEntityService` class 
@@ -616,15 +619,10 @@ There are two ways to add your own EntityProcessors to get picked up by your tes
     private TestEntityProcessorFactory entityProcessorFactory;
 
     @BeforeEach
-    public void clearList(){
-        entityProcessorFactory.clearAll();
-        entityProcessorFactory.addEntityProcessor(new MyEntityProcessor());
+    public void initialzeProcessors(){
+        entityProcessorFactory.setEntityProcessors(new MyEntityProcessor());
 
     }
-
-    @RegisterExtension
-    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
-
 
 ```
 2. You can use a custom Configuration to add your

@@ -41,6 +41,13 @@ public abstract class AbstractIndexValueMakerFactory implements IndexValueMakerF
      */
     protected abstract void registerIndexValueMakers(Consumer<IndexValueMaker> registrar);
 
+    /**
+     * Reset the Cache of known IndexValueMakers.  This method should
+     * be called whenever a new IndexValueMaker is added after initialization.
+     */
+    protected final void resetCache(){
+        initializer.resetCache();
+    }
 
     /**
      * Create a IndexValueMaker that contains all the registered

@@ -21,6 +21,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
 
     private final CachedSupplier<Void> initializer = ENTITY_PROCESSOR_FACTORY_INITIALIZER_GROUP.add(CachedSupplier.ofInitializer(()->{
         //entityProcessors field may be null if there's no EntityProcessor to inject
+        processorMapByClass.clear();
         registerEntityProcessor(ep -> {
             Class entityClass = ep.getEntityClass();
             if (entityClass != null) {
@@ -31,17 +32,24 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
     }));
     @PostConstruct
     public void init(){
-        initializer.get();
+        initializer.getSync();
 
     }
 
+    /**
+     * Reset the Cache of known EntityProcessors.  This method should
+     * be called whenever a new EntityProcessor is added after initialization.
+     */
+    protected final void resetCache(){
+        initializer.resetCache();
+    }
     protected abstract void registerEntityProcessor(Consumer<EntityProcessor> registar);
 
 
 
     @Override
     public EntityProcessor getCombinedEntityProcessorFor(Object o){
-        initializer.get();
+        initializer.getSync();
         Class entityClass = o.getClass();
         return cache.computeIfAbsent(entityClass, k-> {
             Map<EntityProcessor, Object> list = new IdentityHashMap<>();

@@ -2,12 +2,10 @@ package gsrs.startertests.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import gsrs.startertests.jupiter.ResetIndexValueMakerFactoryBeforeEachExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,9 +34,6 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @RegisterExtension
     TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1955, 11, 05));
-
-    @RegisterExtension
-    ResetIndexValueMakerFactoryBeforeEachExtension resetIndexValueMakerFactory = new ResetIndexValueMakerFactoryBeforeEachExtension();
 
     private JacksonTester<MyEntity> json;
     ObjectMapper objectMapper = new ObjectMapper();

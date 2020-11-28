@@ -26,8 +26,7 @@ public class IndexValueMakerFactoryTest extends AbstractGsrsJpaEntityJunit5Test 
 
     @BeforeEach
     public void init(){
-        factory.clearAll();
-        factory.addIndexValueMaker(new MyIndexValueMaker());
+        factory.setIndexValueMakers(new MyIndexValueMaker());
     }
     @Test
     public void pickedUpComponent(){

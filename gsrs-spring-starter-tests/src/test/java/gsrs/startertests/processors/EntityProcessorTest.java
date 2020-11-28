@@ -46,14 +46,13 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @BeforeEach
     public void clearList(){
-        entityProcessorFactory.clearAll();
-        entityProcessorFactory.addEntityProcessor(new MyEntityProcessor());
+        entityProcessorFactory.setEntityProcessors(new MyEntityProcessor());
         list.clear();
 
     }
 
-    @RegisterExtension
-    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
+//    @RegisterExtension
+//    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
 
     @Autowired
     private TestEntityManager entityManager;

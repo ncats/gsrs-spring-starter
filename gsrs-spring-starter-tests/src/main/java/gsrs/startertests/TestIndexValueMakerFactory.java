@@ -16,12 +16,16 @@ import java.util.function.Consumer;
  * control which {@link IndexValueMaker}s to add.
  */
 public class TestIndexValueMakerFactory extends AbstractIndexValueMakerFactory{
-    private List<IndexValueMaker> indexValueMakers = new ArrayList<>();
+    private List<IndexValueMaker> indexValueMakers;
 
     public TestIndexValueMakerFactory(IndexValueMaker... indexValueMakers){
-        for(IndexValueMaker i : indexValueMakers) {
-            addIndexValueMaker(i);
-        }
+        setIndexValueMakerListTo(indexValueMakers);
+    }
+
+    private void setIndexValueMakerListTo(IndexValueMaker[] indexValueMakers) {
+        List<IndexValueMaker> list = new ArrayList<>(Arrays.asList(indexValueMakers));
+        list.forEach(Objects::nonNull);
+        this.indexValueMakers = list;
     }
 
     @Override
@@ -37,6 +41,7 @@ public class TestIndexValueMakerFactory extends AbstractIndexValueMakerFactory{
      */
     public TestIndexValueMakerFactory addIndexValueMaker(IndexValueMaker indexValueMaker){
         indexValueMakers.add(Objects.requireNonNull(indexValueMaker));
+        resetCache();
         return this;
     }
 
@@ -45,5 +50,11 @@ public class TestIndexValueMakerFactory extends AbstractIndexValueMakerFactory{
      */
     public void clearAll() {
         indexValueMakers.clear();
+        resetCache();
+    }
+    public TestIndexValueMakerFactory setIndexValueMakers(IndexValueMaker... indexValueMakers){
+        setIndexValueMakerListTo(indexValueMakers);
+        resetCache();
+        return this;
     }
 }

@@ -36,13 +36,28 @@ public class TestEntityProcessorFactory extends AbstractEntityProcessorFactory {
      */
     public TestEntityProcessorFactory addEntityProcessor(EntityProcessor entityProcessor){
         entityProcessors.add(Objects.requireNonNull(entityProcessor));
+        resetCache();
         return this;
     }
 
+    /**
+     * Set the EntityProcessors to the given list.
+     * @param entityProcessors
+     * @return this
+     * @throws NullPointerException if any entityProcessors are null.
+     */
+    public TestEntityProcessorFactory setEntityProcessors(EntityProcessor... entityProcessors){
+        ArrayList<EntityProcessor> list = new ArrayList<>(Arrays.asList(entityProcessors));
+        list.forEach(Objects::requireNonNull);
+        this.entityProcessors = list;
+        resetCache();
+        return this;
+    }
     /**
      * Remove all entityProcessors.
      */
     public void clearAll() {
         entityProcessors.clear();
+        resetCache();
     }
 }
