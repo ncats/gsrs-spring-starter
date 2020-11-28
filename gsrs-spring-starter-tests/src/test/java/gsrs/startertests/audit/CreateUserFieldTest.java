@@ -3,6 +3,7 @@ package gsrs.startertests.audit;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 import gsrs.startertests.*;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Principal;
 import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;

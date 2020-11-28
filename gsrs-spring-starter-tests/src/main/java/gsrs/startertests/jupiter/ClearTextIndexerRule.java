@@ -1,4 +1,4 @@
-package gsrs.startertests;
+package gsrs.startertests.jupiter;
 
 import gov.nih.ncats.common.io.IOUtil;
 import org.junit.jupiter.api.extension.BeforeEachCallback;

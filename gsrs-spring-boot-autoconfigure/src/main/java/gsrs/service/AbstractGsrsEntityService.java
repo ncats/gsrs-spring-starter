@@ -67,7 +67,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @PostConstruct
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
-        validatorFactory = CachedSupplier.of(()->validatorFactoryService.newFactory(context));
+        //This is added to the initization Group so that we can reset this in tests
+        validatorFactory = ENTITY_SERVICE_INTIALIZATION_GROUP.add(()->validatorFactoryService.newFactory(context));
     }
 
     /**

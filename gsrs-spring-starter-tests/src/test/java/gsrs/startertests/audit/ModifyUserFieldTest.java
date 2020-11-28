@@ -7,6 +7,7 @@ import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.EntityProcessor;
 import ix.core.models.Principal;
 import lombok.Data;
@@ -15,10 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -38,18 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @GsrsJpaTest(classes = GsrsSpringApplication.class, dirtyMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
-@Import(ModifyUserFieldTest.MyConfig.class)
 public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
-    @Configuration
-    public static class MyConfig {
-        @Bean
-        @Primary
-        public EntityProcessorFactory entityProcessorFactory() {
-
-            return new TestEntityProcessorFactory(new SetCreatedBy());
-        }
-    }
 
     /**
      * I can't seem to be able to use @WithMockUser to have 2 different
@@ -61,10 +48,8 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
      */
     private static class SetCreatedBy implements EntityProcessor<MyEntity>{
 
-        private CachedSupplier<Void> init = CachedSupplier.runOnce(()->{
-            AutowireHelper.getInstance().autowire(this);
-            return null;
-        });
+        private CachedSupplier<Void> init = CachedSupplier.runOnceInitializer(()->AutowireHelper.getInstance().autowire(this));
+
         @Autowired
         private PrincipalRepository principalRepository;
 
@@ -93,6 +78,9 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private TestEntityManager entityManager;
 
+    @Autowired
+    private TestEntityProcessorFactory entityProcessorFactory;
+
 
     @Autowired
     private PrincipalRepository principalRepository;
@@ -100,6 +88,9 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     private Long id;
     @BeforeEach
     public void addUserToRepo(){
+        EntityProcessorFactory.ENTITY_PROCESSOR_FACTORY_INITIALIZER_GROUP.resetCache();
+        entityProcessorFactory.clearAll();
+        entityProcessorFactory.addEntityProcessor(new SetCreatedBy());
         principalRepository.save(new Principal("myUser", null));
         principalRepository.save(new Principal("otherUser", null));
 

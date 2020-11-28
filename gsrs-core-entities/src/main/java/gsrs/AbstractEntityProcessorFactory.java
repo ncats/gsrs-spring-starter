@@ -19,7 +19,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
     private Map<Class, List<EntityProcessor>> processorMapByClass = new ConcurrentHashMap<>();
     private Map<Class, EntityProcessor> cache = new ConcurrentHashMap<>();
 
-    private final CachedSupplier<Void> initializer = CachedSupplier.runOnce(()->{
+    private final CachedSupplier<Void> initializer = ENTITY_PROCESSOR_FACTORY_INITIALIZER_GROUP.add(CachedSupplier.ofInitializer(()->{
         //entityProcessors field may be null if there's no EntityProcessor to inject
         registerEntityProcessor(ep -> {
             Class entityClass = ep.getEntityClass();
@@ -28,8 +28,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
                 processorMapByClass.computeIfAbsent(entityClass, k -> new ArrayList<>()).add(ep);
             }
         });
-        return null;
-    });
+    }));
     @PostConstruct
     public void init(){
         initializer.get();

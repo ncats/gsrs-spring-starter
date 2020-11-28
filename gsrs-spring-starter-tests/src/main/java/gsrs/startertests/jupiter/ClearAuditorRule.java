@@ -1,4 +1,4 @@
-package gsrs.startertests;
+package gsrs.startertests.jupiter;
 
 
 import gsrs.AuditConfig;

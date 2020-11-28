@@ -1,6 +1,7 @@
-package gsrs.startertests;
+package gsrs.startertests.jupiter;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.startertests.GsrsJpaTest;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.boot.test.context.TestComponent;

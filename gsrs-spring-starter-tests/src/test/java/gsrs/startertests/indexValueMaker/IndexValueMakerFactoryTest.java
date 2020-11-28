@@ -1,24 +1,13 @@
 package gsrs.startertests.indexValueMaker;
 
-import gsrs.AuditConfig;
-import gsrs.indexer.IndexValueMakerFactory;
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
-import gsrs.startertests.processors.EntityProcessorTest;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.Data;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,20 +18,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @GsrsJpaTest(classes =GsrsSpringApplication.class)
-@Import(IndexValueMakerFactoryTest.MyConfig.class)
-public class IndexValueMakerFactoryTest {
+public class IndexValueMakerFactoryTest extends AbstractGsrsJpaEntityJunit5Test {
 
-    @TestConfiguration
-    static class MyConfig{
-        @Bean
-        @Primary
-        public IndexValueMakerFactory indexValueMakerFactory(){
-            return new TestIndexValueMakerFactory(new MyIndexValueMaker());
-        }
-    }
+
     @Autowired
-    private IndexValueMakerFactory factory;
+    private TestIndexValueMakerFactory factory;
 
+    @BeforeEach
+    public void init(){
+        factory.clearAll();
+        factory.addIndexValueMaker(new MyIndexValueMaker());
+    }
     @Test
     public void pickedUpComponent(){
         Foo foo = new Foo();
@@ -103,7 +89,7 @@ public class IndexValueMakerFactoryTest {
     public static class SubFoo extends Foo{
         private String anotherField;
     }
-    @Component
+
     public static class MyIndexValueMaker implements IndexValueMaker<Foo> {
 
         @Override

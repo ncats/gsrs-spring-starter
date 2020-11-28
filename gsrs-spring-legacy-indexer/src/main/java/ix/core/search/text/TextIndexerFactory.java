@@ -36,7 +36,7 @@ public class TextIndexerFactory {
 
     private TextIndexer defaultIndexer;
 
-    private final CachedSupplier<Void> initializer = CachedSupplier.runOnce(()->{
+    private final CachedSupplier<Void> initializer = IndexValueMakerFactory.INDEX_VALUE_MAKER_INTIALIZATION_GROUP.add(CachedSupplier.ofInitializer(()->{
         // this logic was taken from the static init method of the Play G-SRS TextIndexer and moved to a new factory
         //so it could be used with dependency injection
 
@@ -56,8 +56,7 @@ public class TextIndexerFactory {
                 .collect(Collectors.toSet());
 
         defaultIndexer = getInstance(new File(defaultDir));
-        return null;
-    });
+    }));
     @PostConstruct
     private void init(){
         initializer.getSync();

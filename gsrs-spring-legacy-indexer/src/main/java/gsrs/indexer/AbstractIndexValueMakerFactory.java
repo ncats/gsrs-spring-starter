@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /**
  * An abstract {@link IndexValueMakerFactory} implementation
  * that will create a combined IndexValueMaker containing the ReflectingIndexValueMaker
- * plus any compatibile IndexValueMakers that are registered with {@link #registerIndexValueMakers(Consumer)}
+ * plus any compatible IndexValueMakers that are registered with {@link #registerIndexValueMakers(Consumer)}
  * method.
  *
  */
@@ -22,14 +22,16 @@ public abstract class AbstractIndexValueMakerFactory implements IndexValueMakerF
     private ReflectingIndexValueMaker reflectingIndexValueMaker = new ReflectingIndexValueMaker();
 
     private ConcurrentHashMap<Class, List<IndexValueMaker>> valueMakersMap = new ConcurrentHashMap<>();
-    private final CachedSupplier<Void> initializer = CachedSupplier.runOnce(()->{
-        registerIndexValueMakers(i->{
-            if(i !=null) {
-                valueMakersMap.computeIfAbsent(i.getIndexedEntityClass(), c -> new ArrayList<>()).add(i);
-            }
-        });
-       return null;
-    });
+    private final CachedSupplier<Void> initializer = INDEX_VALUE_MAKER_INTIALIZATION_GROUP.add(
+            CachedSupplier.ofInitializer(()->{
+                //clear Map incase this is not the first time this is run we don't want to double register
+                            valueMakersMap.clear();
+                            registerIndexValueMakers(i->{
+                                if(i !=null) {
+                                    valueMakersMap.computeIfAbsent(i.getIndexedEntityClass(), c -> new ArrayList<>()).add(i);
+                                }
+                            });
+                        }));
 
     /**
      * Initization method that is called to register IndexValueMakers

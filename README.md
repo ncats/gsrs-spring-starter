@@ -540,7 +540,28 @@ when injecting dependencies.
 ##### Tests with Custom EntityProcessors
 By default, `@GsrsJpaTest` will replace the usual code that finds your EntityProcessors,
 the `EntityProcessorFactory` implementation with a test version, `TestEntityProcessorFactory`.
-If you don't override this Bean, it will not find any EntityProcessors.  You can use a custom Configuration to add your
+If you don't override this Bean, it will not find any EntityProcessors.  
+
+There are two ways to add your own EntityProcessors to get picked up by your test:
+1. You can Inject the instance use the add/clear methods on `TestEntityProcessorFactory` to add the ones you want for each particular test:
+```java
+    @Autowired
+    private TestEntityProcessorFactory entityProcessorFactory;
+
+    @BeforeEach
+    public void clearList(){
+        entityProcessorFactory.clearAll();
+        entityProcessorFactory.addEntityProcessor(new MyEntityProcessor());
+
+    }
+
+    @Autowired
+    @RegisterExtension
+    ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension;
+
+
+```
+2. You can use a custom Configuration to add your
 own TestEntityProcessorFactory instance which passes along the EntityProcessors to use in the test:
 
 ```java
