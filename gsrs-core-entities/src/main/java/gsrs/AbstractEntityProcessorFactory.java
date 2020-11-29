@@ -22,6 +22,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
     private final CachedSupplier<Void> initializer = ENTITY_PROCESSOR_FACTORY_INITIALIZER_GROUP.add(CachedSupplier.ofInitializer(()->{
         //entityProcessors field may be null if there's no EntityProcessor to inject
         processorMapByClass.clear();
+        cache.clear();
         registerEntityProcessor(ep -> {
             Class entityClass = ep.getEntityClass();
             if (entityClass != null) {
@@ -42,6 +43,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
      */
     protected final void resetCache(){
         initializer.resetCache();
+
     }
     protected abstract void registerEntityProcessor(Consumer<EntityProcessor> registar);
 
