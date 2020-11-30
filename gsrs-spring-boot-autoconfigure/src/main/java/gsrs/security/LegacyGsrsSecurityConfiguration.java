@@ -11,8 +11,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
-@EnableGlobalMethodSecurity(securedEnabled = true)
+@EnableWebSecurity(debug = true)
+@EnableGlobalMethodSecurity(
+        securedEnabled = true,
+        prePostEnabled = true,
+        jsr250Enabled = true
+)
 public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
@@ -22,11 +26,18 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-
-        http.authorizeRequests()
-                .antMatchers("/api/**")
-                .permitAll()
-                .and()
+//        http.authorizeRequests()
+//                .antMatchers("/**").hasRole("USER")
+//                .anyRequest()
+//                .authenticated()
+//                .and()
+//                .formLogin()
+        http
+//                .authorizeRequests()
+//                .and()
+//                .antMatchers("/api/**")
+//                .permitAll()
+//                .and()
                 .addFilterBefore(legacyAuthenticationFilter, BasicAuthenticationFilter.class)
 
         ;

@@ -19,6 +19,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     private LegacyAuthenticationConfiguration authenticationConfiguration;
 
 
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         //the order of the old GSRS is to check this:

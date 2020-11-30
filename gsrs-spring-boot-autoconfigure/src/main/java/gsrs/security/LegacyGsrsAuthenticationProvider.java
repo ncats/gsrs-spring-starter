@@ -36,9 +36,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
         if(authentication instanceof LegacySsoAuthentication){
             LegacySsoAuthentication auth = (LegacySsoAuthentication) authentication;
             UserProfile up = repository.findByUser_Username(auth.getUsername());
-            if(up ==null){
-                //user does not exist
-                if(authenticationConfiguration.isAutoregister()){
+            if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(auth.getUsername(), auth.getEmail());
                     up = new UserProfile(p);
                     if(authenticationConfiguration.isAutoregisteractive()){
@@ -48,30 +46,31 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                     //should cascade new Principal
                     repository.saveAndFlush(up);
                 }
+            if(up !=null){
 
                 return new UsernamePasswordAuthenticationToken(auth.getUsername(), auth.getEmail(),
-                        up.getRoles().stream().map(r->new SimpleGrantedAuthority(r.name())).collect(Collectors.toList()));
+                        up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
             }
         }else if(authentication instanceof LegacyUserPassAuthentication){
             LegacyUserPassAuthentication auth = (LegacyUserPassAuthentication) authentication;
             UserProfile up = repository.findByUser_Username(auth.getUsername());
-            if(up ==null){
-                //user does not exist
-                if(authenticationConfiguration.isAutoregister()){
-                    Principal p = new Principal(auth.getUsername(), null);
-                    up = new UserProfile(p);
-                    if(authenticationConfiguration.isAutoregisteractive()){
-                        up.active = true;
-                    }
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+            if(up ==null && authenticationConfiguration.isAutoregister()) {
+                Principal p = new Principal(auth.getUsername(), null);
+                up = new UserProfile(p);
+                if (authenticationConfiguration.isAutoregisteractive()) {
+                    up.active = true;
                 }
+                up.systemAuth = false;
+                //should cascade new Principal
+                repository.saveAndFlush(up);
+
+            }
+            if(up!=null){
                 String rawPassword = (String) auth.getCredentials();
                 if(up.acceptPassword(rawPassword)){
                     //valid password!
                     return new UsernamePasswordAuthenticationToken(auth.getUsername(), up.getEncodePassword(),
-                            up.getRoles().stream().map(r->new SimpleGrantedAuthority(r.name())).collect(Collectors.toList()));
+                            up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
 
                 }
 
