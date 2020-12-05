@@ -53,11 +53,11 @@ public class GsrsWebConfig {
 
                         System.out.println(method);
                         //we need to use the findMergedAnnotation to combine all the aliased fields
-                        GsrsRestApiRequestMapping getMapping =AnnotatedElementUtils.findMergedAnnotation(method, GsrsRestApiRequestMapping.class);
-                        System.out.println(getMapping);
+                        GsrsRestApiRequestMapping gsrsMapping =AnnotatedElementUtils.findMergedAnnotation(method, GsrsRestApiRequestMapping.class);
+                        System.out.println(gsrsMapping);
                         int[] versions=new int[]{1};
-                        if(getMapping !=null){
-                            versions = getMapping.apiVersions();
+                        if(gsrsMapping !=null){
+                            versions = gsrsMapping.apiVersions();
                         }
 
                         //we want to do 2 things
@@ -75,7 +75,7 @@ public class GsrsWebConfig {
 
                         //this will be overridden if we have get or post mappings
                         PatternsRequestCondition apiPattern = new PatternsRequestCondition(apiBasePatterns.toArray(new String[apiBasePatterns.size()]));
-                        if (getMapping != null) {
+                        if (gsrsMapping != null) {
                            if (gsrsRestApiAnnotation != null) {
 
 
@@ -102,8 +102,8 @@ public class GsrsWebConfig {
                                    idHelper= commonIdHelper;
                                }
 
-                               String idPlaceHolder = getMapping.idPlaceholder();
-                               String notIdPlaceHolder = getMapping.notIdPlaceholder();
+                               String idPlaceHolder = gsrsMapping.idPlaceholder();
+                               String notIdPlaceHolder = gsrsMapping.notIdPlaceholder();
 
                                Set<String> updatedPatterns = new LinkedHashSet<>();
                                //Spring adds leading / to the paths if you forgot to put it
@@ -116,7 +116,7 @@ public class GsrsWebConfig {
                                Set<String> adjustedPatterns = new HashSet<>();
                                for(Set<String> basePatternPerVersion : apiBasesByVersions) {
 
-                                   String[] paths = getMapping.value();
+                                   String[] paths = gsrsMapping.value();
 
                                    if(paths.length==0){
                                        //no path it's probably a post to the root
@@ -146,7 +146,7 @@ public class GsrsWebConfig {
                                for(String route : adjustedPatterns) {
                                    String updatedRoute = idHelper.replaceId(route, idPlaceHolder);
                                    updatedRoute = idHelper.replaceInverseId(updatedRoute, notIdPlaceHolder);
-                                   System.out.println("updated route : " + route + "  -> " + updatedRoute);
+                                   System.out.println("updated route : "  + route + "  -> " + updatedRoute);
 
                                    updatedPatterns.add(updatedRoute);
 
@@ -154,6 +154,7 @@ public class GsrsWebConfig {
                                apiPattern = new PatternsRequestCondition(updatedPatterns.toArray(new String[updatedPatterns.size()]));
 
                             }
+
                             mapping = new RequestMappingInfo(mapping.getName(), apiPattern,
                                     mapping.getMethodsCondition(), mapping.getParamsCondition(),
                                     mapping.getHeadersCondition(), mapping.getConsumesCondition(),

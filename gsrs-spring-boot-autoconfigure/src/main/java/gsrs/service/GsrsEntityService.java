@@ -3,6 +3,7 @@ package gsrs.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.controller.OffsetBasedPageRequest;
+import gsrs.security.*;
 import ix.core.validator.ValidationResponse;
 import lombok.Builder;
 import lombok.Data;
@@ -47,6 +48,7 @@ public interface GsrsEntityService<T, I> {
      * Remove the given entity from the repository.
      * @param id the id of the entity to delete.
      */
+    @hasUpdateRole
     void delete(I id);
 
     /**
@@ -64,9 +66,9 @@ public interface GsrsEntityService<T, I> {
      * @see OffsetBasedPageRequest
      */
     Page page(Pageable pageable);
-
+    @hasDataEntryRole
     CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException;
-
+    @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
     ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception;

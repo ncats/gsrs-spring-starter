@@ -8,20 +8,19 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-@Component
-public class LegacyAuthenticationFilter extends OncePerRequestFilter {
+//@Component
+public class LegacyAuthenticationFilter implements Filter {
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
 
 
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    public void doFilter(ServletRequest r, ServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         //the order of the old GSRS is to check this:
         /*
         AuthenticatorFactory authFac = AuthenticatorFactory.getInstance(app);
@@ -30,8 +29,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 		authFac.registerAuthenticator(new UserTokenAuthenticator());
 		authFac.registerAuthenticator(new UserKeyAuthenticator());
          */
+        HttpServletRequest request = (HttpServletRequest) r;
         Authentication auth = null;
         if(authenticationConfiguration.isTrustheader()){
+
             String username = request.getHeader(authenticationConfiguration.getUsernameheader());
             String email = request.getHeader(authenticationConfiguration.getUseremailheader());
             if(username !=null && email !=null){

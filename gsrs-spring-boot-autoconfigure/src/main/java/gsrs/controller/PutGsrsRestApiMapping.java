@@ -20,9 +20,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@RequestMapping(
-        method = {RequestMethod.PUT}
-)
+@RequestMapping
 @GsrsRestApiRequestMapping
 public @interface PutGsrsRestApiMapping {
     /**
@@ -80,5 +78,8 @@ public @interface PutGsrsRestApiMapping {
      */
     @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String[] produces() default {};
+
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
+    RequestMethod[] method() default {RequestMethod.PUT};
 
 }

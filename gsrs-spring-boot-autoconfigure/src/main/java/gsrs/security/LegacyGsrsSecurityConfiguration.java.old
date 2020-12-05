@@ -3,20 +3,25 @@ package gsrs.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.header.HeaderWriterFilter;
 
 @Configuration
 @EnableWebSecurity(debug = true)
 @EnableGlobalMethodSecurity(
         securedEnabled = true,
         prePostEnabled = true,
-        jsr250Enabled = true
+        jsr250Enabled = true,
+        proxyTargetClass = true,
+        order=0
 )
+@Order(1)
 public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
@@ -33,12 +38,13 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 //                .and()
 //                .formLogin()
         http
-//                .authorizeRequests()
+//        .authorizeRequests().anyRequest().authenticated()
 //                .and()
 //                .antMatchers("/api/**")
 //                .permitAll()
 //                .and()
-                .addFilterBefore(legacyAuthenticationFilter, BasicAuthenticationFilter.class)
+//                .antMatcher(
+                .addFilterAfter(legacyAuthenticationFilter, HeaderWriterFilter.class)
 
         ;
 
@@ -46,6 +52,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.eraseCredentials(false);
         auth.authenticationProvider(legacyGsrsAuthenticationProvider);
     }
 }

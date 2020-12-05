@@ -7,6 +7,7 @@ import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-@Component
+//@Component
 public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
@@ -69,9 +70,12 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                 String rawPassword = (String) auth.getCredentials();
                 if(up.acceptPassword(rawPassword)){
                     //valid password!
+
                     return new UsernamePasswordAuthenticationToken(auth.getUsername(), up.getEncodePassword(),
                             up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
 
+                }else{
+                    throw new BadCredentialsException("invalid credentials for username" + auth.getUsername());
                 }
 
             }

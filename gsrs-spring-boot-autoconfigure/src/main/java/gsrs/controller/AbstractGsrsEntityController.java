@@ -2,7 +2,6 @@ package gsrs.controller;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.security.*;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
 import ix.core.util.EntityUtils;
@@ -95,8 +94,8 @@ public abstract class AbstractGsrsEntityController<T, I> {
 //            });
 //        }
 //    }
-    @PostGsrsRestApiMapping
-    @hasDataEntryRole
+    @PostGsrsRestApiMapping("create")
+
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson, @RequestParam Map<String, String> queryParameters) throws IOException {
         AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
 
@@ -150,8 +149,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return resp;
 
     }
-    @PutGsrsRestApiMapping
-    @hasUpdateRole
+    @PutGsrsRestApiMapping("")
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
        AbstractGsrsEntityService.UpdateResult<T> result = entityService.updateEntity(updatedEntityJson);
@@ -204,7 +202,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
                 String.valueOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)),
                 String.valueOf(request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)));
     }
-    @hasDataEntryRole
+
     @GetGsrsRestApiMapping("/@count")
     public long getCount(){
         return entityService.count();
@@ -258,7 +256,6 @@ public abstract class AbstractGsrsEntityController<T, I> {
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-    @hasUpdateRole
     @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
         Optional<I> idOptional = entityService.getEntityIdOnlyBySomeIdentifier(id);
