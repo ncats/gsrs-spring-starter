@@ -15,6 +15,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Configuration for GSRS controllers mostly used right now
@@ -53,31 +54,46 @@ public class GsrsControllerConfiguration {
         String value =request.getParameter(errorCodeParameter);
         return overrideErrorCodeIfNeeded(defaultStatus, Collections.singletonMap(errorCodeParameter, value));
     }
-    private int overrideErrorCodeIfNeeded(int defaultStatus, Map<String, String> queryParameters){
-        //GSRS-1598 force not found error to sometimes be a 500 instead of 404
-        //if requests tells us
-        try {
-            String specifiedResponse = queryParameters.get(errorCodeParameter);
-            if(specifiedResponse !=null){
-                int askedForStatus = Integer.parseInt(specifiedResponse);
-                //status must be a 4xx or 5xx so people can't make it 200
-                if(isValidErrorCode(askedForStatus)){
-                    return askedForStatus;
+    private int overrideErrorCodeIfNeededServlet(int defaultStatus, Map<String, String[]> queryParameters){
+        return overrideErrorCodeIfNeeded(defaultStatus, k-> {
+            String[] value = queryParameters.get(k);
+            if(value ==null || value.length ==0){
+                return null;
+            }
+            return value[0];
+        });
+    }
+
+    private int overrideErrorCodeIfNeeded(int defaultStatus, Function<String,String> parameterFunction){
+            //GSRS-1598 force not found error to sometimes be a 500 instead of 404
+            //if requests tells us
+            try {
+                String specifiedResponse = parameterFunction.apply(errorCodeParameter);
+                if(specifiedResponse !=null){
+                    int askedForStatus = Integer.parseInt(specifiedResponse);
+                    //status must be a 4xx or 5xx so people can't make it 200
+                    if(isValidErrorCode(askedForStatus)){
+                        return askedForStatus;
+                    }
+                }
+
+            }catch(Exception e){
+                //no request?
+            }
+
+            if(forceErrorCodeValue!=null){
+                int asInt = forceErrorCodeValue.intValue();
+                if(isValidErrorCode(asInt)){
+                    return asInt;
                 }
             }
+            //use default
+            return defaultStatus;
 
-        }catch(Exception e){
-            //no request?
-        }
+    }
 
-        if(forceErrorCodeValue!=null){
-            int asInt = forceErrorCodeValue.intValue();
-            if(isValidErrorCode(asInt)){
-                return asInt;
-            }
-        }
-        //use default
-        return defaultStatus;
+    private int overrideErrorCodeIfNeeded(int defaultStatus, Map<String, String> queryParameters){
+        return overrideErrorCodeIfNeeded(defaultStatus, queryParameters::get);
     }
 
     public ResponseEntity<Object> handleNotFound(Map<String, String> queryParameters){
@@ -126,6 +142,10 @@ public class GsrsControllerConfiguration {
             return origStatus;
         }
         return HttpStatus.valueOf(newCode);
+    }
+
+    public int getStatusFor(int originalStatusCode, Map<String, String[]> parameterMap) {
+        return overrideErrorCodeIfNeededServlet(originalStatusCode, parameterMap);
     }
 
     @Data
