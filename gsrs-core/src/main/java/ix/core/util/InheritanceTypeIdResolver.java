@@ -120,6 +120,7 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
     }
     @Override
     public void init(JavaType javaType) {
+        initIfNeeded();
         baseType = javaType;
 
         Class<?> clazz = baseType.getRawClass();

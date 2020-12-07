@@ -23,6 +23,7 @@ import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -94,9 +95,12 @@ public abstract class AbstractGsrsEntityController<T, I> {
 //            });
 //        }
 //    }
-    @PostGsrsRestApiMapping("create")
+    @PostGsrsRestApiMapping()
 
-    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson, @RequestParam Map<String, String> queryParameters) throws IOException {
+    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws IOException {
+        System.out.println("injected Principal is " + principal);
         AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
 
         if(result.isCreated()){
@@ -150,7 +154,9 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
     }
     @PutGsrsRestApiMapping("")
-    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
+    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
 
        AbstractGsrsEntityService.UpdateResult<T> result = entityService.updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
