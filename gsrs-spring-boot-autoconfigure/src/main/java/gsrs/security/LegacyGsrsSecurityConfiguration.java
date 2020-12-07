@@ -17,8 +17,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 @Configuration
 public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
+//    @Autowired
+//    LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
 
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
@@ -66,10 +66,10 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 //        return manager;
 //
 //    }
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(legacyGsrsAuthenticationProvider);
-    }
+//    @Override
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.authenticationProvider(legacyGsrsAuthenticationProvider);
+//    }
 
 
 

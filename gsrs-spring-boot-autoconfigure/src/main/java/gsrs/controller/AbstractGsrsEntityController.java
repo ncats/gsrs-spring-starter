@@ -4,6 +4,7 @@ package gsrs.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
+import ix.core.models.Role;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
@@ -110,6 +111,10 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return new ResponseEntity<>(result.getValidationResponse(),gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
 
 
+    }
+
+    protected void requireAnyRoles(Principal principal, Role...roles){
+//         principal.
     }
 
     /*private void foo(){
