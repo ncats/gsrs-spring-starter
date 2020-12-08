@@ -22,4 +22,5 @@ public class GsrsAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         response.setStatus(gsrsControllerConfiguration.getStatusFor(HttpServletResponse.SC_UNAUTHORIZED, request.getParameterMap()));
     }
+
 }

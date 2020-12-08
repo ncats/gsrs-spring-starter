@@ -16,7 +16,8 @@ import org.springframework.context.annotation.Import;
 @Import(value = {AutowireHelper.class, GsrsControllerConfiguration.class,
         GsrsApiControllerAdvice.class,
          GsrsFactoryConfiguration.class, ConfigBasedGsrsValidatorFactory.class,
-        JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class})
+        JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class
+        })
 public class GsrsApiAutoConfiguration {
 
 

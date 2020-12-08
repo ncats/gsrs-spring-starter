@@ -48,7 +48,7 @@ public interface GsrsEntityService<T, I> {
      * Remove the given entity from the repository.
      * @param id the id of the entity to delete.
      */
-//    @hasUpdateRole
+    @hasUpdateRole
     void delete(I id);
 
     /**
@@ -66,9 +66,9 @@ public interface GsrsEntityService<T, I> {
      * @see OffsetBasedPageRequest
      */
     Page page(Pageable pageable);
-//    @hasDataEntryRole
+    @hasDataEntryRole
     CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException;
-//    @hasUpdateRole
+    @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
     ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception;

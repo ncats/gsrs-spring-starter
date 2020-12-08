@@ -111,21 +111,26 @@ public class GsrsControllerConfiguration {
 
 
     }
-
-    public ResponseEntity<Object> handleBadRequest(Map<String, String> queryParameters) {
-        int status = overrideErrorCodeIfNeeded(400, queryParameters);
+    public ResponseEntity<Object> handleBadRequest(int defaultStatus, Map<String, String> queryParameters) {
+        int status = overrideErrorCodeIfNeeded(defaultStatus, queryParameters);
         return new ResponseEntity<>( createStatusJson("bad request", status), HttpStatus.valueOf(status));
 
+    }
+    public ResponseEntity<Object> handleBadRequest(Map<String, String> queryParameters) {
+       return handleBadRequest(400, queryParameters);
     }
     public ResponseEntity<Object> handleError(Throwable t, Map<String, String> queryParameters) {
         int status = overrideErrorCodeIfNeeded(500, queryParameters);
         return new ResponseEntity<>( getError(t, status), HttpStatus.valueOf(status));
 
     }
-    public ResponseEntity<Object> handleError(Throwable t, WebRequest request) {
-        int status = overrideErrorCodeIfNeeded(500, request);
+    public ResponseEntity<Object> handleError(int defaultStatus, Throwable t, WebRequest request) {
+        int status = overrideErrorCodeIfNeeded(defaultStatus, request);
         return new ResponseEntity<>( getError(t, status), HttpStatus.valueOf(status));
 
+    }
+    public ResponseEntity<Object> handleError(Throwable t, WebRequest request) {
+      return handleError(500, t, request);
     }
     public HttpStatus getHttpStatusFor(HttpStatus origStatus, Map<String, String> queryParameters) {
         int code = origStatus.value();
@@ -155,7 +160,7 @@ public class GsrsControllerConfiguration {
         private HttpStatus status;
     }
 
-    private static Object getError(Throwable t, int status){
+    public static Object getError(Throwable t, int status){
 
         Map m=new HashMap();
         if(t instanceof InvocationTargetException){
@@ -167,7 +172,7 @@ public class GsrsControllerConfiguration {
         return m;
     }
 
-    private static Object createStatusJson(String message, int status){
+    public static Object createStatusJson(String message, int status){
         Map m=new HashMap();
         m.put("message", message);
 
