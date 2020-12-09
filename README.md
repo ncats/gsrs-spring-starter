@@ -449,7 +449,72 @@ The EntityScan and EnableJpaRepositories need to list all the base packages to s
  
  Please also add your own packages to those lists.
  
+ ## Security
+ GSRS uses Spring Secuity for authentication and authorization.
  
+ 
+ ### Authorization
+ GSRS has built in User Roles for Authorization.
+* Query,
+* DataEntry,
+* SuperDataEntry,
+* Updater,
+* SuperUpdate,
+* Approver,
+* Admin
+ 
+ Certain API routes are only allowed to be executed by users who have specific roles.
+ For example, in order to update a GSRS Entity, you need to have the `Updater` Role.
+ 
+  The GSRS Starter has helper annotations to make this more clear
+ 
+ * `@hasAdminRole`
+ * `@hasApproverRole`
+ * `@hasDataEntryRole`
+ * `@hasSuperDataEntryRole`
+ * `@hasSuperUpdaterRole`
+ * `@hasUpdateRole`
+ 
+ You can also use the standard Spring `@PreAuthorize()`/ `@PostAuthorize()` annotations with these roles as well.
+ 
+ It doesn't matter what Authentication mechanism you use as long as your users have these defined Roles.
+ 
+ ### Authentication
+  
+ 
+ #### Legacy Authentication
+  The GSRS Starter supports the legacy GSRS 2 authentication mechanisms such as the GSRS User Profile table and 
+  checking specific headers in REST Requests for authentication information.  To Turn this on,
+  use `@EnableLegacyGsrsAuthentication`.
+
+These are the legacy config options that can be set
+```
+# SSO HTTP proxy authentication settings
+ix.authentication.trustheader=true
+ix.authentication.usernameheader="OAM_REMOTE_USER"
+ix.authentication.useremailheader="AUTHENTICATION_HEADER_NAME_EMAIL"
+
+# set this "false" to only allow authenticated users to see the application
+ix.authentication.allownonauthenticated=true
+
+# set this "true" to allow any user that authenticates to be registered
+# as a user automatically
+ix.authentication.autoregister=true
+
+#Set this to "true" to allow autoregistered users to be active as well
+ix.authentication.autoregisteractive=true
+
+```
+##### TrustHeader
+This option assumes that the GSRS system is sitting behind a Single Sign On (SSO) System that performs authentication
+and will write specific headers to each request as it passes through the SSO gateway.
+ 
+
+#### Username and Password in Header
+this should only be used in https situations. Legacy GSRS lets you include the GSRS credentials to be put in HTTP headers
+as `auth-username` and `auth-password` headers.
+
+
  ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
    
