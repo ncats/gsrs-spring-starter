@@ -22,9 +22,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@RequestMapping(
-        method = {RequestMethod.GET}
-)
+@RequestMapping
 @GsrsRestApiRequestMapping
 public @interface GetGsrsRestApiMapping {
     /**
@@ -85,5 +83,8 @@ public @interface GetGsrsRestApiMapping {
      */
     @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String[] produces() default {};
+
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
+    RequestMethod[] method() default {RequestMethod.GET};
 
 }

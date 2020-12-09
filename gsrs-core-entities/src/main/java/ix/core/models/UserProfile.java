@@ -142,6 +142,9 @@ public class UserProfile extends IxModel{
 		this.hashp = Util.encrypt(password, this.salt);
 	}
 
+	public String getEncodePassword(){
+		return salt.length()+"$"+salt+hashp;
+	}
 
 
 	public static UserProfile GUEST() {

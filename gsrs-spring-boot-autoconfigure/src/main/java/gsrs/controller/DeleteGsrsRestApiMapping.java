@@ -20,9 +20,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@RequestMapping(
-        method = {RequestMethod.DELETE}
-)
+@RequestMapping
 @GsrsRestApiRequestMapping
 public @interface DeleteGsrsRestApiMapping {
     /**
@@ -81,5 +79,8 @@ public @interface DeleteGsrsRestApiMapping {
      */
     @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String[] produces() default {};
+
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
+    RequestMethod[] method() default {RequestMethod.DELETE};
 
 }

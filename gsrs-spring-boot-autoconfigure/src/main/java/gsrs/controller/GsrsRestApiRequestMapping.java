@@ -2,6 +2,7 @@ package gsrs.controller;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -95,5 +96,11 @@ public @interface GsrsRestApiRequestMapping {
      */
     @AliasFor(annotation = RequestMapping.class)
     String[] produces() default {};
+
+    /**
+     * Alias for {@link RequestMapping#produces}.
+     */
+    @AliasFor(annotation = RequestMapping.class)
+    RequestMethod[] method() default {};
 
 }

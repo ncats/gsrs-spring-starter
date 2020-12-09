@@ -4,6 +4,7 @@ package gsrs.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
+import ix.core.models.Role;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
@@ -16,12 +17,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +97,11 @@ public abstract class AbstractGsrsEntityController<T, I> {
 //        }
 //    }
     @PostGsrsRestApiMapping()
-    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson, @RequestParam Map<String, String> queryParameters) throws IOException {
+
+    public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws IOException {
+        System.out.println("injected Principal is " + principal);
         AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
 
         if(result.isCreated()){
@@ -104,6 +111,10 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return new ResponseEntity<>(result.getValidationResponse(),gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
 
 
+    }
+
+    protected void requireAnyRoles(Principal principal, Role...roles){
+//         principal.
     }
 
     /*private void foo(){
@@ -147,8 +158,10 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return resp;
 
     }
-    @PutGsrsRestApiMapping()
-    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
+    @PutGsrsRestApiMapping("")
+    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
 
        AbstractGsrsEntityService.UpdateResult<T> result = entityService.updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
@@ -254,7 +267,6 @@ public abstract class AbstractGsrsEntityController<T, I> {
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-
     @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
         Optional<I> idOptional = entityService.getEntityIdOnlyBySomeIdentifier(id);
