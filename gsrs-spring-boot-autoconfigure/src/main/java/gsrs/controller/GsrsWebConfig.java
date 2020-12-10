@@ -1,12 +1,19 @@
 package gsrs.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.controllers.EntityFactory;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.condition.PatternsRequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -21,6 +28,43 @@ import java.util.*;
  */
 @Configuration
 public class GsrsWebConfig {
+
+    public abstract class ObjectMapperInterceptor implements MethodInterceptor {
+
+        @Override
+        public Object invoke(MethodInvocation invocation) throws Throwable {
+            return ReflectionUtils.invokeMethod(invocation.getMethod(), getObject(), invocation.getArguments());
+        }
+
+        protected abstract ObjectMapper getObject();
+
+    }
+    @Bean
+    public ObjectMapper objectMapper(ObjectMapperResolver objectMapperResolver) {
+        ProxyFactory factory = new ProxyFactory();
+        factory.setTargetClass(ObjectMapper.class);
+        factory.addAdvice(new ObjectMapperInterceptor() {
+
+            @Override
+            protected ObjectMapper getObject() {
+                return objectMapperResolver.getObjectMapper();
+            }
+
+        });
+
+        return (ObjectMapper) factory.getProxy();
+    }
+
+    @Bean
+    public ObjectMapperResolver objectMapperResolver() {
+        return new RequestMatchingEntityMapperResolver();
+    }
+
+
+    /**
+     *
+     * This is the code that creates all the api/v1/* mapping based on the custom GSRSApiController annotations.
+     */
 
     @Bean
     public WebMvcRegistrations webMvcRegistrationsHandlerMapping() {

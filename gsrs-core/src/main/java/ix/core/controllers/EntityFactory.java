@@ -29,6 +29,7 @@ import ix.core.models.BeanViews;
 //import ix.utils.Util;
 //import ix.utils.pojopatch.PojoDiff;
 //import ix.utils.pojopatch.PojoPatch;
+import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -161,13 +162,15 @@ public class EntityFactory {
 
     @Slf4j
     static public class EntityMapper extends ObjectMapper {
-        /**
-		 * Default value
-		 */
-		private static final long serialVersionUID = 1L;
+        private boolean keyOnly=false;
 
-		public static EntityMapper FULL_ENTITY_MAPPER(){
-        	return new EntityMapper(BeanViews.Full.class);
+        /**
+         * Default value
+         */
+        private static final long serialVersionUID = 1L;
+
+        public static EntityMapper FULL_ENTITY_MAPPER(){
+            return new EntityMapper(BeanViews.Full.class);
         }
 
         public static EntityMapper JSON_DIFF_ENTITY_MAPPER(){
@@ -175,19 +178,26 @@ public class EntityFactory {
         }
 
         public static EntityMapper INTERNAL_ENTITY_MAPPER(){
-        	return new EntityMapper(BeanViews.Internal.class);
+            return new EntityMapper(BeanViews.Internal.class);
         }
 
-		public static EntityMapper COMPACT_ENTITY_MAPPER() {
-			return new EntityMapper(BeanViews.Compact.class);
-		}
-		
+        public static EntityMapper COMPACT_ENTITY_MAPPER() {
+            return new EntityMapper(BeanViews.Compact.class);
+        }
+        public static EntityMapper KEY_ENTITY_MAPPER() {
+            return new EntityMapper(BeanViews.Key.class);
+        }
+
         public EntityMapper (Class<?>... views) {
+
             configure (MapperFeature.DEFAULT_VIEW_INCLUSION, true);
             configure (SerializationFeature.WRITE_NULL_MAP_VALUES, false);
             this.setSerializationInclusion(Include.NON_NULL);
             _serializationConfig = getSerializationConfig();
             for (Class<?> v : views) {
+                if(v.equals(BeanViews.Key.class)){
+                    keyOnly=true;
+                }
                 _serializationConfig = _serializationConfig.withView(v);
 
             }
@@ -201,28 +211,28 @@ public class EntityFactory {
 
         void addHandler () {
             addHandler (new DeserializationProblemHandler () {
-                    public boolean handleUnknownProperty
-                        (DeserializationContext ctx, 
+                public boolean handleUnknownProperty
+                        (DeserializationContext ctx,
                          JsonParser parser,
-                         JsonDeserializer deser, 
-                         Object bean, 
+                         JsonDeserializer deser,
+                         Object bean,
                          String property) {
-                        return _handleUnknownProperty
+                    return _handleUnknownProperty
                             (ctx, parser, deser, bean, property);
-                    }
-                });
+                }
+            });
         }
-        
+
         public EntityMapper () {
             addHandler ();
         }
 
         public boolean _handleUnknownProperty
-            (DeserializationContext ctx, JsonParser parser,
-             JsonDeserializer deser, Object bean, String property) {
+                (DeserializationContext ctx, JsonParser parser,
+                 JsonDeserializer deser, Object bean, String property) {
             try {
                 /*
-                Logger.warn("Unknown property \""
+            	Logger.warn("Unknown property \""
                             +property+"\" (token="
                             +parser.getCurrentToken()
                             +") while parsing "
@@ -233,7 +243,7 @@ public class EntityFactory {
             catch (IOException ex) {
                 ex.printStackTrace();
                 log.error
-                    ("Unable to handle unknown property!", ex);
+                        ("Unable to handle unknown property!", ex);
                 return false;
             }
             return true;
@@ -242,15 +252,29 @@ public class EntityFactory {
         public String toJson (Object obj) {
             return toJson (obj, false);
         }
-        
+
         public String toJson (Object obj, boolean pretty) {
+            if(this.keyOnly){
+                EntityUtils.Key k= EntityUtils.EntityWrapper.of(obj).getKey();
+                try {
+                    return pretty
+                            ? writerWithDefaultPrettyPrinter().writeValueAsString(k)
+                            : writeValueAsString (k);
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                    log.trace("Can't write Json", ex);
+                }
+            }
+
+
             try {
                 return pretty
-                    ? writerWithDefaultPrettyPrinter().writeValueAsString(obj)
-                    : writeValueAsString (obj);
+                        ? writerWithDefaultPrettyPrinter().writeValueAsString(obj)
+                        : writeValueAsString (obj);
             }
             catch (Exception ex) {
-            	ex.printStackTrace();
+                ex.printStackTrace();
                 log.trace("Can't write Json", ex);
             }
             return null;
