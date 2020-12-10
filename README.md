@@ -514,6 +514,36 @@ and will write specific headers to each request as it passes through the SSO gat
 this should only be used in https situations. Legacy GSRS lets you include the GSRS credentials to be put in HTTP headers
 as `auth-username` and `auth-password` headers.
 
+## GSRS Common REST API Patterns
+### Paged Requests
+
+### Fetching By ID
+
+### Flexible Fetching
+
+### Fetching Partial Records by Field
+
+### JSON Views
+Adding a URL parameter `view` with one of the values below will change the returned JSON response to limit what parts 
+of the entities are returned.
+
+* full - return everything this might cause performance bottlenecks fetching all the data.
+
+* compact - any fields that are collections will only return with a URL for how to fetch those records
+
+* key - return only the Entity id and class.  This is mostly used internally for fast fetching to be refecthed from a datastore later.
+
+### Change Response Code
+Sometimes, consumers of the GSRS API are not able to handle standard REST status codes.  For example, a bad request
+will usually return some kind of 400 level status code.  Some GSRS consumers can't handle such status codes and require
+the API only return specfic status codes such as 500 for any error. If your consumer is like that you can add
+the additional URL parameter `error_response` to set the status code to a particlar int value if there is a problem.
+Only valid error codes such as something in the 400s or 500s are allowed; any value outside that range will be ignored.
+
+For example, if you try to record by making a POST or PUT and your credentials have an insufficient Role
+so that you are unauthorized to make that update, the API will normally return a status code of 401 unauthorized.
+However if you made the same request with the same insufficient credentials but this time added the url parameter `error_response=500`
+the API will return a status code of 500 instead.
 
  ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
