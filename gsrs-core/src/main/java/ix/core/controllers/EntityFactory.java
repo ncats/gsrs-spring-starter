@@ -2,9 +2,13 @@ package ix.core.controllers;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.io.CharacterEscapes;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.ContextAttributes;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
+import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonFormatVisitorWrapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 //import com.fasterxml.jackson.databind.node.ObjectNode;
 //import com.flipkart.zjsonpatch.JsonPatch;
@@ -13,6 +17,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 //import ix.core.adapters.InxightTransaction;
 //import ix.core.controllers.v1.GsrsApiUtil;
 //import ix.core.controllers.v1.RouteFactory;
+import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import gov.nih.ncats.common.functions.ThrowableConsumer;
+import gov.nih.ncats.common.functions.ThrowableFunction;
 import ix.core.models.BeanViews;
 //import ix.core.plugins.IxCache;
 //import ix.core.plugins.TextIndexerPlugin;
@@ -33,10 +42,13 @@ import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
+import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -249,6 +261,14 @@ public class EntityFactory {
             return true;
         }
 
+        protected ObjectWriter _newWriter(SerializationConfig config) {
+            if(this.keyOnly){
+                return new KeyOnlyObjectWriter(this, config);
+            }
+            return super._newWriter(config);
+        }
+
+
         public String toJson (Object obj) {
             return toJson (obj, false);
         }
@@ -278,6 +298,112 @@ public class EntityFactory {
                 log.trace("Can't write Json", ex);
             }
             return null;
+        }
+
+        private class KeyOnlyObjectWriter extends ObjectWriter {
+
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
+                super(mapper, config, rootType, pp);
+            }
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config) {
+                super(mapper, config);
+            }
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
+                super(mapper, config, s);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config, GeneratorSettings genSettings, Prefetch prefetch) {
+                super(base, config, genSettings, prefetch);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config) {
+                super(base, config);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, JsonFactory f) {
+                super(base, f);
+            }
+
+            public KeyOnlyObjectWriter() {
+                super(EntityMapper.this, EntityMapper.this._serializationConfig);
+
+            }
+
+            @Override
+            protected ObjectWriter _new(ObjectWriter base, JsonFactory f) {
+                return new KeyOnlyObjectWriter(base, f);
+            }
+
+            @Override
+            protected ObjectWriter _new(ObjectWriter base, SerializationConfig config) {
+                return new KeyOnlyObjectWriter(base, config);
+            }
+
+            @Override
+            protected ObjectWriter _new(GeneratorSettings genSettings, Prefetch prefetch) {
+
+                return new KeyOnlyObjectWriter(this, this._config, genSettings, prefetch);
+            }
+
+            @Override
+            protected SequenceWriter _newSequenceWriter(boolean wrapInArray, JsonGenerator gen, boolean managedInput) throws IOException {
+                return super._newSequenceWriter(wrapInArray, gen, managedInput);
+            }
+
+            @Override
+            public SequenceWriter writeValuesAsArray(JsonGenerator gen) throws IOException {
+                return super.writeValuesAsArray(gen);
+            }
+
+            public void writeValue(File resultFile, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(resultFile, v), value);
+            }
+
+            private <E extends Throwable> void writeValueConsumer(ThrowableConsumer<Object, E> consumer, Object value) throws E{
+                if(EntityMapper.this.keyOnly){
+                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
+                    if(ew.hasIdField()) {
+                       consumer.accept(ew.getKey());
+                        return;
+                    }
+                }
+               consumer.accept(value);
+            }
+            private <T, E extends Throwable> T writeValueFunction(ThrowableFunction<Object, T, E> consumer, Object value) throws E{
+                if(EntityMapper.this.keyOnly){
+                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
+                    if(ew.hasIdField()) {
+                        return consumer.apply(ew.getKey());
+
+                    }
+                }
+                return consumer.apply(value);
+            }
+            @Override
+            public void writeValue(JsonGenerator g, Object value) throws IOException {
+                writeValueConsumer( v->super.writeValue(g, v), value);
+
+            }
+
+            public void writeValue(OutputStream out, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(out, v), value);
+            }
+
+            public void writeValue(Writer w, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(w, v), value);
+            }
+
+            public void writeValue(DataOutput out, Object value) throws IOException {
+                writeValueConsumer( v->super.writeValue(out, v), value);
+            }
+
+            public String writeValueAsString(Object value) throws JsonProcessingException {
+                return writeValueFunction( v-> super.writeValueAsString(v), value);
+
+            }
         }
     }
 

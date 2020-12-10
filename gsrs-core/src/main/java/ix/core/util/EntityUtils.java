@@ -2629,7 +2629,7 @@ public class EntityUtils {
 		public String getKind() {
 			return this.kind.getName();
 		}
-
+		@JsonIgnore
 		public Object getIdNative() {
 			return this._id;
 		}
@@ -2637,7 +2637,7 @@ public class EntityUtils {
 		public String getIdString() {
 			return this._id.toString();
 		}
-
+		@JsonIgnore
 		public EntityInfo<?> getEntityInfo() {
 			return kind;
 		}

@@ -1,6 +1,7 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.BeanViews;
 import lombok.extern.slf4j.Slf4j;
@@ -9,25 +10,36 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 @Slf4j
 public class RequestMatchingEntityMapperResolver implements ObjectMapperResolver {
 
 
 
 
+    private final CachedSupplier<ObjectMapper> defaultMapper;
+
+    public RequestMatchingEntityMapperResolver(){
+        this.defaultMapper = CachedSupplier.runOnce(()-> EntityFactory.EntityMapper.COMPACT_ENTITY_MAPPER());
+    }
+    public RequestMatchingEntityMapperResolver(ObjectMapper defaultMapper) {
+        Objects.requireNonNull(defaultMapper);
+        this.defaultMapper = CachedSupplier.ofConstant(defaultMapper);
+    }
+
     @Override
     public ObjectMapper getObjectMapper() {
         ServletRequestAttributes sra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(sra ==null){
+            return defaultMapper.get();
+        }
         HttpServletRequest request = sra.getRequest();
         return getMapperForView(request.getParameterValues("view"));
 
     }
 
-    private EntityFactory.EntityMapper getMapperForView(String... view){
+    private ObjectMapper getMapperForView(String... view){
         List<Class> views= new ArrayList<>();
         if (view != null) {
 
@@ -44,11 +56,12 @@ public class RequestMatchingEntityMapperResolver implements ObjectMapperResolver
                 if (matches == 0)
                     log.warn("Unsupported view: "+a);
             }
-        }else {
-            views.add(BeanViews.Compact.class);
+        }
+        if(views.isEmpty()){
+            return defaultMapper.get();
         }
 
-        return new EntityFactory.EntityMapper(views.toArray(new Class[0]));
+        return new EntityFactory.EntityMapper(views.toArray(new Class[views.size()]));
     }
 
 }
