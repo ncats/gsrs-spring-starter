@@ -3,9 +3,12 @@ package gsrs.controller;
 
 import ix.core.models.ETag;
 import ix.core.search.SearchResult;
+import ix.core.util.EntityUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLegacyTextSearchGsrsEntityController<T,I> {
 
@@ -33,7 +36,20 @@ public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLega
 //        if(request().queryString().get("export") ==null) {
 //            etag.save();
 //        }
-        etag.setContent(results);
+        //content is transient so don't need to worry about transforming results
+        String view = request.getParameter("view");
+        if("key".equals(view)){
+            etag.setContent(results.stream().map(e->  {
+                Optional<EntityUtils.Key> opt = EntityUtils.EntityWrapper.of(e).getOptionalKey();
+                if(opt.isPresent()){
+                    return opt.get();
+                }
+                return e;
+            }
+            ).collect(Collectors.toList()));
+        }else {
+            etag.setContent(results);
+        }
         etag.setSponosredResults(result.getSponsoredMatches());
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());

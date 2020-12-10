@@ -275,15 +275,17 @@ public class EntityFactory {
 
         public String toJson (Object obj, boolean pretty) {
             if(this.keyOnly){
-                EntityUtils.Key k= EntityUtils.EntityWrapper.of(obj).getKey();
-                try {
-                    return pretty
-                            ? writerWithDefaultPrettyPrinter().writeValueAsString(k)
-                            : writeValueAsString (k);
-                }
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                    log.trace("Can't write Json", ex);
+                Optional<EntityUtils.Key> optKey= EntityUtils.EntityWrapper.of(obj).getOptionalKey();
+                if(optKey.isPresent()) {
+                    EntityUtils.Key k = optKey.get();
+                    try {
+                        return pretty
+                                ? writerWithDefaultPrettyPrinter().writeValueAsString(k)
+                                : writeValueAsString(k);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        log.trace("Can't write Json", ex);
+                    }
                 }
             }
 
@@ -353,10 +355,7 @@ public class EntityFactory {
                 return super._newSequenceWriter(wrapInArray, gen, managedInput);
             }
 
-            @Override
-            public SequenceWriter writeValuesAsArray(JsonGenerator gen) throws IOException {
-                return super.writeValuesAsArray(gen);
-            }
+
 
             public void writeValue(File resultFile, Object value) throws IOException, JsonGenerationException, JsonMappingException {
                 writeValueConsumer( v->super.writeValue(resultFile, v), value);
@@ -366,8 +365,13 @@ public class EntityFactory {
                 if(EntityMapper.this.keyOnly){
                     EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
                     if(ew.hasIdField()) {
-                       consumer.accept(ew.getKey());
-                        return;
+                        Optional<EntityUtils.Key> opt = ew.getOptionalKey();
+                        //we could be serializing an entity without an id set because it wasn't saved
+                        //so this checks for that if there isn't a key it will fallback to serializing whole thing
+                        if(opt.isPresent()) {
+                            consumer.accept(opt.get());
+                            return;
+                        }
                     }
                 }
                consumer.accept(value);
