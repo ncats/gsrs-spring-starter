@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import gsrs.springUtils.GsrsSpringUtils;
+import ix.core.EntityMapperOptions;
 import ix.core.controllers.RequestOptions;
 import ix.core.search.FieldedQueryFacet;
 import ix.core.search.text.TextIndexer.Facet;
@@ -41,6 +42,8 @@ import java.util.*;
   "exactMatches",
   "narrowSearchSuggestions",
   "content"})
+//we don't want to collapse ETags when using key view (although the content may be still be collapsed)
+@EntityMapperOptions(collapsibleInKeyView = false)
 public class ETag extends IxModel {
 
 	@Column(length = 16, unique = true)

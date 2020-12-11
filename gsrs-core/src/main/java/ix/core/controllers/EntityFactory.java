@@ -2,9 +2,13 @@ package ix.core.controllers;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.io.CharacterEscapes;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.ContextAttributes;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
+import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonFormatVisitorWrapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 //import com.fasterxml.jackson.databind.node.ObjectNode;
 //import com.flipkart.zjsonpatch.JsonPatch;
@@ -13,6 +17,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 //import ix.core.adapters.InxightTransaction;
 //import ix.core.controllers.v1.GsrsApiUtil;
 //import ix.core.controllers.v1.RouteFactory;
+import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import gov.nih.ncats.common.functions.ThrowableConsumer;
+import gov.nih.ncats.common.functions.ThrowableFunction;
 import ix.core.models.BeanViews;
 //import ix.core.plugins.IxCache;
 //import ix.core.plugins.TextIndexerPlugin;
@@ -29,13 +38,17 @@ import ix.core.models.BeanViews;
 //import ix.utils.Util;
 //import ix.utils.pojopatch.PojoDiff;
 //import ix.utils.pojopatch.PojoPatch;
+import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
+import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -161,13 +174,15 @@ public class EntityFactory {
 
     @Slf4j
     static public class EntityMapper extends ObjectMapper {
-        /**
-		 * Default value
-		 */
-		private static final long serialVersionUID = 1L;
+        private boolean keyOnly=false;
 
-		public static EntityMapper FULL_ENTITY_MAPPER(){
-        	return new EntityMapper(BeanViews.Full.class);
+        /**
+         * Default value
+         */
+        private static final long serialVersionUID = 1L;
+
+        public static EntityMapper FULL_ENTITY_MAPPER(){
+            return new EntityMapper(BeanViews.Full.class);
         }
 
         public static EntityMapper JSON_DIFF_ENTITY_MAPPER(){
@@ -175,19 +190,26 @@ public class EntityFactory {
         }
 
         public static EntityMapper INTERNAL_ENTITY_MAPPER(){
-        	return new EntityMapper(BeanViews.Internal.class);
+            return new EntityMapper(BeanViews.Internal.class);
         }
 
-		public static EntityMapper COMPACT_ENTITY_MAPPER() {
-			return new EntityMapper(BeanViews.Compact.class);
-		}
-		
+        public static EntityMapper COMPACT_ENTITY_MAPPER() {
+            return new EntityMapper(BeanViews.Compact.class);
+        }
+        public static EntityMapper KEY_ENTITY_MAPPER() {
+            return new EntityMapper(BeanViews.Key.class);
+        }
+
         public EntityMapper (Class<?>... views) {
+
             configure (MapperFeature.DEFAULT_VIEW_INCLUSION, true);
             configure (SerializationFeature.WRITE_NULL_MAP_VALUES, false);
             this.setSerializationInclusion(Include.NON_NULL);
             _serializationConfig = getSerializationConfig();
             for (Class<?> v : views) {
+                if(v.equals(BeanViews.Key.class)){
+                    keyOnly=true;
+                }
                 _serializationConfig = _serializationConfig.withView(v);
 
             }
@@ -201,28 +223,28 @@ public class EntityFactory {
 
         void addHandler () {
             addHandler (new DeserializationProblemHandler () {
-                    public boolean handleUnknownProperty
-                        (DeserializationContext ctx, 
+                public boolean handleUnknownProperty
+                        (DeserializationContext ctx,
                          JsonParser parser,
-                         JsonDeserializer deser, 
-                         Object bean, 
+                         JsonDeserializer deser,
+                         Object bean,
                          String property) {
-                        return _handleUnknownProperty
+                    return _handleUnknownProperty
                             (ctx, parser, deser, bean, property);
-                    }
-                });
+                }
+            });
         }
-        
+
         public EntityMapper () {
             addHandler ();
         }
 
         public boolean _handleUnknownProperty
-            (DeserializationContext ctx, JsonParser parser,
-             JsonDeserializer deser, Object bean, String property) {
+                (DeserializationContext ctx, JsonParser parser,
+                 JsonDeserializer deser, Object bean, String property) {
             try {
                 /*
-                Logger.warn("Unknown property \""
+            	Logger.warn("Unknown property \""
                             +property+"\" (token="
                             +parser.getCurrentToken()
                             +") while parsing "
@@ -233,27 +255,159 @@ public class EntityFactory {
             catch (IOException ex) {
                 ex.printStackTrace();
                 log.error
-                    ("Unable to handle unknown property!", ex);
+                        ("Unable to handle unknown property!", ex);
                 return false;
             }
             return true;
         }
 
+        protected ObjectWriter _newWriter(SerializationConfig config) {
+            if(this.keyOnly){
+                return new KeyOnlyObjectWriter(this, config);
+            }
+            return super._newWriter(config);
+        }
+
+
         public String toJson (Object obj) {
             return toJson (obj, false);
         }
-        
+
         public String toJson (Object obj, boolean pretty) {
+            if(this.keyOnly){
+                Optional<EntityUtils.Key> optKey= EntityUtils.EntityWrapper.of(obj).getOptionalKey();
+                if(optKey.isPresent()) {
+                    EntityUtils.Key k = optKey.get();
+                    try {
+                        return pretty
+                                ? writerWithDefaultPrettyPrinter().writeValueAsString(k)
+                                : writeValueAsString(k);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        log.trace("Can't write Json", ex);
+                    }
+                }
+            }
+
+
             try {
                 return pretty
-                    ? writerWithDefaultPrettyPrinter().writeValueAsString(obj)
-                    : writeValueAsString (obj);
+                        ? writerWithDefaultPrettyPrinter().writeValueAsString(obj)
+                        : writeValueAsString (obj);
             }
             catch (Exception ex) {
-            	ex.printStackTrace();
+                ex.printStackTrace();
                 log.trace("Can't write Json", ex);
             }
             return null;
+        }
+
+        private class KeyOnlyObjectWriter extends ObjectWriter {
+
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
+                super(mapper, config, rootType, pp);
+            }
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config) {
+                super(mapper, config);
+            }
+
+            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
+                super(mapper, config, s);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config, GeneratorSettings genSettings, Prefetch prefetch) {
+                super(base, config, genSettings, prefetch);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config) {
+                super(base, config);
+            }
+
+            public KeyOnlyObjectWriter(ObjectWriter base, JsonFactory f) {
+                super(base, f);
+            }
+
+            public KeyOnlyObjectWriter() {
+                super(EntityMapper.this, EntityMapper.this._serializationConfig);
+
+            }
+
+            @Override
+            protected ObjectWriter _new(ObjectWriter base, JsonFactory f) {
+                return new KeyOnlyObjectWriter(base, f);
+            }
+
+            @Override
+            protected ObjectWriter _new(ObjectWriter base, SerializationConfig config) {
+                return new KeyOnlyObjectWriter(base, config);
+            }
+
+            @Override
+            protected ObjectWriter _new(GeneratorSettings genSettings, Prefetch prefetch) {
+
+                return new KeyOnlyObjectWriter(this, this._config, genSettings, prefetch);
+            }
+
+            @Override
+            protected SequenceWriter _newSequenceWriter(boolean wrapInArray, JsonGenerator gen, boolean managedInput) throws IOException {
+                return super._newSequenceWriter(wrapInArray, gen, managedInput);
+            }
+
+
+
+            public void writeValue(File resultFile, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(resultFile, v), value);
+            }
+
+            private <E extends Throwable> void writeValueConsumer(ThrowableConsumer<Object, E> consumer, Object value) throws E{
+                if(EntityMapper.this.keyOnly){
+                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
+                    if(ew.hasIdField() && ew.getEntityInfo().isCollapsibleInKeyView()) {
+                        Optional<EntityUtils.Key> opt = ew.getOptionalKey();
+                        //we could be serializing an entity without an id set because it wasn't saved
+                        //so this checks for that if there isn't a key it will fallback to serializing whole thing
+                        if(opt.isPresent()) {
+                            consumer.accept(opt.get());
+                            return;
+                        }
+                    }
+                }
+               consumer.accept(value);
+            }
+            private <T, E extends Throwable> T writeValueFunction(ThrowableFunction<Object, T, E> consumer, Object value) throws E{
+                if(EntityMapper.this.keyOnly){
+                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
+                    if(ew.hasIdField()) {
+                        return consumer.apply(ew.getKey());
+
+                    }
+                }
+                return consumer.apply(value);
+            }
+            @Override
+            public void writeValue(JsonGenerator g, Object value) throws IOException {
+                writeValueConsumer( v->super.writeValue(g, v), value);
+
+            }
+
+            public void writeValue(OutputStream out, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(out, v), value);
+            }
+
+            public void writeValue(Writer w, Object value) throws IOException, JsonGenerationException, JsonMappingException {
+                writeValueConsumer( v->super.writeValue(w, v), value);
+            }
+
+            public void writeValue(DataOutput out, Object value) throws IOException {
+                writeValueConsumer( v->super.writeValue(out, v), value);
+            }
+
+            public String writeValueAsString(Object value) throws JsonProcessingException {
+                return writeValueFunction( v-> super.writeValueAsString(v), value);
+
+            }
         }
     }
 

@@ -8,10 +8,13 @@ import ix.core.models.Role;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 //import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
 //import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
 //import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -228,6 +232,11 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
         Page<T> page = entityService.page(new OffsetBasedPageRequest(skip, top,parseSortFromOrderParam(order)));
 
+        String view=queryParameters.get("view");
+        if("key".equals(view)){
+            return new ResponseEntity<>( PagedResult.ofKeys(page), HttpStatus.OK);
+
+        }
         return new ResponseEntity<>(new PagedResult(page), HttpStatus.OK);
     }
 
@@ -246,10 +255,23 @@ public abstract class AbstractGsrsEntityController<T, I> {
         return Sort.by(Sort.Direction.ASC, order);
     }
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PagedResult<T>{
         private long total, count,skip, top;
         private List<T> content;
 
+        public static PagedResult<EntityUtils.Key> ofKeys(Page<?> page){
+            return PagedResult.<EntityUtils.Key>builder()
+                   .total( page.getTotalElements())
+                    .count(page.getNumberOfElements())
+                    .skip( page.getSize() * page.getNumber())
+                    .top( page.getSize())
+                    .content( page.toList().stream().map(e->EntityUtils.EntityWrapper.of(e).getKey()).collect(Collectors.toList()))
+                            .build();
+
+        }
         public PagedResult(Page<T> page){
             this.total = page.getTotalElements();
             this.count= page.getNumberOfElements();

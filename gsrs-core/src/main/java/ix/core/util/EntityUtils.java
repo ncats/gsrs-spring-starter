@@ -12,10 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 
-import ix.core.History;
-import ix.core.IgnoredModel;
-import ix.core.ResourceReference;
-import ix.core.SingleParent;
+import ix.core.*;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
 import ix.core.models.*;
@@ -1085,6 +1082,7 @@ public class EntityUtils {
 		private boolean storeHistory = true;
 		private EntityInfo<?> ancestorInherit;
 
+		private boolean collapsibleInKeyView=true;
 		private boolean isExplicitDeletable=false;
 
 		private Supplier<Set<EntityInfo<? extends T>>> forLater;
@@ -1134,6 +1132,9 @@ public class EntityUtils {
 			return this.keywordFacetMethods;
 		}
 
+		public boolean isCollapsibleInKeyView() {
+			return collapsibleInKeyView;
+		}
 
 		public EntityInfo(Class<T> cls) {
 
@@ -1142,7 +1143,10 @@ public class EntityUtils {
 			this.cls = cls;
 
 			this.hasBackup = (cls.getAnnotation(Backup.class) != null);
-
+			EntityMapperOptions entityMapperOptions = cls.getAnnotation(EntityMapperOptions.class);
+			if(cls.getAnnotation(EntityMapperOptions.class) !=null) {
+				this.collapsibleInKeyView = entityMapperOptions.collapsibleInKeyView();
+			}
 			this.isIgnoredModel = (cls.getAnnotation(IgnoredModel.class) != null);
 			this.indexable = (Indexable) cls.getAnnotation(Indexable.class);
 			this.table = (Table) cls.getAnnotation(Table.class);
@@ -2629,7 +2633,7 @@ public class EntityUtils {
 		public String getKind() {
 			return this.kind.getName();
 		}
-
+		@JsonIgnore
 		public Object getIdNative() {
 			return this._id;
 		}
@@ -2637,7 +2641,7 @@ public class EntityUtils {
 		public String getIdString() {
 			return this._id.toString();
 		}
-
+		@JsonIgnore
 		public EntityInfo<?> getEntityInfo() {
 			return kind;
 		}
