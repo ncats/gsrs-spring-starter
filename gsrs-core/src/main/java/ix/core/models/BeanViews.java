@@ -1,16 +1,24 @@
 package ix.core.models;
 
+import ix.core.EntityMapperOptions;
+
 public class BeanViews {
     public static class Compact {}
     public static class Full{}
     public static class Public {}
 
+    /**
+     * Special View only for {@link ix.core.controllers.EntityFactory.EntityMapper}
+     * that only serializes the id and kind (class) fields.
+     *
+     * @see EntityMapperOptions#collapsibleInKeyView()
+     */
     public static class Key {}
     /**
      * View of the Json that considers more fields
      * than public but less than {@link Internal}
      * and is used when finding differences between
-     * different versons of an entity.
+     * different versions of an entity.
      */
     public static class JsonDiff extends Full {}
 

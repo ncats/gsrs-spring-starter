@@ -364,7 +364,7 @@ public class EntityFactory {
             private <E extends Throwable> void writeValueConsumer(ThrowableConsumer<Object, E> consumer, Object value) throws E{
                 if(EntityMapper.this.keyOnly){
                     EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
-                    if(ew.hasIdField()) {
+                    if(ew.hasIdField() && ew.getEntityInfo().isCollapsibleInKeyView()) {
                         Optional<EntityUtils.Key> opt = ew.getOptionalKey();
                         //we could be serializing an entity without an id set because it wasn't saved
                         //so this checks for that if there isn't a key it will fallback to serializing whole thing
