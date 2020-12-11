@@ -545,6 +545,9 @@ so that you are unauthorized to make that update, the API will normally return a
 However if you made the same request with the same insufficient credentials but this time added the url parameter `error_response=500`
 the API will return a status code of 500 instead.
 
+The parameter name is configurable if you change the value of `gsrs.api.errorCodeParameter` in your property file (or conf file).
+By default, it is set as `gsrs.api.errorCodeParameter=error_response`
+
  ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
    
