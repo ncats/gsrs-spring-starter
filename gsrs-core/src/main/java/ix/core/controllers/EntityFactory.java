@@ -200,6 +200,15 @@ public class EntityFactory {
             return new EntityMapper(BeanViews.Key.class);
         }
 
+        @Override
+        public EntityMapper copy() {
+            Class<?> view = _serializationConfig.getActiveView();
+            if(view ==null){
+                return new EntityMapper();
+            }
+            return new EntityMapper(view);
+        }
+
         public EntityMapper (Class<?>... views) {
 
             configure (MapperFeature.DEFAULT_VIEW_INCLUSION, true);
@@ -300,6 +309,32 @@ public class EntityFactory {
                 log.trace("Can't write Json", ex);
             }
             return null;
+        }
+
+        public JsonNode toJsonNode(Object obj) {
+            if(this.keyOnly){
+                Optional<EntityUtils.Key> optKey= EntityUtils.EntityWrapper.of(obj).getOptionalKey();
+                if(optKey.isPresent()) {
+                    EntityUtils.Key k = optKey.get();
+                    try {
+                        return valueToTree(k);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        log.trace("Can't write Json", ex);
+                    }
+                }
+            }
+
+
+            try {
+                return valueToTree(obj);
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                log.trace("Can't write Json", ex);
+            }
+            return null;
+
         }
 
         private class KeyOnlyObjectWriter extends ObjectWriter {

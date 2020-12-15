@@ -1,26 +1,26 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ix.core.controllers.EntityFactory;
+import org.springframework.http.HttpOutputMessage;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
-public abstract class DynamicMappingJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
+import java.io.IOException;
+import java.lang.reflect.Type;
 
-    // Spring will override this method with one that provides request scoped bean
+public class DynamicMappingJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
+
+
     @Override
-    public abstract ObjectMapper getObjectMapper();
+    protected void writeInternal(Object object, Type type, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+        ObjectMapper mapper = getObjectMapper();
 
-    @Override
-    public void setObjectMapper(ObjectMapper objectMapper) {
-        // We dont need that anymore
+        if(mapper instanceof EntityFactory.EntityMapper){
+            System.out.println("entityMapper!!");
+            String json = ((EntityFactory.EntityMapper)mapper).toJson(object);
+            outputMessage.getBody().write(json.getBytes());
+        }
+        super.writeInternal(object, type, outputMessage);
     }
-
-    public DynamicMappingJacksonHttpMessageConverter() {
-        super();
-    }
-
-    public DynamicMappingJacksonHttpMessageConverter(ObjectMapper objectMapper) {
-        super(objectMapper);
-    }
-    /* Additionally, you need to override all methods that use objectMapper  attribute and change them to use getObjectMapper() method instead */
-
 }

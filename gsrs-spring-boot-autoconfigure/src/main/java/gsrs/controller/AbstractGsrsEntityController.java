@@ -2,9 +2,9 @@ package gsrs.controller;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
-import ix.core.models.Role;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
@@ -20,17 +20,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
-
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -47,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * @see GsrsRestApiController
  */
-public abstract class AbstractGsrsEntityController<T, I> {
+public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityController, T, I> {
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
@@ -117,43 +114,25 @@ public abstract class AbstractGsrsEntityController<T, I> {
 
     }
 
-    protected void requireAnyRoles(Principal principal, Role...roles){
-//         principal.
+    private Object enhanceWithView(Object obj,  Map<String, String> queryParameters){
+        String view = queryParameters.get("view");
+        if(view==null){
+            return obj;
+        }
+
+        if("compact".equals(view)){
+            return new GsrsUnwrappedEntityModel(obj, getClass());
+
+        }
+        return obj;
     }
 
-    /*private void foo(){
-        ValidationResponseBuilder callback = new ValidationUtils.GinasValidationResponseBuilder(objnew, _strategy);
-
-        //turn off duplicate checking in batch mode
-        if(this.method == METHOD_TYPE.BATCH){
-            callback.allowPossibleDuplicates(true);
-        }
-
-        this.validate(objnew, objold, callback);
-        ValidationResponse<Substance> resp =  callback.buildResponse();
-
-        List<GinasProcessingMessage> messages = resp.getValidationMessages()
-                .stream()
-                .filter(m-> m instanceof GinasProcessingMessage)
-                .map(m ->(GinasProcessingMessage)m)
-                .collect(Collectors.toList());
-        messages.stream().forEach( _strategy::processMessage);
-        if(_strategy.handleMessages(objnew, messages)){
-            resp.setValid();
-        }
-        _strategy.addProblems(objnew, messages);
-
-
-
-        if(GinasProcessingMessage.ALL_VALID(messages)){
-            resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
-        }
-        return resp;
-
-
-    }
-
+    /**
+     * Get the Class of this Controller, used
+     * to generate links.
+     * @return the concrete controller class; can not be {@code null}.
      */
+    protected abstract Class<C> controllerClass();
     @PostGsrsRestApiMapping("/@validate")
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
@@ -205,7 +184,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
         if(pojoPointer.isLeafRaw()){
             return new ResponseEntity<>(ew.getRawValue(), HttpStatus.OK);
         }else{
-            return new ResponseEntity<>(ew.toFullJsonNode(), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceWithView(ew.getValue(), queryParameters), HttpStatus.OK);
         }
     }
 
@@ -285,7 +264,7 @@ public abstract class AbstractGsrsEntityController<T, I> {
     public ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
         Optional<T> obj = entityService.getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
-            return new ResponseEntity<>(obj.get(), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceWithView(obj.get(), queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -298,7 +277,6 @@ public abstract class AbstractGsrsEntityController<T, I> {
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-
 //TODO katzelda October 2020 : for now delay work on modern hibernate search use legacy lucene
 
 //    @Data

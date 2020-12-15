@@ -548,7 +548,16 @@ the API will return a status code of 500 instead.
 The parameter name is configurable if you change the value of `gsrs.api.errorCodeParameter` in your property file (or conf file).
 By default, it is set as `gsrs.api.errorCodeParameter=error_response`
 
- ## Testing 
+## GSRS Entity
+GSRS uses JPA annotations
+
+### EntityInfo
+
+### EntityMapper
+
+### EntityMapperOptions
+
+## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
    
    ```xml

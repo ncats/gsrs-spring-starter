@@ -1,6 +1,7 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.controllers.EntityFactory;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -11,7 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.condition.PatternsRequestCondition;
@@ -42,7 +42,7 @@ public class GsrsWebConfig {
     @Bean
     public ObjectMapper objectMapper(ObjectMapperResolver objectMapperResolver) {
         ProxyFactory factory = new ProxyFactory();
-        factory.setTargetClass(ObjectMapper.class);
+        factory.setTargetClass(EntityFactory.EntityMapper.class);
         factory.addAdvice(new ObjectMapperInterceptor() {
 
             @Override
@@ -55,6 +55,15 @@ public class GsrsWebConfig {
         return (ObjectMapper) factory.getProxy();
     }
 
+    @Bean
+    public GsrsUnwrappedEntityModelProcessor gsrsUnwrappedEntityModelProcessor(){
+        return new GsrsUnwrappedEntityModelProcessor();
+    }
+
+//    @Bean
+//    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(){
+//        return new DynamicMappingJacksonHttpMessageConverter();
+//    }
     @Bean
     public ObjectMapperResolver objectMapperResolver() {
         return new RequestMatchingEntityMapperResolver();

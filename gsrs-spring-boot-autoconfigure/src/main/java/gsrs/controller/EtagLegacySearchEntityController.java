@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public abstract class EtagLegacySearchEntityController<T,I> extends AbstractLegacyTextSearchGsrsEntityController<T,I> {
+public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractLegacyTextSearchGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
 //        super(context, pattern);

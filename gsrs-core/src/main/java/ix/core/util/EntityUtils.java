@@ -1050,6 +1050,7 @@ public class EntityUtils {
 
 		private List<FieldMeta> uniqueColumnFields;
 
+
 		private MethodOrFieldMeta changeReasonField = null;
 		private MethodOrFieldMeta versionField = null;
 		private MethodOrFieldMeta validatedField = null;
@@ -1372,6 +1373,10 @@ public class EntityUtils {
 //			}
 		}
 
+		public List<FieldMeta> getCollapsedFields(){
+			return fields.stream().filter(FieldMeta::isCollapseInCompactView)
+							.collect(Collectors.toList());
+		}
 		private static void findPublicAndOtherIndexableFields(Class<?> c, Consumer<Field> fields){
 			for(Field f : c.getDeclaredFields()){
 				int modifiers = f.getModifiers();
@@ -2390,6 +2395,8 @@ public class EntityUtils {
 
 		private boolean isJsonSerailzed=true;
 
+		private boolean collapseInCompactView=false;
+		private String compactViewFieldName;
 		private JsonSerialize jsonSerialize=null;
 		private JsonSerializer<?> serializer=null;
 
@@ -2504,6 +2511,25 @@ public class EntityUtils {
 					}
 				}
 			}
+
+			EntityMapperOptions entityMapperOptions = f.getAnnotation(EntityMapperOptions.class);
+			if(entityMapperOptions !=null){
+				if(entityMapperOptions.linkoutInCompactView()){
+					this.compactViewFieldName = entityMapperOptions.linkoutInCompactViewName().isEmpty()? "_"+serializedName : entityMapperOptions.linkoutInCompactViewName();
+					this.collapseInCompactView = true;
+				}
+			}
+			if(compactViewFieldName ==null){
+				this.compactViewFieldName = "_"+serializedName;
+			}
+		}
+
+		public boolean isCollapseInCompactView() {
+			return collapseInCompactView;
+		}
+
+		public String getCompactViewFieldName() {
+			return compactViewFieldName;
 		}
 
 		public boolean isChangeReason(){

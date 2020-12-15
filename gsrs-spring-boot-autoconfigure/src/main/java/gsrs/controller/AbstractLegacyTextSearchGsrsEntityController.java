@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  * @param <T>
  * @param <I>
  */
-public abstract class AbstractLegacyTextSearchGsrsEntityController<T, I> extends AbstractGsrsEntityController<T,I> {
+public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends AbstractLegacyTextSearchGsrsEntityController, T, I> extends AbstractGsrsEntityController<C, T,I> {
 
 //    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
 //        super(context, idHelper);

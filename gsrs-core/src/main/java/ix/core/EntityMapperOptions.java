@@ -8,7 +8,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(value=RetentionPolicy.RUNTIME)
 @Inherited
-@Target(value={ElementType.TYPE})
+@Target(value={ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
 public @interface EntityMapperOptions {
     /**
      * When Json View {@link ix.core.models.BeanViews.Key} is used
@@ -17,4 +17,7 @@ public @interface EntityMapperOptions {
      * defaults to {@code true}.
      */
     boolean collapsibleInKeyView() default true;
+
+    boolean linkoutInCompactView() default false;
+    String linkoutInCompactViewName() default "";
 }
