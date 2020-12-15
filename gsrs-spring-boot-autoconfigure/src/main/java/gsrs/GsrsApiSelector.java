@@ -9,6 +9,8 @@ import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
+import ix.core.util.pojopointer.LambdaParseRegistry;
+import ix.core.util.pojopointer.URIPojoPointerParser;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
@@ -56,7 +58,9 @@ public class GsrsApiSelector implements ImportSelector {
 
         //TODO make something other than CONF based validator?
         componentsToInclude.add(ConfigBasedValidatorFactoryConfiguration.class);
-
+        componentsToInclude.add(URIPojoPointerParser.class);
+        componentsToInclude.add(LambdaParseRegistry.class);
+        componentsToInclude.add(RegisteredFunctionProperties.class);
 
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
