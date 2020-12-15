@@ -224,6 +224,7 @@ public class EntityFactory {
             }
 
             SimpleModule module = new SimpleModule();
+
             //TODO katzelda October 2020: add Amount Serializer back when we do substances
 //            module.setSerializerModifier(new AmountSerializerModifier());
             registerModule(module);

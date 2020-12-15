@@ -69,7 +69,6 @@ public class GsrsWebConfig {
         return new RequestMatchingEntityMapperResolver();
     }
 
-
     /**
      *
      * This is the code that creates all the api/v1/* mapping based on the custom GSRSApiController annotations.
