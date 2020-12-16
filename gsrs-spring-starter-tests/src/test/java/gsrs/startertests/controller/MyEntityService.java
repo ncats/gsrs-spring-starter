@@ -30,14 +30,6 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
         super(CONTEXT, IdHelpers.UUID);
     }
 
-    @Override
-    public String getIdAsStringFor(MyEntity entity) {
-        UUID uuid =entity.getUuid();
-        if(uuid==null){
-            return null;
-        }
-        return uuid.toString();
-    }
 
     @Override
     protected MyEntity fromNewJson(JsonNode json) throws IOException {

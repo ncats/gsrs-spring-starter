@@ -77,14 +77,6 @@ public interface GsrsEntityService<T, I> {
 
     Optional<I> getEntityIdOnlyBySomeIdentifier(String id);
 
-    /**
-     * Get the ID as a String value; this is used
-     * when generating URIs.
-     *
-     * @param entity
-     * @return
-     */
-    String getIdAsStringFor(T entity);
     @Data
     @Builder
     class CreationResult<T>{

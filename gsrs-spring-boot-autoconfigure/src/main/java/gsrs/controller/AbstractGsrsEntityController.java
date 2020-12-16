@@ -126,13 +126,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         return model;
     }
-
-    /**
-     * Get the Class of this Controller, used
-     * to generate links.
-     * @return the concrete controller class; can not be {@code null}.
-     */
-    protected abstract Class<C> controllerClass();
     @PostGsrsRestApiMapping("/@validate")
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
