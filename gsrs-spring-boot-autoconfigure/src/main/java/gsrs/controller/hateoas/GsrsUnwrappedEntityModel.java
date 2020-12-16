@@ -27,6 +27,8 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      */
     @JsonUnwrapped
     private T obj;
+    @JsonIgnore
+    private boolean isCompact;
     /**
      * This is the list of Links we will in-line these as well
      * using JsonAnyGetter on the getter below.
@@ -61,5 +63,13 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     @JsonAnyGetter
     public Map<String, Link> getOurLinks() {
         return ourLinks;
+    }
+
+    public boolean isCompact() {
+        return isCompact;
+    }
+
+    public void setCompact(boolean compact) {
+        isCompact = compact;
     }
 }

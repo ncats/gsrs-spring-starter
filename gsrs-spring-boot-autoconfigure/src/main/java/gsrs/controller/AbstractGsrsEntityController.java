@@ -119,12 +119,12 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         if(view==null){
             return obj;
         }
-
+        GsrsUnwrappedEntityModel model = new GsrsUnwrappedEntityModel(obj, getClass());
         if("compact".equals(view)){
-            return new GsrsUnwrappedEntityModel(obj, getClass());
+            model.setCompact(true);
 
         }
-        return obj;
+        return model;
     }
 
     /**

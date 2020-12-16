@@ -3,6 +3,7 @@ package gsrs.controller.hateoas;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.util.EntityUtils;
 import lombok.Data;
 import org.springframework.hateoas.*;
@@ -21,36 +22,57 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 /**
  * A GSRS Controller Aware {@link RepresentationModelProcessor}
  * that will add HATEOAS like links in a GSRS API backwards compatible way.
- *
- * If the Request's view is set to "compact". then this will use the {@link ix.core.util.EntityUtils.EntityInfo}
+ * This Processor will add a "_self" JSON attribute to the Model object as well as add other
+ * attributes if needed such as:
+ * <ul>
+ * <li>If the Request's view is set to "compact". then this will use the {@link ix.core.util.EntityUtils.EntityInfo}
  * of the model object to find any collapsed fields via {@link ix.core.util.EntityUtils.EntityInfo#getCollapsedFields()}
- * method and create links to the API with an href and count attribute.
+ * method and create links to the API with an href and count attribute.</li>
+ * </ul>
  */
 public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelProcessor<GsrsUnwrappedEntityModel<?>> {
     @Override
     public GsrsUnwrappedEntityModel<?> process(GsrsUnwrappedEntityModel<?> model) {
         Object obj = model.getObj();
         EntityUtils.EntityInfo<?> info = EntityUtils.EntityWrapper.of(obj).getEntityInfo();
+        CachedSupplier<String> idString = info.getIdString(obj);
+        String id = idString.get();
+        //always add self
+        model.add(computeSelfLink(model, id));
 
-        info.getCollapsedFields().forEach(f->{
-            String compactFieldName = f.getCompactViewFieldName();
-            String field = f.getName();
+        if(model.isCompact()) {
+            info.getCollapsedFields().forEach(f -> {
+                String compactFieldName = f.getCompactViewFieldName();
+                String field = f.getName();
 
-            String id = info.getIdString(obj).get();
-            if(f.isCollection()){
-                model.add(
-                    new CollectionLink(((Collection) f.getValue(obj).get()).size(), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).expand(id)));
-            }else if(f.isArray()){
-                model.add(
-                        new CollectionLink((Array.getLength(f.getValue(obj).get())), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(),null)).withRel(compactFieldName).expand(id)));
-            }
+
+                System.out.println(field);
+                if (f.isCollection()) {
+                    model.add(
+                            new CollectionLink(((Collection) f.getValue(obj).get()).size(), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).expand(id)));
+                } else if (f.isArray()) {
+                    model.add(
+                            new CollectionLink((Array.getLength(f.getValue(obj).get())), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).expand(id)));
+                }
 //            else{
 //                model.add(
 //                        linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).getTemplate());
 //
 //            }
             });
+        }
         return model;
+    }
+
+    private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
+        Link l= linkTo(methodOn(model.getController()).getById(id, Collections.emptyMap())).withRel("_self").expand(id);
+        String query=l.toUri().getRawQuery();
+        if(query==null){
+            return l.withHref(l.getHref() +"?view=full");
+        }
+        return l.withHref(l.getHref() +"&view=full");
+
+
     }
 
     /**
@@ -63,7 +85,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     private static class CollectionLink extends Link{
 
         private int count;
-        @JsonUnwrapped
+        @JsonIgnore //this is jsonIgnore because we delegate the getters with the same json annotations so ignoring means we don't list everything twice
         private Link link;
 
 
