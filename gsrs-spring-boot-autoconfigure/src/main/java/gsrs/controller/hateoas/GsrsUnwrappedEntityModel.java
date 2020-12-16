@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import gsrs.controller.AbstractGsrsEntityController;
+import gsrs.controller.GsrsEntityController;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
 
@@ -40,9 +41,9 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * to generate the correct method URL.
      */
     @JsonIgnore
-    private Class<? extends AbstractGsrsEntityController> controller;
+    private Class<? extends GsrsEntityController> controller;
 
-    public GsrsUnwrappedEntityModel(T obj, Class<? extends AbstractGsrsEntityController> controllerClass) {
+    public GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
         this.obj = obj;
         this.controller = controllerClass;
     }
@@ -51,7 +52,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         return obj;
     }
 
-    public Class<? extends AbstractGsrsEntityController> getController() {
+    public Class<? extends GsrsEntityController> getController() {
         return controller;
     }
 

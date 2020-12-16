@@ -3,8 +3,11 @@ package gsrs.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.controller.IdHelper;
+import gsrs.repository.EditRepository;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
+import ix.core.models.Edit;
+import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
 import ix.ginas.utils.validation.ValidatorFactory;
@@ -32,6 +35,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
+    @Autowired
+    private EditRepository editRepository;
 
     private final String context;
     private final Pattern idPattern;
@@ -206,7 +211,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     @Transactional
     protected T transactionalPersist(T newEntity){
-        return create(newEntity);
+        T saved = create(newEntity);
+
+        return saved;
     }
 
     @Override
@@ -253,7 +260,22 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     @Transactional
     protected T transactionalUpdate(T entity){
-        return update(entity);
+        T after =  update(entity);
+        //refetch old version
+        T before = get(getIdFrom(entity)).get();
+        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(after);
+        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
+        EntityUtils.EntityWrapper<?> ewold = EntityUtils.EntityWrapper.of(before);
+
+        edit.oldValue = ewold.toFullJson();
+        edit.version = ewold.getVersion().orElse(null);
+        edit.comments = ew.getChangeReason().orElse(null);
+        edit.kind = ew.getKind();
+        edit.newValue = ew.toFullJson();
+
+        editRepository.save(edit);
+        System.out.println("edit = " + edit.id);
+        return after;
     }
 
     @Override
