@@ -2,11 +2,13 @@ package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
+import ix.core.EntityMapperOptions;
 import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
 import org.springframework.data.annotation.CreatedBy;
@@ -68,12 +70,14 @@ public class Edit extends BaseModel {
     @Lob
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
+    @JsonView(BeanViews.Full.class)
     public String oldValue; // value as Json
 
     @Basic(fetch= FetchType.LAZY)
     @Lob
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
+    @JsonView(BeanViews.Full.class)
     public String newValue; // value as Json
 
     public Edit() {}
@@ -145,6 +149,7 @@ public class Edit extends BaseModel {
     }
     
     @JsonIgnore
+    @EntityMapperOptions(includeAsCallable=true)
     public JsonNode getDiff(){
     	try{
 	    	ObjectMapper om = new ObjectMapper();

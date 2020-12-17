@@ -3,8 +3,10 @@ package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
+import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
@@ -165,7 +167,9 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
 
-
+    protected Optional<EditRepository> editRepository(){
+        return Optional.empty();
+    }
 
 
     private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) {
@@ -173,18 +177,32 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         String field = getEndWildCardMatchingPartOfUrl(request);
+        EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
+        if(field !=null && field.startsWith("@edit")){
+            Optional<EditRepository> editRepository = editRepository();
+            if(editRepository.isPresent()){
+                Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(opt.get());
+                if(nativeIdFor.isPresent()){
+                    List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
+                    //TODO enhance here
+                    return new ResponseEntity<>(editList, HttpStatus.OK);
+                }
 
+            }
+            return gsrsControllerConfiguration.handleNotFound(queryParameters);
+        }
         PojoPointer pojoPointer = PojoPointer.fromURIPath(field);
-        Optional<EntityUtils.EntityWrapper<?>> at = EntityUtils.EntityWrapper.of(opt.get()).at(pojoPointer);
+
+        Optional<EntityUtils.EntityWrapper<?>> at = ew.at(pojoPointer);
         if(!at.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         //match old Play version of GSRS which either return JSON for an object or raw string?
-        EntityUtils.EntityWrapper ew= at.get();
+
         if(pojoPointer.isLeafRaw()){
-            return new ResponseEntity<>(ew.getRawValue(), HttpStatus.OK);
+            return new ResponseEntity<>(at.get().getRawValue(), HttpStatus.OK);
         }else{
-            return new ResponseEntity<>(enhanceWithView(ew.getValue(), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceWithView(at.get().getValue(), queryParameters), HttpStatus.OK);
         }
     }
 
