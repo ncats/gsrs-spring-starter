@@ -50,9 +50,10 @@ public class Edit extends BaseModel {
     @Column(length=64)
     public String batch;
 
-    @CreatedBy
-    @ManyToOne(cascade= CascadeType.PERSIST)
-    public Principal editor;
+    //TODO katzelda Dec 2020 turn off createdBy for now stackoverflow with userdetails
+////    @CreatedBy
+//    @ManyToOne(cascade= CascadeType.PERSIST)
+//    public Principal editor;
 
     @Column(length=1024)
     public String path;
@@ -89,10 +90,10 @@ public class Edit extends BaseModel {
     }
     
     
-    public String getEditor(){
-    	if(editor==null)return null;
-    	return editor.username;
-    }
+//    public String getEditor(){
+//    	if(editor==null)return null;
+//    	return editor.username;
+//    }
     //FIXME : katzelda Dec 2020 move these links to controller
     /*
     @JsonProperty("oldValue")

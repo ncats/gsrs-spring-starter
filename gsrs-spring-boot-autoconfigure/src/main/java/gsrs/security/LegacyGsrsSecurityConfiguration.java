@@ -19,8 +19,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 @Configuration
 public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-//    @Autowired
-//    LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
+    @Autowired
+    LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
 
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
@@ -80,12 +80,17 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 //    }
 
 
+//    @Bean
+//    public GsrsUserProfileUserService gsrsUserProfileUserService(){
+//        return new GsrsUserProfileUserService();
+//    }
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 
         auth.eraseCredentials(false);
-//        auth.userDetailsService(userDetailsService());
+        auth.authenticationProvider(legacyGsrsAuthenticationProvider);
+//        auth.userDetailsService(gsrsUserProfileUserService());
 //        auth.inMemoryAuthentication().withUser("admin").password("{noop}admin").roles(Role.Admin.name());
 //        auth.inMemoryAuthentication().withUser("user1").password("{noop}pass").roles(Role.Query.name());
 //        auth.inMemoryAuthentication().withUser("user2").password("{noop}pass").roles(Role.SuperUpdate.name());

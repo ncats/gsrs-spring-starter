@@ -6,6 +6,7 @@ import gsrs.controller.IdHelper;
 import gsrs.repository.EditRepository;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
@@ -16,6 +17,8 @@ import ix.utils.pojopatch.PojoPatch;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +40,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @Autowired
     private EditRepository editRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final String context;
     private final Pattern idPattern;
@@ -227,11 +233,13 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         }
 
         T oldEntity = opt.get();
-
+        String oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
         Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.CREATE);
         ValidationResponse<T> resp = validator.validate(updatedEntity, oldEntity);
         UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder()
-                                                            .validationResponse(resp);
+                                                            .validationResponse(resp)
+                                                            .oldJson(oldJson);
+
         if(resp!=null && !resp.isValid()){
             return builder.status(UpdateResult.STATUS.ERROR)
                     .build();
@@ -242,9 +250,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         patch.apply(oldEntity);
         System.out.println("updated entity = " + oldEntity);
         try {
-            builder.updatedEntity(transactionalUpdate(oldEntity));
+            builder.updatedEntity(transactionalUpdate(oldEntity, oldJson));
             builder.status(UpdateResult.STATUS.UPDATED);
         }catch(Throwable t){
+            t.printStackTrace();
             builder.status(UpdateResult.STATUS.ERROR);
         }
         //match 200 status of old GSRS
@@ -259,16 +268,19 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @implSpec delegates to {@link #update(Object)} inside a {@link Transactional}.
      */
     @Transactional
-    protected T transactionalUpdate(T entity){
+    protected T transactionalUpdate(T entity, String oldJson){
+
         T after =  update(entity);
-        //refetch old version
-        T before = get(getIdFrom(entity)).get();
         EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(after);
         Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
-        EntityUtils.EntityWrapper<?> ewold = EntityUtils.EntityWrapper.of(before);
 
-        edit.oldValue = ewold.toFullJson();
-        edit.version = ewold.getVersion().orElse(null);
+        edit.oldValue = oldJson;
+        String newVersionStr = ew.getVersion().orElse(null);
+        if(newVersionStr ==null) {
+            edit.version = null;
+        }else{
+            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
+        }
         edit.comments = ew.getChangeReason().orElse(null);
         edit.kind = ew.getKind();
         edit.newValue = ew.toFullJson();

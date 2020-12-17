@@ -66,6 +66,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         return ourLinks;
     }
 
+    @JsonIgnore
     public boolean isCompact() {
         return isCompact;
     }
