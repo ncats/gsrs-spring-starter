@@ -5,6 +5,7 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
+import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -33,31 +34,37 @@ public class EditController implements GsrsEntityController{
 
     private ResponseEntity<Object> addLinksTo(Edit edit) {
         GsrsUnwrappedEntityModel<Edit> model = new GsrsUnwrappedEntityModel<>(edit, getClass());
-        model.add(GsrsLinkUtil.fieldLink("$oldValue", linkTo(methodOn(getClass()).getById(edit.id.toString(), null)).withRel("oldValue")));
-        model.add(GsrsLinkUtil.fieldLink("$newValue", linkTo(methodOn(getClass()).getById(edit.id.toString(), null)).withRel("newValue")));
-        model.add(GsrsLinkUtil.fieldLink("$diff", linkTo(methodOn(getClass()).getById(edit.id.toString(), null)).withRel("diff")));
+        model.add(GsrsLinkUtil.fieldLink("$oldValue",
+                linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null, null)).withRel("oldValue").expand(edit.id)));
+        model.add(GsrsLinkUtil.fieldLink("$newValue", linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null, null)).withRel("newValue").expand(edit.id)));
+        model.add(GsrsLinkUtil.fieldLink("$diff", linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null,null)).withRel("diff").expand(edit.id)));
 
         return new ResponseEntity<>(model, HttpStatus.OK);
 
     }
 
     @Override
-    public ResponseEntity<Object> createEntity(JsonNode newEntityJson, Map queryParameters, Principal principal) throws IOException {
+    public ResponseEntity<Object> createEntity(JsonNode newEntityJson, Map<String,String> queryParameters, Principal principal) throws IOException {
         return null;
     }
 
     @Override
-    public ValidationResponse validateEntity(JsonNode updatedEntityJson, Map queryParameters) throws Exception {
+    public ValidationResponse validateEntity(JsonNode updatedEntityJson, Map<String,String> queryParameters) throws Exception {
         return null;
     }
 
     @Override
-    public ResponseEntity<Object> updateEntity(JsonNode updatedEntityJson, Map queryParameters, Principal principal) throws Exception {
+    public ResponseEntity<Object> updateEntity(JsonNode updatedEntityJson, Map<String,String> queryParameters, Principal principal) throws Exception {
         return null;
     }
 
     @Override
-    public ResponseEntity<Object> getFieldById(String id, Map queryParameters, HttpServletRequest request) {
+    public ResponseEntity<Object> getFieldById(String id, Map<String,String> queryParameters, HttpServletRequest request) {
+        Edit edit = editRepository.getOne(UUID.fromString(id));
+        if(edit ==null){
+            return gsrsControllerConfiguration.handleNotFound(queryParameters);
+        }
+        EntityUtils.EntityWrapper.of(edit).f
         return null;
     }
 

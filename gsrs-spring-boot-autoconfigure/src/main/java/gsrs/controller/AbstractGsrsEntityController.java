@@ -117,15 +117,18 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     private Object enhanceWithView(Object obj,  Map<String, String> queryParameters){
         String view = queryParameters.get("view");
-        if(view==null){
-            return obj;
-        }
+
         GsrsUnwrappedEntityModel model = new GsrsUnwrappedEntityModel(obj, getClass());
         if("compact".equals(view)){
             model.setCompact(true);
 
         }
+        addAdditionalLinks(model);
         return model;
+    }
+
+    protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){
+
     }
     @Override
     @PostGsrsRestApiMapping("/@validate")

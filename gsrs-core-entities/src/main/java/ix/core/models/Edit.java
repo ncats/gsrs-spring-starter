@@ -51,7 +51,7 @@ public class Edit extends BaseModel {
     public String batch;
 
     //TODO katzelda Dec 2020 turn off createdBy for now stackoverflow with userdetails
-////    @CreatedBy
+//    @CreatedBy
 //    @ManyToOne(cascade= CascadeType.PERSIST)
 //    public Principal editor;
 
