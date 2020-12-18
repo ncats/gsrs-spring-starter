@@ -8,16 +8,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.GsrsApiAction;
 import ix.core.EntityMapperOptions;
+import ix.core.FieldResourceReference;
 import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 @Entity
 @Table(name="ix_core_edit")
@@ -70,16 +69,18 @@ public class Edit extends BaseModel {
     @Lob
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
-    @JsonView(BeanViews.Full.class)
-    @EntityMapperOptions(linkoutRawInEveryView = true)
+    @JsonIgnore
+//    @JsonView(BeanViews.Full.class)
+//    @EntityMapperOptions(linkoutRawInEveryView = true)
     public String oldValue; // value as Json
 
     @Basic(fetch= FetchType.LAZY)
     @Lob
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
-    @JsonView(BeanViews.Full.class)
-    @EntityMapperOptions(linkoutRawInEveryView = true)
+    @JsonIgnore
+//    @JsonView(BeanViews.Full.class)
+//    @EntityMapperOptions(linkoutRawInEveryView = true)
     public String newValue; // value as Json
 
     public Edit() {}
@@ -100,45 +101,29 @@ public class Edit extends BaseModel {
 //    	if(editor==null)return null;
 //    	return editor.username;
 //    }
-    //FIXME : katzelda Dec 2020 move these links to controller
-    /*
-    @JsonProperty("oldValue")
-    public ResourceReference<JsonNode> getOldValueReference() {
-    	//we will always have an old value
-    	String uri = Global.getNamespace()+"/edits("+id+")/$oldValue";
-        return ResourceReference.ofSerializedJson(uri, new Supplier<String>() {
-            @Override
-            public String get() {
-                return oldValue;
-            }
-        });
+
+    @JsonIgnore
+    @GsrsApiAction("oldValue")
+    public FieldResourceReference<JsonNode> getOldValueReference() {
+
+        return FieldResourceReference.forRawFieldAsJson("oldValue", oldValue);
     }
-    @JsonProperty("newValue")
+    @JsonIgnore
+    @GsrsApiAction("newValue")
     public ResourceReference<JsonNode> getNewValueReference() {
         //we will always have new value
 
-    	String uri = Global.getNamespace()+"/edits("+id+")/$newValue";
-    	return ResourceReference.ofSerializedJson(uri, new Supplier<String>() {
-            @Override
-            public String get() {
-                return newValue;
-            }
-        });
+        return FieldResourceReference.forRawFieldAsJson("newValue", newValue);
     }
     
 
-    @JsonProperty("diff")
+    @JsonIgnore
+    @GsrsApiAction("diff")
     public ResourceReference<JsonNode> getDiffLink () {
-//    	if(this.newValue==null || this.oldValue==null)return null;
-    	String uri = Global.getNamespace()+"/edits("+id+")/$diff";
-    	return ResourceReference.of(uri, new Supplier<JsonNode>(){
-			@Override
-			public JsonNode get() {
-				return getDiff();
-			}
-    	});
+        return FieldResourceReference.forRawField("diff", this::getDiff);
+
     }
-*/
+
     @Override
     public String fetchGlobalId(){
     	if(this.id==null)return null;
@@ -149,9 +134,8 @@ public class Edit extends BaseModel {
     public Date getCreatedDate(){
     	return new Date(this.created);
     }
-    
+
     @JsonIgnore
-    @EntityMapperOptions(includeAsCallable=true)
     public JsonNode getDiff(){
     	try{
 	    	ObjectMapper om = new ObjectMapper();

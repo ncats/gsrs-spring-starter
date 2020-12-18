@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.context.request.WebRequest;
@@ -40,6 +41,7 @@ import java.util.function.Function;
 @Configuration
 @ConfigurationProperties(prefix="gsrs.api")
 @Data
+
 public class GsrsControllerConfiguration {
 
     private String errorCodeParameter;

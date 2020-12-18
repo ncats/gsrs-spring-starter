@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 
+import gsrs.model.GsrsApiAction;
 import ix.core.*;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
@@ -1391,6 +1392,9 @@ public class EntityUtils {
 			return fields.stream().filter(FieldMeta::isCollapseInCompactView)
 							.collect(Collectors.toList());
 		}
+		public List<MethodMeta> getApiActions(){
+			return methods.stream().filter(m-> m.isApiAction).collect(Collectors.toList());
+		}
 		private static void findPublicAndOtherIndexableFields(Class<?> c, Consumer<Field> fields){
 			for(Field f : c.getDeclaredFields()){
 				int modifiers = f.getModifiers();
@@ -1969,7 +1973,7 @@ public class EntityUtils {
 		private boolean isStructure = false;
 		private boolean isSequence = false;
 		private Class<?> type;
-
+		private boolean isApiAction=false;
 		private boolean isArray = false;
 		private boolean isCollection = false;
 		private boolean isId = false;
@@ -2158,7 +2162,15 @@ public class EntityUtils {
 			if(entityMapperOptions !=null){
 				isApiCallable = entityMapperOptions.includeAsCallable();
 			}
+
+			GsrsApiAction apiAction = m.getAnnotation(GsrsApiAction.class);
+			if(apiAction !=null){
+				isApiAction = true;
+				serializedName = apiAction.value();
+				isJsonIgnore = false;
+			}
 		}
+
 
 		public boolean isChangeReason() {
 			return isChangeReason;

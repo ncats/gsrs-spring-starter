@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import org.springframework.web.servlet.resource.ResourceUrlProvider;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +55,9 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Autowired
     private GsrsEntityService<T, I> entityService;
+
+    @Autowired
+    private EntityLinks entityLinks;
 
 //    /**
 //     * Create a new GSRS Controller with the given context.
@@ -129,6 +134,14 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return model;
     }
 
+    private Object enhanceWithView(List<Object> list,  Map<String, String> queryParameters){
+        List<Object> modelList = new ArrayList<>(list.size());
+        for(Object o : list){
+            modelList.add(enhanceWithView(o, queryParameters));
+        }
+        return new GsrsUnwrappedEntityModel(modelList, getClass());
+    }
+
     protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){
 
     }
@@ -162,7 +175,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping(value={"/{id}/**", "({id})/**" })
-    public ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
+    public ResponseEntity<Object> getFieldById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
         return returnOnySpecifiedFieldPartFor(entityService.getEntityBySomeIdentifier(id), queryParameters, request);
     }
 
@@ -178,14 +191,15 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         String field = getEndWildCardMatchingPartOfUrl(request);
         EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
-        if(field !=null && field.startsWith("@edit")){
+        if(field !=null && field.startsWith("@edits")){
             Optional<EditRepository> editRepository = editRepository();
             if(editRepository.isPresent()){
                 Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(opt.get());
                 if(nativeIdFor.isPresent()){
                     List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
-                    //TODO enhance here
-                    return new ResponseEntity<>(editList, HttpStatus.OK);
+                    if(editList !=null) {
+                        return new ResponseEntity<>(enhanceWithView((List)editList, queryParameters), HttpStatus.OK);
+                    }
                 }
 
             }
@@ -282,7 +296,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
-    public ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity<Object> getById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<T> obj = entityService.getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             return new ResponseEntity<>(enhanceWithView(obj.get(), queryParameters), HttpStatus.OK);
@@ -291,7 +305,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
     @Override
     @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
-    public ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<I> idOptional = entityService.getEntityIdOnlyBySomeIdentifier(id);
         if(idOptional.isPresent()){
             entityService.delete(idOptional.get());

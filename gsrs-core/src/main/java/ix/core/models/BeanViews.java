@@ -3,7 +3,8 @@ package ix.core.models;
 import ix.core.EntityMapperOptions;
 
 public class BeanViews {
-    public static class Compact {}
+    public static class RestApi {}
+    public static class Compact extends RestApi{}
     public static class Full{}
     public static class Public {}
 
