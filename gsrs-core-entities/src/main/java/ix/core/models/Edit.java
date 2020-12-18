@@ -71,6 +71,7 @@ public class Edit extends BaseModel {
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonView(BeanViews.Full.class)
+    @EntityMapperOptions(linkoutRawInEveryView = true)
     public String oldValue; // value as Json
 
     @Basic(fetch= FetchType.LAZY)
@@ -78,6 +79,7 @@ public class Edit extends BaseModel {
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonView(BeanViews.Full.class)
+    @EntityMapperOptions(linkoutRawInEveryView = true)
     public String newValue; // value as Json
 
     public Edit() {}

@@ -22,4 +22,6 @@ public @interface EntityMapperOptions {
     String linkoutInCompactViewName() default "";
 
     boolean includeAsCallable() default false;
+
+    boolean linkoutRawInEveryView() default false;
 }
