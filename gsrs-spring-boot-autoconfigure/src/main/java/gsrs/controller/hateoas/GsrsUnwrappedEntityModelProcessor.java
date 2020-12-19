@@ -25,7 +25,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * <li>If the Request's view is set to "compact". then this will use the {@link ix.core.util.EntityUtils.EntityInfo}
  * of the model object to find any collapsed fields via {@link ix.core.util.EntityUtils.EntityInfo#getCollapsedFields()}
  * method and create links to the API with an href and count attribute.</li>
+ *
+ * <li>If the Entity has any methods annotated with {@link gsrs.model.GsrsApiAction} those will
+ * be turned into links</li>
  * </ul>
+ *
+ * All these links will be further transformed to use the standard GSRS api/v1 prefix
+ * and fix any of the links that use the $controller($id) paths as well
+ * as the generic HATEOAS link builders won't include that part since it's not in the requestMapping annotations.
  */
 public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelProcessor<GsrsUnwrappedEntityModel<?>> {
    @Autowired
