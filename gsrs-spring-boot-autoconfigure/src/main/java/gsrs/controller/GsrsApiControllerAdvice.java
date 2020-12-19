@@ -27,6 +27,7 @@ public class GsrsApiControllerAdvice {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity handleUnchecked(RuntimeException ex, WebRequest request){
+        ex.printStackTrace();
         return gsrsControllerConfiguration.handleError(ex, request);
     }
 

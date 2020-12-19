@@ -40,8 +40,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         Object obj = model.getObj();
         if(obj instanceof Collection){
             for(Object child : (Collection)obj){
-                GsrsUnwrappedEntityModel<?> childModel = (GsrsUnwrappedEntityModel<?>)child;
-                handleSingleObject(childModel, childModel.getObj());
+                if(child instanceof GsrsUnwrappedEntityModel) {
+                    GsrsUnwrappedEntityModel<?> childModel = (GsrsUnwrappedEntityModel<?>) child;
+                    handleSingleObject(childModel, childModel.getObj());
+                }
             }
             return model;
         }
