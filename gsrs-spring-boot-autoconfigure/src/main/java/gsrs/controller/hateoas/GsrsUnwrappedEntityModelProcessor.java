@@ -56,8 +56,8 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
             if(resource instanceof FieldResourceReference){
                 String field = ((FieldResourceReference)resource).computedResourceLink();
 
-                model.add(GsrsLinkUtil.fieldLink(action.getJsonFieldName(),entityLinks.linkFor(obj.getClass())
-                        .slash(id)
+                model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),entityLinks.linkFor(obj.getClass())
+                        .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                         .slash(field)
                         .withRel(action.getJsonFieldName())));
 
@@ -95,9 +95,9 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         Link l= linkTo(methodOn(model.getController()).getById(id, Collections.emptyMap())).withRel("_self").expand(id);
         String query=l.toUri().getRawQuery();
         if(query==null){
-            return l.withHref(l.getHref() +"?view=full");
+            return GsrsLinkUtil.adapt(id,l.withHref(l.getHref() +"?view=full"));
         }
-        return l.withHref(l.getHref() +"&view=full");
+        return GsrsLinkUtil.adapt(id,l.withHref(l.getHref() +"&view=full"));
 
 
     }

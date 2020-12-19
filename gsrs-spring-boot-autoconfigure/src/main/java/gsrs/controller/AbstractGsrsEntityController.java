@@ -174,7 +174,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @GetGsrsRestApiMapping(value={"/{id}/**", "({id})/**" })
+    @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**" })
     public ResponseEntity<Object> getFieldById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
         return returnOnySpecifiedFieldPartFor(entityService.getEntityBySomeIdentifier(id), queryParameters, request);
     }
@@ -295,7 +295,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
+    @GetGsrsRestApiMapping(value = {"({id})", "/{id}" })
     public ResponseEntity<Object> getById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<T> obj = entityService.getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
@@ -304,7 +304,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
     @Override
-    @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
+    @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
     public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<I> idOptional = entityService.getEntityIdOnlyBySomeIdentifier(id);
         if(idOptional.isPresent()){

@@ -27,7 +27,7 @@ public interface GsrsEntityController<T, I> {
                                         @RequestParam Map<String, String> queryParameters,
                                         Principal principal) throws Exception;
 
-    @GetGsrsRestApiMapping(value={"/{id}/**", "({id})/**" })
+    @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**"  })
     ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request);
 
     @GetGsrsRestApiMapping("/@count")
@@ -39,9 +39,9 @@ public interface GsrsEntityController<T, I> {
                                 @RequestParam(value = "order", required = false) String order,
                                 @RequestParam Map<String, String> queryParameters);
 
-    @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
+    @GetGsrsRestApiMapping(value = {"({id})", "/{id}"})
     ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
 
-    @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
+    @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}" })
     ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
 }

@@ -22,12 +22,18 @@ class FieldLink extends Link {
     private Link link;
 
 
-    FieldLink(String field, Link link){
+    FieldLink(String field, Link link, String id){
 
         URI uri = link.toUri();
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?
-        String apiPath = "/api/v1" + uri.getRawPath().replace("/**", "/"+field);
-
+        String apiPath = "/api/v1" + uri.getRawPath()
+                            .replace("/("+id+")", "("+id+")");
+        if(field !=null){
+            apiPath = apiPath.replace("/**", "/"+field);
+        }
+        //GSRS api sometimes uses format $controller($id)
+        //instead of $controller/$id
+        //HATEOAS adds the slash to make it $controller/($id) so we have to fix it
         String host = uri.getHost();
         int port = uri.getPort();
         String scheme = uri.getScheme();

@@ -9,17 +9,21 @@ public final class GsrsLinkUtil {
         //can not instantiate
     }
 
-    public static Link fieldLink(Collection<?> collection, String fieldName, Link link){
+    public static Link fieldLink(Collection<?> collection, String id, String fieldName, Link link){
         return new CollectionFieldLink(collection.size(), fieldName, link);
     }
-    public static Link fieldLink(Object[] array, String fieldName, Link link){
+    public static Link fieldLink(Object[] array, String id,  String fieldName, Link link){
         return new CollectionFieldLink(array.length, fieldName, link);
     }
-    public static Link fieldLink(int[] array, String fieldName, Link link){
+    public static Link fieldLink(int[] array, String id,  String fieldName, Link link){
         return new CollectionFieldLink(array.length, fieldName, link);
     }
 
-    public static Link fieldLink(String fieldName, Link link){
-        return new FieldLink(fieldName, link);
+    public static Link fieldLink( String id, String fieldName, Link link){
+        return new FieldLink(fieldName, link, id);
+    }
+
+    public static Link adapt( String id, Link link){
+        return new FieldLink(null, link, id);
     }
 }
