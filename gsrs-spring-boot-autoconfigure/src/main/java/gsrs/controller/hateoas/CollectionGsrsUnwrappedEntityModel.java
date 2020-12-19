@@ -13,7 +13,7 @@ import gsrs.controller.GsrsEntityController;
  * so that the response JSON look correct for the GSRS API Contract.
  * @param <T>
  */
-public class CollectionGsrsUnwrappedEntityModel<T> extends GsrsUnwrappedEntityModel<T> {
+class CollectionGsrsUnwrappedEntityModel<T> extends GsrsUnwrappedEntityModel<T> {
 
     public CollectionGsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
         super(obj, controllerClass);

@@ -45,7 +45,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         }
         return new GsrsUnwrappedEntityModel<T>(obj, controllerClass);
     }
-    public GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
+    protected GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
         this.obj = obj;
 
         this.controller = controllerClass;

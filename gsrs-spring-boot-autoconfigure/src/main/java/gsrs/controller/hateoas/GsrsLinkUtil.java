@@ -26,4 +26,6 @@ public final class GsrsLinkUtil {
     public static Link adapt( String id, Link link){
         return new FieldLink(null, link, id);
     }
+
+
 }

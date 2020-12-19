@@ -6,15 +6,12 @@ import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.Collections;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * A GSRS Controller Aware {@link RepresentationModelProcessor}
@@ -60,7 +57,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
             Object resource =action.getValue(obj).get();
-            if(resource instanceof FieldResourceReference){
+            if(resource !=null && resource instanceof FieldResourceReference){
                 String field = ((FieldResourceReference)resource).computedResourceLink();
 
                 model.add(
@@ -83,12 +80,13 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                 System.out.println(field);
                 if (f.isCollection()) {
-                    model.add(
-                            new CollectionFieldLink(((Collection) f.getValue(obj).get()).size(), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).expand(id)));
+                    model.add( computeFieldLink(((Collection) f.getValue(obj).get()).size(),
+                            obj, id, field, compactFieldName));
                 } else if (f.isArray()) {
                     model.add(
-                            new CollectionFieldLink((Array.getLength(f.getValue(obj).get())), field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).expand(id)));
-                }
+                            computeFieldLink(Array.getLength(f.getValue(obj).get()),
+                                    obj, id, field, compactFieldName));
+                 }
 //            else{
 //                model.add(
 //                        linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).getTemplate());
@@ -99,6 +97,16 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         return model;
     }
 
+    private LinkBuilder getControllerLinkFor(GsrsUnwrappedEntityModel<?> model){
+        return entityLinks.linkFor(model.getObj().getClass());
+    }
+    private Link  computeFieldLink(int collectionSize, Object entity, String id, String fieldPath, String rel){
+       return new CollectionLink(collectionSize, GsrsLinkUtil.adapt(id, entityLinks.linkFor(entity.getClass())
+                .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+                .slash(fieldPath)
+                .withRel(rel)));
+
+    }
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
