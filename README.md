@@ -557,6 +557,41 @@ GSRS uses JPA annotations
 
 ### EntityMapperOptions
 
+### GsrsApiAction
+`@GsrsApiAction` is an annotation to put on a method in an Entity
+that you want the JSON representation to have a link to invoke
+
+* Raw Field uses the GSRS API to make the field start wit ha `$` character
+to return the result as raw text.
+
+```java
+    @JsonIgnore
+    @GsrsApiAction("diff")
+    public ResourceReference<JsonNode> getDiffLink () {
+        return FieldResourceReference.forRawField("diff", this::getDiff);
+
+    }
+
+    @JsonIgnore
+    public JsonNode getDiff(){
+    	try{
+	    	ObjectMapper om = new ObjectMapper();
+	    	JsonNode js1=om.readTree(oldValue);
+	    	JsonNode js2=om.readTree(newValue);
+	    	return JsonDiff.asJson(js1, js2);
+    	}catch(Exception e){
+    		return null;
+    	}
+    }
+```
+
+Will make a JSON response like this:
+```json
+   "diff": {
+                "href": "http://localhost:8080/api/v1/myEntity(12345)/$diff"
+            },
+
+```
 ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
    
