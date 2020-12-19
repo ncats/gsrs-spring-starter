@@ -40,11 +40,11 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
     @Override
     public GsrsUnwrappedEntityModel<?> process(GsrsUnwrappedEntityModel<?> model) {
-        Object obj = model.obj;
+        Object obj = model.getObj();
         if(obj instanceof Collection){
             for(Object child : (Collection)obj){
                 GsrsUnwrappedEntityModel<?> childModel = (GsrsUnwrappedEntityModel<?>)child;
-                handleSingleObject(childModel, childModel.obj);
+                handleSingleObject(childModel, childModel.getObj());
             }
             return model;
         }
@@ -102,7 +102,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
-        Link l= GsrsLinkUtil.adapt(id, entityLinks.linkFor(model.obj.getClass())
+        Link l= GsrsLinkUtil.adapt(id, entityLinks.linkFor(model.getObj().getClass())
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
 
                 .withRel("_self"));

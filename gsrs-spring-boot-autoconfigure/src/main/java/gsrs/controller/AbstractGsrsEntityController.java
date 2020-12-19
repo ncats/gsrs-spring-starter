@@ -125,7 +125,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     private Object enhanceWithView(Object obj,  Map<String, String> queryParameters){
         String view = queryParameters.get("view");
 
-        GsrsUnwrappedEntityModel model = new GsrsUnwrappedEntityModel(obj, getClass());
+        GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj, getClass());
         if("compact".equals(view)){
             model.setCompact(true);
 
@@ -139,7 +139,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         for(Object o : list){
             modelList.add(enhanceWithView(o, queryParameters));
         }
-        return new GsrsUnwrappedEntityModel(modelList, getClass());
+        return GsrsUnwrappedEntityModel.of(modelList, getClass());
 //        return modelList;
     }
 
