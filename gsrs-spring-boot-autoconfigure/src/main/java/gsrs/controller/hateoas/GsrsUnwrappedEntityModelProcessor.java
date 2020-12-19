@@ -33,11 +33,11 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
     @Override
     public GsrsUnwrappedEntityModel<?> process(GsrsUnwrappedEntityModel<?> model) {
-        Object obj = model.getObj();
+        Object obj = model.obj;
         if(obj instanceof Collection){
             for(Object child : (Collection)obj){
                 GsrsUnwrappedEntityModel<?> childModel = (GsrsUnwrappedEntityModel<?>)child;
-                handleSingleObject(childModel, childModel.getObj());
+                handleSingleObject(childModel, childModel.obj);
             }
             return model;
         }
@@ -56,7 +56,8 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
             if(resource instanceof FieldResourceReference){
                 String field = ((FieldResourceReference)resource).computedResourceLink();
 
-                model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),entityLinks.linkFor(obj.getClass())
+                model.add(
+                        GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),entityLinks.linkFor(obj.getClass())
                         .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                         .slash(field)
                         .withRel(action.getJsonFieldName())));
@@ -92,12 +93,17 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     }
 
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
-        Link l= linkTo(methodOn(model.getController()).getById(id, Collections.emptyMap())).withRel("_self").expand(id);
+
+
+        Link l= GsrsLinkUtil.adapt(id, entityLinks.linkFor(model.obj.getClass())
+                .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+
+                .withRel("_self"));
         String query=l.toUri().getRawQuery();
         if(query==null){
-            return GsrsLinkUtil.adapt(id,l.withHref(l.getHref() +"?view=full"));
+            return l.withHref(l.getHref() +"?view=full");
         }
-        return GsrsLinkUtil.adapt(id,l.withHref(l.getHref() +"&view=full"));
+        return l.withHref(l.getHref() +"&view=full");
 
 
     }

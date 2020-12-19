@@ -26,18 +26,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class EditController2 extends AbstractGsrsEntityController<EditController2, Edit, UUID>{
 
 
-    @Override
-    protected void addAdditionalLinks(GsrsUnwrappedEntityModel model) {
-        Object obj = model.getObj();
-        if(obj instanceof Edit){
-            Edit edit = (Edit) obj;
-//            model.add(GsrsLinkUtil.fieldLink("$oldValue",
-//                    linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null, null)).withRel("oldValue").expand(edit.id)));
-//            model.add(GsrsLinkUtil.fieldLink("$newValue", linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null, null)).withRel("newValue").expand(edit.id)));
-//            model.add(GsrsLinkUtil.fieldLink("$diff", linkTo(methodOn(getClass()).getFieldById(edit.id.toString(), null,null)).withRel("diff").expand(edit.id)));
-
-        }
-    }
 
 
 }

@@ -140,6 +140,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             modelList.add(enhanceWithView(o, queryParameters));
         }
         return new GsrsUnwrappedEntityModel(modelList, getClass());
+//        return modelList;
     }
 
     protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){

@@ -27,7 +27,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * needed so the links to add are added to the object's JSON Node.
      */
     @JsonUnwrapped
-    private T obj;
+    public T obj;
     @JsonIgnore
     private boolean isCompact;
     /**
@@ -46,10 +46,6 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     public GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
         this.obj = obj;
         this.controller = controllerClass;
-    }
-
-    public T getObj() {
-        return obj;
     }
 
     public Class<? extends GsrsEntityController> getController() {
