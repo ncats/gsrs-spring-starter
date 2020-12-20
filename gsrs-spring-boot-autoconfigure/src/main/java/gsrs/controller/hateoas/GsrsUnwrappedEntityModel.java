@@ -3,14 +3,13 @@ package gsrs.controller.hateoas;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonValue;
 import gsrs.controller.AbstractGsrsEntityController;
+import gsrs.controller.GsrsEntityController;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * GSRS Controller Aware HATEOAS {@link RepresentationModel} implementation
@@ -22,13 +21,11 @@ import java.util.Map;
  * @see {@link GsrsUnwrappedEntityModelProcessor}
  */
 public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrappedEntityModel<T>> {
-    /**
-     * needed so the links to add are added to the object's JSON Node.
-     */
-    @JsonUnwrapped
-    private T obj;
+
     @JsonIgnore
     private boolean isCompact;
+
+    private T obj;
     /**
      * This is the list of Links we will in-line these as well
      * using JsonAnyGetter on the getter below.
@@ -40,18 +37,21 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * to generate the correct method URL.
      */
     @JsonIgnore
-    private Class<? extends AbstractGsrsEntityController> controller;
+    private Class<? extends GsrsEntityController> controller;
 
-    public GsrsUnwrappedEntityModel(T obj, Class<? extends AbstractGsrsEntityController> controllerClass) {
+    public static <T> GsrsUnwrappedEntityModel<T> of(T obj, Class<? extends GsrsEntityController> controllerClass){
+        if(obj instanceof Collection){
+            return new CollectionGsrsUnwrappedEntityModel<>(obj, controllerClass);
+        }
+        return new GsrsUnwrappedEntityModel<T>(obj, controllerClass);
+    }
+    protected GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
         this.obj = obj;
+
         this.controller = controllerClass;
     }
 
-    public T getObj() {
-        return obj;
-    }
-
-    public Class<? extends AbstractGsrsEntityController> getController() {
+    public Class<? extends GsrsEntityController> getController() {
         return controller;
     }
 
@@ -65,11 +65,16 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         return ourLinks;
     }
 
+    @JsonIgnore
     public boolean isCompact() {
         return isCompact;
     }
 
     public void setCompact(boolean compact) {
         isCompact = compact;
+    }
+    @JsonUnwrapped
+    public T getObj() {
+        return obj;
     }
 }

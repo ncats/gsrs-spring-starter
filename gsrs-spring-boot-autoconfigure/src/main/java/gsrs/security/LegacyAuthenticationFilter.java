@@ -6,9 +6,7 @@ import ix.core.models.Principal;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -60,9 +58,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     repository.saveAndFlush(up);
                 }
                 if(up !=null){
-
-                   auth= new UsernamePasswordAuthenticationToken(username, email,
-                            up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
+                    auth = new UserProfilePasswordAuthentication(up);
                 }
             }
         }
@@ -89,9 +85,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 if(up!=null){
                     if(up.acceptPassword(pass)){
                         //valid password!
-
-                        auth= new UsernamePasswordAuthenticationToken(username, up.getEncodePassword(),
-                                up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
+                        auth = new UserProfilePasswordAuthentication(up);
 
                     }else{
                         throw new BadCredentialsException("invalid credentials for username" + username);

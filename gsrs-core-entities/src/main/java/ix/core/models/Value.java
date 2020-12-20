@@ -1,6 +1,7 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 
 import javax.persistence.*;
@@ -10,6 +11,7 @@ import java.io.Serializable;
 @Table(name="ix_core_value")
 @Inheritance
 @DiscriminatorValue("VAL")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Value extends LongBaseModel implements Serializable{
     @Id
     @GeneratedValue(strategy=GenerationType.SEQUENCE)

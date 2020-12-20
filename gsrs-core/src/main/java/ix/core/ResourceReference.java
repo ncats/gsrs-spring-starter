@@ -28,7 +28,10 @@ public class ResourceReference <T>{
 	public String toString(){
 		return resourceLink;
 	}
-	
+
+	public String computedResourceLink(){
+		return resourceLink;
+	}
 	/**
 	 * The direct serialized JsonNode expected for raw serialization ('$')
 	 * @return
@@ -51,7 +54,7 @@ public class ResourceReference <T>{
 	}
 	public static ResourceReference<JsonNode> ofSerializedJson(String uri, Supplier<String> rawSupplier){
 		Objects.requireNonNull(rawSupplier);
-		return new ResourceReference<JsonNode>(uri, ()->{
+		return new ResourceReference<>(uri, ()->{
 			ObjectMapper om = new ObjectMapper();
 			try {
 				return om.readTree(rawSupplier.get());
@@ -63,7 +66,7 @@ public class ResourceReference <T>{
 	}
 	public static ResourceReference<JsonNode> ofSerializedJson(String uri, String raw){
 		
-		return new ResourceReference<JsonNode>(uri, ()->{
+		return new ResourceReference<>(uri, ()->{
 			ObjectMapper om = new ObjectMapper();
 			try {
 				return om.readTree(raw);
@@ -87,7 +90,7 @@ public class ResourceReference <T>{
                                SerializerProvider provider)
 	        throws IOException, JsonProcessingException {
 	        
-	        provider.defaultSerializeValue(res.toString(), jgen);
+	        provider.defaultSerializeValue(res.computedResourceLink(), jgen);
 	    }    
 	}
 		

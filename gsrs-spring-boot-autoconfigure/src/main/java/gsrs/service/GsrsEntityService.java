@@ -1,5 +1,6 @@
 package gsrs.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.controller.OffsetBasedPageRequest;
@@ -96,5 +97,7 @@ public interface GsrsEntityService<T, I> {
         private STATUS status;
         private ValidationResponse<T> validationResponse;
         private T updatedEntity;
+        @JsonIgnore
+        private String oldJson;
     }
 }

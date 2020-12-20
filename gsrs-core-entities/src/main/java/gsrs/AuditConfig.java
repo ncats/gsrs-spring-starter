@@ -3,6 +3,7 @@ package gsrs;
 import gov.nih.ncats.common.util.Caches;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.repository.PrincipalRepository;
+import gsrs.security.GsrsUserProfileDetails;
 import ix.core.models.Principal;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
@@ -63,15 +65,23 @@ public class AuditConfig {
         }
 
         @Override
+
         public Optional<Principal> getCurrentAuditor() {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if(auth ==null || auth instanceof AnonymousAuthenticationToken){
                 return Optional.empty();
             }
             String name = auth.getName();
+            if(auth instanceof GsrsUserProfileDetails){
+                return Optional.of(((GsrsUserProfileDetails)auth).getPrincipal().user);
+            }
             System.out.println("looking up principal for " + name);
 
-            return Optional.ofNullable(principalCache.computeIfAbsent(name, n->principalRepository.findDistinctByUsernameIgnoreCase(name)) );
+            return Optional.ofNullable(principalCache.computeIfAbsent(name,
+                    n->{
+                Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
+                return p;
+                    }) );
         }
     }	
 }

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 
+import gsrs.model.GsrsApiAction;
 import ix.core.*;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
@@ -380,6 +381,11 @@ public class EntityUtils {
 				}
 
 				@Override
+				public boolean isCallableByApi() {
+					return false;
+				}
+
+				@Override
 				public Optional<Object> getValue(Object entity) {
 					return Optional.of(sequence);
 				}
@@ -542,7 +548,7 @@ public class EntityUtils {
 				VirtualMapMethodMeta vmmm=new VirtualMapMethodMeta(field);
 				return Optional.of(Tuple.of(vmmm, vmmm.getValue(this.getValue())));
 			}
-			return ei.getJsonGetterFor(field).map(f->Tuple.of(f,f.getValue(this.getValue())));
+			return ei.getApiFieldFor(field).map(f->Tuple.of(f,f.getValue(this.getValue())));
 		}
 		
 		public Stream<MethodOrFieldMeta> fields(){
@@ -552,13 +558,13 @@ public class EntityUtils {
 				           .stream()
 				           .map(k->new VirtualMapMethodMeta(k.toString()));
 			}
-			return ei.streamJsonGetters();
+			return ei.streamApiFields();
 		}
 		
 		public Stream<Tuple<MethodOrFieldMeta,Optional<Object>>> fieldsAndValues(){
 			return fields().map(m->Tuple.of(m, m.getValue(this.getValue())));
 		}
-		
+
 		
 		
 		public Object getValueOrNullAt(String field){
@@ -871,6 +877,7 @@ public class EntityUtils {
 	        					.fieldsAndValues()
 	        					.map(t->Tuple.of(t.k().getJsonFieldName(), t.v().orElse(null)))
 	        					.collect(Collectors.toList());
+
 	        		return Optional.of(EntityWrapper.of(value));
 				});
 				
@@ -1091,6 +1098,8 @@ public class EntityUtils {
 		
 		Map<String,MethodOrFieldMeta> jsonGetters;
 
+		Map<String, MethodOrFieldMeta> apiFields;
+
 		//Some simple factory helper methods
 
 		//TODO katzelda October 2020 : for now remove exact fields list we can implement this support later
@@ -1246,8 +1255,14 @@ public class EntityUtils {
 			    	  if(a.getJsonModifiers()>b.getJsonModifiers())return a;
 			    	  return b;
 			      }));
-			
-			
+
+			apiFields =Stream.concat(methods.stream(),  fields.stream())
+					.filter(m->m.isCallableByApi())
+					.collect(Collectors.toMap(m->m.getJsonFieldName(), m->m, (a,b)->{
+						if(a.getJsonModifiers()>b.getJsonModifiers())return a;
+						return b;
+					}));
+
 			uniqueColumnFields = fields.stream()
 					.filter(f -> f.isUniqueColumn())
 					.collect(Collectors.toList());
@@ -1376,6 +1391,9 @@ public class EntityUtils {
 		public List<FieldMeta> getCollapsedFields(){
 			return fields.stream().filter(FieldMeta::isCollapseInCompactView)
 							.collect(Collectors.toList());
+		}
+		public List<MethodMeta> getApiActions(){
+			return methods.stream().filter(m-> m.isApiAction).collect(Collectors.toList());
 		}
 		private static void findPublicAndOtherIndexableFields(Class<?> c, Consumer<Field> fields){
 			for(Field f : c.getDeclaredFields()){
@@ -1573,9 +1591,17 @@ public class EntityUtils {
 			MethodOrFieldMeta mofm = jsonGetters.get(jsonField);
 			return Optional.ofNullable(mofm);
 		}
-		
+		public Optional<MethodOrFieldMeta> getApiFieldFor(String jsonField){
+			Objects.requireNonNull(jsonField);
+			MethodOrFieldMeta mofm = apiFields.get(jsonField);
+			return Optional.ofNullable(mofm);
+		}
 		public Stream<MethodOrFieldMeta> streamJsonGetters(){
 			return jsonGetters.values().stream();
+		}
+
+		public Stream<MethodOrFieldMeta> streamApiFields(){
+			return apiFields.values().stream();
 		}
 
 		public List<MethodMeta> getMethods() {
@@ -1765,10 +1791,10 @@ public class EntityUtils {
 		//
 	}
 
-	public static interface MethodOrFieldMeta{
+	public  interface MethodOrFieldMeta{
 		
-		public static int JSON_MODIFIER_METHOD = 2;
-		public static int JSON_MODIFIER_EXPLICIT = 1;
+		int JSON_MODIFIER_METHOD = 2;
+		int JSON_MODIFIER_EXPLICIT = 1;
 		
 
 		public Optional<Object> getValue(Object entity);
@@ -1806,7 +1832,8 @@ public class EntityUtils {
 		public boolean isTextEnabled();
 		public boolean isSequence();
 		public boolean isStructure();
-		
+
+		boolean isCallableByApi();
 		public Class<?> deserializeAs();
 		public <T> JsonSerializer<T> getSerializer();
 		
@@ -1855,6 +1882,11 @@ public class EntityUtils {
 		public Optional<Object> getValue(Object entity) {
 			Object val=asMap(entity).get(field);
 			return Optional.ofNullable(val);
+		}
+
+		@Override
+		public boolean isCallableByApi() {
+			return false;
 		}
 
 		@Override
@@ -1941,7 +1973,7 @@ public class EntityUtils {
 		private boolean isStructure = false;
 		private boolean isSequence = false;
 		private Class<?> type;
-
+		private boolean isApiAction=false;
 		private boolean isArray = false;
 		private boolean isCollection = false;
 		private boolean isId = false;
@@ -1952,7 +1984,7 @@ public class EntityUtils {
 		private boolean isChangeReason=false;
 		private boolean isJsonIgnore=false;
 		private boolean isGeneratedByPlay=false;
-		
+		private boolean isApiCallable=false;
 		private JsonProperty jsonProperty=null;
 		private JsonSerialize jsonSerialize=null; 
 		private JsonSerializer<?> serializer=null;
@@ -2125,7 +2157,20 @@ public class EntityUtils {
 				isArray = true;
 			}
 			isId = (m.getAnnotation(Id.class) != null);
+
+			EntityMapperOptions entityMapperOptions = m.getAnnotation(EntityMapperOptions.class);
+			if(entityMapperOptions !=null){
+				isApiCallable = entityMapperOptions.includeAsCallable();
+			}
+
+			GsrsApiAction apiAction = m.getAnnotation(GsrsApiAction.class);
+			if(apiAction !=null){
+				isApiAction = true;
+				serializedName = apiAction.value();
+				isJsonIgnore = false;
+			}
 		}
+
 
 		public boolean isChangeReason() {
 			return isChangeReason;
@@ -2232,6 +2277,11 @@ public class EntityUtils {
 		@Override
 		public boolean isStructure() {
 			return this.isStructure;
+		}
+
+		@Override
+		public boolean isCallableByApi() {
+			return isApiCallable || isJsonSerialized();
 		}
 
 		@Override
@@ -2395,6 +2445,7 @@ public class EntityUtils {
 
 		private boolean isJsonSerailzed=true;
 
+		private boolean isApiCallable=false;
 		private boolean collapseInCompactView=false;
 		private String compactViewFieldName;
 		private JsonSerialize jsonSerialize=null;
@@ -2438,6 +2489,11 @@ public class EntityUtils {
 				}
 			}
 			return this.getName();
+		}
+
+		@Override
+		public boolean isCallableByApi() {
+			return isApiCallable || isJsonSerialized();
 		}
 
 		public Column getColumn() {
@@ -2518,6 +2574,7 @@ public class EntityUtils {
 					this.compactViewFieldName = entityMapperOptions.linkoutInCompactViewName().isEmpty()? "_"+serializedName : entityMapperOptions.linkoutInCompactViewName();
 					this.collapseInCompactView = true;
 				}
+				isApiCallable = entityMapperOptions.includeAsCallable();
 			}
 			if(compactViewFieldName ==null){
 				this.compactViewFieldName = "_"+serializedName;
