@@ -13,6 +13,7 @@ import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
+import org.springframework.data.annotation.CreatedBy;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -51,10 +52,10 @@ public class Edit extends BaseModel {
     @Column(length=64)
     public String batch;
 
-    //TODO katzelda Dec 2020 turn off createdBy for now stackoverflow with userdetails
-//    @CreatedBy
-//    @ManyToOne(cascade= CascadeType.PERSIST)
-//    public Principal editor;
+//    TODO katzelda Dec 2020 turn off createdBy for now stackoverflow with userdetails
+    @CreatedBy
+    @ManyToOne(cascade= CascadeType.PERSIST)
+    public Principal editor;
 
     @Column(length=1024)
     public String path;
