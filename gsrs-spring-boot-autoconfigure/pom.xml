@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.3.5-SNAPSHOT</version>
+        <version>0.3.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,6 +17,12 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core</artifactId>
             <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-legacy-structure-indexer</artifactId>
+            <version>${gsrs.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

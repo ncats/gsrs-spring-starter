@@ -30,7 +30,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * This is the list of Links we will in-line these as well
      * using JsonAnyGetter on the getter below.
      */
-    private Map<String, Link> ourLinks = new HashMap<>();
+    private Map<String, Object> ourLinks = new HashMap<>();
     /**
      * This is the controller that was used to create this REST Response
      * will be used by the {@link GsrsUnwrappedEntityModelProcessor}
@@ -57,11 +57,15 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
 
     @Override
     public GsrsUnwrappedEntityModel<T> add(Link link) {
-         ourLinks.put(link.getRel().value(), link);
+         ourLinks.put(link.getRel().value(), link.getHref());
          return this;
     }
+    public GsrsUnwrappedEntityModel<T> addLink(String name, String href){
+        ourLinks.put(name, href);
+        return this;
+    }
     @JsonAnyGetter
-    public Map<String, Link> getOurLinks() {
+    public Map<String, Object> getOurLinks() {
         return ourLinks;
     }
 

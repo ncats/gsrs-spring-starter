@@ -9,19 +9,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>gsrs-spring-boot-starter</artifactId>
+    <artifactId>gsrs-spring-legacy-structure-indexer</artifactId>
 
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-            <version>2.3.4.RELEASE</version>
-        </dependency>
-        <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
-            <version>${gsrs.version}</version>
+            <artifactId>molwitch</artifactId>
+            <version>0.6.0</version>
         </dependency>
+
     </dependencies>
 </project>
