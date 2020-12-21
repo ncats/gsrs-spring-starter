@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
@@ -13,6 +14,8 @@ import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.ginas.models.serialization.PrincipalDeserializer;
+import ix.ginas.models.serialization.PrincipalSerializer;
 import org.springframework.data.annotation.CreatedBy;
 
 import javax.persistence.*;
@@ -52,9 +55,11 @@ public class Edit extends BaseModel {
     @Column(length=64)
     public String batch;
 
-//    TODO katzelda Dec 2020 turn off createdBy for now stackoverflow with userdetails
+
     @CreatedBy
-    @ManyToOne(cascade= CascadeType.PERSIST)
+    @ManyToOne(cascade= CascadeType.ALL)
+    @JsonDeserialize(using = PrincipalDeserializer.class)
+    @JsonSerialize(using = PrincipalSerializer.class)
     public Principal editor;
 
     @Column(length=1024)

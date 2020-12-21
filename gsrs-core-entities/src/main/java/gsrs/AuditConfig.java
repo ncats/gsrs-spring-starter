@@ -73,7 +73,9 @@ public class AuditConfig {
             }
             String name = auth.getName();
             if(auth instanceof GsrsUserProfileDetails){
-                return Optional.of(((GsrsUserProfileDetails)auth).getPrincipal().user);
+                //refetch from repository becaus the one from the authentication is "detached"
+                return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
+
             }
             System.out.println("looking up principal for " + name);
 
