@@ -344,7 +344,10 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
 			return false;
 		}
 		GinasCommonData g=(GinasCommonData)o;
-		return Objects.equals(uuid, g.uuid);
+		//change to getOrGenerate since if the uuid isn't set null will be considered equals
+        //this caused problems in GSRS 2.x when we had validation rules that did List.remove( object)
+        // if multiple objects had unset uuids we would accidntally remove the wrong one!!
+		return Objects.equals(getOrGenerateUUID(), g.getOrGenerateUUID());
 //		if(!(this.uuid+"").equals(g.uuid+"")){
 //			return false;
 //		}
