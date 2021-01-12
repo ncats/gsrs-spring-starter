@@ -16,48 +16,17 @@ import java.util.Optional;
 @NoRepositoryBean
 public interface GsrsVersionedRepository<T, ID> extends GsrsRepository<T, ID> {
 
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     default Optional<T> findByKey(EntityUtils.Key key){
         return findById((ID)key.getIdNative());
     }
 
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Override
-    List<T> findAll();
-
+    <S extends T> S save(S s);
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Override
-    List<T> findAll(Sort sort);
-
+    <S extends T> List<S> saveAll(Iterable<S> iterable);
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Override
-    List<T> findAllById(Iterable<ID> iterable);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    T getOne(ID id);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    <S extends T> List<S> findAll(Example<S> example);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    <S extends T> List<S> findAll(Example<S> example, Sort sort);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    Page<T> findAll(Pageable pageable);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    Optional<T> findById(ID id);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    <S extends T> Optional<S> findOne(Example<S> example);
-
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @Override
-    <S extends T> Page<S> findAll(Example<S> example, Pageable pageable);
+    <S extends T> S saveAndFlush(S s);
 }

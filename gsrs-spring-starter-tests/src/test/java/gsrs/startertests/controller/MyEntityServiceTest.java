@@ -67,6 +67,27 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     }
 
     @Test
+
+    public void callingGetManyTimesDoesNotIncrementVersion() throws Exception {
+        MyEntity myEntity = new MyEntity();
+        myEntity.setFoo("myFoo");
+
+        AbstractGsrsEntityService.CreationResult<MyEntity> result = myEntityService.createEntity(objectMapper.valueToTree(myEntity));
+        assertTrue(result.isCreated());
+        MyEntity savedMyEntity = result.getCreatedEntity();
+
+        assertNotNull(savedMyEntity.getUuid());
+        for(int i=0 ;i< 10; i++) {
+            assertThat(myEntityService.getEntityBySomeIdentifier(savedMyEntity.getUuid().toString()).get(), matchesExample(MyEntity.builder()
+                    .foo("myFoo")
+                    .created(timeTraveller.getWhereWeAre().asDate())
+                    .modified(timeTraveller.getWhereWeAre().asDate())
+                    .version(1)
+                    .build()));
+        }
+    }
+
+    @Test
     public void loadTwoDifferentRecords() throws Exception {
         MyEntity myEntity = new MyEntity();
         myEntity.setFoo("myFoo");

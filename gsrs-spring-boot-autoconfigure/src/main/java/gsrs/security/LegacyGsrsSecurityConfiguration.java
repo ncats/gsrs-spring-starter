@@ -4,6 +4,7 @@ import gsrs.controller.GsrsRestResponseErrorHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,12 +33,12 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-//                .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
-//                .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
-//                .antMatchers(HttpMethod.POST, "/api/*").authenticated()
+                .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
+                .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
+                .antMatchers(HttpMethod.POST, "/api/*").authenticated()
 //        .antMatchers("/login*").permitAll()
 
-                .anyRequest().authenticated()
+//                .anyRequest().authenticated()
                 .and()
                 .addFilterBefore(legacyAuthenticationFilter(), BasicAuthenticationFilter.class)
 //                .and()
