@@ -25,6 +25,7 @@ class FieldLink extends Link {
     FieldLink(String field, Link link, String id){
 
         URI uri = link.toUri();
+        System.out.println("orl url =" + uri);
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?
         String apiPath = "/api/v1" + uri.getRawPath()
                             .replace("/("+id+")", "("+id+")");
