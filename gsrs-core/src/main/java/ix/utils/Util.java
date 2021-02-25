@@ -57,6 +57,18 @@ public class Util {
         return UserAgents[rand.nextInt(UserAgents.length)];
     }
 
+    private static final Pattern UUID_PATTERN = Pattern.compile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$");
+
+    /**
+     * Does the given input String match the UUID pattern.
+     * @param id the String to compare
+     * @return {@code true} if the given Strin matches the UUID pattern including dashes;
+     * {@code false } otherwise.
+     */
+    public static boolean isUUID(String id){
+        Matcher m = UUID_PATTERN.matcher(id);
+        return m.matches();
+    }
 
     public static String toObjectToString(Object o){
         return o.getClass().getName() + "@" + Integer.toHexString(o.hashCode());

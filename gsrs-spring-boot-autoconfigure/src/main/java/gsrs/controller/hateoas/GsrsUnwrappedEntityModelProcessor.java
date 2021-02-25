@@ -2,6 +2,7 @@ package gsrs.controller.hateoas;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.FieldResourceReference;
+import ix.core.ObjectResourceReference;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.*;
@@ -59,19 +60,30 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
             Object resource =action.getValue(obj).get();
-            if(resource !=null && resource instanceof FieldResourceReference){
-                String field = ((FieldResourceReference)resource).computedResourceLink();
+            if(resource !=null) {
+                if (resource instanceof FieldResourceReference) {
+                    String field = ((FieldResourceReference) resource).computedResourceLink();
 
-                model.add(
-                        GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),entityLinks.linkFor(obj.getClass())
-                        .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-                        .slash(field)
-                        .withRel(action.getJsonFieldName())));
+                    model.add(
+                            GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), entityLinks.linkFor(obj.getClass())
+                                    .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+                                    .slash(field)
+                                    .withRel(action.getJsonFieldName())));
 
 //                String field = ((FieldResourceReference)resource).computedResourceLink();
 //                model.add(GsrsLinkUtil.fieldLink(field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null))
 //                                                .withRel(action.getJsonFieldName()).expand(id)));
 
+                }else if(resource instanceof ObjectResourceReference){
+                    ObjectResourceReference objResource = (ObjectResourceReference)resource;
+                    LinkBuilder linkBuilder = entityLinks.linkFor(objResource.getEntityClass())
+                            .slash("(" + objResource.getId() + ")");
+                    if(objResource.getFieldPath()!=null){
+                        linkBuilder = linkBuilder.slash(objResource.getFieldPath());
+                    }
+                    model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder
+                                    .withRel(action.getJsonFieldName())));
+                }
             }
         }
         if(model.isCompact()) {
