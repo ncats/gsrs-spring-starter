@@ -1,6 +1,7 @@
 package gsrs.controller.hateoas;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.model.Sizeable;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
 import ix.core.util.EntityUtils;
@@ -100,7 +101,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                     model.add(
                             computeFieldLink(Array.getLength(f.getValue(obj).get()),
                                     obj, id, field, compactFieldName));
-                 }
+                 }else if(Sizeable.class.isAssignableFrom(f.getType())){
+                    model.add( computeFieldLink(((Sizeable) f.getValue(obj).get()).getSize(),
+                            obj, id, field, compactFieldName));
+                }
 //            else{
 //                model.add(
 //                        linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null)).withRel(compactFieldName).getTemplate());
