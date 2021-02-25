@@ -186,11 +186,6 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
 		gac.add(p);
 		this.setRecordAccess(gac);
 	}
-	public void addRestrictGroup(String group){
-		//TODO katzelda October 2020: this should probably be moved to a utility class that can have repositories injected in
-		//make this a no-op for now since it's a required method in the interface
-//		addRestrictGroup(AdminFactory.registerGroupIfAbsent(new Group(group)));
-	}
 
 
     public GinasCommonData () {
