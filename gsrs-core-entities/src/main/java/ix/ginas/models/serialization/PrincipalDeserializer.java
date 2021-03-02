@@ -28,7 +28,7 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
 
     private synchronized  void initIfNeeded(){
         if(principalRepository ==null) {
-            AutowireHelper.getInstance().autowire(principalRepository);
+            AutowireHelper.getInstance().autowire(this);
         }
     }
     public PrincipalDeserializer(PrincipalRepository principalRepository) {
