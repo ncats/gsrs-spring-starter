@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.controller.IdHelper;
 import gsrs.repository.EditRepository;
+import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
-import gsrs.validator.ValidatorConfig;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
@@ -193,10 +193,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     public  CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException {
         T newEntity = fromNewJson(newEntityJson);
 
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
+        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
 
-        ValidationResponse<T> response = createValidationResponse(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
-        ValidatorCallback callback = createCallbackFor(newEntity, response, ValidatorConfig.METHOD_TYPE.CREATE);
+        ValidationResponse<T> response = createValidationResponse(newEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
+        ValidatorCallback callback = createCallbackFor(newEntity, response, DefaultValidatorConfig.METHOD_TYPE.CREATE);
         validator.validate(newEntity, null, callback);
         callback.complete();
 
@@ -213,7 +213,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     }
 
-    protected <T>  ValidationResponse<T> createValidationResponse(T newEntity, Object oldEntity, ValidatorConfig.METHOD_TYPE type){
+    protected <T>  ValidationResponse<T> createValidationResponse(T newEntity, Object oldEntity, DefaultValidatorConfig.METHOD_TYPE type){
         return new ValidationResponse<T>(newEntity);
     }
 
@@ -244,10 +244,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
         T oldEntity = opt.get();
         String oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.UPDATE);
+        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
 
-        ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.UPDATE);
-        ValidatorCallback callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.UPDATE);
+        ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+        ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
         validator.validate(updatedEntity, oldEntity, callback);
 
         callback.complete();
@@ -275,7 +275,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return builder.build();
     }
 
-    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
+    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, DefaultValidatorConfig.METHOD_TYPE type) {
         return new ValidatorCallback() {
             @Override
             public void addMessage(ValidationMessage message) {
@@ -354,15 +354,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         ValidationResponse<T> response;
         ValidatorCallback callback;
         if(opt.isPresent()){
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), ValidatorConfig.METHOD_TYPE.UPDATE);
-            response = createValidationResponse(updatedEntity, opt.orElse(null), ValidatorConfig.METHOD_TYPE.UPDATE);
-            callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.UPDATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+            response = createValidationResponse(updatedEntity, opt.orElse(null), DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+            callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
             validator.validate(updatedEntity, opt.orElse(null), callback);
 
         }else{
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
-            response = createValidationResponse(updatedEntity, opt.orElse(null), ValidatorConfig.METHOD_TYPE.CREATE);
-            callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.CREATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
+            response = createValidationResponse(updatedEntity, opt.orElse(null), DefaultValidatorConfig.METHOD_TYPE.CREATE);
+            callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.CREATE);
             validator.validate(updatedEntity, opt.orElse(null), callback);
         }
         callback.complete();

@@ -1,5 +1,7 @@
 package gsrs;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.validator.ValidatorConfig;
 import lombok.Data;
@@ -15,7 +17,7 @@ import java.util.Map;
 @Data
 public class GsrsFactoryConfiguration {
 
-    private Map<String, List<ValidatorConfig>> validators;
+    private Map<String, JsonNode> validators;
     private List<EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers= false;
@@ -35,6 +37,13 @@ public class GsrsFactoryConfiguration {
             //nothing set
             return Collections.emptyList();
         }
-        return validators.getOrDefault(context, Collections.emptyList());
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode list = validators.getOrDefault(context, mapper.createArrayNode());
+        List<ValidatorConfig> configs = new ArrayList<>();
+        for(JsonNode n : list){
+            configs.add(mapper.convertValue(n, ValidatorConfig.class));
+        }
+        return configs;
     }
 }

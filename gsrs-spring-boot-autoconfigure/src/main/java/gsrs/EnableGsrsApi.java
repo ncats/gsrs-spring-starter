@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.autoconfigure.GsrsApiAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 
@@ -10,7 +11,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( GsrsApiSelector.class)
+@Import( {GsrsApiSelector.class, GsrsApiAutoConfiguration.class})
 @EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
 public @interface EnableGsrsApi {
 

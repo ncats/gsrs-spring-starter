@@ -1,6 +1,6 @@
 package ix.ginas.utils.validation;
 
-import gsrs.validator.ValidatorConfig;
+import gsrs.validator.DefaultValidatorConfig;
 import ix.core.validator.Validator;
 
 /**
@@ -8,7 +8,7 @@ import ix.core.validator.Validator;
  */
 public interface ValidatorPlugin<T> extends Validator<T> {
 
-    boolean supports(T newValue, T oldValue, ValidatorConfig.METHOD_TYPE methodType);
+    boolean supports(T newValue, T oldValue, DefaultValidatorConfig.METHOD_TYPE methodType);
 
 
 

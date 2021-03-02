@@ -2,9 +2,9 @@ package ix.ginas.utils.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.Validator;
-import org.springframework.context.ApplicationContext;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +35,7 @@ public class ValidatorFactory {
     }
 
 
-    public <T> Validator<T> createValidatorFor(T newValue, T oldValue, ValidatorConfig.METHOD_TYPE methodType){
+    public <T> Validator<T> createValidatorFor(T newValue, T oldValue, DefaultValidatorConfig.METHOD_TYPE methodType){
         return plugins.entrySet().stream()
                 .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType) && e.getKey().supports(newValue, oldValue, methodType))
                 .map(e -> (Validator<T>) e.getKey())
