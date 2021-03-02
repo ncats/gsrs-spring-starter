@@ -13,4 +13,11 @@ public interface ValidatorCallback {
     void haltProcessing();
 
     void setValid();
+
+    /**
+     * Validation is complete.
+     * @implSpec  the default implementation is a no-op.
+     * @since 3.0
+     */
+    default void complete(){}
 }

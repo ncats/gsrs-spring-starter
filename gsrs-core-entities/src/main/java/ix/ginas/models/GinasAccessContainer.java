@@ -6,15 +6,13 @@ import ix.core.models.Group;
 import ix.ginas.models.serialization.GroupDeserializer;
 import ix.ginas.models.serialization.GroupSerializer;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
+import javax.persistence.*;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-//@Entity
-//@Table(name = "ix_ginas_access")
+@Entity
+@Table(name = "ix_ginas_access")
 public class GinasAccessContainer {
 	
 	@Id

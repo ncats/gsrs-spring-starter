@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.stream.StreamUtil;
 import ix.core.controllers.EntityFactory.EntityMapper;
 import ix.core.models.*;
+import ix.ginas.converters.GinasAccessConverter;
 import ix.ginas.models.serialization.GroupDeserializer;
 import ix.ginas.models.serialization.GroupSerializer;
 import ix.ginas.models.serialization.PrincipalDeserializer;
@@ -56,8 +57,10 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
     public Date created=null;
 
     @CreatedBy
-    @OneToOne()
     @Indexable(facet = true, name = "Created By", sortable=true, recurse=false)
+    @ManyToOne(cascade= CascadeType.ALL)
+    @JsonDeserialize(using = PrincipalDeserializer.class)
+    @JsonSerialize(using = PrincipalSerializer.class)
     public Principal createdBy;
 
     @LastModifiedDate
@@ -65,31 +68,12 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
     public Date lastEdited;
     
     //TP: why is this one-to-one?
-    @OneToOne()
+    @ManyToOne(cascade= CascadeType.ALL)
 	@LastModifiedBy
     @Indexable(facet = true, name = "Last Edited By", sortable=true, recurse=false, useFullPath = true)
+    @JsonDeserialize(using = PrincipalDeserializer.class)
+    @JsonSerialize(using = PrincipalSerializer.class)
     public Principal lastEditedBy;
-
-    @CreatedBy
-    @JsonDeserialize(using = PrincipalDeserializer.class)
-    public Principal getCreatedBy() {
-		return createdBy;
-	}
-
-    @JsonSerialize(using = PrincipalSerializer.class)
-	public void setCreatedBy(Principal createdBy) {
-		this.createdBy = createdBy;
-	}
-    
-    @JsonDeserialize(using = PrincipalDeserializer.class)
-    public Principal getLastEditedBy() {
-		return lastEditedBy;
-	}
-
-    @JsonSerialize(using = PrincipalSerializer.class)
-	public void setLastEditedBy(Principal lastEditedBy) {
-		this.lastEditedBy = lastEditedBy;
-	}
 
 
 	//Where did this come from?
@@ -98,8 +82,9 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
     //OLD WAY
     @JsonIgnore
     @Basic(fetch= FetchType.LAZY)
-    //@Lob
+//    @Lob
 //    @OneToOne(cascade=CascadeType.ALL)
+    @Convert(converter = GinasAccessConverter.class)
     private GinasAccessContainer recordAccess;
 //    
     
@@ -170,6 +155,7 @@ public class GinasCommonData extends BaseModel implements GinasAccessControlled,
     
     @JsonProperty("access")
     @JsonSerialize(contentUsing = GroupSerializer.class)
+    @Transient
     public Set<Group> getAccess(){
     	GinasAccessContainer gac=getRecordAccess();
     	if(gac!=null){

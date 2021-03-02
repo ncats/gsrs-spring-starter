@@ -9,8 +9,10 @@ import gsrs.validator.ValidatorConfig;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
+import ix.core.validator.ValidatorCallback;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
@@ -192,19 +194,27 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         T newEntity = fromNewJson(newEntityJson);
 
         Validator<T> validator  = validatorFactory.getSync().createValidatorFor(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
-        ValidationResponse<T> resp = validator.validate(newEntity, null);
+
+        ValidationResponse<T> response = createValidationResponse(newEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
+        ValidatorCallback callback = createCallbackFor(newEntity, response, ValidatorConfig.METHOD_TYPE.CREATE);
+        validator.validate(newEntity, null, callback);
+        callback.complete();
+
         CreationResult.CreationResultBuilder<T> builder = CreationResult.<T>builder()
-                                                                            .validationResponse(resp);
+                                                                            .validationResponse(response);
 
-        if(resp!=null && !resp.isValid()){
+        if(response!=null && !response.isValid()){
 
-            return builder
-                    .build();
+            return builder.build();
         }
         return builder.createdEntity(transactionalPersist(newEntity))
                                 .created(true)
                                 .build();
 
+    }
+
+    protected <T>  ValidationResponse<T> createValidationResponse(T newEntity, Object oldEntity, ValidatorConfig.METHOD_TYPE type){
+        return new ValidationResponse<T>(newEntity);
     }
 
     /**
@@ -234,13 +244,18 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
         T oldEntity = opt.get();
         String oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.CREATE);
-        ValidationResponse<T> resp = validator.validate(updatedEntity, oldEntity);
+        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.UPDATE);
+
+        ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, ValidatorConfig.METHOD_TYPE.UPDATE);
+        ValidatorCallback callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.UPDATE);
+        validator.validate(updatedEntity, oldEntity, callback);
+
+        callback.complete();
         UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder()
-                                                            .validationResponse(resp)
+                                                            .validationResponse(response)
                                                             .oldJson(oldJson);
 
-        if(resp!=null && !resp.isValid()){
+        if(response!=null && !response.isValid()){
             return builder.status(UpdateResult.STATUS.ERROR)
                     .build();
         }
@@ -259,6 +274,44 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         //match 200 status of old GSRS
         return builder.build();
     }
+
+    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
+        return new ValidatorCallback() {
+            @Override
+            public void addMessage(ValidationMessage message) {
+                response.addValidationMessage(message);
+            }
+
+            @Override
+            public void setInvalid() {
+                response.setValid(false);
+            }
+
+            @Override
+            public void setValid() {
+                response.setValid(true);
+            }
+
+            @Override
+            public void haltProcessing() {
+
+            }
+
+            @Override
+            public void addMessage(ValidationMessage message, Runnable appyAction) {
+                response.addValidationMessage(message);
+
+            }
+
+            @Override
+            public void complete() {
+                if(response.hasError()){
+                    response.setValid(false);
+                }
+            }
+        };
+    }
+
     /**
      * Update the given entity inside a transaction.
      * This method should NOT be overridden by client code
@@ -298,17 +351,24 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
         Optional<T> opt = id==null? Optional.empty() : get(id);
         Validator<T> validator;
+        ValidationResponse<T> response;
+        ValidatorCallback callback;
         if(opt.isPresent()){
             validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), ValidatorConfig.METHOD_TYPE.UPDATE);
+            response = createValidationResponse(updatedEntity, opt.orElse(null), ValidatorConfig.METHOD_TYPE.UPDATE);
+            callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.UPDATE);
+            validator.validate(updatedEntity, opt.orElse(null), callback);
 
         }else{
             validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, ValidatorConfig.METHOD_TYPE.CREATE);
-
+            response = createValidationResponse(updatedEntity, opt.orElse(null), ValidatorConfig.METHOD_TYPE.CREATE);
+            callback = createCallbackFor(updatedEntity, response, ValidatorConfig.METHOD_TYPE.CREATE);
+            validator.validate(updatedEntity, opt.orElse(null), callback);
         }
-        ValidationResponse<T> resp = validator.validate(updatedEntity, opt.orElse(null));
+        callback.complete();
 
         //always send 200 even if validation has errors?
-        return resp;
+        return response;
 
     }
 

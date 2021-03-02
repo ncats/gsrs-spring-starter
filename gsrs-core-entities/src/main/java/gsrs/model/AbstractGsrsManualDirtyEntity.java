@@ -7,9 +7,7 @@ import gsrs.GsrsManualDirtyMaker;
 import ix.core.search.text.TextIndexerEntityListener;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -19,18 +17,23 @@ import java.util.Set;
  * programmatic setting of dirty fields.
  */
 @MappedSuperclass
+//@Access(value= AccessType.FIELD)
 public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity implements GsrsManualDirtyMaker{
 
     @JsonIgnore
     @Transient
-    private Set<String> dirtyFields = new HashSet<>();
+    private transient Set<String> dirtyFields = new HashSet<>();
 
     @MatchingIgnore
     @Override
+    @JsonIgnore
+    @Transient
     public Set<String> getDirtyFields() {
         return dirtyFields;
     }
     @Override
+    @JsonIgnore
+    @Transient
     public void setIsDirty(String field) {
         this.dirtyFields.add(Objects.requireNonNull(field));
     }

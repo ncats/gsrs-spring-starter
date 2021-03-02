@@ -1,9 +1,7 @@
 package gsrs;
 
-import gsrs.repository.GroupRepository;
-import ix.core.models.IxModel;
-import ix.ginas.models.GinasCommonData;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+
+
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
