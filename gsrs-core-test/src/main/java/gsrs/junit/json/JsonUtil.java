@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flipkart.zjsonpatch.JsonDiff;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
+import ix.core.controllers.EntityFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,9 +37,14 @@ public class JsonUtil {
 	// TP: This method takes arbitrary objects, serialized them, and returns the difference
 	// this may be useful if you'd like to see the difference between random seralizable objects
 	public static Changes computeChanges(Object before, Object after, ChangeFilter...filters ){
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
 		JsonNode beforeNode=om.valueToTree(before);
 		JsonNode afterNode=om.valueToTree(after);
+		try{
+			System.out.println(om.writerWithDefaultPrettyPrinter().writeValueAsString(beforeNode));
+			System.out.println("\n"+om.writerWithDefaultPrettyPrinter().writeValueAsString(afterNode));
+		}catch(Throwable t){}
+
 		return computeChanges(beforeNode,afterNode,filters);
 	}
 

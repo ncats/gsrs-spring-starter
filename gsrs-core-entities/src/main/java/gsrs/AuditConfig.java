@@ -73,16 +73,29 @@ public class AuditConfig {
             }
             String name = auth.getName();
             if(auth instanceof GsrsUserProfileDetails){
-                //refetch from repository becaus the one from the authentication is "detached"
+                //refetch from repository because the one from the authentication is "detached"
                 return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
-            System.out.println("looking up principal for " + name);
+            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
             return Optional.ofNullable(principalCache.computeIfAbsent(name,
                     n->{
-                Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
-                return p;
+                try {
+                    Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
+                    return p;
+                }catch(Throwable t){
+                    t.printStackTrace();
+                    throw t;
+                }
+                        //if name doesn't exist it will return null which won't get entered into the map and could
+                        //cause a stackoverflow of constantly re-looking up a non-existant value
+                        //TODO should we use configuration to add new user if missing?
+//                        if(p !=null){
+//                            return p;
+//                        }
+//                        throw new IllegalStateException("user name " + name + " not found");
+
                     }) );
         }
     }	

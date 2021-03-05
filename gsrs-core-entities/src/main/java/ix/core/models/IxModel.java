@@ -31,12 +31,10 @@ public class IxModel extends BaseModel {
 
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
-    @CreatedDate
     public Date created = TimeUtil.getCurrentDate();
 
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
-    @LastModifiedDate
     public Date modified;
 
     public boolean deprecated;
@@ -44,6 +42,17 @@ public class IxModel extends BaseModel {
     public IxModel() {}
 
 
+    @PrePersist
+    private void markCreated(){
+        Date date =TimeUtil.getCurrentDate();
+        created = date;
+        modified= date;
+    }
+    @PreUpdate
+    private void markUpdated(){
+        Date date =TimeUtil.getCurrentDate();
+        modified= date;
+    }
 
 	@Override
 	public String fetchGlobalId() {

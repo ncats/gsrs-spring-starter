@@ -143,10 +143,11 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .version(1)
                 .build()));
 
-        savedMyEntity.setFoo("updatedFoo");
+        MyEntity copy =  objectMapper.convertValue(objectMapper.valueToTree(savedMyEntity), MyEntity.class);
+        copy.setFoo("updatedFoo");
         timeTraveller.jumpAhead(1, TimeUnit.DAYS);
 
-        AbstractGsrsEntityService.UpdateResult<MyEntity> updateResult = myEntityService.updateEntity(objectMapper.valueToTree(savedMyEntity));
+        AbstractGsrsEntityService.UpdateResult<MyEntity> updateResult = myEntityService.updateEntity(objectMapper.valueToTree(copy));
 
         assertEquals(AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED, updateResult.getStatus());
         assertThat(updateResult.getUpdatedEntity(), matchesExample(MyEntity.builder()

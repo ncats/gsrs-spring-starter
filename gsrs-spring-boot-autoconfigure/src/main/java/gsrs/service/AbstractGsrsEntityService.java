@@ -9,6 +9,7 @@ import gsrs.validator.GsrsValidatorFactory;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
+import ix.core.util.LogUtil;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
@@ -16,6 +17,7 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -23,9 +25,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
  * @param <T> the entity type.
  * @param <I> the type for the entity's ID.
  */
+@Slf4j
 public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityService<T, I> {
 
     @Autowired
@@ -190,6 +191,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
 
     @Override
+    @Transactional
     public  CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException {
         T newEntity = fromNewJson(newEntityJson);
 
@@ -233,6 +235,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     }
 
     @Override
+    @Transactional
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
@@ -262,7 +265,47 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
         PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
         System.out.println("changes = " + patch.getChanges());
-        patch.apply(oldEntity);
+        final List<Object> removed = new ArrayList<Object>();
+
+        //Apply the changes, grabbing every change along the way
+        Stack changeStack=patch.apply(oldEntity, c->{
+            if("remove".equals(c.getOp())){
+                removed.add(c.getOldValue());
+            }
+            LogUtil.trace(()->c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
+        });
+        if(changeStack.isEmpty()){
+            throw new IllegalStateException("No change detected");
+        }else{
+            LogUtil.debug(()->"Found:" + changeStack.size() + " changes");
+        }
+        //This is the last line of defense for making sure that the patch worked
+        //Should throw an exception here if there's a major problem
+        String serialized= EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
+
+        while(!changeStack.isEmpty()){
+            Object v=changeStack.pop();
+            EntityUtils.EntityWrapper ewchanged= EntityUtils.EntityWrapper.of(v);
+            if(!ewchanged.isIgnoredModel() && ewchanged.isEntity()){
+
+                entityManager.merge(ewchanged.getValue());
+            }
+        }
+
+        //explicitly delete deleted things
+        //This should ONLY delete objects which "belong"
+        //to something. That is, have a @SingleParent annotation
+        //inside
+
+        removed.stream()
+                .filter(Objects::nonNull)
+                .map(o-> EntityUtils.EntityWrapper.of(o))
+                .filter(ew->ew.isExplicitDeletable())
+                .forEach(ew->{
+                    log.warn("deleting:" + ew.getValue());
+                    entityManager.remove(ew.getValue());
+                });
+
         System.out.println("updated entity = " + oldEntity);
         try {
             builder.updatedEntity(transactionalUpdate(oldEntity, oldJson));

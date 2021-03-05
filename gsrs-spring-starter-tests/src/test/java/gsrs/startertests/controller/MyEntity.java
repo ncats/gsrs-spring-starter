@@ -20,7 +20,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-class MyEntity extends AbstractGsrsEntity {
+public class MyEntity extends AbstractGsrsEntity {
     @Id
     @GeneratedValue
     private UUID uuid;
