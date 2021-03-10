@@ -1,5 +1,7 @@
 package gsrs;
 
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +14,16 @@ public class GsrsEntityProcessorListener {
 
     @Autowired
     private EntityProcessorFactory epf;
-//    @PostConstruct
-//    public void debug(){
-//        System.out.println("entityProcessorFactory = " + epf.getClass());
-//    }
+    @Autowired
+    private EntityPersistAdapter entityPersistAdapter;
+
+    private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
     @PreUpdate
     public void preUpdate(Object o){
         try {
-            epf.getCombinedEntityProcessorFor(o).preUpdate(o);
+            initializer.get();
+            entityPersistAdapter.preUpdateBeanDirect(o, ()->epf.getCombinedEntityProcessorFor(o).preUpdate(o));
+
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
         }
@@ -28,7 +32,10 @@ public class GsrsEntityProcessorListener {
     @PostUpdate
     public void postUpdate(Object o){
         try {
-            epf.getCombinedEntityProcessorFor(o).postUpdate(o);
+            initializer.get();
+            //TODO where should oldvalues come from?
+            entityPersistAdapter.postUpdateBeanDirect(o, null, true, ()->epf.getCombinedEntityProcessorFor(o).postUpdate(o));
+
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
         }
@@ -37,6 +44,7 @@ public class GsrsEntityProcessorListener {
     @PrePersist
     public void prePersist(Object o){
         try {
+            initializer.get();
             epf.getCombinedEntityProcessorFor(o).prePersist(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
@@ -46,6 +54,7 @@ public class GsrsEntityProcessorListener {
     @PostPersist
     public void postPersist(Object o){
         try {
+            initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
@@ -55,6 +64,7 @@ public class GsrsEntityProcessorListener {
     @PreRemove
     public void preRemove(Object o){
         try {
+            initializer.get();
             epf.getCombinedEntityProcessorFor(o).preRemove(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
@@ -63,6 +73,7 @@ public class GsrsEntityProcessorListener {
     @PostRemove
     public void postRemove(Object o){
         try {
+            initializer.get();
             epf.getCombinedEntityProcessorFor(o).postRemove(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
@@ -71,6 +82,7 @@ public class GsrsEntityProcessorListener {
     @PostLoad
     public void postLoad(Object o){
         try {
+            initializer.get();
             epf.getCombinedEntityProcessorFor(o).postLoad(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);

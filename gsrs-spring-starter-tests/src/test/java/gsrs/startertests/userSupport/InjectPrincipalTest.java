@@ -1,5 +1,6 @@
 package gsrs.startertests.userSupport;
 
+import gsrs.EntityPersistAdapter;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,6 +32,8 @@ public class InjectPrincipalTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private TestEntityProcessorFactory entityProcessorFactory;
+
+
 
     @BeforeEach
     public void init(){

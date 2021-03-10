@@ -267,9 +267,10 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
     @Override
     public void forceUpdate() {
-        //TODO katzelda October 2020: make this a no-op for now should be done elsewhere
-    	/*
+
+
 		currentVersion++;
+		/*
 		super.update();
 
     	 */

@@ -1,6 +1,7 @@
 package gsrs.startertests;
 
 import gsrs.AuditConfig;
+import gsrs.EntityPersistAdapter;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.jupiter.*;
@@ -35,7 +36,8 @@ import java.lang.annotation.*;
 //        Lucene4IndexServiceFactory.class,
         Principal.class,
         Lucene4IndexServiceFactory.class,
-        GsrsEntityTestConfiguration.class})
+        GsrsEntityTestConfiguration.class,
+        EntityPersistAdapter.class})
 public @interface GsrsJpaTest {
     /**
      * The dirties context tells the test

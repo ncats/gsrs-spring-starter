@@ -2,6 +2,7 @@ package gsrs.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelper;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
@@ -46,6 +47,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private EntityPersistAdapter entityPersistAdapter;
 
     private final String context;
     private final Pattern idPattern;

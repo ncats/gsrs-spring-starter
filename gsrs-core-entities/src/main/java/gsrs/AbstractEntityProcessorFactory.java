@@ -64,6 +64,8 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
                 }
             }
             Set<EntityProcessor> processors = list.keySet();
+            //TODO add legacy re-indexer?
+            //TODO add backup processor?
             if(processors.isEmpty()){
                 return new NoOpEntityProcessor(k);
             }

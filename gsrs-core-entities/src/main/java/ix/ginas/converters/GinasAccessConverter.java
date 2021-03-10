@@ -12,6 +12,7 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import java.util.BitSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Converter(autoApply = true)
 public class GinasAccessConverter implements AttributeConverter<GinasAccessContainer, byte[]> {
@@ -25,10 +26,17 @@ public class GinasAccessConverter implements AttributeConverter<GinasAccessConta
 
 	@Override
 	public byte[] convertToDatabaseColumn(GinasAccessContainer attribute) {
-		BitSet bs = new BitSet();
 
+		BitSet bs = new BitSet();
+		if(attribute ==null){
+			return null;
+		}
 		try {
-			for(Group g: attribute.getAccess()){
+			Set<Group> access = attribute.getAccess();
+			if(access ==null){
+				return null;
+			}
+			for(Group g: access){
 				Long lid=g.id;
 				if(lid==null){
 					throw new IllegalStateException(g.name + " not persisted yet?");
@@ -52,9 +60,12 @@ public class GinasAccessConverter implements AttributeConverter<GinasAccessConta
 	@Override
 	public synchronized GinasAccessContainer convertToEntityAttribute(byte[] dbData) {
 		injectGroupRepositoryIfNeeded();
-		BitSet bs = BitSet.valueOf(dbData);
 
+		if(dbData ==null){
+			return null;
+		}
 		try {
+			BitSet bs = BitSet.valueOf(dbData);
 			GinasAccessContainer gac=new GinasAccessContainer();
 			for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i+1)) {
 				Optional<Group> g1=groupRepository.findById(Long.valueOf(i));

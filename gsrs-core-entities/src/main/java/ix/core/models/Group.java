@@ -28,6 +28,9 @@ public class Group extends LongBaseModel {
     @JsonIgnore
     public Set<Principal> members = new HashSet<>();
 
+    public Group(){
+        //required for hibernate?
+    }
    @JsonCreator
     public Group(@JsonProperty("name") String name) {
         this.name = name;

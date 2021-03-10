@@ -65,4 +65,16 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
         assertThat(p1.id).isEqualTo(p2.id);
     }
 
+    @Test
+    public void registerMultiple(){
+        Principal p1 = principalService.registerIfAbsent("name1");
+        Principal p2 = principalService.registerIfAbsent("name2");
+
+        assertThat(p1.id).isNotEqualTo(p2.id);
+        Principal p3 = principalService.registerIfAbsent("name1");
+        assertThat(p1.id).isEqualTo(p3.id);
+        assertThat(p1.username).isEqualTo(p3.username);
+    }
+
+
 }

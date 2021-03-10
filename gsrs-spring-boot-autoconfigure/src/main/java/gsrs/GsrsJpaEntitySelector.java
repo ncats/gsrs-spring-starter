@@ -12,6 +12,7 @@ public class GsrsJpaEntitySelector implements ImportSelector {
                 AuditConfig.class.getName(),
 //                BasicEntityProcessorFactory.class.getName(),
                 GsrsEntityProcessorListener.class.getName(),
+                EntityPersistAdapter.class.getName()
         };
     }
 }

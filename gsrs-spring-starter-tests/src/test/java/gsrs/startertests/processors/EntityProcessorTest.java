@@ -1,5 +1,7 @@
 package gsrs.startertests.processors;
 
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.EntityPersistAdapter;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 
@@ -12,8 +14,12 @@ import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -24,9 +30,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@GsrsJpaTest(classes =GsrsSpringApplication.class)
+@GsrsJpaTest(classes ={GsrsSpringApplication.class})
 @ActiveProfiles("test")
 public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Data
@@ -38,7 +49,6 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
 
         private String foo;
     }
-
 
 
 
@@ -102,6 +112,16 @@ public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
 
         list.clear();
         sut.setFoo("domain2");
+
+//        when(epa.preUpdateBeanDirect(eq(sut),any() )).thenAnswer(invocation->{
+//            ((Unchecked.ThrowingRunnable) invocation.getArgument(1)).run();
+//            return null;
+//        });
+//       doAnswer(invocation->{
+//            ((Unchecked.ThrowingRunnable) invocation.getArgument(3)).run();
+//            return null;
+//        }).when(epa).postUpdateBeanDirect(eq(sut), any(), eq(true),any() );
+
         MyEntity sut2 =  entityManager.persistAndFlush(sut);
 
 
