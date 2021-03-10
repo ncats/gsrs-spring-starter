@@ -52,6 +52,25 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         return handleSingleObject(model, obj);
     }
 
+    /**
+     * The @ExposeResourceFor annotation in spring HATAEOS only allows mapping to a single class.
+     * This causes problems when the entity has subclasses (like GSRS Substance) the subclasses won't map
+     * and throw exceptions.  So this iteratively calls super classes until it finds a working entity link
+     * or gets all the way to Object.
+     * @param c the class to get the controller link for
+     * @return the {@link LinkBuilder} for that controller.
+     * @throws IllegalArgumentException if the given class or any parent class does not have a controller.
+     */
+    private LinkBuilder getEntityLinkForClassOrParentClass(Class<?> c){
+        do {
+            try {
+                return entityLinks.linkFor(c);
+            }catch(Exception e){}
+            c = c.getSuperclass();
+        }while(c !=null);
+        throw new IllegalArgumentException("invalid entity link class " + c);
+    }
+
     private GsrsUnwrappedEntityModel<?> handleSingleObject(GsrsUnwrappedEntityModel<?> model, Object obj) {
         EntityUtils.EntityInfo<?> info = EntityUtils.EntityWrapper.of(obj).getEntityInfo();
         CachedSupplier<String> idString = info.getIdString(obj);
@@ -66,7 +85,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                     String field = ((FieldResourceReference) resource).computedResourceLink();
 
                     model.add(
-                            GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), entityLinks.linkFor(obj.getClass())
+                            GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),getEntityLinkForClassOrParentClass(obj.getClass())
                                     .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                                     .slash(field)
                                     .withRel(action.getJsonFieldName())));
@@ -77,7 +96,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                 }else if(resource instanceof ObjectResourceReference){
                     ObjectResourceReference objResource = (ObjectResourceReference)resource;
-                    LinkBuilder linkBuilder = entityLinks.linkFor(objResource.getEntityClass())
+                    LinkBuilder linkBuilder = getEntityLinkForClassOrParentClass(objResource.getEntityClass())
                             .slash("(" + objResource.getId() + ")");
                     if(objResource.getFieldPath()!=null){
                         linkBuilder = linkBuilder.slash(objResource.getFieldPath());
@@ -116,10 +135,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     }
 
     private LinkBuilder getControllerLinkFor(GsrsUnwrappedEntityModel<?> model){
-        return entityLinks.linkFor(model.getObj().getClass());
+        return getEntityLinkForClassOrParentClass(model.getObj().getClass());
     }
     private Link  computeFieldLink(int collectionSize, Object entity, String id, String fieldPath, String rel){
-       return new CollectionLink(collectionSize, GsrsLinkUtil.adapt(id, entityLinks.linkFor(entity.getClass())
+       return new CollectionLink(collectionSize, GsrsLinkUtil.adapt(id, getEntityLinkForClassOrParentClass(entity.getClass())
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                 .slash(fieldPath)
                 .withRel(rel)));
@@ -128,7 +147,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
-        Link l= GsrsLinkUtil.adapt(id, entityLinks.linkFor(model.getObj().getClass())
+        Link l= GsrsLinkUtil.adapt(id, getEntityLinkForClassOrParentClass(model.getObj().getClass())
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
 
                 .withRel("_self"));
