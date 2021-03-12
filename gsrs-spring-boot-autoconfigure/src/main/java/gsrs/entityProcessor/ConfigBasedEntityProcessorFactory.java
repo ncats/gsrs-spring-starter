@@ -13,6 +13,8 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class ConfigBasedEntityProcessorFactory extends AbstractEntityProcessorFactory {
+
+
     @Autowired
     private GsrsFactoryConfiguration config;
 

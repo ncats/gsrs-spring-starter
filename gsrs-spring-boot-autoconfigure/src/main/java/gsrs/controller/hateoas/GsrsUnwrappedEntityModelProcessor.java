@@ -13,6 +13,7 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Optional;
 
 
 /**
@@ -113,16 +114,19 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
 
                 System.out.println(field);
-                if (f.isCollection()) {
-                    model.add( computeFieldLink(((Collection) f.getValue(obj).get()).size(),
-                            obj, id, field, compactFieldName));
-                } else if (f.isArray()) {
-                    model.add(
-                            computeFieldLink(Array.getLength(f.getValue(obj).get()),
-                                    obj, id, field, compactFieldName));
-                 }else if(Sizeable.class.isAssignableFrom(f.getType())){
-                    model.add( computeFieldLink(((Sizeable) f.getValue(obj).get()).getSize(),
-                            obj, id, field, compactFieldName));
+                Optional<Object> value = f.getValue(obj);
+                if(value.isPresent()) {
+                    if (f.isCollection()) {
+                        model.add(computeFieldLink(((Collection) value.get()).size(),
+                                obj, id, field, compactFieldName));
+                    } else if (f.isArray()) {
+                        model.add(
+                                computeFieldLink(Array.getLength(value.get()),
+                                        obj, id, field, compactFieldName));
+                    } else if (Sizeable.class.isAssignableFrom(f.getType())) {
+                        model.add(computeFieldLink(((Sizeable) value.get()).getSize(),
+                                obj, id, field, compactFieldName));
+                    }
                 }
 //            else{
 //                model.add(

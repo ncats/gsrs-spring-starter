@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.validator.ValidatorConfig;
+import gsrs.validator.ValidatorConfigList;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ import java.util.Map;
 @Data
 public class GsrsFactoryConfiguration {
 
-    private Map<String, JsonNode> validators;
+    private Map<String, List<Map<String,Object>>> validators;
     private List<EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers= false;
@@ -38,12 +39,23 @@ public class GsrsFactoryConfiguration {
             return Collections.emptyList();
         }
         ObjectMapper mapper = new ObjectMapper();
-
-        JsonNode list = validators.getOrDefault(context, mapper.createArrayNode());
-        List<ValidatorConfig> configs = new ArrayList<>();
-        for(JsonNode n : list){
-            configs.add(mapper.convertValue(n, ValidatorConfig.class));
+        try {
+            List<Map<String,Object>> list = validators.get(context);
+            if(list==null || list.isEmpty()){
+                return Collections.emptyList();
+            }
+            List<ValidatorConfig> configs = new ArrayList<>();
+            for (Map<String,Object> n : list) {
+                configs.add(mapper.convertValue(n, ValidatorConfig.class));
+            }
+            return configs;
+        }catch(Throwable t){
+            throw t;
         }
-        return configs;
+//        ValidatorConfigList list = (ValidatorConfigList) validators.get(context);
+//        if(list ==null){
+//            return Collections.emptyList();
+//        }
+//        return list.getConfigList();
     }
 }

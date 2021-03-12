@@ -8,7 +8,7 @@ import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
 
 import java.util.Map;
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "configClass")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "configClass", defaultImpl = DefaultValidatorConfig.class)
 @JsonTypeIdResolver(InheritanceTypeIdResolver.class)
 public interface ValidatorConfig {
     Map<String, Object> getParameters();

@@ -9,6 +9,7 @@ import ix.ginas.models.serialization.GroupSerializer;
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -59,9 +60,20 @@ public class GinasAccessContainer {
 	public void setAccess(Collection<Group> acc){
 		this.access=new LinkedHashSet<Group>(acc);
 	}
-	
-	
-	public boolean equals(Object o){
-		return false;
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof GinasAccessContainer)) return false;
+		GinasAccessContainer that = (GinasAccessContainer) o;
+		return Objects.equals(id, that.id) &&
+				Objects.equals(access, that.access) &&
+				Objects.equals(entityType, that.entityType);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, access, entityType);
 	}
 }
