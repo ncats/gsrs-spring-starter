@@ -270,6 +270,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
 
 		currentVersion++;
+		setIsDirty("currentVersion");
 		/*
 		super.update();
 
