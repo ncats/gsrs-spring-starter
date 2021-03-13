@@ -347,7 +347,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             @Override
             public void addMessage(ValidationMessage message, Runnable appyAction) {
                 response.addValidationMessage(message);
-
+                appyAction.run();
             }
 
             @Override

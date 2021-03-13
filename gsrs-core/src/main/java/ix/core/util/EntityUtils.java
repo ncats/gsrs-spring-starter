@@ -2907,7 +2907,9 @@ public class EntityUtils {
 						path.pushAndPopWith(fi.k().getName(), () -> {
 							fi.k().forEach(fi.v(), (i, o) -> {
 								path.pushAndPopWith(String.valueOf(i), () -> {
-									next(EntityWrapper.of(o));
+									if(o !=null) {
+										next(EntityWrapper.of(o));
+									}
 								});
 							});
 						});
@@ -2916,7 +2918,9 @@ public class EntityUtils {
 					//only Entities are recursed for non-arrays
 					ew.streamFieldsAndValues(EntityInfo::isPlainOldEntityField).forEach(fi -> {
 						path.pushAndPopWith(fi.k().getName(), () -> {
-							next(EntityWrapper.of(fi.v()));
+							if(fi.v() !=null) {
+								next(EntityWrapper.of(fi.v()));
+							}
 						});
 					});
 
@@ -2924,7 +2928,9 @@ public class EntityUtils {
 						path.pushAndPopWith(t.k().getName(), () -> {
 							t.k().forEach(t.v(), (i, o) -> {
 								path.pushAndPopWith(String.valueOf(i), () -> {
-									next(EntityWrapper.of(o));
+									if(o !=null) {
+										next(EntityWrapper.of(o));
+									}
 								});
 							});
 						});

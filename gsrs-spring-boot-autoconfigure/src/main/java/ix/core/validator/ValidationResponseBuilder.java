@@ -1,5 +1,6 @@
 package ix.core.validator;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -15,10 +16,13 @@ public class ValidationResponseBuilder<T> implements ValidatorCallback {
 
     private volatile boolean halted = false;
     public ValidationResponseBuilder(T o, Predicate<GinasProcessingMessage> shouldApplyPredicate) {
-        resp = new ValidationResponse<T>(o);
-        this.shouldApplyPredicate = shouldApplyPredicate == null ? m -> true : shouldApplyPredicate;
+        this(o, new ValidationResponse<T>(o), shouldApplyPredicate);
     }
 
+    public ValidationResponseBuilder(T o, ValidationResponse<T> resp, Predicate<GinasProcessingMessage> shouldApplyPredicate) {
+        this.resp = Objects.requireNonNull(resp);
+        this.shouldApplyPredicate = shouldApplyPredicate == null ? m -> true : shouldApplyPredicate;
+    }
 
     @Override
     public void addMessage(ValidationMessage message) {
