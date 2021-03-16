@@ -1,6 +1,7 @@
 package gsrs;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.model.AbstractGsrsEntity;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +84,9 @@ public class GsrsEntityProcessorListener {
     public void postLoad(Object o){
         try {
             initializer.get();
+//            if(o instanceof AbstractGsrsEntity){
+//                ((AbstractGsrsEntity)o).setPreviousState();
+//            }
             epf.getCombinedEntityProcessorFor(o).postLoad(o);
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);

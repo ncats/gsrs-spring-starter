@@ -1,8 +1,10 @@
 package gsrs;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.Unchecked;
 
+import gsrs.model.AbstractGsrsEntity;
 import ix.core.models.Edit;
 
 import ix.core.util.EntityUtils;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
@@ -28,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 @Component
 @Slf4j
+@Transactional
 public class EntityPersistAdapter {
 
     @PersistenceContext
@@ -44,6 +48,9 @@ public class EntityPersistAdapter {
     private Map<Key, String> workingOnJSON = new ConcurrentHashMap<>();
 
     public boolean isReindexing = false;
+
+    @Autowired
+    private OutsideTransactionUtil outsideTransactionUtil;
 
     private ConcurrentHashMap<Key, Integer> alreadyLoaded = new ConcurrentHashMap<>(10000);;
 
@@ -221,21 +228,18 @@ public class EntityPersistAdapter {
 
 
     public <E extends Exception> boolean preUpdateBeanDirect(Object bean, Unchecked.ThrowingRunnable<E> runnable) throws E{
-        EntityWrapper ew = EntityWrapper.of(bean);
-
-        EditLock ml = lockMap.get(ew.getKey());
+        EntityWrapper<?> ew = EntityWrapper.of(bean);
+        Key key = ew.getKey();
+        EditLock ml = lockMap.computeIfAbsent(key, new Function<Key, EditLock>() {
+            @Override
+            public EditLock apply(Key key) {
+                return new EditLock(key, lockMap); // This should work, but
+                // feels wrong
+            }
+        });
         if (ml != null && ml.hasPreUpdateBeenCalled()) {
             return true; // true?
         }
-//        if (ml != null && request != null) {
-//            InxightTransaction it = InxightTransaction.getTransaction(request.getTransaction());
-//            ml.setTransaction(it);
-//            it.addFinallyRun(new Runnable() {
-//                public void run() {
-//                    ml.release();
-//                }
-//            });
-//        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
 
             @Override
@@ -244,6 +248,8 @@ public class EntityPersistAdapter {
                 ml.release();
             }
         });
+
+
         runnable.run();
 
         if (ml != null) {
@@ -276,10 +282,12 @@ public class EntityPersistAdapter {
                 if (ml == null || !ml.hasEdit()) {
 
                     Edit edit = new Edit(ew.getEntityClass(), key.getIdString());
-                    EntityWrapper<?> ewold = EntityWrapper.of(oldvalues);
+                    if(bean instanceof AbstractGsrsEntity){
+                        AbstractGsrsEntity gsrsEntity = (AbstractGsrsEntity)bean;
+                        edit.version = gsrsEntity.getPreviousVersion();
+                        edit.oldValue = gsrsEntity.getPreviousState() ==null? null: gsrsEntity.getPreviousState().toString();
+                    }
 
-                    edit.oldValue = ewold.toFullJson();
-                    edit.version = ewold.getVersion().orElse(null);
                     edit.comments = ew.getChangeReason().orElse(null);
                     edit.kind = ew.getKind();
                     edit.newValue = ew.toFullJson();

@@ -67,7 +67,7 @@ public class EditLock {
     }
 
     public Optional<Edit> getEdit() {
-        return Optional.of(edit);
+        return Optional.ofNullable(edit);
     }
 
     public EditLock addEdit(Edit e) {

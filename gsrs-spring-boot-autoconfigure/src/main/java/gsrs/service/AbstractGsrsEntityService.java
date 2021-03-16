@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelper;
+import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
@@ -238,6 +239,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return saved;
     }
 
+    protected T fixUpdatedIfNeeded(T oldEntity, T updatedEntity){
+        return updatedEntity;
+    }
     @Override
     @Transactional
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
@@ -250,7 +254,27 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         }
 
         T oldEntity = opt.get();
-        String oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
+        String oldJson =null;
+        if(oldEntity instanceof AbstractGsrsEntity){
+            AbstractGsrsEntity gsrsEntity = (AbstractGsrsEntity) oldEntity;
+            //a postLoad should now set the old json so let's reuse it
+
+            JsonNode previousState =gsrsEntity.getPreviousState();
+            if(previousState ==null){
+                gsrsEntity.updatePreviousState();
+                gsrsEntity.getPreviousState();
+            }
+            if(previousState!=null) {
+                oldJson = previousState.toString();
+            }
+        }
+        //this is to trigger the postLoad !? not sure why we need to do this but without it it won't call postLoad
+//        entityManager.refresh(oldEntity);
+        updatedEntity = fixUpdatedIfNeeded(oldEntity, updatedEntity);
+
+        if(oldJson ==null) {
+            oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
+        }
         Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
 
         ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
@@ -307,7 +331,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 .filter(ew->ew.isExplicitDeletable())
                 .forEach(ew->{
                     log.warn("deleting:" + ew.getValue());
-                    entityManager.remove(ew.getValue());
+                    //hibernate can only removed entities from this transaction
+                    //this logic will merge "detached" entities from outside this transaction before removing anything
+                    entityManager.remove(entityManager.contains(ew.getValue()) ? ew.getValue() : entityManager.merge(ew.getValue()));
+
                 });
 
         System.out.println("updated entity = " + oldEntity);

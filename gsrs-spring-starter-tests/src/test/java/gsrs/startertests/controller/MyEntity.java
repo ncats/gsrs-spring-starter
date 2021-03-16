@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
@@ -37,4 +34,8 @@ public class MyEntity extends AbstractGsrsEntity {
 
 
 
+    @PostLoad
+    public void postLoad(){
+        System.out.println("here!!!");
+    }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.service.GsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +15,9 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +40,9 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     private JacksonTester<MyEntity> json;
     ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private EntityManager em;
 
     @BeforeEach
     public void setup() {
@@ -66,6 +72,33 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .build()));
     }
 
+    @Test
+    public void loadedRecordShouldHavePreviousStateSetManually() throws Exception {
+        MyEntity myEntity = new MyEntity();
+        myEntity.setFoo("myFoo");
+       em.persist(myEntity);
+        em.flush();
+
+        MyEntity loadedEntity = em.find(MyEntity.class, myEntity.getUuid());
+
+        em.refresh(loadedEntity);
+        assertNotNull(loadedEntity.getPreviousState());
+    }
+    @Test
+    public void loadedRecordShouldHavePreviousStateSetFromEntityService() throws Exception {
+        MyEntity myEntity = new MyEntity();
+        myEntity.setFoo("myFoo");
+        AbstractGsrsEntityService.CreationResult<MyEntity> result = myEntityService.createEntity(objectMapper.valueToTree(myEntity));
+        assertTrue(result.isCreated());
+        MyEntity savedMyEntity = result.getCreatedEntity();
+
+        MyEntity copy= objectMapper.treeToValue(objectMapper.valueToTree(savedMyEntity), MyEntity.class);
+        copy.setFoo("otherValue");
+       GsrsEntityService.UpdateResult<MyEntity>  updateResult = myEntityService.updateEntity(objectMapper.valueToTree(copy));
+
+        String oldLoadedJson = updateResult.getUpdatedEntity().getPreviousState().toString();
+        assertTrue(oldLoadedJson.contains("myFoo"), oldLoadedJson);
+    }
     @Test
 
     public void callingGetManyTimesDoesNotIncrementVersion() throws Exception {

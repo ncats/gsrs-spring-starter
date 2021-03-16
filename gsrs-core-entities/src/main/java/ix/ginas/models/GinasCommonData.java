@@ -38,7 +38,7 @@ public class GinasCommonData extends NoIdGinasCommonData{
 
     @JsonIgnore
     public UUID getOrGenerateUUID() {
-        if (uuid != null) return uuid;
+        if (getUuid() != null) return uuid;
         this.uuid = UUID.randomUUID();
         return uuid;
     }
