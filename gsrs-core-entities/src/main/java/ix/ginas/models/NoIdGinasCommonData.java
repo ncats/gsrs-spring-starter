@@ -55,7 +55,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
     @CreatedBy
     @Indexable(facet = true, name = "Created By", sortable = true, recurse = false)
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH})
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @JsonSerialize(using = PrincipalSerializer.class)
     public Principal createdBy;
@@ -65,7 +65,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
     public Date lastEdited;
 
     //TP: why is this one-to-one?
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH})
     @LastModifiedBy
     @Indexable(facet = true, name = "Last Edited By", sortable = true, recurse = false, useFullPath = true)
     @JsonDeserialize(using = PrincipalDeserializer.class)

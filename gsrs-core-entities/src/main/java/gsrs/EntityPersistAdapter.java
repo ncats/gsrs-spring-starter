@@ -118,7 +118,7 @@ public class EntityPersistAdapter {
 
     private <T> Optional<T>  findByKey(EntityManager em, EntityUtils.Key key){
 
-        return  (Optional<T>) Optional.of(em.find(key.getEntityInfo().getEntityClass(), key.getIdNative()));
+        return  (Optional<T>) Optional.ofNullable(em.find(key.getEntityInfo().getEntityClass(), key.getIdNative()));
     }
 
     public Optional<Edit> getEditFor(Key k){

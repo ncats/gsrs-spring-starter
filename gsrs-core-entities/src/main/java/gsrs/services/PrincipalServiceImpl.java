@@ -6,9 +6,11 @@ import ix.core.models.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class PrincipalServiceImpl implements PrincipalService {
 
     private final PrincipalRepository principalRepository;
@@ -20,11 +22,10 @@ public class PrincipalServiceImpl implements PrincipalService {
 
     @Override
     public Principal registerIfAbsent(Principal p){
-        Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(p.username);
+        Principal alreadyInDb = principalRepository.readOnlyfindDistinctByUsernameIgnoreCase(p.username);
         if(alreadyInDb!=null){
             return alreadyInDb;
         }
-        principalRepository.save(p);
-        return p;
+        return principalRepository.save(p);
     }
 }

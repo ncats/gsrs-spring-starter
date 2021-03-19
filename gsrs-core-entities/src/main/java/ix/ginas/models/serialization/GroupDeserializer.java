@@ -9,11 +9,13 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 
 
 @JsonComponent
+@Transactional
 public class GroupDeserializer extends JsonDeserializer<Group> {
     @Autowired
     private GroupRepository groupRepository;
@@ -49,7 +51,7 @@ public class GroupDeserializer extends JsonDeserializer<Group> {
 
 //    	Group grp = AdminFactory.registerGroupIfAbsent(new Group(name));
 //        return grp;
-        return new Group(name);
+        return groupRepository.save(new Group(name));
     }
 }
 

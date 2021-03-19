@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 
@@ -18,7 +21,7 @@ import java.io.IOException;
 public class PrincipalDeserializer extends JsonDeserializer<Principal> {
 
     @Autowired
-    private PrincipalRepository principalRepository;
+    private PrincipalService principalRepository;
 
     public PrincipalDeserializer(){
 
@@ -31,11 +34,12 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
             AutowireHelper.getInstance().autowire(this);
         }
     }
-    public PrincipalDeserializer(PrincipalRepository principalRepository) {
+    public PrincipalDeserializer(PrincipalService principalRepository) {
         this.principalRepository = principalRepository;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Principal deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
         initIfNeeded();
         JsonToken token = jsonParser.getCurrentToken();
@@ -49,14 +53,7 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
         }
         else { // JsonToken.VALUE_STRING:
             String username = jsonParser.getValueAsString();
-            Principal principal = principalRepository.findDistinctByUsernameIgnoreCase(username);
-
-            if(principal !=null){
-                return principal;
-            }
-            //katzelda Sept 2019 just create a new object? we can save it later on save...
-
-            return new Principal(username, null);
+            return principalRepository.registerIfAbsent(username);
         }
     }
 }

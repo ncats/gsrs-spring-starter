@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -33,7 +35,7 @@ public class EditLock {
         }
     }
     private Counter count = new Counter();
-    private ReentrantLock lock = new ReentrantLock();
+    private LockProxy lock = new LockProxy(new ReentrantLock());
 
 
     private final  Map<EntityUtils.Key, EditLock> lockMap;
@@ -54,9 +56,6 @@ public class EditLock {
     }
 
 
-    public boolean isLocked() {
-        return this.lock.isLocked();
-    }
 
     public boolean tryLock() {
         return this.lock.tryLock();
@@ -122,7 +121,7 @@ public class EditLock {
             count.decrementAndGet();
         }
         try{
-        	lock.unlock();
+        	lock.forceUnlock();
         }catch(Exception e){
         	e.printStackTrace();
         	throw e;
@@ -161,4 +160,64 @@ public class EditLock {
 	public int getCount() {
 		return count.intValue();
 	}
+
+    static class LockProxy implements Lock {
+
+        // The actual lock.
+        private volatile Lock lock;
+
+        public LockProxy(Lock lock) {
+            // Trap the lock we are proxying.
+            this.lock = lock;
+        }
+
+        @Override
+        public void lock() {
+            // Proxy it.
+            lock.lock();
+        }
+
+        @Override
+        public void lockInterruptibly() throws InterruptedException {
+            // Proxy it.
+            lock.lockInterruptibly();
+        }
+
+        @Override
+        public boolean tryLock() {
+            // Proxy it.
+            return lock.tryLock();
+        }
+
+        @Override
+        public boolean tryLock(long l, TimeUnit tu) throws InterruptedException {
+            // Proxy it.
+            return lock.tryLock(l, tu);
+        }
+
+        @Override
+        public void unlock() {
+            // Proxy it.
+            lock.unlock();
+        }
+
+        @Override
+        public Condition newCondition() {
+            // Proxy it.
+            return lock.newCondition();
+        }
+
+        // Extra functionality to unlock from any thread.
+        public void forceUnlock() {
+            // Actually just replace the perhaps locked lock with a new one.
+            // Kinda like a clone. I expect a neater way is around somewhere.
+            if (lock instanceof ReentrantLock) {
+                lock = new ReentrantLock();
+            } else {
+                throw new UnsupportedOperationException(
+                        "Cannot force unlock of lock type "
+                                + lock.getClass().getSimpleName());
+            }
+        }
+    }
 }

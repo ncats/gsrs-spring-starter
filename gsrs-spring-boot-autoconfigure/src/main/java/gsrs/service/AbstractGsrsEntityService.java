@@ -235,7 +235,22 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Transactional
     protected T transactionalPersist(T newEntity){
         T saved = create(newEntity);
+        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(saved);
+        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
 
+
+        String newVersionStr = ew.getVersion().orElse(null);
+        if(newVersionStr ==null) {
+            edit.version = null;
+        }else{
+            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
+        }
+        edit.comments = ew.getChangeReason().orElse(null);
+        edit.kind = ew.getKind();
+        edit.newValue = ew.toFullJson();
+
+        editRepository.save(edit);
+        entityManager.flush();
         return saved;
     }
 
@@ -248,6 +263,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
         I id = getIdFrom(updatedEntity);
+        /*
         Optional<T> opt = get(id);
         if(!opt.isPresent()){
             return UpdateResult.<T>builder().status(UpdateResult.STATUS.NOT_FOUND).build();
@@ -275,77 +291,95 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         if(oldJson ==null) {
             oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
         }
-        Validator<T> validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+        */
+        UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
+        EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, oldEntity-> {
+            EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
+            String oldJson = og.toFullJson();
+            Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
 
-        ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
-        ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
-        validator.validate(updatedEntity, oldEntity, callback);
+            ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+            ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+            validator.validate(updatedEntity, oldEntity, callback);
 
-        callback.complete();
-        UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder()
-                                                            .validationResponse(response)
-                                                            .oldJson(oldJson);
+            callback.complete();
 
-        if(response!=null && !response.isValid()){
-            return builder.status(UpdateResult.STATUS.ERROR)
-                    .build();
-        }
+                    builder.validationResponse(response)
+                    .oldJson(oldJson);
 
-        PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
-        System.out.println("changes = " + patch.getChanges());
-        final List<Object> removed = new ArrayList<Object>();
-
-        //Apply the changes, grabbing every change along the way
-        Stack changeStack=patch.apply(oldEntity, c->{
-            if("remove".equals(c.getOp())){
-                removed.add(c.getOldValue());
+            if (response != null && !response.isValid()) {
+                builder.status(UpdateResult.STATUS.ERROR);
+                return Optional.empty();
             }
-            LogUtil.trace(()->c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
-        });
-        if(changeStack.isEmpty()){
-            throw new IllegalStateException("No change detected");
-        }else{
-            LogUtil.debug(()->"Found:" + changeStack.size() + " changes");
-        }
-        //This is the last line of defense for making sure that the patch worked
-        //Should throw an exception here if there's a major problem
-        String serialized= EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
-        while(!changeStack.isEmpty()){
-            Object v=changeStack.pop();
-            EntityUtils.EntityWrapper ewchanged= EntityUtils.EntityWrapper.of(v);
-            if(!ewchanged.isIgnoredModel() && ewchanged.isEntity()){
+            PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
+            System.out.println("changes = " + patch.getChanges());
+            final List<Object> removed = new ArrayList<Object>();
 
-                entityManager.merge(ewchanged.getValue());
+            //Apply the changes, grabbing every change along the way
+            Stack changeStack = patch.apply(oldEntity, c -> {
+                if ("remove".equals(c.getOp())) {
+                    removed.add(c.getOldValue());
+                }
+                LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
+            });
+            if (changeStack.isEmpty()) {
+                throw new IllegalStateException("No change detected");
+            } else {
+                LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
             }
-        }
+            //This is the last line of defense for making sure that the patch worked
+            //Should throw an exception here if there's a major problem
+            String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
-        //explicitly delete deleted things
-        //This should ONLY delete objects which "belong"
-        //to something. That is, have a @SingleParent annotation
-        //inside
 
-        removed.stream()
-                .filter(Objects::nonNull)
-                .map(o-> EntityUtils.EntityWrapper.of(o))
-                .filter(ew->ew.isExplicitDeletable())
-                .forEach(ew->{
-                    log.warn("deleting:" + ew.getValue());
+            while (!changeStack.isEmpty()) {
+                Object v = changeStack.pop();
+                EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
+                if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+
+                    entityManager.merge(ewchanged.getValue());
+                }
+            }
+
+            //explicitly delete deleted things
+            //This should ONLY delete objects which "belong"
+            //to something. That is, have a @SingleParent annotation
+            //inside
+
+          /*  removed.stream()
+                    .filter(Objects::nonNull)
                     //hibernate can only removed entities from this transaction
                     //this logic will merge "detached" entities from outside this transaction before removing anything
-                    entityManager.remove(entityManager.contains(ew.getValue()) ? ew.getValue() : entityManager.merge(ew.getValue()));
+                    .peek(o -> {
+                        if (!entityManager.contains(o)) {
+                            entityManager.merge(o);
+                        }
+                    })
+                    .map(o -> EntityUtils.EntityWrapper.of(o))
+                    .filter(ew -> ew.isExplicitDeletable())
+                    .forEach(ew -> {
+                        log.warn("deleting:" + ew.getValue());
 
-                });
+                        entityManager.remove(ew.getValue());
 
-        System.out.println("updated entity = " + oldEntity);
-        try {
-            builder.updatedEntity(transactionalUpdate(oldEntity, oldJson));
-            builder.status(UpdateResult.STATUS.UPDATED);
-        }catch(Throwable t){
-            t.printStackTrace();
-            builder.status(UpdateResult.STATUS.ERROR);
-        }
-        //match 200 status of old GSRS
+                    });*/
+            //TODO re-index here
+
+            try {
+                T saved = transactionalUpdate(oldEntity, oldJson);
+                System.out.println("updated entity = " + saved);
+                builder.updatedEntity(saved);
+                builder.status(UpdateResult.STATUS.UPDATED);
+                return Optional.of(saved);
+            }catch(Throwable t){
+                t.printStackTrace();
+                builder.status(UpdateResult.STATUS.ERROR);
+                return Optional.empty();
+            }
+
+
+        });
         return builder.build();
     }
 
@@ -398,22 +432,24 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     protected T transactionalUpdate(T entity, String oldJson){
 
         T after =  update(entity);
-        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(after);
-        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
-
-        edit.oldValue = oldJson;
-        String newVersionStr = ew.getVersion().orElse(null);
-        if(newVersionStr ==null) {
-            edit.version = null;
-        }else{
-            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
-        }
-        edit.comments = ew.getChangeReason().orElse(null);
-        edit.kind = ew.getKind();
-        edit.newValue = ew.toFullJson();
-
-        editRepository.save(edit);
-        System.out.println("edit = " + edit.id);
+        //Edit for update handled by EntityPersistAdapter
+//        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(after);
+//        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
+//
+//        edit.oldValue = oldJson;
+//        String newVersionStr = ew.getVersion().orElse(null);
+//        if(newVersionStr ==null) {
+//            edit.version = null;
+//        }else{
+//            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
+//        }
+//        edit.comments = ew.getChangeReason().orElse(null);
+//        edit.kind = ew.getKind();
+//        edit.newValue = ew.toFullJson();
+//
+//        editRepository.save(edit);
+//        System.out.println("edit = " + edit.id);
+        entityManager.flush();
         return after;
     }
 

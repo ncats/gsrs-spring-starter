@@ -84,21 +84,21 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         em.refresh(loadedEntity);
         assertNotNull(loadedEntity.getPreviousState());
     }
-    @Test
-    public void loadedRecordShouldHavePreviousStateSetFromEntityService() throws Exception {
-        MyEntity myEntity = new MyEntity();
-        myEntity.setFoo("myFoo");
-        AbstractGsrsEntityService.CreationResult<MyEntity> result = myEntityService.createEntity(objectMapper.valueToTree(myEntity));
-        assertTrue(result.isCreated());
-        MyEntity savedMyEntity = result.getCreatedEntity();
-
-        MyEntity copy= objectMapper.treeToValue(objectMapper.valueToTree(savedMyEntity), MyEntity.class);
-        copy.setFoo("otherValue");
-       GsrsEntityService.UpdateResult<MyEntity>  updateResult = myEntityService.updateEntity(objectMapper.valueToTree(copy));
-
-        String oldLoadedJson = updateResult.getUpdatedEntity().getPreviousState().toString();
-        assertTrue(oldLoadedJson.contains("myFoo"), oldLoadedJson);
-    }
+//    @Test
+//    public void loadedRecordShouldHavePreviousStateSetFromEntityService() throws Exception {
+//        MyEntity myEntity = new MyEntity();
+//        myEntity.setFoo("myFoo");
+//        AbstractGsrsEntityService.CreationResult<MyEntity> result = myEntityService.createEntity(objectMapper.valueToTree(myEntity));
+//        assertTrue(result.isCreated());
+//        MyEntity savedMyEntity = result.getCreatedEntity();
+//
+//        MyEntity copy= objectMapper.treeToValue(objectMapper.valueToTree(savedMyEntity), MyEntity.class);
+//        copy.setFoo("otherValue");
+//       GsrsEntityService.UpdateResult<MyEntity>  updateResult = myEntityService.updateEntity(objectMapper.valueToTree(copy));
+//
+//        String oldLoadedJson = updateResult.getUpdatedEntity().getPreviousState().toString();
+//        assertTrue(oldLoadedJson.contains("myFoo"), oldLoadedJson);
+//    }
     @Test
 
     public void callingGetManyTimesDoesNotIncrementVersion() throws Exception {
