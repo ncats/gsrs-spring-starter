@@ -17,9 +17,6 @@ public class Acl extends LongBaseModel {
             Admin,
             Owner
             }
-        
-    @Id
-    public Long id;
 
     public Permission perm = Permission.Read;
 

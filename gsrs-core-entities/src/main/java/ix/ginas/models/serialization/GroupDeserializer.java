@@ -15,7 +15,6 @@ import java.io.IOException;
 
 
 @JsonComponent
-@Transactional
 public class GroupDeserializer extends JsonDeserializer<Group> {
     @Autowired
     private GroupRepository groupRepository;

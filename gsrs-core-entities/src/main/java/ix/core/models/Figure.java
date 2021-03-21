@@ -9,8 +9,6 @@ import javax.persistence.*;
 @Inheritance
 @DiscriminatorValue("FIG")
 public class Figure extends LongBaseModel {
-    @Id
-    public Long id; // internal id
 
     public String caption;
     public String mimeType;

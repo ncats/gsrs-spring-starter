@@ -1,6 +1,9 @@
 package ix.core.models;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
@@ -12,8 +15,12 @@ import javax.persistence.MappedSuperclass;
 public abstract class LongBaseModel extends BaseModel {
 
     @Id
-    @GeneratedValue //Ebean added GeneratedValue by default we have to be explicit in hibernate
-    public Long id;
+	@GeneratedValue(strategy = GenerationType.SEQUENCE)
+//    @GeneratedValue //Ebean added GeneratedValue by default we have to be explicit in hibernate
+//	@Id
+//	@GeneratedValue(strategy= GenerationType.SEQUENCE, generator = "non-nullGen")
+//	@GenericGenerator(name = "non-nullGen", strategy = "ix.ginas.models.generators.NullLongGenerator")
+	public Long id;
 	
 	@Override
 	public String fetchGlobalId() {

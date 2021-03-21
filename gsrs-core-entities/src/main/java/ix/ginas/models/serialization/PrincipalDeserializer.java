@@ -6,14 +6,11 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 
@@ -21,7 +18,7 @@ import java.io.IOException;
 public class PrincipalDeserializer extends JsonDeserializer<Principal> {
 
     @Autowired
-    private PrincipalService principalRepository;
+    private PrincipalService principalService;
 
     public PrincipalDeserializer(){
 
@@ -30,16 +27,15 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
     }
 
     private synchronized  void initIfNeeded(){
-        if(principalRepository ==null) {
+        if(principalService ==null) {
             AutowireHelper.getInstance().autowire(this);
         }
     }
     public PrincipalDeserializer(PrincipalService principalRepository) {
-        this.principalRepository = principalRepository;
+        this.principalService = principalRepository;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Principal deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
         initIfNeeded();
         JsonToken token = jsonParser.getCurrentToken();
@@ -53,7 +49,7 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
         }
         else { // JsonToken.VALUE_STRING:
             String username = jsonParser.getValueAsString();
-            return principalRepository.registerIfAbsent(username);
+            return principalService.registerIfAbsent(username);
         }
     }
 }

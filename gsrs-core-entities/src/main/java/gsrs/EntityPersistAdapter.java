@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 @Component
 @Slf4j
-@Transactional
 public class EntityPersistAdapter {
 
     @PersistenceContext
@@ -217,14 +216,6 @@ public class EntityPersistAdapter {
         }
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION)
-    public void doAfterCompletion(EntityTransactionCompletionEvent event){
-        EditLock lock = lockMap.get(event.getKey());
-        if(lock !=null){
-            lock.release();
-        }
-
-    }
 
 
     public <E extends Exception> boolean preUpdateBeanDirect(Object bean, Unchecked.ThrowingRunnable<E> runnable) throws E{

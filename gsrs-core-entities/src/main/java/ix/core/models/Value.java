@@ -14,11 +14,6 @@ import java.io.Serializable;
 @DiscriminatorValue("VAL")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Value extends LongBaseModel implements Serializable{
-    @Id
-    @GeneratedValue(strategy=GenerationType.SEQUENCE, generator = "non-nullGen")
-    @GenericGenerator(name = "non-nullGen", strategy = "ix.ginas.models.generators.NullLongGenerator")
-
-    public Long id;
     public String label;
     
     public Value () {}

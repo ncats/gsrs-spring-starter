@@ -10,7 +10,6 @@ import javax.transaction.Transactional;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class PrincipalServiceImpl implements PrincipalService {
 
     private final PrincipalRepository principalRepository;
@@ -21,11 +20,12 @@ public class PrincipalServiceImpl implements PrincipalService {
     }
 
     @Override
-    public Principal registerIfAbsent(Principal p){
-        Principal alreadyInDb = principalRepository.readOnlyfindDistinctByUsernameIgnoreCase(p.username);
+    public Principal registerIfAbsent(String username){
+        Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(username);
         if(alreadyInDb!=null){
             return alreadyInDb;
         }
-        return principalRepository.save(p);
+        System.out.println("creating principal " + username);
+        return principalRepository.save(new Principal(username, null));
     }
 }
