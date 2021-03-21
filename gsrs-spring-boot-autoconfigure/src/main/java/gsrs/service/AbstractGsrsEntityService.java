@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelper;
-import gsrs.model.AbstractGsrsEntity;
+import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
@@ -21,6 +20,7 @@ import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -54,6 +54,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
@@ -225,7 +227,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                     return builder.build();
                 }
-                return builder.createdEntity(transactionalPersist(newEntity))
+                T createdEntity = transactionalPersist(newEntity);
+                applicationEventPublisher.publishEvent(newCreationEvent(createdEntity));
+                return builder.createdEntity(createdEntity)
                         .created(true)
                         .build();
             } catch (Exception t) {
@@ -234,6 +238,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             }
         });
     }
+
+    protected abstract AbstractEntityCreatedEvent<T> newUpdateEvent(T updatedEntity);
+
+    protected abstract AbstractEntityCreatedEvent<T> newCreationEvent(T createdEntity);
 
     protected <T>  ValidationResponse<T> createValidationResponse(T newEntity, Object oldEntity, DefaultValidatorConfig.METHOD_TYPE type){
         return new ValidationResponse<T>(newEntity);
@@ -404,6 +412,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 if(savedVersion ==null){
                     status.setRollbackOnly();
                 }
+                applicationEventPublisher.publishEvent(newUpdateEvent(savedVersion.getValue()));
                 return builder.build();
             }catch(IOException e){
                 status.setRollbackOnly();
