@@ -10,4 +10,6 @@ import org.springframework.context.annotation.Configuration;
 public class GsrsRabbitMqConfiguration {
 
     private String exchange = "gsrs_exchange";
+
+    boolean enabled = true;
 }

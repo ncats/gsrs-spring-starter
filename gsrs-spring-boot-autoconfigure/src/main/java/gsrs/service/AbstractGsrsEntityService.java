@@ -3,6 +3,7 @@ package gsrs.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
+import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.controller.IdHelper;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -64,6 +65,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private GsrsRabbitMqConfiguration gsrsRabbitMqConfiguration;
 
     private String exchangeName;
 
@@ -262,7 +265,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 AbstractEntityCreatedEvent<T> event = newCreationEvent(createdEntity);
                 if(event !=null) {
                     applicationEventPublisher.publishEvent(event);
-                    if (exchangeName != null) {
+                    if (gsrsRabbitMqConfiguration.isEnabled() && exchangeName != null) {
                         rabbitTemplate.convertAndSend(exchangeName, substanceCreatedKey, event);
                     }
                 }
@@ -453,7 +456,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                     AbstractEntityUpdatedEvent<T> event = newUpdateEvent(savedVersion.getValue());
                     if(event !=null) {
                         applicationEventPublisher.publishEvent(event);
-                        if (exchangeName != null) {
+                        if (gsrsRabbitMqConfiguration.isEnabled() && exchangeName != null) {
                             rabbitTemplate.convertAndSend(exchangeName, substanceUpdatedKey, event);
                         }
                     }
