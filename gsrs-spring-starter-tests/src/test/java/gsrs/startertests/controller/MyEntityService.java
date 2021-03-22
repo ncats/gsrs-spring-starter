@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.controller.OffsetBasedPageRequest;
+import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.service.AbstractGsrsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,7 +29,7 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     private MyEntityRepository repository;
 
     public MyEntityService(){
-        super(CONTEXT, IdHelpers.UUID);
+        super(CONTEXT, IdHelpers.UUID, null,null,null);
     }
 
 
@@ -105,5 +107,15 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     @Override
     protected MyEntity update(MyEntity myEntity) {
         return repository.saveAndFlush(myEntity);
+    }
+
+    @Override
+    protected AbstractEntityUpdatedEvent<MyEntity> newUpdateEvent(MyEntity updatedEntity) {
+        return null;
+    }
+
+    @Override
+    protected AbstractEntityCreatedEvent<MyEntity> newCreationEvent(MyEntity createdEntity) {
+        return null;
     }
 }

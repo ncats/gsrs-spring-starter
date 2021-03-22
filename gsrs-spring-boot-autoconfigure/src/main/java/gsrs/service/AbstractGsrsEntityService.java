@@ -5,6 +5,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelper;
 import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
@@ -19,6 +20,7 @@ import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -60,6 +62,13 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    private String exchangeName;
+
+    private String substanceCreatedKey, substanceUpdatedKey, substanceFailedKey;
+
     private final String context;
     private final Pattern idPattern;
 
@@ -67,23 +76,45 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     /**
      * Create a new GSRS Entity Service with the given context.
      * @param context the context for the routes of this controller.
+     *
      * @param idPattern the {@link Pattern} to match an ID.  This will be used to determine
      *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+     * @param exchangeName The Rabbit exchange name for this entity; can not be {@code null}.
+     *
+     * @param entityCreateKey The Rabbit queue to publish to when an entity is created; can not be {@code null}.
+     *
+     * @param entityUpdateKey The Rabbit exchange name for this entity; can not be {@code null}.
      * @throws NullPointerException if any parameters are null.
      */
-    public AbstractGsrsEntityService(String context, Pattern idPattern) {
+    public AbstractGsrsEntityService(String context, Pattern idPattern,
+                                     String exchangeName,
+                                     String entityCreateKey, String entityUpdateKey) {
         this.context = Objects.requireNonNull(context, "context can not be null");
         this.idPattern = Objects.requireNonNull(idPattern, "ID pattern can not be null");
+        this.exchangeName = exchangeName;
+        if(exchangeName !=null) {
+            this.substanceCreatedKey = Objects.requireNonNull(entityCreateKey);
+            this.substanceUpdatedKey = Objects.requireNonNull(entityUpdateKey);
+        }else{
+            //ignore fields
+            this.substanceCreatedKey = entityCreateKey;
+            this.substanceUpdatedKey = entityUpdateKey;
+        }
     }
     /**
-    * Create a new GSRS Entity Service with the given context.
-    * @param context the context for the routes of this controller.
-    * @param idHelper the {@link IdHelper} to match an ID.  This will be used to determine
-    *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
-    * @throws NullPointerException if any parameters are null.
-    */
-    public AbstractGsrsEntityService(String context, IdHelper idHelper) {
-        this(context, Pattern.compile("^"+idHelper.getRegexAsString() +"$"));
+     * Create a new GSRS Entity Service with the given context.
+     * @param context the context for the routes of this controller.
+     * @param idHelper the {@link IdHelper} to match an ID.  This will be used to determine
+     *                  Strings that are IDs versus Strings that should be flex looked up.  @see {@link #flexLookup(String)}.
+     * @param exchangeName The Rabbit exchange name for this entity; can not be {@code null}.
+     * @param entityCreateKey The Rabbit queue to publish to when an entity is created; can not be {@code null}.
+     *
+     * @param entityUpdateKey The Rabbit exchange name for this entity; can not be {@code null}.
+     * @throws NullPointerException if any parameters are null.
+     */
+    public AbstractGsrsEntityService(String context, IdHelper idHelper, String exchangeName,
+                                     String entityCreateKey, String entityUpdateKey) {
+        this(context, Pattern.compile("^"+idHelper.getRegexAsString() +"$"), exchangeName, entityCreateKey, entityUpdateKey);
     }
 
     @Override
@@ -228,7 +259,13 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                     return builder.build();
                 }
                 T createdEntity = transactionalPersist(newEntity);
-                applicationEventPublisher.publishEvent(newCreationEvent(createdEntity));
+                AbstractEntityCreatedEvent<T> event = newCreationEvent(createdEntity);
+                if(event !=null) {
+                    applicationEventPublisher.publishEvent(event);
+                    if (exchangeName != null) {
+                        rabbitTemplate.convertAndSend(exchangeName, substanceCreatedKey, event);
+                    }
+                }
                 return builder.createdEntity(createdEntity)
                         .created(true)
                         .build();
@@ -239,7 +276,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         });
     }
 
-    protected abstract AbstractEntityCreatedEvent<T> newUpdateEvent(T updatedEntity);
+    protected abstract AbstractEntityUpdatedEvent<T> newUpdateEvent(T updatedEntity);
 
     protected abstract AbstractEntityCreatedEvent<T> newCreationEvent(T createdEntity);
 
@@ -411,8 +448,16 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 });
                 if(savedVersion ==null){
                     status.setRollbackOnly();
+                }else {
+                    //only publish events if we save!
+                    AbstractEntityUpdatedEvent<T> event = newUpdateEvent(savedVersion.getValue());
+                    if(event !=null) {
+                        applicationEventPublisher.publishEvent(event);
+                        if (exchangeName != null) {
+                            rabbitTemplate.convertAndSend(exchangeName, substanceUpdatedKey, event);
+                        }
+                    }
                 }
-                applicationEventPublisher.publishEvent(newUpdateEvent(savedVersion.getValue()));
                 return builder.build();
             }catch(IOException e){
                 status.setRollbackOnly();
