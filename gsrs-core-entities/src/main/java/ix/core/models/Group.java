@@ -16,8 +16,6 @@ import java.util.Set;
 @Entity
 @Table(name="ix_core_group")
 public class Group extends LongBaseModel {
-    @Id
-    public Long id;
 
     @Column(unique=true)
     public String name;

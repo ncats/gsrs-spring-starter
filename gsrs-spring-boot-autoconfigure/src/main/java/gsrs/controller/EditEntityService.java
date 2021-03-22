@@ -2,6 +2,8 @@ package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.models.Edit;
@@ -23,7 +25,7 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
 
     private ObjectMapper mapper = new ObjectMapper();
     public EditEntityService() {
-        super("edits", IdHelpers.UUID);
+        super("edits", IdHelpers.UUID, null,null,null);
     }
 
     @Override
@@ -85,6 +87,16 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     @Override
     protected Edit update(Edit edit) {
         return editRepository.save(edit);
+    }
+
+    @Override
+    protected AbstractEntityUpdatedEvent<Edit> newUpdateEvent(Edit updatedEntity) {
+        return null;
+    }
+
+    @Override
+    protected AbstractEntityCreatedEvent<Edit> newCreationEvent(Edit createdEntity) {
+        return null;
     }
 
     @Override

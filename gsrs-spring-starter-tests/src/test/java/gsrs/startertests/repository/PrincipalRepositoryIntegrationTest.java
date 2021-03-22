@@ -57,8 +57,8 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
     @Test
     public void ensureUsernamesAreCaseInsensitive() {
 
-        Principal p1= principalService.registerIfAbsent(new Principal("TEST",null));
-        Principal p2=principalService.registerIfAbsent(new Principal("test",null));
+        Principal p1= principalService.registerIfAbsent("TEST");
+        Principal p2=principalService.registerIfAbsent("test");
 
 
         assertThat(p1.id).isNotNull();

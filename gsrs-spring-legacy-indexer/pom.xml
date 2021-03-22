@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -56,7 +56,6 @@
             <artifactId>gsrs-core</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
