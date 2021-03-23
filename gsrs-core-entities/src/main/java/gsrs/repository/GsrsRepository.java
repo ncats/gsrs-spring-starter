@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface GsrsRepository<T, ID> extends JpaRepository<T, ID> {
 
     default Optional<T> findByKey(EntityUtils.Key key){
+        //this doesn't work for some reason idNative is String not UUID for example
         return findById((ID)key.getIdNative());
     }
 }

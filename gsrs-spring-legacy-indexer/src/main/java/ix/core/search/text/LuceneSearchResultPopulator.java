@@ -95,7 +95,7 @@ class LuceneSearchResultPopulator {
 					return new Key(ei, id);
 				} else {
 					String id = doc.getField(ei.getInternalIdField()).stringValue();
-					return new Key(ei, id);
+					return new Key(ei, ei.formatIdToNative(id));
 				}
 			}else{
 				throw new NoSuchElementException("Entity:" + kind + " has no ID field");

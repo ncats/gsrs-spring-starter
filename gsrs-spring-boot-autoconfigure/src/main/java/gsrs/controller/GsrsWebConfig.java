@@ -86,7 +86,10 @@ public class GsrsWebConfig {
 
                     @Override
                     protected boolean isHandler(Class<?> beanType) {
-                        return AnnotatedElementUtils.hasAnnotation(beanType, GsrsRestApiController.class) /*|| super.isHandler(beanType)*/;
+                        if(beanType.getName(). contains("ExportController")){
+                            System.out.println("here");
+                        }
+                        return AnnotatedElementUtils.hasAnnotation(beanType, GsrsRestApiController.class) || super.isHandler(beanType);
 
                     }
 
