@@ -19,11 +19,14 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.repository.core.EntityMetadata;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -50,6 +53,8 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private ExportService exportService;
@@ -123,7 +128,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return factory.createNewExporter(pos, params);
     }
 
-    private static ETag saveAsEtag(List<Object> results, SearchResult result, HttpServletRequest request) {
+    private ETag saveAsEtag(List<Object> results, SearchResult result, HttpServletRequest request) {
         final ETag etag = new ETag.Builder()
                 .fromRequest(request)
                 .options(result.getOptions())
@@ -132,10 +137,13 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
                 .sha1OfRequest(request, "q", "facet")
                 .build();
-            //TODO add save and export support
-//        if(request().queryString().get("export") ==null) {
-//            etag.save();
-//        }
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult( stauts -> {
+                    if (request.getParameter("export") == null) {
+                        entityManager.merge(etag);
+                    }
+                });
         //content is transient so don't need to worry about transforming results
         String view = request.getParameter("view");
         if("key".equals(view)){
