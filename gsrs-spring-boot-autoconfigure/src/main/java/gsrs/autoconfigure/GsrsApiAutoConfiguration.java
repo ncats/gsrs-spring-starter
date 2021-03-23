@@ -3,6 +3,7 @@ package gsrs.autoconfigure;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.RegisteredFunctionProperties;
 
+import gsrs.controller.ExportController;
 import gsrs.controller.GsrsApiControllerAdvice;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.service.DefaultExportService;

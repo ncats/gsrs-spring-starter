@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.controller.ExportController;
 import gsrs.controller.GsrsWebConfig;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
@@ -63,6 +64,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(URIPojoPointerParser.class);
         componentsToInclude.add(LambdaParseRegistry.class);
         componentsToInclude.add(RegisteredFunctionProperties.class);
+        componentsToInclude.add(ExportController.class);
 
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
