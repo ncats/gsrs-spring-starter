@@ -7,12 +7,14 @@ import ix.ginas.exporters.OutputFormat;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import sun.misc.Cache;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.*;
 
+@Component
 @Configuration
 @ConfigurationProperties("ix.ginas.export")
 @Data
@@ -28,6 +30,10 @@ public class GsrsExportConfiguration {
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
+        AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
+        if(factories ==null){
+            return;
+        }
         for(Map.Entry<String, List<Class>> entry : factories.entrySet()){
             String context = entry.getKey();
             List<ExporterFactory> list = new ArrayList<>();
@@ -87,6 +93,7 @@ public class GsrsExportConfiguration {
     }
 
     private List<OutputFormat> getAllOutputsAsList(List<ExporterFactory> exporters) {
+
         List<OutputFormat> list = new ArrayList<>();
         if(exporters !=null) {
             for (ExporterFactory factory : exporters) {
@@ -106,6 +113,7 @@ public class GsrsExportConfiguration {
      */
     public ExporterFactory getExporterFor(String context, ExporterFactory.Parameters params){
         Objects.requireNonNull(params);
+        initializer.get();
         List<ExporterFactory> contextExporters = exporters.get(context);
         if(contextExporters !=null) {
             for (ExporterFactory factory : contextExporters) {

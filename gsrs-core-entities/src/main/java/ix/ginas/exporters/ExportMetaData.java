@@ -80,10 +80,10 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
 
     public ExportMetaData(){}
 
-    public ExportMetaData(String collectionId, String originalQuery, Principal principal, boolean publicOnly, String extension) {
+    public ExportMetaData(String collectionId, String originalQuery, String username, boolean publicOnly, String extension) {
         this.collectionId = collectionId;
         this.originalQuery = originalQuery;
-        this.username = principal.username;
+        this.username = username;
         this.publicOnly = publicOnly;
         this.extension = extension;
     }

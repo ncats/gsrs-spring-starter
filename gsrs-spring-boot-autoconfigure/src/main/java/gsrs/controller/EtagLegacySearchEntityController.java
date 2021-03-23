@@ -2,18 +2,15 @@ package gsrs.controller;
 
 
 import gov.nih.ncats.common.util.Unchecked;
+import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportGenerator;
 import gsrs.service.ExportService;
 import ix.core.models.ETag;
-import ix.core.models.Principal;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
-import ix.ginas.exporters.ExportMetaData;
-import ix.ginas.exporters.ExportProcess;
-import ix.ginas.exporters.Exporter;
-import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.repository.core.EntityMetadata;
@@ -21,18 +18,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
+import javax.websocket.server.PathParam;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.security.Principal;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,6 +60,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private TaskExecutor taskExecutor;
 
+    @Autowired
+    private GsrsExportConfiguration gsrsExportConfiguration;
+
+
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);
@@ -69,19 +71,32 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
 
 
-    protected abstract Stream<T> filterStream(Stream<T> stream, Map<String, String> parameters);
+    protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
-    public ResponseEntity<Object> createExport(String etagId, String format, boolean publicOnly, @RequestParam("filename") String fileName, Principal prof,
-                                                       @RequestParam Map<String, String> parameters) throws Exception {
+    /*
+    GET     /$context<[a-z0-9_]+>/export                     ix.core.controllers.v1.RouteFactory.exportFormats(context: String)
+GET     /$context<[a-z0-9_]+>/export/                     ix.core.controllers.v1.RouteFactory.exportFormats(context: String)
+GET     /$context<[a-z0-9_]+>/export/:etagId               ix.core.controllers.v1.RouteFactory.exportOptions(context: String, etagId: String, publicOnly: Boolean ?=true)
+GET     /$context<[a-z0-9_]+>/export/:etagId/               ix.core.controllers.v1.RouteFactory.exportOptions(context: String, etagId: String, publicOnly: Boolean ?=true)
+
+GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.controllers.v1.RouteFactory.createExport(context: String, etagId: String, format: String, publicOnly: Boolean ?=true)
+
+     */
+    @GetGsrsRestApiMapping("/export/{etagId}/{format}")
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, @PathVariable("format") String format,
+                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, @RequestParam(value ="filename", required= false) String fileName,
+                                               Principal prof,
+                                               @RequestParam Map<String, String> parameters) throws Exception {
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
+        boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
             return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
         }
 
 
-        ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof, publicOnly, format);
+        ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
 
 
         //Not ideal, but gets around user problem
@@ -93,7 +108,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //        }
 
 
-        Stream<T> effectivelyFinalStream = filterStream(mstream, parameters);
+        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters);
 
 
         if(fileName!=null){
@@ -103,24 +118,31 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
 
-        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, parameters)));
+        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
 
         return new ResponseEntity<>(p.getMetaData(), HttpStatus.OK);
 
 
     }
 
-    protected abstract ExporterFactory.Parameters createParamters(String extension, Map<String, String> parameters);
+    protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters){
+        for(OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())){
+            if(extension.equals(f.getExtension())){
+                return new DefaultParameters(f, publicOnly);
+            }
+        }
+        throw new IllegalArgumentException("could not find supported exporter for extension '"+ extension +"'");
 
-    protected abstract ExporterFactory<T> createExportFactoryFor(ExporterFactory.Parameters parameters);
+    }
 
 
-    private Exporter<T> getExporterFor(String extension, OutputStream pos, Map<String, String> parameters)
+
+    private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters)
             throws IOException {
 
-        ExporterFactory.Parameters params = createParamters(extension, parameters);
+        ExporterFactory.Parameters params = createParamters(extension, publicOnly, parameters);
 
-        ExporterFactory<T>  factory = createExportFactoryFor(params);
+        ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
         if (factory == null) {
             // TODO handle null couldn't find factory for params
             throw new IllegalArgumentException("could not find suitable factory for " + params);
