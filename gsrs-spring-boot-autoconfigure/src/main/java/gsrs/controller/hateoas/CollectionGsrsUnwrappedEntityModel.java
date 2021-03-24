@@ -15,8 +15,8 @@ import gsrs.controller.GsrsEntityController;
  */
 class CollectionGsrsUnwrappedEntityModel<T> extends GsrsUnwrappedEntityModel<T> {
 
-    public CollectionGsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
-        super(obj, controllerClass);
+    public CollectionGsrsUnwrappedEntityModel(T obj) {
+        super(obj);
     }
 
     @Override

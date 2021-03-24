@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonValue;
 import gsrs.controller.AbstractGsrsEntityController;
 import gsrs.controller.GsrsEntityController;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
 
@@ -31,37 +33,29 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * using JsonAnyGetter on the getter below.
      */
     private Map<String, Object> ourLinks = new HashMap<>();
-    /**
-     * This is the controller that was used to create this REST Response
-     * will be used by the {@link GsrsUnwrappedEntityModelProcessor}
-     * to generate the correct method URL.
-     */
-    @JsonIgnore
-    private Class<? extends GsrsEntityController> controller;
 
-    public static <T> GsrsUnwrappedEntityModel<T> of(T obj, Class<? extends GsrsEntityController> controllerClass){
+    public static <T> GsrsUnwrappedEntityModel<T> of(T obj){
         if(obj instanceof Collection){
-            return new CollectionGsrsUnwrappedEntityModel<>(obj, controllerClass);
+            return new CollectionGsrsUnwrappedEntityModel<>(obj);
         }
-        return new GsrsUnwrappedEntityModel<T>(obj, controllerClass);
+        return new GsrsUnwrappedEntityModel<T>(obj);
     }
-    protected GsrsUnwrappedEntityModel(T obj, Class<? extends GsrsEntityController> controllerClass) {
+    protected GsrsUnwrappedEntityModel(T obj) {
         this.obj = obj;
-
-        this.controller = controllerClass;
     }
 
-    public Class<? extends GsrsEntityController> getController() {
-        return controller;
-    }
 
     @Override
     public GsrsUnwrappedEntityModel<T> add(Link link) {
-         ourLinks.put(link.getRel().value(), link.getHref());
+         ourLinks.put(link.getRel().value(), new RestUrlLink(link.getHref()));
          return this;
     }
+    public GsrsUnwrappedEntityModel<T> add(Link link, String type) {
+        ourLinks.put(link.getRel().value(), new RestUrlLink(link.getHref(), type));
+        return this;
+    }
     public GsrsUnwrappedEntityModel<T> addLink(String name, String href){
-        ourLinks.put(name, href);
+        ourLinks.put(name, new RestUrlLink(href));
         return this;
     }
     @JsonAnyGetter
@@ -80,5 +74,16 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     @JsonUnwrapped
     public T getObj() {
         return obj;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class RestUrlLink{
+        private String url;
+        private String type;
+
+        public RestUrlLink(String url){
+            this(url, "GET");
+        }
     }
 }

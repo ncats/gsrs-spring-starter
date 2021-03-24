@@ -588,9 +588,31 @@ to return the result as raw text.
 Will make a JSON response like this:
 ```json
    "diff": {
-                "href": "http://localhost:8080/api/v1/myEntity(12345)/$diff"
+                "url": "http://localhost:8080/api/v1/myEntity(12345)/$diff"
+                "type": "GET"
             },
 
+```
+
+### URL for other HTTP Verbs such as POST and DELETE
+The `@GsrsApiAction` annotation has an optional `type` field to specify the HTTP verb.  If not set
+the default value is GET.
+
+For example if you have a method like this
+```java
+    @JsonIgnore
+    @GsrsApiAction(value = "removeUrl", type = GsrsApiAction.Type.DELETE)
+    public ResourceReference<String> removeUrl () {
+        // .. make ResourceReference object as before
+
+    }
+```
+The JSON response will include this
+```json
+"removeUrl": {
+        "url": "http://localhost:8080/api/v1/myEntity(12345)",
+        "type": "DELETE"
+    },
 ```
 ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency

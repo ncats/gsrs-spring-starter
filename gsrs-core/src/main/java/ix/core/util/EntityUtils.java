@@ -2044,6 +2044,9 @@ public class EntityUtils {
 			}
 		}
 
+		public <T extends Annotation> T getAnnotation(Class<T> annotationClass){
+		    return m.getAnnotation(annotationClass);
+        }
 		public Set<Class<?>> getHookTypes(){
 			return hookTypes;
 		}
