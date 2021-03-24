@@ -22,4 +22,17 @@ public @interface GsrsApiAction {
      * @return
      */
     String value();
+
+    /**
+     * The HTTP verb Type; defaults to GET
+     * @return
+     */
+    Type type() default Type.GET;
+
+    enum Type{
+        GET,
+        POST,
+        DELETE,
+        HEAD
+    }
 }

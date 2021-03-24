@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.service.ExportService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
@@ -10,6 +11,7 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
@@ -21,8 +23,9 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 @ExposesResourceFor(ExportMetaData.class)
-@GsrsRestApiController(context = "profile")
+@GsrsRestApiController(context = "profile/downloads")
 public class ExportController {
 
     @Autowired
@@ -31,13 +34,13 @@ public class ExportController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
-
-    @GetGsrsRestApiMapping("/downloads")
+    @PreAuthorize("isAuthenticated()")
+    @GetGsrsRestApiMapping("")
     public List<ExportMetaData> myDownloads(Principal principal){
         return exportService.getExplicitExportMetaData(principal.getName());
     }
-
-    @GetGsrsRestApiMapping("/downloads/{id}")
+    @PreAuthorize("isAuthenticated()")
+    @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> getStatusOf(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
@@ -45,10 +48,11 @@ public class ExportController {
 
         }
 
-        return new ResponseEntity<>(opt.get(), HttpStatus.OK);
-    }
 
-    @DeleteGsrsRestApiMapping("/downloads/{id}")
+        return new ResponseEntity<>(GsrsUnwrappedEntityModel.of(opt.get()), HttpStatus.OK);
+    }
+    @PreAuthorize("isAuthenticated()")
+    @DeleteGsrsRestApiMapping(value = {"/{id}", "({id})"})
     public ResponseEntity<Object> delete(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
@@ -60,16 +64,21 @@ public class ExportController {
 
         return new ResponseEntity<>("removed", HttpStatus.ACCEPTED);
     }
-
-    @GetGsrsRestApiMapping("/downloads/{id}/download")
+    @PreAuthorize("isAuthenticated()")
+    @GetGsrsRestApiMapping(value = {"/{id}/download", "({id})/download"})
     public ResponseEntity<Object> download(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters) throws IOException {
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
             return new ResponseEntity<>("could not find exported data with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
-        //TODO check if complete?
+
         Optional<ExportDir.ExportFile<ExportMetaData>> exportFile = exportService.getFile(principal.getName(), opt.get().getFilename());
+        if(!opt.get().isComplete()){
+           //should we not return unless complete?
+            return new ResponseEntity<>("export not completed" + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+
+        }
         if(!exportFile.isPresent()){
             return new ResponseEntity<>("could not find exported file from Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 

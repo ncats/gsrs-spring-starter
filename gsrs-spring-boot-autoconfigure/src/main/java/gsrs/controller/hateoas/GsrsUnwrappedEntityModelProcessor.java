@@ -1,6 +1,7 @@
 package gsrs.controller.hateoas;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.model.GsrsApiAction;
 import gsrs.model.Sizeable;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
@@ -82,6 +83,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         for(EntityUtils.MethodMeta action : info.getApiActions()){
             Object resource =action.getValue(obj).get();
             if(resource !=null) {
+                //GSRS 2.x RestUrlLink object has 2 fields : rul and type (for GET, DELETE etc)
+                GsrsApiAction gsrsApiAction = action.getAnnotation(GsrsApiAction.class);
+                String type = gsrsApiAction ==null? "GET": gsrsApiAction.type().name();
+
                 if (resource instanceof FieldResourceReference) {
                     String field = ((FieldResourceReference) resource).computedResourceLink();
 
@@ -89,7 +94,8 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                             GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),getEntityLinkForClassOrParentClass(obj.getClass())
                                     .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                                     .slash(field)
-                                    .withRel(action.getJsonFieldName())));
+                                    .withRel(action.getJsonFieldName())),
+                            type);
 
 //                String field = ((FieldResourceReference)resource).computedResourceLink();
 //                model.add(GsrsLinkUtil.fieldLink(field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null))
@@ -103,7 +109,8 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                         linkBuilder = linkBuilder.slash(objResource.getFieldPath());
                     }
                     model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder
-                                    .withRel(action.getJsonFieldName())));
+                                    .withRel(action.getJsonFieldName())),
+                            type);
                 }
             }
         }

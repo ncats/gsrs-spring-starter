@@ -2,11 +2,16 @@ package ix.ginas.exporters;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.GsrsApiAction;
+import ix.core.FieldResourceReference;
+import ix.core.ResourceReference;
 import ix.core.models.Principal;
 import ix.ginas.models.utils.JSONEntity;
 
 
+import javax.persistence.Id;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -16,7 +21,7 @@ import java.util.function.Consumer;
 @JSONEntity(name = "metadata")
 public class ExportMetaData implements Comparable<ExportMetaData>{
     private Consumer<Long> totalConsumer=(l)->{};
-    
+    @Id
     public String id = UUID.randomUUID().toString();
     
     private long numRecords;
@@ -114,7 +119,25 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
     public String getKey(){
     	return getKeyFor(this.collectionId,this.extension, this.publicOnly);
     }
-    
+
+    @JsonIgnore
+    @GsrsApiAction("downloadUrl")
+    public ResourceReference<String> downloadUrl () {
+        if(isComplete()) {
+            return FieldResourceReference.forField("download", () -> "");
+        }
+        return null;
+
+    }
+    @JsonIgnore
+    @GsrsApiAction(value = "removeUrl", type = GsrsApiAction.Type.DELETE)
+    public ResourceReference<String> removeUrl () {
+        if(isComplete()) {
+            return FieldResourceReference.forField("", () -> "");
+        }
+        return null;
+
+    }
     //TODO katzelda March 2021: turn off these url links for now until the controller is ready
     /*
     public RestUrlLink getSelf(){
