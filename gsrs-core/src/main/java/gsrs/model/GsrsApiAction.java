@@ -31,8 +31,10 @@ public @interface GsrsApiAction {
 
     enum Type{
         GET,
+        PUT,
         POST,
         DELETE,
-        HEAD
+        HEAD,
+        PATCH
     }
 }

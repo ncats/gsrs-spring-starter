@@ -138,6 +138,15 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
         return null;
 
     }
+    @JsonIgnore
+    @GsrsApiAction(value = "cancelUrl", type = GsrsApiAction.Type.PUT)
+    public ResourceReference<String> cancelUrl () {
+        if(!isComplete()) {
+            return FieldResourceReference.forField("@cancel", () -> "");
+        }
+        return null;
+
+    }
     //TODO katzelda March 2021: turn off these url links for now until the controller is ready
     /*
     public RestUrlLink getSelf(){

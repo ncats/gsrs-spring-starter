@@ -91,6 +91,11 @@ public class ExportProcess<T> {
                         metaData.addRecord();
                     })
                     .anyMatch(m->{
+                        //katzelda March 2021: if we cancel the executor it should
+                        //set the interrupt flag so check that too #cancelled field only set from API call
+                        if(Thread.currentThread().isInterrupted()){
+                            metaData.cancel();
+                        }
                      return metaData.cancelled;
                     });
                     
