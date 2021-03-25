@@ -614,6 +614,10 @@ The JSON response will include this
         "type": "DELETE"
     },
 ```
+
+## Export and Download Search Results
+When using the Legacy search, 
+
 ## Testing 
    There is a test module called `gsrs-spring-starter-tests` please add this to your maven pom as a test depdendency
    
