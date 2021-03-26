@@ -115,9 +115,21 @@ public class EntityPersistAdapter {
         return change(key, changeOp);
     }
 
-    private <T> Optional<T>  findByKey(EntityManager em, EntityUtils.Key key){
+    private <T> Optional<T> findByKey(EntityManager em, EntityUtils.Key key) {
 
-        return  (Optional<T>) Optional.ofNullable(em.find(key.getEntityInfo().getEntityClass(), key.getIdNative()));
+        // The class of this key may not be the same
+        // as the class it's stored in in the DB. Need to go
+        // generic. The Key object should probably support
+        // something like Key.toRootKey() or something to get
+        // the more generic form. As-is this may come up again
+        // in other contexts.
+        
+        Class<T> kls = (Class<T>) key.getEntityInfo()
+                                     .getInherittedRootEntityInfo()
+                                     .getEntityClass();
+        Object id = key.getIdNative();
+
+        return (Optional<T>) Optional.ofNullable(em.find(kls, id));
     }
 
     public Optional<Edit> getEditFor(Key k){

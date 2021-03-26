@@ -12,6 +12,7 @@ import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.LogUtil;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
@@ -360,88 +361,124 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         */
                 UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
                 EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, oldEntity -> {
-                    EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
-                    String oldJson = og.toFullJson();
-                    Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+                	EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
+                	String oldJson = og.toFullJson();
+                	Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
 
-                    ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
-                    ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
-                    validator.validate(updatedEntity, oldEntity, callback);
+                	ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+                	ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+                	validator.validate(updatedEntity, oldEntity, callback);
 
-                    callback.complete();
+                	callback.complete();
 
-                    builder.validationResponse(response)
-                            .oldJson(oldJson);
+                	builder.validationResponse(response)
+                           .oldJson(oldJson);
 
-                    if (response != null && !response.isValid()) {
-                        builder.status(UpdateResult.STATUS.ERROR);
-                        return Optional.empty();
-                    }
+                	if (response != null && !response.isValid()) {
+                		builder.status(UpdateResult.STATUS.ERROR);
+                		return Optional.empty();
+                	}
+                	
+                	EntityWrapper<T> oWrap = EntityWrapper.of(oldEntity);
+                	EntityWrapper<T> nWrap = EntityWrapper.of(updatedEntity);
 
-                    PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
-                    System.out.println("changes = " + patch.getChanges());
-                    final List<Object> removed = new ArrayList<Object>();
+                	boolean usePojoPatch=false;
+                	//only use POJO patch if the entities are the same type
+                	if(oWrap.getEntityClass().equals(nWrap.getEntityClass())){ 
+                		usePojoPatch=true;
+                	}
+                	if(usePojoPatch) {
+                		PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
+                		System.out.println("changes = " + patch.getChanges());
+                		final List<Object> removed = new ArrayList<Object>();
 
-                    //Apply the changes, grabbing every change along the way
-                    Stack changeStack = patch.apply(oldEntity, c -> {
-                        if ("remove".equals(c.getOp())) {
-                            removed.add(c.getOldValue());
-                        }
-                        LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
-                    });
-                    if (changeStack.isEmpty()) {
-                        throw new IllegalStateException("No change detected");
-                    } else {
-                        LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
-                    }
-                    oldEntity = fixUpdatedIfNeeded(oldEntity, oldEntity);
-                    //This is the last line of defense for making sure that the patch worked
-                    //Should throw an exception here if there's a major problem
-                    String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
+                		//Apply the changes, grabbing every change along the way
+                		Stack changeStack = patch.apply(oldEntity, c -> {
+                			if ("remove".equals(c.getOp())) {
+                				removed.add(c.getOldValue());
+                			}
+                			LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
+                		});
+                		if (changeStack.isEmpty()) {
+                			throw new IllegalStateException("No change detected");
+                		} else {
+                			LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
+                		}
+                		oldEntity = fixUpdatedIfNeeded(oldEntity, oldEntity);
+                		//This is the last line of defense for making sure that the patch worked
+                		//Should throw an exception here if there's a major problem
+                		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
 
-                    while (!changeStack.isEmpty()) {
-                        Object v = changeStack.pop();
-                        EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
-                        if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                		while (!changeStack.isEmpty()) {
+                			Object v = changeStack.pop();
+                			EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
+                			if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
 
-                            entityManager.merge(ewchanged.getValue());
-                        }
-                    }
+                				entityManager.merge(ewchanged.getValue());
+                			}
+                		}
 
-                    //explicitly delete deleted things
-                    //This should ONLY delete objects which "belong"
-                    //to something. That is, have a @SingleParent annotation
-                    //inside
+                		//explicitly delete deleted things
+                		//This should ONLY delete objects which "belong"
+                		//to something. That is, have a @SingleParent annotation
+                		//inside
 
-            removed.stream()
-                    .filter(Objects::nonNull)
+                		removed.stream()
+                		.filter(Objects::nonNull)
 
-                    .map(o -> EntityUtils.EntityWrapper.of(o))
-                    .filter(ew -> ew.isExplicitDeletable())
-                    .forEach(ew -> {
-                        Object o = ew.getValue();
-                        log.warn("deleting:" + o);
-                        //hibernate can only remove entities from this transaction
-                        //this logic will merge "detached" entities from outside this transaction before removing anything
+                		.map(o -> EntityUtils.EntityWrapper.of(o))
+                		.filter(ew -> ew.isExplicitDeletable())
+                		.forEach(ew -> {
+                			Object o = ew.getValue();
+                			log.warn("deleting:" + o);
+                			//hibernate can only remove entities from this transaction
+                			//this logic will merge "detached" entities from outside this transaction before removing anything
 
-                        entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
+                			entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
 
-                    });
+                		});
 
-                    try {
-                        T saved = transactionalUpdate(oldEntity, oldJson);
-                        System.out.println("updated entity = " + saved);
-                        builder.updatedEntity(saved);
-                        builder.status(UpdateResult.STATUS.UPDATED);
+                		try {
+                			T saved = transactionalUpdate(oldEntity, oldJson);
+                			System.out.println("updated entity = " + saved);
+                			builder.updatedEntity(saved);
+                			builder.status(UpdateResult.STATUS.UPDATED);
 
-                        return Optional.of(saved);
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                        builder.status(UpdateResult.STATUS.ERROR);
+                			return Optional.of(saved);
+                		} catch (Throwable t) {
+                			t.printStackTrace();
+                			builder.status(UpdateResult.STATUS.ERROR);
 
-                        return Optional.empty();
-                    }
+                			return Optional.empty();
+                		}
+                	}else {
+                	    //NON POJOPATCH: delete and save for updates
+
+                	    T oldValue=(T)oWrap.getValue();
+                	    entityManager.remove(oldValue);
+
+                	    // Now need to take care of bad update pieces:
+                	    //	1. Version not incremented correctly (post update hooks not called) 
+                	    //  2. Some metadata / audit data may be problematic
+                	    //  3. The update hooks are called explicitly now
+                	    //     ... and that's a weird thing to do, because the persist hooks
+                	    //     will get called too. Does someone really expect things to
+                	    //     get called twice?
+                	    // TODO: the above pieces are from the old codebase, but the new one
+                	    // has to have these evaluated too. Need unit tests.
+
+
+                	    T newValue = (T)nWrap.getValue();
+                	    entityManager.persist(newValue);
+
+                	    T saved = transactionalUpdate(newValue, oldJson);
+
+                	    builder.updatedEntity(newValue);
+                	    builder.status(UpdateResult.STATUS.UPDATED);
+
+                	    return Optional.of(newValue); //Delete & Create
+                	}
 
 
                 });
