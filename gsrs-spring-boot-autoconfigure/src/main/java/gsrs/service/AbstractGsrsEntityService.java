@@ -25,12 +25,12 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -416,22 +416,18 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
             removed.stream()
                     .filter(Objects::nonNull)
-                    //hibernate can only removed entities from this transaction
-                    //this logic will merge "detached" entities from outside this transaction before removing anything
-                    .peek(o -> {
-                        if (!entityManager.contains(o)) {
-                            entityManager.merge(o);
-                        }
-                    })
+
                     .map(o -> EntityUtils.EntityWrapper.of(o))
                     .filter(ew -> ew.isExplicitDeletable())
                     .forEach(ew -> {
-                        log.warn("deleting:" + ew.getValue());
+                        Object o = ew.getValue();
+                        log.warn("deleting:" + o);
+                        //hibernate can only remove entities from this transaction
+                        //this logic will merge "detached" entities from outside this transaction before removing anything
 
-                        entityManager.remove(ew.getValue());
+                        entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
 
                     });
-                    //TODO re-index here
 
                     try {
                         T saved = transactionalUpdate(oldEntity, oldJson);
@@ -534,7 +530,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 //
 //        editRepository.save(edit);
 //        System.out.println("edit = " + edit.id);
-        entityManager.flush();
+//        entityManager.flush();
         return after;
     }
 
@@ -573,6 +569,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<T> getEntityBySomeIdentifier(String id) {
         Optional<T> opt;
         if(isId(id)) {
@@ -583,6 +580,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return opt;
     }
     @Override
+    @Transactional(readOnly = true)
     public Optional<I> getEntityIdOnlyBySomeIdentifier(String id) {
         Optional<I> opt;
         if(isId(id)) {
@@ -628,5 +626,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @return an Optional that is empty if there is no entity with the given id;
      *  or an Optional that has the found entity.
      */
+    @Transactional
     public abstract Optional<T> flexLookup(String someKindOfId);
 }

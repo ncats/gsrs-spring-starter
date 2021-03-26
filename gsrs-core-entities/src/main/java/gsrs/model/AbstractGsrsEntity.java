@@ -7,6 +7,8 @@ import gsrs.GsrsEntityProcessorListener;
 import ix.core.search.text.TextIndexerEntityListener;
 import ix.core.util.EntityUtils;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
@@ -35,6 +37,7 @@ public abstract class AbstractGsrsEntity{
     @PostLoad
     public void updatePreviousState(){
         EntityUtils.EntityWrapper<AbstractGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
+
         this.previousState = ew.toFullJsonNode();
         this.previousVersion = ew.getVersion().orElse(null);
     }
