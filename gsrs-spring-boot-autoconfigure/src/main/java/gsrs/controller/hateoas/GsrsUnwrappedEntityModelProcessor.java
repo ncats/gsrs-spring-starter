@@ -60,17 +60,18 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
      * and throw exceptions.  So this iteratively calls super classes until it finds a working entity link
      * or gets all the way to Object.
      * @param c the class to get the controller link for
-     * @return the {@link LinkBuilder} for that controller.
+     * @return the {@link LinkBuilder} for that controller wrapped in an Optional; or empty if there is no
+     * entity associated with a controller.
      * @throws IllegalArgumentException if the given class or any parent class does not have a controller.
      */
-    private LinkBuilder getEntityLinkForClassOrParentClass(Class<?> c){
+    private Optional<LinkBuilder> getEntityLinkForClassOrParentClass(Class<?> c){
         do {
             try {
-                return entityLinks.linkFor(c);
+                return Optional.of(entityLinks.linkFor(c));
             }catch(Exception e){}
             c = c.getSuperclass();
         }while(c !=null);
-        throw new IllegalArgumentException("invalid entity link class " + c);
+        return Optional.empty();
     }
 
     private GsrsUnwrappedEntityModel<?> handleSingleObject(GsrsUnwrappedEntityModel<?> model, Object obj) {
@@ -78,7 +79,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         CachedSupplier<String> idString = info.getIdString(obj);
         String id = idString.get();
         //always add self
-        model.add(computeSelfLink(model, id));
+        Link link = computeSelfLink(model, id);
+        if(link !=null) {
+            model.add(link);
+        }
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
             Object resource =action.getValue(obj).get();
@@ -90,12 +94,15 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                 if (resource instanceof FieldResourceReference) {
                     String field = ((FieldResourceReference) resource).computedResourceLink();
 
-                    model.add(
-                            GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),getEntityLinkForClassOrParentClass(obj.getClass())
-                                    .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-                                    .slash(field)
-                                    .withRel(action.getJsonFieldName())),
-                            type);
+                    Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(obj.getClass());
+                    if(linkBuilder.isPresent()) {
+                        model.add(
+                                GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder.get()
+                                        .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+                                        .slash(field)
+                                        .withRel(action.getJsonFieldName())),
+                                type);
+                    }
 
 //                String field = ((FieldResourceReference)resource).computedResourceLink();
 //                model.add(GsrsLinkUtil.fieldLink(field, linkTo(methodOn(model.getController()).getFieldById(id, Collections.emptyMap(), null))
@@ -103,14 +110,17 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                 }else if(resource instanceof ObjectResourceReference){
                     ObjectResourceReference objResource = (ObjectResourceReference)resource;
-                    LinkBuilder linkBuilder = getEntityLinkForClassOrParentClass(objResource.getEntityClass())
-                            .slash("(" + objResource.getId() + ")");
-                    if(objResource.getFieldPath()!=null){
-                        linkBuilder = linkBuilder.slash(objResource.getFieldPath());
+                    Optional<LinkBuilder> opt = getEntityLinkForClassOrParentClass(objResource.getEntityClass());
+                    if(opt.isPresent()) {
+                        LinkBuilder linkBuilder = opt.get()
+                                .slash("(" + objResource.getId() + ")");
+                        if (objResource.getFieldPath() != null) {
+                            linkBuilder = linkBuilder.slash(objResource.getFieldPath());
+                        }
+                        model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder
+                                        .withRel(action.getJsonFieldName())),
+                                type);
                     }
-                    model.add(GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder
-                                    .withRel(action.getJsonFieldName())),
-                            type);
                 }
             }
         }
@@ -123,16 +133,19 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                 System.out.println(field);
                 Optional<Object> value = f.getValue(obj);
                 if(value.isPresent()) {
+                    Link l=null;
                     if (f.isCollection()) {
-                        model.add(computeFieldLink(((Collection) value.get()).size(),
-                                obj, id, field, compactFieldName));
+                        l= computeFieldLink(((Collection) value.get()).size(),
+                                obj, id, field, compactFieldName);
                     } else if (f.isArray()) {
-                        model.add(
-                                computeFieldLink(Array.getLength(value.get()),
-                                        obj, id, field, compactFieldName));
+                        l = computeFieldLink(Array.getLength(value.get()),
+                                        obj, id, field, compactFieldName);
                     } else if (Sizeable.class.isAssignableFrom(f.getType())) {
-                        model.add(computeFieldLink(((Sizeable) value.get()).getSize(),
-                                obj, id, field, compactFieldName));
+                        l =computeFieldLink(((Sizeable) value.get()).getSize(),
+                                obj, id, field, compactFieldName);
+                    }
+                    if(l!=null){
+                        model.add(l);
                     }
                 }
 //            else{
@@ -145,11 +158,15 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         return model;
     }
 
-    private LinkBuilder getControllerLinkFor(GsrsUnwrappedEntityModel<?> model){
+    private Optional<LinkBuilder> getControllerLinkFor(GsrsUnwrappedEntityModel<?> model){
         return getEntityLinkForClassOrParentClass(model.getObj().getClass());
     }
     private Link  computeFieldLink(int collectionSize, Object entity, String id, String fieldPath, String rel){
-       return new CollectionLink(collectionSize, GsrsLinkUtil.adapt(id, getEntityLinkForClassOrParentClass(entity.getClass())
+        Optional<LinkBuilder> opt = getEntityLinkForClassOrParentClass(entity.getClass());
+        if(!opt.isPresent()){
+            return null;
+        }
+        return new CollectionLink(collectionSize, GsrsLinkUtil.adapt(id, opt.get()
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
                 .slash(fieldPath)
                 .withRel(rel)));
@@ -158,7 +175,11 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
-        Link l= GsrsLinkUtil.adapt(id, getEntityLinkForClassOrParentClass(model.getObj().getClass())
+        Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(model.getObj().getClass());
+        if(!linkBuilder.isPresent()){
+            return null;
+        }
+        Link l= GsrsLinkUtil.adapt(id, linkBuilder.get()
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
 
                 .withRel("_self"));
