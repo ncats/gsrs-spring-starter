@@ -2101,15 +2101,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return getQueryParser(FULL_TEXT_FIELD);
 	}
 
-	public Query parseQuery(String q) throws Exception{
-        QueryParser parser = getQueryParser();
-        turnOnSuffixSearchIfNeeded(q, parser);
-
-
-        Query q1=parser.parse(q);
-		//return q1;
-		return withSearcher(s -> q1.rewrite(s.getIndexReader()));
-	}
+//	@Deprecated
+//	public Query parseQuery(String q) throws Exception{
+//        QueryParser parser = getQueryParser();
+//        turnOnSuffixSearchIfNeeded(q, parser);
+//
+//
+//        Query q1=parser.parse(q);
+//		//return q1;
+//		return withSearcher(s -> q1.rewrite(s.getIndexReader()));
+//	}
 
     private void turnOnSuffixSearchIfNeeded(String q, QueryParser parser) {
 
@@ -2647,6 +2648,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void removeAllType(Class<?> type) throws Exception{
 		removeAllType(EntityUtils.getEntityInfoFor(type));
 	}
+	
+	public void remove(Query query) throws Exception {
+	    log.debug("## removing documents: " + query);
+	    indexerService.deleteDocuments(query);
+	    listenersDeleteDocuments(query);
+	}
+
 
 	public void remove(String text) throws Exception {
 		try {
@@ -3180,7 +3188,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 	
 
-	private static String toExactMatchString(String in){
+	public static String toExactMatchString(String in){
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
 
