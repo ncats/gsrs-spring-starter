@@ -1022,7 +1022,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private Directory taxonDir;
 
 	private DirectoryTaxonomyWriter taxonWriter;
-	private FacetsConfig facetsConfig;
+
+
+    private FacetsConfig facetsConfig;
 
 
     private ConcurrentMap<String, SuggestLookup> lookups;
@@ -1072,6 +1074,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 //        });
 //    }
 
+    protected DirectoryTaxonomyWriter getTaxonWriter() {
+        return taxonWriter;
+    }
 
 	private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
 		// empty instance should only be used for
@@ -1250,7 +1255,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         return Tuple.of(ddq,filter);
     }
 
-	private <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
+	protected <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
 		searchManager.maybeRefresh();
 		IndexSearcher searcher = searchManager.acquire();
 		try {
@@ -1343,6 +1348,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         private static final Pattern ROOT_CONTEXT_ADDER = Pattern
                 .compile("(\\b(?!" + ROOT + ")[^ :]*_[^ :]*[:])");
+
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
             oldQParser = new QueryParser(def, createIndexAnalyzer());

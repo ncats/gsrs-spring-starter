@@ -40,7 +40,8 @@ public class TextIndexerFactory {
         // this logic was taken from the static init method of the Play G-SRS TextIndexer and moved to a new factory
         //so it could be used with dependency injection
 
-        deepKinds = textIndexerConfig.getDeepFields()
+        deepKinds = Optional.ofNullable(textIndexerConfig)
+                .map(cf->cf.getDeepFields()
                 .stream()
                 .map(s->{
                     try{
@@ -53,7 +54,8 @@ public class TextIndexerFactory {
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .map(ei->ei.getName())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet())
+                ).orElse(new HashSet<>());
 
         defaultIndexer = getInstance(new File(defaultDir));
     }));
