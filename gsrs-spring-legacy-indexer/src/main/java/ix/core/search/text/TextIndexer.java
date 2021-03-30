@@ -1074,7 +1074,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 //        });
 //    }
 
-    protected DirectoryTaxonomyWriter getTaxonWriter() {
+    public DirectoryTaxonomyWriter getTaxonWriter() {
         return taxonWriter;
     }
 
@@ -1169,7 +1169,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	@FunctionalInterface
-	interface SearcherFunction<R> {
+	public interface SearcherFunction<R> {
 		R apply(IndexSearcher indexSearcher) throws Exception;
 	}
 
@@ -1255,7 +1255,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         return Tuple.of(ddq,filter);
     }
 
-	protected <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
+	public <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
 		searchManager.maybeRefresh();
 		IndexSearcher searcher = searchManager.acquire();
 		try {
@@ -1560,11 +1560,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public Map<String,List<Filter>> createAndRemoveRangeFiltersFromOptions(SearchOptions options) {
 		Map<String, List<Filter>> filters = new HashMap<String,List<Filter>>();
-		options.removeAndConsumeRangeFilters((f,r)->{
-			filters
-			    .computeIfAbsent(f, k -> new ArrayList<Filter>())
-				.add(FieldCacheRangeFilter.newLongRange(f, r[0], r[1], true, false));
-		});
+		if(options !=null) {
+            options.removeAndConsumeRangeFilters((f, r) -> {
+                filters
+                        .computeIfAbsent(f, k -> new ArrayList<Filter>())
+                        .add(FieldCacheRangeFilter.newLongRange(f, r[0], r[1], true, false));
+            });
+        }
 		return filters;
 	}
 
@@ -1572,7 +1574,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public Sort createSorterFromOptions(SearchOptions options) {
 		Sort sorter = null;
-		if (!options.getOrder().isEmpty()) {
+		if (options !=null && !options.getOrder().isEmpty()) {
 			List<SortField> fields = new ArrayList<SortField>();
 			for (String f : options.getOrder()) {
 				boolean rev = false;
