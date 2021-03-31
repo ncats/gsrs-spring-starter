@@ -632,7 +632,7 @@ public class SearchResult {
 		private LazyList<Key,Object> matches;
 		private List<?> result;
 		private int count =-1;
-		private SearchOptions options;
+		private SearchOptions options = new SearchOptions.Builder().build();
 		private long stop =-1;
 		private Comparator<Key> idComparator;
 		private List<SoftReference<SearchResultDoneListener>> listeners;

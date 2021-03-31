@@ -48,6 +48,7 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.CharStream;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -1021,7 +1022,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private Directory taxonDir;
 
 	private DirectoryTaxonomyWriter taxonWriter;
-	private FacetsConfig facetsConfig;
+
+
+    private FacetsConfig facetsConfig;
 
 
     private ConcurrentMap<String, SuggestLookup> lookups;
@@ -1071,6 +1074,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 //        });
 //    }
 
+    public DirectoryTaxonomyWriter getTaxonWriter() {
+        return taxonWriter;
+    }
 
 	private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
 		// empty instance should only be used for
@@ -1163,7 +1169,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	@FunctionalInterface
-	interface SearcherFunction<R> {
+	public interface SearcherFunction<R> {
 		R apply(IndexSearcher indexSearcher) throws Exception;
 	}
 
@@ -1249,7 +1255,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         return Tuple.of(ddq,filter);
     }
 
-	private <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
+	public <R> R withSearcher(SearcherFunction<R> worker) throws Exception {
 		searchManager.maybeRefresh();
 		IndexSearcher searcher = searchManager.acquire();
 		try {
@@ -1334,47 +1340,46 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return -1;
 	}
 
-	public static class IxQueryParser extends QueryParser {
 
-		private static final Pattern ROOT_CONTEXT_ADDER=
-				Pattern.compile("(\\b(?!" + ROOT + ")[^ :]*_[^ :]*[:])");
 
-		//TODO setting the default operation to AND
-        //will make split words on white space act as an && operation not an or
-        //so phrases won't have to be quoted
+    public static class IxQueryParser extends ComplexPhraseQueryParser {
 
-		protected IxQueryParser(CharStream charStream) {
-			super(charStream);
-//			setDefaultOperator(QueryParser.AND_OPERATOR);
-		}
+        private QueryParser oldQParser;
 
-		public IxQueryParser(String def) {
+        private static final Pattern ROOT_CONTEXT_ADDER = Pattern
+                .compile("(\\b(?!" + ROOT + ")[^ :]*_[^ :]*[:])");
+
+        public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
-//			setDefaultOperator(QueryParser.AND_OPERATOR);
+            oldQParser = new QueryParser(def, createIndexAnalyzer());
+            // setDefaultOperator(QueryParser.AND_OPERATOR);
         }
 
-		public IxQueryParser(String string, Analyzer indexAnalyzer) {
-			super(string, indexAnalyzer);
-//			setDefaultOperator(QueryParser.AND_OPERATOR);
-		}
+        public IxQueryParser(String string, Analyzer indexAnalyzer) {
+            super(string, indexAnalyzer);
 
-		@Override
-        protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
-            Query q= super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
-            //katzelda 4/14/2018
-            //this is to get range queries to work with our datetimestamps
-            //without having to use the lucene DateTools
+            oldQParser = new QueryParser(string, indexAnalyzer);
+            // setDefaultOperator(QueryParser.AND_OPERATOR);
+        }
+
+        @Override
+        protected Query getRangeQuery(String field, String part1, String part2,
+                boolean startInclusive, boolean endInclusive)
+                throws ParseException {
+            Query q = super.getRangeQuery(field, part1, part2, startInclusive,
+                    endInclusive);
+            // katzelda 4/14/2018
+            // this is to get range queries to work with our datetimestamps
+            // without having to use the lucene DateTools
             if (q instanceof TermRangeQuery) {
                 TermRangeQuery trq = (TermRangeQuery) q;
                 String lower = trq.getLowerTerm().utf8ToString();
                 String higher = trq.getUpperTerm().utf8ToString();
 
                 try {
-                    double low = Double
-                            .parseDouble(lower);
-                    double high = Double
-                            .parseDouble(higher);
-                    q = NumericRangeQuery.newDoubleRange("D_" +trq.getField(),
+                    double low = Double.parseDouble(lower);
+                    double high = Double.parseDouble(higher);
+                    q = NumericRangeQuery.newDoubleRange("D_" + trq.getField(),
                             low, high, trq.includesLower(),
                             trq.includesUpper());
                 } catch (Exception e) {
@@ -1384,40 +1389,48 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             return q;
         }
-		@Override
-		public Query parse(String qtext) throws ParseException {
-			if (qtext != null) {
-				qtext = transformQueryForExactMatch(qtext);
-			}
-			// add ROOT prefix to all term queries (containing '_') where not
-			// otherwise specified
-			qtext = ROOT_CONTEXT_ADDER.matcher(qtext).replaceAll(ROOT + "_$1");
+
+        @Override
+        public Query parse(String qtext) throws ParseException {
+            if (qtext != null) {
+                qtext = transformQueryForExactMatch(qtext);
+            }
+            // add ROOT prefix to all term queries (containing '_') where not
+            // otherwise specified
+            qtext = ROOT_CONTEXT_ADDER.matcher(qtext).replaceAll(ROOT + "_$1");
+
+            // If there's an error parsing, it probably needs to have
+            // quotes. Likely this happens from ":" chars
+
+            Query q = null;
+            try {
+                if (qtext.contains("*")) {
+                    q = super.parse(qtext);
+                } else {
+                    q = oldQParser.parse(qtext);
+                }
+
+            } catch (Exception e) {
+                // This is not a good way to deal with dangling quotes, but it
+                // is A
+                // way to do it
+                try {
+                    q = super.parse("\"" + qtext + "\"");
+                } catch (Exception e2) {
+                    if (qtext.startsWith("\"")) {
+                        q = super.parse(qtext + "\"");
+                    } else {
+                        q = super.parse("\"" + qtext);
+                    }
+                }
+            }
+            return q;
+
+        }
+    }
 
 
 
-			//If there's an error parsing, it probably needs to have
-			//quotes. Likely this happens from ":" chars
-
-			Query q = null;
-			try{
-				q = super.parse(qtext);
-			}catch(Exception e){
-				//This is not a good way to deal with dangling quotes, but it is A
-				//way to do it
-				try{
-					q = super.parse("\"" + qtext + "\"");
-				}catch(Exception e2){
-					if(qtext.startsWith("\"")){
-						q = super.parse(qtext + "\"");
-					}else{
-						q = super.parse("\"" + qtext);
-					}
-				}
-			}
-			return q;
-
-		}
-	}
 
 
 	public SearchResult search(GsrsRepository gsrsRepository, String text, int size) throws IOException {
@@ -1547,11 +1560,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public Map<String,List<Filter>> createAndRemoveRangeFiltersFromOptions(SearchOptions options) {
 		Map<String, List<Filter>> filters = new HashMap<String,List<Filter>>();
-		options.removeAndConsumeRangeFilters((f,r)->{
-			filters
-			    .computeIfAbsent(f, k -> new ArrayList<Filter>())
-				.add(FieldCacheRangeFilter.newLongRange(f, r[0], r[1], true, false));
-		});
+		if(options !=null) {
+            options.removeAndConsumeRangeFilters((f, r) -> {
+                filters
+                        .computeIfAbsent(f, k -> new ArrayList<Filter>())
+                        .add(FieldCacheRangeFilter.newLongRange(f, r[0], r[1], true, false));
+            });
+        }
 		return filters;
 	}
 
@@ -1559,7 +1574,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public Sort createSorterFromOptions(SearchOptions options) {
 		Sort sorter = null;
-		if (!options.getOrder().isEmpty()) {
+		if (options !=null && !options.getOrder().isEmpty()) {
 			List<SortField> fields = new ArrayList<SortField>();
 			for (String f : options.getOrder()) {
 				boolean rev = false;
