@@ -1,7 +1,11 @@
 package ix.seqaln;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import gov.nih.ncats.common.util.CachedSupplier;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
@@ -21,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.util.Version;
+
 import org.jcvi.jillion.align.pairwise.PairwiseSequenceAlignment;
 import org.jcvi.jillion.core.residue.Residue;
 import org.jcvi.jillion.core.residue.ResidueSequence;
@@ -45,61 +50,17 @@ public class SequenceIndexer {
     static final String CACHE_NAME = SequenceIndexer.class.getName()+".Cache";
     static final Version LUCENE_VERSION = Version.LATEST;
 
-//    static CacheManager CACHE_MANAGER;
+    CacheManager CACHE_MANAGER;
 
     static int DEFAULT_KMER_SIZE = 3;
 
 
 
-    /**
-     * A slightly slimmed down form of CachedSupplier,
-     * only repeated here because the seqaln module 
-     * can't see the Util class.
-     * 
-     * @author peryeata
-     *
-     * @param <T> The type to be supplied
-     */
-    public static class CachedSup<T> implements Supplier<T>{
-        private static AtomicLong generatedVersion= new AtomicLong();
-        private long generatedWith=-1;
-        private Supplier<T> sup;
-        private boolean wasRun=false;
-        private T local=null;
 
-
-
-        public CachedSup(Supplier<T> sup){
-            this.sup=sup;
-        }
-
-        public static <T> CachedSup<T> of(Supplier<T> sup) {
-            return new CachedSup<T>(sup);
-        }
-
-        @Override
-        public T get() {
-            if(wasRun && generatedWith==generatedVersion.get()){
-                return local;
-            }else{
-                local=sup.get();
-                wasRun=true;
-                generatedWith=generatedVersion.get();
-                return local;
-            }
-        }
-
-        public static void resetAllCaches(){
-            generatedVersion.incrementAndGet();
-        }
-
-    }
-
-    //TODO March 2021 : removed ehcache stuff for now
-//    static CachedSup<Ehcache> CACHE = CachedSup.of(()->{
-//        CACHE_MANAGER = CacheManager.getInstance();
-//        return CACHE_MANAGER.addCacheIfAbsent(CACHE_NAME);
-//    });
+    CachedSupplier<Ehcache> CACHE = CachedSupplier.of(()->{
+        CACHE_MANAGER = CacheManager.getInstance();
+        return CACHE_MANAGER.addCacheIfAbsent(CACHE_NAME);
+    });
 
     public static enum CutoffType{
         LOCAL,
@@ -1170,10 +1131,10 @@ public class SequenceIndexer {
 
     public String getSeq (final String id) {
         try {
-//            return
-//                    getOrElse
-//                    (getClass().getName()+"/"+FIELD_SEQ+"/"+id,
-//                            ()->{
+            return
+                    getOrElse
+                    (getClass().getName()+"/"+FIELD_SEQ+"/"+id,
+                            ()->{
                                 seqSearchManager.maybeRefresh();
                                 IndexSearcher searcher = seqSearchManager.acquire();
                                 try {
@@ -1188,23 +1149,22 @@ public class SequenceIndexer {
                                     seqSearchManager.release(searcher);
                                 }
                                 return null;
-//                            });
+                            });
         }catch (Exception ex) {
             ex.printStackTrace();
         }
         return null;
     }
-    //TODO katzelda March 2021: removed ehcache stuff for now to add back later
-      /*
+
     @SuppressWarnings("unchecked")
-    static <T> T getOrElse (String key, Callable<T> generator)
+    <T> T getOrElse (String key, Callable<T> generator)
             throws Exception {
         Object value = CACHE.get().get(key);
 
 
         if (value == null) {
             value = generator.call();
-            CACHE.get().put(new Element (key, value));
+            CACHE.get().put(new Element(key, value));
 
         }else {
             value = ((Element)value).getObjectValue();
@@ -1213,7 +1173,6 @@ public class SequenceIndexer {
         return (T)value;
     }
 
-     */
 
 
     public List<KmerFingerprintWrapper> getFPSequencesWithBounds(int lowerBound, int upperbound, List<String> mustHaveAtLeastOneTag) {

@@ -15,6 +15,7 @@
 <!--        <module>gsrs-gateway</module>-->
         <module>gsrs-discovery</module>
         <module>gsrs-spring-legacy-sequence-indexer</module>
+        <module>gsrs-spring-legacy-cache</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
