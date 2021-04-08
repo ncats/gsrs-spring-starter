@@ -3,10 +3,7 @@ package gsrs.startertests.junit4;
 
 import gsrs.AuditConfig;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.jupiter.ClearTextIndexerExtension;
-import gsrs.startertests.jupiter.*;
 import org.junit.Rule;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.util.TestPropertyValues;

@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.TestComponent;
 import java.io.File;
 
 @TestComponent
-public class ClearTextIndexerExtension implements BeforeEachCallback {
+public class ClearIxHomeExtension implements BeforeEachCallback {
     @Value("${ix.home}")
     private String dir;
 
