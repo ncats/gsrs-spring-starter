@@ -6,7 +6,7 @@ import gsrs.EntityPersistAdapter;
 import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
-import gsrs.service.LegacyPayloadService;
+import gsrs.payload.LegacyPayloadService;
 import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.File;
@@ -83,7 +84,7 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
         @Autowired
         private FileDataRepository fileDataRepository;
 
-        @ConditionalOnMissingBean
+        @Primary //for testing we want this to take precendence
         @Bean
         public LegacyPayloadConfiguration legacyPayloadConfiguration() throws IOException {
             LegacyPayloadConfiguration conf = new LegacyPayloadConfiguration();
@@ -93,7 +94,6 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
             conf.setRootDir(payloadDir);
             return conf;
         }
-
         @ConditionalOnMissingBean
         @Bean
         public LegacyPayloadService legacyPayloadService( LegacyPayloadConfiguration conf) throws IOException {

@@ -1,9 +1,10 @@
-package gsrs.service;
+package gsrs.payload;
 
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
+import gsrs.service.PayloadService;
 import ix.core.models.FileData;
 import ix.core.models.Payload;
 import ix.utils.Util;
@@ -19,8 +20,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
-@Service
-public class LegacyPayloadService implements PayloadService{
+//@Service
+public class LegacyPayloadService implements PayloadService {
 
     private final PayloadRepository payloadRepository;
     private final FileDataRepository fileDataRepository;

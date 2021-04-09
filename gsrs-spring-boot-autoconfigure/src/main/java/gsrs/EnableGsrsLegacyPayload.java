@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( { LegacyPayloadConfiguration.class, GsrsLegacyPayloadSelector.class})
+@Import( { GsrsLegacyPayloadSelector.class})
 public @interface EnableGsrsLegacyPayload {
 }

@@ -26,6 +26,12 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-legacy-sequence-indexer</artifactId>
+            <version>${gsrs.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-cache</artifactId>
             <version>${gsrs.version}</version>
             <optional>true</optional>

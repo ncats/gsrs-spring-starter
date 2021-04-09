@@ -6,10 +6,10 @@ import ix.core.cache.GateKeeperFactory;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.File;
-
-@ConfigurationProperties("ix.cache")
+@ConfigurationProperties(prefix = "ix.cache", ignoreInvalidFields = true)
 @Data
 public class GsrsLegacyCachePropertyConfiguration {
     /*
@@ -29,16 +29,16 @@ public class GsrsLegacyCachePropertyConfiguration {
     public static final int DEFAULT_TIME_TO_LIVE = 60*60; // 1hr
     public static final int DEFAULT_TIME_TO_IDLE = 60*60; // 1hr
 
-    int maxElements = DEFAULT_MAX_ELEMENTS;
-    int maxElementsNotEvictable = DEFAULT_MAX_ELEMENTS;
-    int timeToLive = DEFAULT_TIME_TO_LIVE;
-    int timeToIdle = DEFAULT_TIME_TO_IDLE;
-    boolean useFileDb = true;
-    @Value(("${ix.debug:2"))
-    int debugLevel;
+    private int maxElements = DEFAULT_MAX_ELEMENTS;
+    private int maxElementsNotEvictable = DEFAULT_MAX_ELEMENTS;
+    private int timeToLive = DEFAULT_TIME_TO_LIVE;
+    private int timeToIdle = DEFAULT_TIME_TO_IDLE;
+    private boolean useFileDb = true;
+    @Value("${ix.debug:5}")
+    private int debugLevel;
 
     boolean clearpersist = false;
-    public File base;
+    private String base;
 
 
     public GateKeeper createNewGateKeeper(){
@@ -47,7 +47,7 @@ public class GsrsLegacyCachePropertyConfiguration {
                 .useNonEvictableCache(maxElementsNotEvictable,timeToLive,timeToIdle);
 
         if(useFileDb){
-            builder.cacheAdapter(new FileDbCache(base, "inMemCache", clearpersist));
+            builder.cacheAdapter(new FileDbCache(base==null? null: new File(base), "inMemCache", clearpersist));
 
         }
         return  builder.build().create();

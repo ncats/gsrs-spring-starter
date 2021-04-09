@@ -2,10 +2,15 @@ package gsrs.payload;
 
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.sneak.Sneak;
+import gsrs.repository.FileDataRepository;
+import gsrs.repository.PayloadRepository;
+import gsrs.service.PayloadService;
 import ix.core.models.Payload;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -74,4 +79,12 @@ ix.core.files.persist.maxsize="30MB"
         return Optional.of(newLoc);
 
     }
+
+//    @Bean
+//    @ConditionalOnMissingBean
+//    public PayloadService legacyPayloadService(PayloadRepository payloadRepository,
+//                                                      LegacyPayloadConfiguration configuration, FileDataRepository fileDataRepository) throws IOException {
+//
+//        return new LegacyPayloadService(payloadRepository, configuration, fileDataRepository);
+//    }
 }

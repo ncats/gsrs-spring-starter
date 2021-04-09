@@ -1,8 +1,8 @@
 package gsrs;
 
-import gsrs.cache.GsrsLegacyCacheSelector;
-import gsrs.security.GsrsLegacyAuthenticationSelector;
-import gsrs.security.LegacyAuthenticationConfiguration;
+import gsrs.payload.GsrsLegacyPayloadSelector;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.sequence.search.legacy.GsrsLegacySequenceIndexerSelector;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -12,6 +12,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( { GsrsLegacyCacheSelector.class})
-public @interface EnableGsrsLegacyCache {
+@Import( { GsrsLegacySequenceIndexerSelector.class})
+public @interface EnableGsrsLegacySequenceSearch {
 }

@@ -1,20 +1,14 @@
 package gsrs.startertests.payload;
 
-import gsrs.EntityPersistAdapter;
-import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
-import gsrs.service.LegacyPayloadService;
+import gsrs.payload.LegacyPayloadService;
 import gsrs.service.PayloadService;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import gsrs.startertests.jupiter.ClearIxHomeExtension;
 import ix.core.models.Payload;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
