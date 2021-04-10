@@ -50,10 +50,19 @@
         <artifactId>lucene-queryparser</artifactId>
         <version>${lucene.version}</version>
     </dependency>
-
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core-entities</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-akka</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
         <dependency>

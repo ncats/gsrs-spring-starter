@@ -15,8 +15,12 @@ import gov.nih.ncats.common.util.TimeUtil;
 
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.repository.GsrsRepository;
+import ix.core.models.FV;
+import ix.core.models.Facet;
+import ix.core.models.FacetFilter;
+import ix.core.models.FieldedQueryFacet;
 import ix.core.search.*;
-import ix.core.search.FieldedQueryFacet.MATCH_TYPE;
+import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
@@ -45,7 +49,6 @@ import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queryparser.classic.CharStream;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -303,7 +306,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
 
         public FacetMeta getFacet(int top, int skip, String filter, String uri) throws ParseException {
-            Facet fac = new Facet(getField(), null);
+            FacetImpl fac = new FacetImpl(getField(), null);
 
             Predicate<Tuple<String,Integer>> filt=(t)->true;
 
@@ -319,7 +322,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
                 .filter(filt)
                 .map(t->new FV(fac,t.k(),t.v()))
-                .collect(StreamUtil.maxElements(top+skip, Facet.Comparators.COUNT_SORTER_DESC))
+                .collect(StreamUtil.maxElements(top+skip, FacetImpl.Comparators.COUNT_SORTER_DESC))
                 .skip(skip)
                 .limit(top)
                 .forEach(fv->{
@@ -503,45 +506,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 
-
-
-	public static class FV {
-
-		private Facet container;
-		String label;
-		Integer count;
-
-
-
-		FV(Facet container, String label, Integer count) {
-			this.container=container;
-			this.label = label;
-			this.count = count;
-		}
-
-		public String getLabel() {
-			return label;
-		}
-
-		public Integer getCount() {
-			return count;
-		}
-        //TODO katzelda October 2020: ignore it since it's not in json
-//		@JsonIgnore
-//		public String getToggleUrl(){
-//			return container.sr.getFacetToggleURI(container.name, this.label);
-//		}
-	}
-
-	public interface FacetFilter extends Predicate<FV>{
-		boolean accepted(FV fv);
-
-		default boolean test(FV fv){
-			return accepted(fv);
-		}
-	}
-
-	public static class Facet {
+    public static class FacetImpl implements Facet {
 		String name;
 		private List<FV> values = new ArrayList<FV>();
 		private Set<String> selectedLabel=new HashSet<>();
@@ -567,25 +532,30 @@ public class TextIndexer implements Closeable, ProcessListener {
 		 *
 		 * @param label
 		 */
-		public void setSelectedLabel(String ... label){
+		@Override
+        public void setSelectedLabel(String... label){
 			this.setSelectedLabels(Arrays.stream(label).collect(Collectors.toList()));
 		}
 
-		public void setPrefix(String prefix){
+		@Override
+        public void setPrefix(String prefix){
 			this.prefix=prefix;
 		}
 
-		public String getPrefix(){
+		@Override
+        public String getPrefix(){
 			return this.prefix;
 		}
 
 
-		@JsonInclude(Include.NON_EMPTY)
+		@Override
+        @JsonInclude(Include.NON_EMPTY)
 		public Set<String> getSelectedLabels(){
 			return this.selectedLabel;
 		}
 
-		@JsonIgnore
+		@Override
+        @JsonIgnore
 		public List<FV> getSelectedFV(){
 		    return this.selectedFVfetch.get();
 		}
@@ -599,7 +569,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 //		    }
 //		}
 
-		@JsonIgnore
+		@Override
+        @JsonIgnore
 		public Set<String> getMissingSelections(){
 		    Set<String> containedSet=this.getSelectedFV().stream()
 		        .map(FV::getLabel)
@@ -611,16 +582,18 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 
-		public Facet(String name, SearchResult sr) {
+		public FacetImpl(String name, SearchResult sr) {
 			this.name = name;
 			this.sr=sr;
 		}
 
-		public String getName() {
+		@Override
+        public String getName() {
 			return name;
 		}
 
-		public List<FV> getValues() {
+		@Override
+        public List<FV> getValues() {
 			return values;
 		}
 
@@ -635,58 +608,68 @@ public class TextIndexer implements Closeable, ProcessListener {
 		 * </pre>
 		 * @return
 		 */
-		public int size() {
+		@Override
+        public int size() {
 			return values.size();
 		}
 
-		public FV getValue(int index) {
+		@Override
+        public FV getValue(int index) {
 			return values.get(index);
 		}
 
-		public String getLabel(int index) {
+		@Override
+        public String getLabel(int index) {
 			return values.get(index).getLabel();
 		}
 
-		public Integer getCount(int index) {
+		@Override
+        public Integer getCount(int index) {
 			return values.get(index).getCount();
 		}
 
-		public Integer getCount(String label) {
+		@Override
+        public Integer getCount(String label) {
 			for (FV fv : values)
-				if (fv.label.equalsIgnoreCase(label))
-					return fv.count;
+				if (fv.getLabel().equalsIgnoreCase(label))
+					return fv.getCount();
 			return null;
 		}
 
-		public void sort() {
+		@Override
+        public void sort() {
 			sortCounts(true);
 		}
 
-		public Facet filter(FacetFilter filter) {
-			Facet filtered = new Facet(name,sr);
+		@Override
+        public Facet filter(FacetFilter filter) {
+			FacetImpl filtered = new FacetImpl(name,sr);
 			for (FV fv : values)
 				if (filter.accepted(fv))
 					filtered.values.add(fv);
 			return filtered;
 		}
 
-		public void sortLabels(final boolean desc) {
+		@Override
+        public void sortLabels(final boolean desc) {
 			Collections.sort(values, new Comparator<FV>() {
 				public int compare(FV v1, FV v2) {
-					return desc ? v2.label.compareTo(v1.label) : v1.label.compareTo(v2.label);
+					return desc ? v2.getLabel() .compareTo(v1.getLabel()) : v1.getLabel().compareTo(v2.getLabel());
 				}
 			});
 		}
 
-		public void sortCounts(final boolean desc) {
+		@Override
+        public void sortCounts(final boolean desc) {
 			Collections.sort(values, (v1,v2)->{
-					int d = desc ? (v2.count - v1.count) : (v1.count - v2.count);
+					int d = desc ? (v2.getCount() - v1.getCount()) : (v1.getCount() - v2.getCount());
 					if (d == 0)
-						d = v1.label.compareTo(v2.label);
+						d = v1.getLabel().compareTo(v2.getLabel());
 					return d;
 			});
 		}
 
+        @Override
         public Map<String,Integer> toCountMap() {
 		    Map<String, Integer> map = new LinkedHashMap<>();
             for(FV fv : values){
@@ -701,15 +684,15 @@ public class TextIndexer implements Closeable, ProcessListener {
             LABEL_SORTER_ASC{
                 @Override
                 public int compare(FV v1, FV v2) {
-                    return v1.label.compareTo(v2.label);
+                    return v1.getLabel().compareTo(v2.getLabel());
                 }
             },
             COUNT_SORTER_ASC{
                 @Override
                 public int compare(FV v1, FV v2) {
-                    int d = (v1.count - v2.count);
+                    int d = (v1.getCount() - v2.getCount());
                     if (d == 0)
-                        d = -v1.label.compareTo(v2.label);
+                        d = -v1.getLabel().compareTo(v2.getLabel());
                     return d;
                 }
             },
@@ -727,7 +710,8 @@ public class TextIndexer implements Closeable, ProcessListener {
             };
 		}
 
-		@JsonIgnore
+		@Override
+        @JsonIgnore
 		public ArrayList<String> getLabelString() {
 			ArrayList<String> strings = new ArrayList<String>();
 			for (int i = 0; i < values.size(); i++) {
@@ -737,7 +721,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return strings;
 		}
 
-		@JsonIgnore
+		@Override
+        @JsonIgnore
 		public ArrayList<Integer> getLabelCount() {
 			ArrayList<Integer> counts = new ArrayList<Integer>();
 			for (int i = 0; i < values.size(); i++) {
@@ -754,7 +739,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		 * @param count
 		 * @return The {@link FV} that was added
 		 */
-		public FV add(String label, Integer count){
+		@Override
+        public FV add(String label, Integer count){
 			FV val=new FV(this, label, count);
 			add(val);
 			return val;
@@ -765,6 +751,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			this.selectedFVfetch.resetCache();
 		}
 
+        @Override
         public void setSelectedLabels(List<String> collect) {
             this.selectedLabel.clear();
             this.selectedLabel.addAll(collect);
@@ -1634,7 +1621,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		facetResults.stream()
 			.filter(Objects::nonNull)
 			.map(result -> {
-				Facet fac = new Facet(result.dim, sr);
+				Facet fac = new FacetImpl(result.dim, sr);
 
 				// make sure the facet value is returned
 				// for selected value
@@ -2347,7 +2334,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			Facets facets = new LongRangeFacetCounts(flr.field, fc, range);
 			FacetResult result = facets.getTopChildren(options.getFdim(), flr.field);
-			Facet f = new Facet(result.dim, searchResult);
+			FacetImpl f = new FacetImpl(result.dim, searchResult);
 
 			f.enhanced=false;
 //			if (DEBUG(1)) {

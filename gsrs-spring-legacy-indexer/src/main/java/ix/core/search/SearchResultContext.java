@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-
-import ix.core.search.FieldedQueryFacet.MATCH_TYPE;
+import ix.core.models.FieldedQueryFacet;
+import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 
 import ix.utils.Util;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;

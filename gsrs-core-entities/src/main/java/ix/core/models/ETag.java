@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.EntityMapperOptions;
 import ix.core.controllers.RequestOptions;
-import ix.core.search.FieldedQueryFacet;
-import ix.core.search.text.TextIndexer.Facet;
 import ix.utils.Util;
 
 import javax.persistence.Column;

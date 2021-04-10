@@ -1,8 +1,8 @@
 package ix.core.search.text;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import ix.core.search.text.TextIndexer.FV;
-import ix.core.search.text.TextIndexer.Facet;
+import ix.core.models.FV;
+import ix.core.models.Facet;
 
 import java.util.List;
 

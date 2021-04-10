@@ -8,6 +8,9 @@ import java.io.IOException;
 
 public interface SequenceIndexerService {
 
+    long getLastModified();
+
+    void remove(String id) throws IOException;
     void add(String id, String sequence) throws IOException;
 
     void add(String id, NucleotideSequence sequence) throws IOException;

@@ -33,6 +33,16 @@ public class LegacySequenceIndexerService implements SequenceIndexerService {
     }
 
     @Override
+    public void remove(String id) throws IOException{
+        indexer.remove(id);
+    }
+
+    @Override
+    public long getLastModified() {
+        return indexer.lastModified();
+    }
+
+    @Override
     public void add(String id, String sequence) throws IOException {
         indexer.add(id, sequence);
     }

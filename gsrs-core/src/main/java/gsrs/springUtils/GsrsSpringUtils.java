@@ -1,8 +1,15 @@
 package gsrs.springUtils;
 
+import gov.nih.ncats.common.util.Unchecked;
+
 import javax.servlet.http.HttpServletRequest;
+import java.util.function.Consumer;
 
 public class GsrsSpringUtils {
+
+    private GsrsSpringUtils(){
+        //can not instantiate
+    }
     public static String getFullUrlFrom(HttpServletRequest req) {
         String queryString = req.getQueryString();
         if(queryString ==null || queryString.isEmpty()){
@@ -12,5 +19,17 @@ public class GsrsSpringUtils {
         }
     }
 
+    public static void tryTaskAtMost(Unchecked.ThrowingRunnable t, Consumer<Throwable> cons, int n) {
+        n = Math.max(1, n);
+        while (n-- > 0) {
+            try {
+                t.run();
+                return;
+            } catch (Throwable e) {
+                if (n == 0)
+                    cons.accept(e);
+            }
+        }
+    }
 
 }
