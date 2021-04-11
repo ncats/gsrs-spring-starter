@@ -12,8 +12,8 @@ public class GsrsLegacyCacheConfiguration {
     private GsrsLegacyCachePropertyConfiguration configuration;
 
     @Bean
-    @ConditionalOnMissingBean
-    public IxCache ixCache(){
+    @ConditionalOnMissingBean(GsrsCache.class)
+    public GsrsCache ixCache(){
         /*
         int debugLevel = context.getDebugLevel();
 

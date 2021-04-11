@@ -2,21 +2,20 @@ package ix.core.cache;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.cache.GsrsCache;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil.TypedCallable;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.statistics.CoreStatistics;
 
 import javax.annotation.PreDestroy;
-import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-public class IxCache implements Closeable {
+public class IxCache implements GsrsCache {
 	private AtomicLong lastNotifiedChange=new AtomicLong(0l); // The last timestamp IxCache was told there was a change
 	
     static final int DEFAULT_MAX_ELEMENTS = 10000;
@@ -54,12 +53,14 @@ public class IxCache implements Closeable {
     }
 
 
-    public Object get (String key) {
+    @Override
+    public Object get(String key) {
         return this.gateKeeper.get(key);
     }
     
     
-    public Object getRaw (String key) {
+    @Override
+    public Object getRaw(String key) {
         return this.gateKeeper.getRaw(key);
     }
 
@@ -68,29 +69,34 @@ public class IxCache implements Closeable {
     /**
      * apply generator if the evictableCache was created before epoch
      */
-    public <T> T getOrElse (long epoch,
-                                   String key, TypedCallable<T> generator) throws Exception {
+    @Override
+    public <T> T getOrElse(long epoch,
+                           String key, TypedCallable<T> generator) throws Exception {
         return this.gateKeeper.getSinceOrElse(key,epoch, generator);
     }
     
-    public <T> T getOrElse (String key, TypedCallable<T> generator)
+    @Override
+    public <T> T getOrElse(String key, TypedCallable<T> generator)
         throws Exception {
     	return getOrElse(key,generator,0);
     }
     
     // mimic play.Cache 
-    public <T> T getOrElse (String key, TypedCallable<T> generator,
-                                   int seconds) throws Exception {
+    @Override
+    public <T> T getOrElse(String key, TypedCallable<T> generator,
+                           int seconds) throws Exception {
         return this.gateKeeper.getOrElse(key,  generator,seconds);
 
     }
     
+    @Override
     public void clearCache(){
         this.gateKeeper.clear();
     }
     
-    public <T> T getOrElseRaw (String key, TypedCallable<T> generator,
-            int seconds) throws Exception {
+    @Override
+    public <T> T getOrElseRaw(String key, TypedCallable<T> generator,
+                              int seconds) throws Exception {
 
         return this.gateKeeper.getOrElseRaw(key, generator, seconds);
 
@@ -118,12 +124,14 @@ public class IxCache implements Closeable {
         this.gateKeeper.put(key, value, expiration);
     }
 
-    public boolean remove (String key) {
+    @Override
+    public boolean remove(String key) {
         return this.gateKeeper.remove(key);
 
     }
     
-    public boolean removeAllChildKeys (String key){
+    @Override
+    public boolean removeAllChildKeys(String key){
         return this.gateKeeper.removeAllChildKeys(key);
 
     }
@@ -135,25 +143,29 @@ public class IxCache implements Closeable {
         return this.gateKeeper.getStatistics();
     }
 
-    public boolean contains (String key) {
+    @Override
+    public boolean contains(String key) {
         return this.gateKeeper.contains(key);
 
     }
     
 
 
-	public void setRaw(String key, Object value) {
+	@Override
+    public void setRaw(String key, Object value) {
         this.gateKeeper.putRaw(key, value);
 
 	}
 
 
-	@SuppressWarnings("unchecked")
+	@Override
+    @SuppressWarnings("unchecked")
 	public <T> T getOrElseTemp(String key, TypedCallable<T> generator) throws Exception{
         return this.gateKeeper.getOrElseRaw(key, this.lastNotifiedChange.get(), generator,0);
 	}
 	
-	@SuppressWarnings("unchecked")
+	@Override
+    @SuppressWarnings("unchecked")
 	public <T> T updateTemp(String key, T t) throws Exception{
         this.gateKeeper.putRaw(key, t);
         return t;
@@ -180,7 +192,8 @@ public class IxCache implements Closeable {
 	 * @param key
 	 * @return
 	 */
-	public Object getTemp(String key) {
+	@Override
+    public Object getTemp(String key) {
 		return getRaw(key);
 	}
 	
@@ -198,11 +211,13 @@ public class IxCache implements Closeable {
 	 * @param key
 	 * @return
 	 */
-	public void setTemp(String key, Object value) {
+	@Override
+    public void setTemp(String key, Object value) {
 		setRaw(key, value);
 	}
 	
-	public void addToMatchingContext(String contextID, Key key, String prop, Object value){
+	@Override
+    public void addToMatchingContext(String contextID, Key key, String prop, Object value){
         Map<String,Object> additionalProps = getMatchingContextByContextID(contextID, key);
         if(additionalProps==null){
             additionalProps=new HashMap<String,Object>();
@@ -211,11 +226,13 @@ public class IxCache implements Closeable {
         setMatchingContext(contextID,key, additionalProps);
     }
 	
-	public void setMatchingContext(String contextID, Key key, Map<String,Object> matchingContext){
+	@Override
+    public void setMatchingContext(String contextID, Key key, Map<String, Object> matchingContext){
 	    setTemp("MatchingContext/" + contextID + "/" + key.toString(), matchingContext);
 	}
 	
-	public  Map<String, Object> getMatchingContextByContextID(String contextID, Key key){
+	@Override
+    public  Map<String, Object> getMatchingContextByContextID(String contextID, Key key){
         return (Map<String, Object>) getTemp("MatchingContext/" + contextID + "/" + key.toString());
     }
 

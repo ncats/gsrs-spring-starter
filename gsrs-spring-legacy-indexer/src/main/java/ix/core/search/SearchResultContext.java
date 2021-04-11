@@ -388,11 +388,11 @@ public class SearchResultContext {
     public static class SearchResultContextOrSerialized{
     	SearchResultContext ctx=null;
     	SerailizedSearchResultContext serial=null;
-    	SearchResultContextOrSerialized(SearchResultContext ctx){
+    	public SearchResultContextOrSerialized(SearchResultContext ctx){
     		this.ctx=ctx;
     		this.serial=ctx.getSerializedForm();
     	}
-    	SearchResultContextOrSerialized(SerailizedSearchResultContext serial){
+    	public SearchResultContextOrSerialized(SerailizedSearchResultContext serial){
     		this.serial=serial;
     	}
     	
