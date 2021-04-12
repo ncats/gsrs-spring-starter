@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Optional;
 
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
@@ -38,6 +39,11 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @Override
     public SearchResult search(String query, SearchOptions options) throws IOException {
         return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query);
+    }
+
+    @Override
+    public SearchResult search(String query, SearchOptions options, Collection<?> subset) throws IOException {
+        return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query, subset);
     }
 
     @Override

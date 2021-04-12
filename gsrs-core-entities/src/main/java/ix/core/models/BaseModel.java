@@ -82,7 +82,6 @@ public abstract class BaseModel extends AbstractGsrsManualDirtyEntity {
 	
 	@JsonProperty("_matchContext")
 	@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-	@JsonIgnore
 	@Transient
 	public Map<String,Object> getMatchContextProperties(){
 		if(matchContext ==null){
