@@ -1,11 +1,7 @@
 package gsrs.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import gsrs.GsrsEntityProcessorListener;
 import gsrs.GsrsManualDirtyMaker;
-import ix.core.search.text.TextIndexerEntityListener;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.util.HashSet;

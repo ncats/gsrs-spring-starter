@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 class WaitForSearchCallable implements Callable<List>, SearchResultDoneListener {
 
@@ -34,9 +35,9 @@ class WaitForSearchCallable implements Callable<List>, SearchResultDoneListener 
     }
 	@Override
 	public List call() throws Exception {
-		if(latch.getCount()>0 && !result.finished()){
+		while(latch.getCount()>0 && !result.finished()){
 //            System.out.println("awaiting....");
-			latch.await();
+			latch.await(30, TimeUnit.SECONDS);
 		}
 //        System.out.println("done await!!!");
         result.removeListener(this);

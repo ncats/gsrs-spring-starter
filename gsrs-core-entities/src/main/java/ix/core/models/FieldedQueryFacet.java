@@ -1,7 +1,6 @@
-package ix.core.search;
+package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import ix.core.FieldNameDecorator;
 
 import java.io.Serializable;
 import java.util.function.Function;

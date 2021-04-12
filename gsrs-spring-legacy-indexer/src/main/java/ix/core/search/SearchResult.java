@@ -2,8 +2,9 @@ package ix.core.search;
 
 import gov.nih.ncats.common.util.TimeUtil;
 
+import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
-import ix.core.search.text.TextIndexer.Facet;
+import ix.core.models.Facet;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 

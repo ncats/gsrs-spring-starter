@@ -25,10 +25,15 @@ class FieldLink extends Link {
     FieldLink(String field, Link link, String id){
 
         URI uri = link.toUri();
-        System.out.println("orl url =" + uri);
+//        System.out.println("orl url =" + uri);
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?
-        String apiPath = "/api/v1" + uri.getRawPath()
-                            .replace("/("+id+")", "("+id+")");
+        String apiPath;
+        if(id !=null) {
+            apiPath = "/api/v1" + uri.getRawPath()
+                    .replace("/(" + id + ")", "(" + id + ")");
+        }else{
+            apiPath = "/api/v1" + uri.getRawPath();
+        }
         if(field !=null){
             apiPath = apiPath.replace("/**", "/"+field);
         }

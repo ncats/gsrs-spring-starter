@@ -6,6 +6,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.akka.GsrsAkkaSpringExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
@@ -84,7 +85,8 @@ public abstract class ResultProcessor<T, R> implements ResultMapper<T,R> {
 
         // while we continue to fetch the rest of the results in the
         // background
-        ActorRef handler = system.actorOf(Props.create(SearchResultHandler.class));
+//        ActorRef handler = system.actorOf(GsrsAkkaSpringExtension.INSTANCE.get(system).props("SearchResultHandler"));
+		ActorRef handler = system.actorOf(Props.create(SearchResultHandler.class));
         handler.tell(this, ActorRef.noSender());
 //        log.debug("## search results submitted: "+handler);
 	}
