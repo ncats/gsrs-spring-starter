@@ -17,6 +17,7 @@ import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +26,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+@ExposesResourceFor(SearchResultContext.class)
 @Slf4j
 @GsrsRestApiController(context ="status")
 public class SearchResultController {
@@ -71,7 +78,7 @@ public class SearchResultController {
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
                                                         @RequestParam Map<String, String> queryParameters,
-                                                               HttpServletRequest request) {
+                                                               HttpServletRequest request) throws URISyntaxException {
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -84,14 +91,23 @@ public class SearchResultController {
         SearchResultContext ctx=possibleContext.getContext();
 
 
+        URI originalURI = new URI(ctx.getGeneratingUrl());
+        String query = originalURI.getQuery();
+        //TODO clean this up make regex static final
+        String[] paramGroups = query.split("&");
+        Map<String, String[]> paramMap = new HashMap<>();
+        for(String g : paramGroups){
+            String parts[] = g.split("=");
+            paramMap.computeIfAbsent(parts[0], a -> new String[1])[0]=parts[1];
+        }
 
         SearchRequest searchRequest = new SearchRequest.Builder()
                 .top(top)
                 .skip(skip)
                 .fdim(fdim)
-                .withParameters(Util.reduceParams(request.getParameterMap(),
+                .withParameters(Util.reduceParams(paramMap,
                         "facet", "sideway", "order"))
-                .query(queryParameters.get("q")) //TODO: Refactor this
+                .query(query) //TODO: Refactor this
                 .build();
 
 

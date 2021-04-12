@@ -9,6 +9,9 @@ public class UUIDUtil {
     private static final Pattern UUID_PATTERN  = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     public static boolean isUUID(String pid){
+        if(pid==null){
+            return false;
+        }
         return UUID_PATTERN.matcher(pid).find();
     }
 }
