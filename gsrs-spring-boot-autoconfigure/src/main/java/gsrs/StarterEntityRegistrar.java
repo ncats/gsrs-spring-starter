@@ -15,6 +15,8 @@ public class StarterEntityRegistrar implements ImportBeanDefinitionRegistrar {
 
         AutoConfigurationPackages.register(registry, "ix");
         AutoConfigurationPackages.register(registry, "gsrs");
+        //gov.nih.ncats
+        AutoConfigurationPackages.register(registry, "gov.nih.ncats");
         AutoConfigurationPackages.register(registry, PrincipalRepository.class.getPackage().getName());
 
     }

@@ -3,7 +3,6 @@ package gsrs;
 
 
 import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.lang.annotation.ElementType;

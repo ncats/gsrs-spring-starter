@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
+import gsrs.service.GsrsEntityService;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
@@ -25,7 +26,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @GsrsRestApiController(context = "edits")
 public class EditController2 extends AbstractGsrsEntityController<EditController2, Edit, UUID>{
 
+    @Autowired
+    private EditEntityService editEntityService;
 
-
-
+    @Override
+    public GsrsEntityService<Edit, UUID> getEntityService() {
+        return editEntityService;
+    }
 }
