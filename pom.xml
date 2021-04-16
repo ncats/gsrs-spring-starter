@@ -26,13 +26,44 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <gsrs.version>0.6.0-SNAPSHOT</gsrs.version>
+        <gsrs.version>0.6.1-SNAPSHOT</gsrs.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
+
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+        <developer>
+            <id>katzelda</id>
+            <name>Daniel Katzel</name>
+            <email>daniel.katzel@nih.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
 
     <repositories>
         <repository>
@@ -47,7 +78,16 @@
         </repository>
     </repositories>
 
-
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
 
 </project>

@@ -4,13 +4,13 @@ import javax.persistence.*;
 
 @Entity
 @Table(name="ix_core_namespace")
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_namespace_seq", allocationSize = 1)
 public class Namespace extends LongBaseModel {
     public enum Modifier {
         Public, // anyone can access this resource
             Internal, // only authenticated users have access
             Private // only specific users have access
             }
-    //TODO override seq generator!
 //    @Id
 //    @GeneratedValue(generator = "ix_core_namespace_seq")
 //    public Long id;

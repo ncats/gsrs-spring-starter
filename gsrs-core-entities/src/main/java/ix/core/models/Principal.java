@@ -9,6 +9,7 @@ import javax.validation.constraints.Email;
 @Table(name="ix_core_principal")
 @Inheritance
 @DiscriminatorValue("PRI")
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_principal_seq", allocationSize = 1)
 public class Principal extends IxModel {
     // provider of this principal
     public String provider; 

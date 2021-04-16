@@ -15,6 +15,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name="ix_core_group")
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_group_seq", allocationSize = 1)
 public class Group extends LongBaseModel {
 
     @Column(unique=true)

@@ -17,6 +17,7 @@ import java.util.UUID;
 @Slf4j
 @Entity
 @Table(name = "ix_core_userprof")
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_userprof_seq", allocationSize = 1)
 public class UserProfile extends IxModel{
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
