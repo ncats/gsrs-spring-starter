@@ -8,10 +8,7 @@ import ix.core.EntityMapperOptions;
 import ix.core.controllers.RequestOptions;
 import ix.utils.Util;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
 import java.util.*;
@@ -42,6 +39,7 @@ import java.util.*;
   "content"})
 //we don't want to collapse ETags when using key view (although the content may be still be collapsed)
 @EntityMapperOptions(collapsibleInKeyView = false)
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_etag_seq", allocationSize = 1)
 public class ETag extends IxModel {
 
 	@Column(length = 16, unique = true)

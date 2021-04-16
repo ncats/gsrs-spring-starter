@@ -6,6 +6,8 @@ import java.util.List;
 
 @Entity
 @Table(name="ix_core_acl")
+//GSRS 2.x had distinct
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_acl_seq", allocationSize = 1)
 public class Acl extends LongBaseModel {
 
     public enum Permission {

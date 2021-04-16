@@ -13,6 +13,7 @@ import java.io.Serializable;
 @Inheritance
 @DiscriminatorValue("VAL")
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_value_seq", allocationSize = 1)
 public class Value extends LongBaseModel implements Serializable{
     public String label;
     
