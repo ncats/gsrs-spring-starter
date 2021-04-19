@@ -12,7 +12,7 @@
         <module>gsrs-core-test</module>
         <module>gsrs-spring-starter-tests</module>
         <module>gsrs-spring-legacy-structure-indexer</module>
-<!--        <module>gsrs-gateway</module>-->
+        <module>gsrs-gateway</module>
         <module>gsrs-discovery</module>
         <module>gsrs-spring-legacy-sequence-indexer</module>
         <module>gsrs-spring-legacy-cache</module>
@@ -27,6 +27,7 @@
     <properties>
         <java.version>1.8</java.version>
         <gsrs.version>0.6.1-SNAPSHOT</gsrs.version>
+        <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
