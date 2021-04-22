@@ -17,6 +17,7 @@
         <module>gsrs-spring-legacy-sequence-indexer</module>
         <module>gsrs-spring-legacy-cache</module>
         <module>gsrs-spring-akka</module>
+        <module>gsrs-scheduled-tasks</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -25,13 +26,13 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <properties>
-        <java.version>1.8</java.version>
-        <gsrs.version>0.6.1-SNAPSHOT</gsrs.version>
+        <java.version>11</java.version>
+        <gsrs.version>0.6.2-SNAPSHOT</gsrs.version>
         <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.6.2-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
 

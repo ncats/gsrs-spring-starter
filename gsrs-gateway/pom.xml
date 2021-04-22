@@ -5,11 +5,11 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.6.2-SNAPSHOT</version>
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-gateway</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.6.2-SNAPSHOT</version>
     <name>gsrs-gateway</name>
     <description>GSRS Gateway Service</description>
 

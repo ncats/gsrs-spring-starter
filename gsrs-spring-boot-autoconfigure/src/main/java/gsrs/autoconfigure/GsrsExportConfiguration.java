@@ -8,9 +8,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
-import sun.misc.Cache;
-
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.*;
 
