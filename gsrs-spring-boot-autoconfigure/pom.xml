@@ -20,6 +20,12 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-scheduled-tasks</artifactId>
+            <version>${gsrs.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-structure-indexer</artifactId>
             <version>${gsrs.version}</version>
             <optional>true</optional>

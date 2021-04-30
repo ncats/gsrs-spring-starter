@@ -1,6 +1,7 @@
 package ix.seqaln;
 
 import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.MaintenanceModeEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
@@ -17,6 +18,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 @Component
 public class SequenceIndexerEventListener {
 
@@ -26,11 +29,17 @@ public class SequenceIndexerEventListener {
         this.indexer = indexer;
     }
 
-
-
     @EventListener
+    public void reindexing(MaintenanceModeEvent event) throws IOException {
+        if(event.getSource().isInMaintenanceMode()){
+            //begin
+            indexer.removeAll();
+        }
+    }
+
+
+        @EventListener
     public void onCreate(IndexCreateEntityEvent event) {
-        System.out.println("Received gsrs Created event - " + event.getSource());
         EntityUtils.EntityWrapper<?> ew = event.getSource();
         if(!ew.isEntity() || !ew.hasKey()){
             return;

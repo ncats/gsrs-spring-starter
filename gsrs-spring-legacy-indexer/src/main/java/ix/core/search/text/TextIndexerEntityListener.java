@@ -1,5 +1,6 @@
 package ix.core.search.text;
 
+import gsrs.events.MaintenanceModeEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
@@ -25,6 +26,7 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
+
     private void autowireIfNeeded(){
         if(textIndexerFactory==null) {
             AutowireHelper.getInstance().autowire(this);
@@ -32,14 +34,27 @@ public class TextIndexerEntityListener {
     }
 
     @EventListener
-    public void created(IndexCreateEntityEvent event) {
+    public void created(IndexCreateEntityEvent event) throws Exception{
         try {
+            if(event.shouldDeleteFirst()){
+                textIndexerFactory.getDefaultInstance().remove(event.getSource());
+            }
             textIndexerFactory.getDefaultInstance().add(event.getSource());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
+    @EventListener
+    public void reindexing(MaintenanceModeEvent event) {
+
+            if(event.getSource().isInMaintenanceMode()){
+                textIndexerFactory.getDefaultInstance().newProcess();
+
+            }else{
+                textIndexerFactory.getDefaultInstance().doneProcess();
+            }
+    }
 
 
     @EventListener

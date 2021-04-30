@@ -24,4 +24,10 @@ public @interface EntityMapperOptions {
     boolean includeAsCallable() default false;
 
     boolean linkoutRawInEveryView() default false;
+
+    /**
+     * The href for the self URL; defaults to "_self".
+     * @return
+     */
+    String getSelfRel() default "_self";
 }

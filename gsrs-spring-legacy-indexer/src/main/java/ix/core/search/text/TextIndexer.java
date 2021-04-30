@@ -123,6 +123,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	
 	private List<IndexListener> listeners = new ArrayList<>();
 
+	private Set<String> alreadySeenDuringReindexingMode;
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -951,7 +952,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			try {
 				// Don't execute if already shutdown
-				if(isShutDown || isReindexing){
+				if(isShutDown || isReindexing.get()){
 					return;
 				}
 				execute();
@@ -1035,7 +1036,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private boolean isShutDown = false;
 
-	private boolean isReindexing = false;
+	private AtomicBoolean isReindexing = new AtomicBoolean(false);
 
 	private FlushDaemon flushDaemon;
 
@@ -2436,10 +2437,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * recursively index any object annotated with Entity
 	 */
 	public void add(EntityWrapper ew) throws IOException {
-		if(!textIndexerConfig.isEnabled())return;
+		if(!textIndexerConfig.isEnabled()){
+		    return;
+        }
 		Objects.requireNonNull(ew);
-		try{
-			if(!ew.shouldIndex()){
+
+			if(!ew.shouldIndex() || (isReindexing.get() && alreadySeenDuringReindexingMode.add(ew.getKey().toString()))){
 //				if (DEBUG(2)) {
 //					log.debug(">>> Not indexable " + ew.getValue());
 //				}
@@ -2449,7 +2452,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 //				log.debug(">>> Indexing " + ew.getValue() + "...");
 //			}
 
-
+        try{
 
 			HashMap<String,List<TextField>> fullText = new HashMap<>();
             Document doc = new Document();
@@ -2859,14 +2862,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	@Override
 	public void newProcess() {
-
-		flushDaemon.lockFlush();
-        closeAndClear(lookups);
-		//we have to clear our suggest fields since they are about to be completely replaced
-		//lookups.clear();
-		sorters.clear();
-		isReindexing = true;
-		flushDaemon.unLockFlush();
+        if(!isReindexing.get()) {
+            flushDaemon.lockFlush();
+            closeAndClear(lookups);
+            //we have to clear our suggest fields since they are about to be completely replaced
+            //lookups.clear();
+            sorters.clear();
+            isReindexing.set(true);
+            alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
+            flushDaemon.unLockFlush();
+        }
 	}
 
     private <K, V extends Closeable> void closeAndClear(Map<K, V> map){
@@ -2880,7 +2885,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 	@Override
 	public void doneProcess() {
-		isReindexing = false;
+		isReindexing.set(false);
+        alreadySeenDuringReindexingMode =null;
 	}
 
 	@Override

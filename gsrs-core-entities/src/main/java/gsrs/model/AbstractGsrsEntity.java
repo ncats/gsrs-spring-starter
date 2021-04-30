@@ -3,6 +3,7 @@ package gsrs.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.BackupEntityProcessorListener;
 import gsrs.GsrsEntityProcessorListener;
 import gsrs.indexer.IndexerEntityListener;
 import ix.core.util.EntityUtils;
@@ -21,7 +22,7 @@ import javax.persistence.Transient;
 @MappedSuperclass
 //hibernate proxies add some extra fields we want to ignore during json serialization
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class})
+@EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
 public abstract class AbstractGsrsEntity{
 
     @JsonIgnore

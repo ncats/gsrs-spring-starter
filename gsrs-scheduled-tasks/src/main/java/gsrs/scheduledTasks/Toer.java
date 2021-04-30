@@ -1,6 +1,5 @@
 package gsrs.scheduledTasks;
 
-import ix.core.util.Conditional.InstantiatedConditional;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -100,7 +99,7 @@ public interface Toer<T> {
      * on this object.
      * @return
      */
-    public default InstantiatedConditional<T> _if(Predicate<T> pred){
+    public default Conditional.InstantiatedConditional<T> _if(Predicate<T> pred){
         T t= (T)this;
         return Conditional.of(pred).with(t);
     }

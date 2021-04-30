@@ -26,7 +26,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <properties>
-        <java.version>11</java.version>
+        <java.version>1.8</java.version>
         <gsrs.version>0.6.2-SNAPSHOT</gsrs.version>
         <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
     </properties>

@@ -522,6 +522,10 @@ public class SequenceIndexer {
         kmerWriter.deleteDocuments(new Term (FIELD_ID, id));
     }
 
+    public void removeAll() throws IOException {
+        indexWriter.deleteAll();
+        kmerWriter.deleteAll();
+    }
 
 
     public static class KmerFingerprintWrapper{
