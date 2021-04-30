@@ -33,7 +33,7 @@ public class BackupEntityProcessorListener {
     private ApplicationEventPublisher applicationEventPublisher;
 
     @PostPersist
-
+    @PostUpdate
     public void postPersist(Object o){
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
         if(o instanceof BaseModel && ew.getEntityInfo().hasBackup()){
@@ -50,23 +50,23 @@ public class BackupEntityProcessorListener {
         }
     }
 
-    @PostUpdate
-    public void postUpdate(Object o){
-        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
-        if(o instanceof BaseModel && ew.getEntityInfo().hasBackup()){
-            initializer.get();
-            BaseModel bm = (BaseModel)o;
-            //this check is done if somehow it's an update but the old version isn't in the backup table
-            BackupEntity be = backupRepository.findByRefid(bm.fetchGlobalId()).orElseGet(()-> new BackupEntity());
-
-            try {
-                be.setInstantiated((BaseModel) o);
-                backupRepository.saveAndFlush(be);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-
-        }
-    }
+//    @PostUpdate
+//    public void postUpdate(Object o){
+//        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
+//        if(o instanceof BaseModel && ew.getEntityInfo().hasBackup()){
+//            initializer.get();
+//            BaseModel bm = (BaseModel)o;
+//            //this check is done if somehow it's an update but the old version isn't in the backup table
+//            BackupEntity be = backupRepository.findByRefid(bm.fetchGlobalId()).orElseGet(()-> new BackupEntity());
+//
+//            try {
+//                be.setInstantiated((BaseModel) o);
+//                backupRepository.saveAndFlush(be);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//
+//
+//        }
+//    }
 }

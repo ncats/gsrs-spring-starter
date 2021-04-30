@@ -89,6 +89,10 @@ public class BackupEntity extends LongBaseModel{
 		refid= other.refid;
 		sha1 = other.sha1;
 		setBytes(other.getBytes());
+		setIsDirty("kind");
+		setIsDirty("refid");
+		setIsDirty("sha1");
+		setIsDirty("data");
 	}
 	@JsonIgnore
 	public void setInstantiated(BaseModel o) throws Exception{

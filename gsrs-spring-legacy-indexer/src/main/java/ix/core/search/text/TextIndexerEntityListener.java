@@ -35,19 +35,23 @@ public class TextIndexerEntityListener {
 
     @EventListener
     public void created(IndexCreateEntityEvent event) throws Exception{
+        autowireIfNeeded();
         try {
-            if(event.shouldDeleteFirst()){
-                textIndexerFactory.getDefaultInstance().remove(event.getSource());
+            TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+            if(indexer !=null) {
+                if (event.shouldDeleteFirst()) {
+                    indexer.remove(event.getSource());
+                }
+                indexer.add(event.getSource());
             }
-            textIndexerFactory.getDefaultInstance().add(event.getSource());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (Throwable e) {
+            throw new Exception(e);
         }
     }
 
     @EventListener
     public void reindexing(MaintenanceModeEvent event) {
-
+        autowireIfNeeded();
             if(event.getSource().isInMaintenanceMode()){
                 textIndexerFactory.getDefaultInstance().newProcess();
 
@@ -61,9 +65,12 @@ public class TextIndexerEntityListener {
     public void updateEntity(IndexUpdateEntityEvent event) throws Exception {
 //        System.out.println("updating index " + obj);
         autowireIfNeeded();
-        EntityUtils.EntityWrapper ew = event.getSource();
-        textIndexerFactory.getDefaultInstance().remove(ew);
-        textIndexerFactory.getDefaultInstance().add(ew);
+        TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+        if(indexer !=null) {
+            EntityUtils.EntityWrapper ew = event.getSource();
+            indexer.remove(ew);
+            indexer.add(ew);
+        }
     }
     @EventListener
     public void deleteEntity(IndexRemoveEntityEvent event) throws Exception {
