@@ -10,6 +10,8 @@ public interface SequenceIndexerService {
 
     long getLastModified();
 
+    void removeAll() throws IOException;
+
     void remove(String id) throws IOException;
     void add(String id, String sequence) throws IOException;
 

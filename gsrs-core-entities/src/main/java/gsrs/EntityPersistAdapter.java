@@ -339,19 +339,21 @@ public class EntityPersistAdapter {
 
 
 
-
+//
 //    public void deepreindex(Object bean) {
 //        deepreindex(bean, true);
 //    }
 //
 //    public void deepreindex(Object bean, boolean deleteFirst) {
-//        Java8ForOldEbeanHelper.deepreindex(this, EntityWrapper.of(bean), deleteFirst);
+////        Java8ForOldEbeanHelper.deepreindex(this, EntityWrapper.of(bean), deleteFirst);
+//        EntityWrapper.of(bean).traverse().execute((p, child)->reindex(child, deleteFirst));
 //    }
+//
 //
 //    public void reindex(Object bean) {
 //        reindex(EntityWrapper.of(bean), true);
 //    }
-
+//
 //    public void reindex(EntityWrapper ew, boolean deleteFirst) {
 //
 //        try {
@@ -372,7 +374,7 @@ public class EntityPersistAdapter {
 //                makeIndexOnBean(ew.getValue());
 //            }
 //        } catch (Exception e) {
-//            Logger.error("Problem reindexing entity:", e);
+//            log.error("Problem reindexing entity:", e);
 //            e.printStackTrace();
 //        }
 //    }

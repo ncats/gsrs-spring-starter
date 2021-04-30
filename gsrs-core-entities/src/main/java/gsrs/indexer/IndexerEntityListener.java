@@ -23,7 +23,10 @@ public class IndexerEntityListener {
     public void indexNewEntity(Object obj) throws IOException {
 //        System.out.println("adding to index " + obj);
         autowireIfNeeded();
-        applicationEventPublisher.publishEvent(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+        EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(obj);
+        if(ew.shouldIndex()) {
+            applicationEventPublisher.publishEvent(new IndexCreateEntityEvent(ew));
+        }
     }
 
     @PostUpdate
@@ -31,13 +34,17 @@ public class IndexerEntityListener {
 //        System.out.println("updating index " + obj);
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
-        applicationEventPublisher.publishEvent(new IndexUpdateEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+        if(ew.shouldIndex()) {
+            applicationEventPublisher.publishEvent(new IndexUpdateEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+        }
     }
     @PostRemove
     public void deleteEntity(Object obj) throws Exception {
 //        System.out.println("removing from index " + obj);
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
-        applicationEventPublisher.publishEvent(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+        if(ew.shouldIndex()) {
+            applicationEventPublisher.publishEvent(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+        }
     }
 }

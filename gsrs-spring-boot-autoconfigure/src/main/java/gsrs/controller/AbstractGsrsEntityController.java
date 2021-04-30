@@ -124,26 +124,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     }
 
-    private Object enhanceWithView(Object obj,  Map<String, String> queryParameters){
-        String view = queryParameters.get("view");
 
-        GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj);
-        if("compact".equals(view)){
-            model.setCompact(true);
-
-        }
-        addAdditionalLinks(model);
-        return model;
-    }
-
-    private Object enhanceWithView(List<Object> list,  Map<String, String> queryParameters){
-        List<Object> modelList = new ArrayList<>(list.size());
-        for(Object o : list){
-            modelList.add(enhanceWithView(o, queryParameters));
-        }
-        return GsrsUnwrappedEntityModel.of(modelList);
-//        return modelList;
-    }
 
     protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){
 
@@ -192,7 +173,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         if(!opt.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
-        String field = getEndWildCardMatchingPartOfUrl(request);
+        String field = GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
         EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
         if(field !=null && field.startsWith("@edits")){
             Optional<EditRepository> editRepository = editRepository();
@@ -201,7 +182,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                 if(nativeIdFor.isPresent()){
                     List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
                     if(editList !=null) {
-                        return new ResponseEntity<>(enhanceWithView((List)editList, queryParameters), HttpStatus.OK);
+                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView((List)editList, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
                     }
                 }
 
@@ -219,18 +200,11 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         if(pojoPointer.isLeafRaw()){
             return new ResponseEntity<>(at.get().getRawValue(), HttpStatus.OK);
         }else{
-            return new ResponseEntity<>(enhanceWithView(at.get().getValue(), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(at.get().getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
     }
 
-    private static String getEndWildCardMatchingPartOfUrl(HttpServletRequest request) {
-        //Spring boot can't use regex in path to get wildcard expression so have to use request
-        ResourceUrlProvider urlProvider = (ResourceUrlProvider) request
-                .getAttribute(ResourceUrlProvider.class.getCanonicalName());
-        return urlProvider.getPathMatcher().extractPathWithinPattern(
-                String.valueOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)),
-                String.valueOf(request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)));
-    }
+
 
     @Override
     @GetGsrsRestApiMapping("/@count")
@@ -302,7 +276,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> getById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
-            return new ResponseEntity<>(enhanceWithView(obj.get(), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }

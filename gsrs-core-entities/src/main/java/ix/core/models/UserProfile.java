@@ -33,6 +33,7 @@ public class UserProfile extends IxModel{
 
 	@Lob
 	@JsonIgnore
+	@Column(name="ROLES_JSON") //match GSRS 2.x schema
 	private String rolesJSON = null; // this is a silly, but quick way to
 	// serialize roles
 

@@ -1,5 +1,6 @@
 package ix.core.search.text;
 
+import gsrs.events.MaintenanceModeEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
@@ -25,6 +26,7 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
+
     private void autowireIfNeeded(){
         if(textIndexerFactory==null) {
             AutowireHelper.getInstance().autowire(this);
@@ -32,23 +34,43 @@ public class TextIndexerEntityListener {
     }
 
     @EventListener
-    public void created(IndexCreateEntityEvent event) {
+    public void created(IndexCreateEntityEvent event) throws Exception{
+        autowireIfNeeded();
         try {
-            textIndexerFactory.getDefaultInstance().add(event.getSource());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+            if(indexer !=null) {
+                if (event.shouldDeleteFirst()) {
+                    indexer.remove(event.getSource());
+                }
+                indexer.add(event.getSource());
+            }
+        } catch (Throwable e) {
+            throw new Exception(e);
         }
     }
 
+    @EventListener
+    public void reindexing(MaintenanceModeEvent event) {
+        autowireIfNeeded();
+            if(event.getSource().isInMaintenanceMode()){
+                textIndexerFactory.getDefaultInstance().newProcess();
+
+            }else{
+                textIndexerFactory.getDefaultInstance().doneProcess();
+            }
+    }
 
 
     @EventListener
     public void updateEntity(IndexUpdateEntityEvent event) throws Exception {
 //        System.out.println("updating index " + obj);
         autowireIfNeeded();
-        EntityUtils.EntityWrapper ew = event.getSource();
-        textIndexerFactory.getDefaultInstance().remove(ew);
-        textIndexerFactory.getDefaultInstance().add(ew);
+        TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+        if(indexer !=null) {
+            EntityUtils.EntityWrapper ew = event.getSource();
+            indexer.remove(ew);
+            indexer.add(ew);
+        }
     }
     @EventListener
     public void deleteEntity(IndexRemoveEntityEvent event) throws Exception {

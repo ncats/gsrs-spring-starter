@@ -100,7 +100,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
         //Not ideal, but gets around user problem
-        Stream<T> mstream = new EtagExportGenerator<T>(entityManager).generateExportFrom("substances", etagObj.get()).get();
+        Stream<T> mstream = new EtagExportGenerator<T>(entityManager).generateExportFrom(getEntityService().getContext(), etagObj.get()).get();
 
         //GSRS-699 REALLY filter out anything that isn't public unless we are looking at private data
 //        if(publicOnly){

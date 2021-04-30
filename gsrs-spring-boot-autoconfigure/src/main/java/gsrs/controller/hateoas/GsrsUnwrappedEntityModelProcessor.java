@@ -3,6 +3,7 @@ package gsrs.controller.hateoas;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.model.GsrsApiAction;
 import gsrs.model.Sizeable;
+import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
 import ix.core.util.EntityUtils;
@@ -175,14 +176,21 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
-        Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(model.getObj().getClass());
+        Class<?> aClass = model.getObj().getClass();
+        Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(aClass);
         if(!linkBuilder.isPresent()){
             return null;
         }
+        String selfRel = "_self";
+        EntityMapperOptions options = aClass.getAnnotation(EntityMapperOptions.class);
+        if(options !=null){
+            selfRel = options.getSelfRel();
+        }
+
         Link l= GsrsLinkUtil.adapt(id, linkBuilder.get()
                 .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
 
-                .withRel("_self"));
+                .withRel(selfRel));
         String query=l.toUri().getRawQuery();
         if(query==null){
             return l.withHref(l.getHref() +"?view=full");

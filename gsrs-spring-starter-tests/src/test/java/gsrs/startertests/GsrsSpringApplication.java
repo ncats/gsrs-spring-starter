@@ -2,6 +2,7 @@ package gsrs.startertests;
 
 
 import gsrs.EnableGsrsApi;
+import gsrs.EnableGsrsBackup;
 import gsrs.EnableGsrsJpaEntities;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.repository.UserProfileRepository;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 @EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+@EnableGsrsBackup
 //@Import(GsrsEntityTestConfiguration.class)
 public class GsrsSpringApplication {
 
