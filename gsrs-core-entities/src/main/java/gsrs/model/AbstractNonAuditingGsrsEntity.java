@@ -22,8 +22,8 @@ import javax.persistence.Transient;
 @MappedSuperclass
 //hibernate proxies add some extra fields we want to ignore during json serialization
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
-public abstract class AbstractGsrsEntity {
+@EntityListeners(value= {GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
+public abstract class AbstractNonAuditingGsrsEntity {
 
     @JsonIgnore
     @Transient
@@ -34,7 +34,7 @@ public abstract class AbstractGsrsEntity {
 
     @PostLoad
     public void updatePreviousState(){
-        EntityUtils.EntityWrapper<AbstractGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
+        EntityUtils.EntityWrapper<AbstractNonAuditingGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
 
         this.previousState = ew.toFullJsonNode();
         this.previousVersion = ew.getVersion().orElse(null);

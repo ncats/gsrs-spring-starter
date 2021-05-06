@@ -1,15 +1,12 @@
 package gsrs.controller;
 
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
-import gsrs.model.GsrsUrlLink;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.scheduler.GsrsSchedulerConfiguration;
-import gsrs.service.GsrsEntityService;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import org.quartz.Scheduler;
-import org.quartz.SchedulerContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -17,13 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @ExposesResourceFor(Edit.class)
 @GsrsRestApiController(context = "scheduledJobs")
@@ -33,7 +28,7 @@ public class ScheduledTaskController {
     private Scheduler scheduler;
 
     @Autowired
-    private GsrsSchedulerConfiguration gsrsSchedulerConfiguration;
+    private GsrsSchedulerTaskPropertiesConfiguration gsrsSchedulerConfiguration;
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
@@ -43,17 +38,17 @@ public class ScheduledTaskController {
 
     @GetGsrsRestApiMapping("/@count")
     public int count(){
-       return gsrsSchedulerConfiguration.getList().size();
+       return gsrsSchedulerConfiguration.getTasks().size();
     }
 
     @GetGsrsRestApiMapping({"({ID})","/{ID}"})
     public ResponseEntity<Object> getTaskByOrdinal(@PathVariable("ID") int index, @RequestParam Map<String,String> queryParameters){
-        List<SchedulerPlugin.ScheduledTask> list = gsrsSchedulerConfiguration.getList();
+        List<ScheduledTaskInitializer> list = gsrsSchedulerConfiguration.getTasks();
         if(index > list.size()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         Long indexAsLong = Long.valueOf(index);
-        Optional<SchedulerPlugin.ScheduledTask> task= list.stream().filter(s -> indexAsLong.equals(index)).findAny();
+        Optional<ScheduledTaskInitializer> task= list.stream().filter(s -> indexAsLong.equals(index)).findAny();
         if(!task.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
@@ -63,18 +58,18 @@ public class ScheduledTaskController {
     @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**" })
     public ResponseEntity<Object> getFieldById(@PathVariable("id") int index, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
 
-        List<SchedulerPlugin.ScheduledTask> list = gsrsSchedulerConfiguration.getList();
+        List<ScheduledTaskInitializer> list = gsrsSchedulerConfiguration.getTasks();
         if(index > list.size()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         Long indexAsLong = Long.valueOf(index);
-        Optional<SchedulerPlugin.ScheduledTask> task= list.stream().filter(s -> indexAsLong.equals(index)).findAny();
+        Optional<ScheduledTaskInitializer> task= list.stream().filter(s -> indexAsLong.equals(index)).findAny();
         if(!task.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         String field =GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
 
-        EntityUtils.EntityWrapper<SchedulerPlugin.ScheduledTask> ew = EntityUtils.EntityWrapper.of(task.get());
+        EntityUtils.EntityWrapper<ScheduledTaskInitializer> ew = EntityUtils.EntityWrapper.of(task.get());
 
         PojoPointer pojoPointer = PojoPointer.fromURIPath(field);
 

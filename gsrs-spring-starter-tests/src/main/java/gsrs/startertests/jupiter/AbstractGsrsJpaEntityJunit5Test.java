@@ -21,6 +21,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +61,8 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private LegacyPayloadConfiguration legacyPayloadConfiguration;
+
+
 
     @BeforeEach
     public void createPayloadDir() throws IOException {
