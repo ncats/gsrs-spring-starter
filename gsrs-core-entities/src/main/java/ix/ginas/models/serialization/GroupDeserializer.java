@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import gsrs.repository.GroupRepository;
+import gsrs.services.GroupService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 
@@ -17,22 +16,22 @@ import java.io.IOException;
 @JsonComponent
 public class GroupDeserializer extends JsonDeserializer<Group> {
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupService groupService;
 
-    public GroupDeserializer(GroupRepository groupRepository) {
-        this.groupRepository = groupRepository;
+    public GroupDeserializer(GroupService groupService) {
+        this.groupService = groupService;
     }
 
+    //needed for Jackson
     public GroupDeserializer() {
-//        initIfNeeded();
 
     }
 
     private synchronized void initIfNeeded(){
-        if(groupRepository==null){
+        if(groupService ==null){
             AutowireHelper.getInstance().autowire(this);
 //            SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
-            System.out.println(groupRepository);
+//            System.out.println(groupRepository);
         }
     }
     public Group deserialize
@@ -40,17 +39,8 @@ public class GroupDeserializer extends JsonDeserializer<Group> {
             throws IOException, JsonProcessingException {
         initIfNeeded();
         String name=parser.getValueAsString();
-        Group existingGroup = groupRepository.findByNameIgnoreCase(name);
-        if(existingGroup !=null){
-            return existingGroup;
-        }
-        //FIXME katzelda Sept 2019 make this a bean I guess...
-        //katzelda Oct 2019 to be consistent with PrinicpalDeserializer we don't save if absent
-        //this should be done later if the substance with this group is actually saved...
+        return groupService.registerIfAbsent(name);
 
-//    	Group grp = AdminFactory.registerGroupIfAbsent(new Group(name));
-//        return grp;
-        return groupRepository.save(new Group(name));
     }
 }
 

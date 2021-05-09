@@ -26,6 +26,7 @@ import ix.utils.LinkedReferenceSet;
 import lombok.extern.slf4j.Slf4j;
 //import org.apache.lucene.document.Document;
 
+import org.jboss.jandex.Index;
 import org.reflections.Reflections;
 
 
@@ -1095,7 +1096,7 @@ public class EntityUtils {
 
 		private Supplier<Set<EntityInfo<? extends T>>> forLater;
 		
-		
+		private boolean isRootIndex=false;
 		Map<String,MethodOrFieldMeta> jsonGetters;
 
 		Map<String, MethodOrFieldMeta> apiFields;
@@ -1159,6 +1160,8 @@ public class EntityUtils {
 			}
 			this.isIgnoredModel = (cls.getAnnotation(IgnoredModel.class) != null);
 			this.indexable = (Indexable) cls.getAnnotation(Indexable.class);
+			this.isRootIndex = getPossiblyInheritedAnnotation(cls, IndexableRoot.class) !=null;
+
 			this.table = (Table) cls.getAnnotation(Table.class);
 			this.inherits = (Inheritance) cls.getAnnotation(Inheritance.class);
 			ancestorInherit = this;
@@ -1388,12 +1391,39 @@ public class EntityUtils {
 //			}
 		}
 
+		public boolean isRootIndex() {
+			return isRootIndex;
+		}
+
 		public List<FieldMeta> getCollapsedFields(){
 			return fields.stream().filter(FieldMeta::isCollapseInCompactView)
 							.collect(Collectors.toList());
 		}
 		public List<MethodMeta> getApiActions(){
 			return methods.stream().filter(m-> m.isApiAction).collect(Collectors.toList());
+		}
+
+		/**
+		 * Find the given annotation on the given class
+		 * <em>or any super class</em>. This will only find the first
+		 * annotation, if multiple annotations are defined on super classes
+		 * this will find the one "closest" to the passed in class.
+		 * @param c the class to inspect
+		 * @param annotation the annotation to look for.
+		 * @param <A>
+		 * @return the instance of the annotation or {@code null} if no annotation
+		 * is found.
+		 */
+		private static <A extends Annotation>  A getPossiblyInheritedAnnotation(Class<?> c, Class<A> annotation){
+			A a= c.getAnnotation(annotation);
+			if( a !=null){
+				return a;
+			}
+			Class<?> parent = c.getSuperclass();
+			if(parent !=null){
+				return getPossiblyInheritedAnnotation(parent, annotation);
+			}
+			return null;
 		}
 		private static void findPublicAndOtherIndexableFields(Class<?> c, Consumer<Field> fields){
 			for(Field f : c.getDeclaredFields()){

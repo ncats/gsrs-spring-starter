@@ -12,7 +12,6 @@
         <module>gsrs-core-test</module>
         <module>gsrs-spring-starter-tests</module>
         <module>gsrs-spring-legacy-structure-indexer</module>
-        <module>gsrs-gateway</module>
         <module>gsrs-discovery</module>
         <module>gsrs-spring-legacy-sequence-indexer</module>
         <module>gsrs-spring-legacy-cache</module>

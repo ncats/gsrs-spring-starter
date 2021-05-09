@@ -2,7 +2,10 @@ package gsrs;
 
 
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
+import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.GroupService;
+import gsrs.services.GroupServiceImpl;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 import org.springframework.amqp.core.TopicExchange;
@@ -38,6 +41,11 @@ public class GsrsEntitiesConfiguration {
         return new PrincipalServiceImpl(principalRepository);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public GroupService groupService(GroupRepository groupRepository){
+        return new GroupServiceImpl(groupRepository);
+    }
     @Bean
     public TopicExchange substanceExchange(){
         return new TopicExchange(gsrsRabbitMqConfiguration.getExchange());
