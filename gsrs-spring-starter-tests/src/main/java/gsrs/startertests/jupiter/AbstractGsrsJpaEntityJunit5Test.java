@@ -36,10 +36,11 @@ import java.nio.file.Files;
  */
 @ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit5Test.Initializer.class)
 @Import({ClearAuditorBeforeEachExtension.class , ClearIxHomeExtension.class,  AuditConfig.class, AutowireHelper.class,
-        EntityPersistAdapter.class, EntityPersistAdapter.class, AbstractGsrsJpaEntityJunit5Test.PayloadTestConf.class
-//        ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
-//        ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
-//        ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class
+        EntityPersistAdapter.class, EntityPersistAdapter.class, AbstractGsrsJpaEntityJunit5Test.PayloadTestConf.class,
+        ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
+        ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
+        ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
+
 })
 public abstract class AbstractGsrsJpaEntityJunit5Test {
 

@@ -35,7 +35,7 @@ public class GsrsControllerUtil {
             model.setCompact(true);
 
         }
-        if(model !=null) {
+        if(model !=null && additionalLinksConsumer !=null) {
             additionalLinksConsumer.accept(model);
         }
         return model;

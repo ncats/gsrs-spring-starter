@@ -2442,7 +2442,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
 		Objects.requireNonNull(ew);
 
-			if(!ew.shouldIndex() || (isReindexing.get() && alreadySeenDuringReindexingMode.add(ew.getKey().toString()))){
+			if(!ew.shouldIndex() || (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()))){
 //				if (DEBUG(2)) {
 //					log.debug(">>> Not indexable " + ew.getValue());
 //				}
@@ -2871,6 +2871,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             isReindexing.set(true);
             alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
             flushDaemon.unLockFlush();
+            indexerService.removeAll();
         }
 	}
 
