@@ -19,7 +19,8 @@ import java.util.Date;
 public class Principal extends AbstractNonAuditingGsrsEntity implements FetchableEntity{
     @Id
     //Ebean added GeneratedValue by default we have to be explicit in hibernate
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ix_core_principal_seq" )
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ix_core_principal_seq")
+    @SequenceGenerator(name = "PRINCIPAL_ID_SEQ", sequenceName = "ix_core_principal_seq", allocationSize = 1)
     public Long id;
     @Version
     public Long version;
