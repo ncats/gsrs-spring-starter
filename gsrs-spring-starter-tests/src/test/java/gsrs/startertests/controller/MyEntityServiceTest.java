@@ -72,18 +72,7 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .build()));
     }
 
-    @Test
-    public void loadedRecordShouldHavePreviousStateSetManually() throws Exception {
-        MyEntity myEntity = new MyEntity();
-        myEntity.setFoo("myFoo");
-       em.persist(myEntity);
-        em.flush();
 
-        MyEntity loadedEntity = em.find(MyEntity.class, myEntity.getUuid());
-
-        em.refresh(loadedEntity);
-        assertNotNull(loadedEntity.getPreviousState());
-    }
 //    @Test
 //    public void loadedRecordShouldHavePreviousStateSetFromEntityService() throws Exception {
 //        MyEntity myEntity = new MyEntity();

@@ -8,6 +8,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+/**
+ * Spring Event Listener that will receive {@link CreateEditEvent}s
+ * when the transaction commits and delegates to the {@link EditEventService}.
+ */
 @Component
 public class GsrsEditEventListener {
     @Autowired
