@@ -448,6 +448,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 			return Optional.of(saved);
                 		} catch (Throwable t) {
                 			t.printStackTrace();
+
                 			builder.status(UpdateResult.STATUS.ERROR);
 
                 			return Optional.empty();

@@ -3,6 +3,7 @@ package gsrs;
 
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -34,13 +35,32 @@ public class EditLock {
             return count;
         }
     }
+    @Data
+    public static class EditInfo{
+        private Class<?> entityClass;
+        private Object entityId;
+        private String comments;
+        private String oldJson;
+
+        public static EditInfo from(EntityUtils.EntityWrapper<?> ew){
+            String oldJSON = ew.toFullJson();
+            EditLock.EditInfo editInfo = new EditLock.EditInfo();
+            editInfo.setOldJson(oldJSON);
+            editInfo.setEntityClass(ew.getEntityClass());
+            editInfo.setEntityId(ew.getEntityInfo().getNativeIdFor(ew.getValue()).get());
+
+            return editInfo;
+        }
+    }
     private Counter count = new Counter();
     private LockProxy lock = new LockProxy(new ReentrantLock());
 
 
     private final  Map<EntityUtils.Key, EditLock> lockMap;
 
-    private Edit edit = null;
+
+    private EditInfo editInfo = null;
+
 
     private boolean preUpdateWasCalled = false;
     private boolean postUpdateWasCalled = false;
@@ -62,18 +82,18 @@ public class EditLock {
     }
 
     public boolean hasEdit() {
-        return this.edit != null;
+        return this.editInfo != null;
     }
 
-    public Optional<Edit> getEdit() {
-        return Optional.ofNullable(edit);
+    public Optional<EditLock.EditInfo> getEdit() {
+        return Optional.ofNullable(editInfo);
     }
 
-    public EditLock addEdit(Edit e) {
+    public EditLock addEdit(EditLock.EditInfo e) {
         if (hasEdit()) {
             log.warn("Existing edit will be overwritten");
         }
-        this.edit = e;
+        this.editInfo = e;
         return this;
     }
 
@@ -102,7 +122,7 @@ public class EditLock {
         //reset
         preUpdateWasCalled = false;
         postUpdateWasCalled = false;
-        this.edit = null;
+        this.editInfo = null;
 
     }
 
@@ -143,6 +163,7 @@ public class EditLock {
     public void markPostUpdateCalled() {
         if (postUpdateWasCalled == false && this.onPostUpdate != null) {
             onPostUpdate.run();
+
         }
         postUpdateWasCalled = true;
 

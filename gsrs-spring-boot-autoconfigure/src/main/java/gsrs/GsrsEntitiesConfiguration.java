@@ -4,10 +4,7 @@ package gsrs;
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
-import gsrs.services.GroupService;
-import gsrs.services.GroupServiceImpl;
-import gsrs.services.PrincipalService;
-import gsrs.services.PrincipalServiceImpl;
+import gsrs.services.*;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -41,6 +38,11 @@ public class GsrsEntitiesConfiguration {
         return new PrincipalServiceImpl(principalRepository);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public EditEventService EditEventService(){
+        return new EditEventService();
+    }
     @Bean
     @ConditionalOnMissingBean
     public GroupService groupService(GroupRepository groupRepository){

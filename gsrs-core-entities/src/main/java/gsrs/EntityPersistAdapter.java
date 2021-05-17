@@ -4,7 +4,9 @@ package gsrs;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.Unchecked;
 
+import gsrs.events.CreateEditEvent;
 import gsrs.model.AbstractGsrsEntity;
+import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
 
 import ix.core.util.EntityUtils;
@@ -36,6 +38,9 @@ public class EntityPersistAdapter {
     @PersistenceContext
     protected EntityManager entityManager;
 
+    @Autowired
+    private EditRepository editRepository;
+
     // You need this Spring bean
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -59,23 +64,13 @@ public class EntityPersistAdapter {
      * @param ew
      * @return
      */
-    private Edit createAndPushEditForWrappedEntity(EntityWrapper ew, EditLock lock) {
+    private EditLock.EditInfo createAndPushEditForWrappedEntity(EntityWrapper ew, EditLock lock) {
         Objects.requireNonNull(ew);
         String oldJSON = ew.toFullJson();
+        EditLock.EditInfo editInfo =  EditLock.EditInfo.from(ew);
 
-        Edit e = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
-        e.oldValue = oldJSON;
-        e.path = null;
-        e.version = "unknown";
-
-
-        if (ew.getVersion().isPresent()) {
-            e.version = ew.getVersion().get().toString();
-            // TODO: consider this
-            // e.comments = e.version + " comment";
-        }
-        lock.addEdit(e);
-        return e;
+        lock.addEdit(editInfo);
+        return editInfo;
     }
 
     /**
@@ -132,24 +127,12 @@ public class EntityPersistAdapter {
         return (Optional<T>) Optional.ofNullable(em.find(kls, id));
     }
 
-    public Optional<Edit> getEditFor(Key k){
-    	return Optional.ofNullable(lockMap.get(k))
-    			       .map(new Function<EditLock, Edit>(){
-
-							@Override
-							public Edit apply(EditLock t) {
-								return t.getEdit().orElse(null);
-							}
-
-    			       })
-    			       .filter(new Predicate<Edit>(){
-
-							@Override
-							public boolean test(Edit t) {
-								return t!=null;
-							}
-
-    			       });
+    public Optional<EditLock.EditInfo> getEditFor(Key k){
+    	EditLock lock = lockMap.get(k);
+    	if(lock !=null){
+    	    return lock.getEdit();
+        }
+    	return Optional.empty();
 
     }
 
@@ -165,7 +148,6 @@ public class EntityPersistAdapter {
             }
         });
 
-        Edit e = null;
         lock.acquire(); // acquire the lock (blocks)
 
         boolean worked = false;
@@ -184,7 +166,7 @@ public class EntityPersistAdapter {
 
 
 
-            e = createAndPushEditForWrappedEntity(ew, lock); // Doesn't block,
+             createAndPushEditForWrappedEntity(ew, lock); // Doesn't block,
                                                              // or even check
                                                              // for
                                                              // existence of an
@@ -278,41 +260,35 @@ public class EntityPersistAdapter {
         }
         try {
             if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey())) {
-                Key key = ew.getKey();
+
                 // If we didn't already start an edit for this
                 // then start one and save it. Otherwise just ignore
                 // the edit piece.
                 if (ml == null || !ml.hasEdit()) {
 
-                    Edit edit = new Edit(ew.getEntityClass(), key.getIdString());
-                    if(bean instanceof AbstractGsrsEntity){
-                        AbstractGsrsEntity gsrsEntity = (AbstractGsrsEntity)bean;
-                        edit.version = gsrsEntity.getPreviousVersion();
-                        edit.oldValue = gsrsEntity.getPreviousState() ==null? null: gsrsEntity.getPreviousState().toString();
-                    }
+                    EditLock.EditInfo editInfo = EditLock.EditInfo.from(ew);
 
-                    edit.comments = ew.getChangeReason().orElse(null);
-                    edit.kind = ew.getKind();
-                    edit.newValue = ew.toFullJson();
+                    editInfo.setComments(ew.getChangeReason().orElse(null));
 
-                    entityManager.persist(edit);
+
+//                    entityManager.merge(edit);
+                    ml.addEdit(editInfo);
 
                 }else{
-                    Edit e = ml.getEdit().get();
-                    e.kind = ew.getKind();
-                    e.newValue = ew.toFullJson();
+                    EditLock.EditInfo e = ml.getEdit().get();
+                    e.setEntityClass(ew.getEntityClass());
                     if(ew.getChangeReason().isPresent()){
 
-                        if(e.comments ==null){
-                            e.comments = ew.getChangeReason().get();
+                        if(e.getComments() ==null){
+                            e.setComments( ew.getChangeReason().get());
                         }else{
                             //append comment ?
-                            e.comments += ew.getChangeReason().get();
+                            e.setComments(e.getComments() + ew.getChangeReason().get());
                         }
                     }
 
 
-                    entityManager.merge(e);
+//                    entityManager.merge(e);
                 }
             } else {
                 log.warn("Entity bean [" + ew.getKind() + "]" + " doesn't have Id annotation!");
@@ -328,6 +304,14 @@ public class EntityPersistAdapter {
 //            IxCache.removeAllChildKeys(ew.getKey().toString());
             if (ml != null) {
                 ml.markPostUpdateCalled();
+                ml.getEdit().ifPresent(e->{
+                    CreateEditEvent event = new CreateEditEvent();
+                    event.setComments(e.getComments());
+                    event.setId(e.getEntityId());
+                    event.setKind(e.getEntityClass());
+
+                    applicationEventPublisher.publishEvent(event);
+                });
             }
 
 

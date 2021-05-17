@@ -12,6 +12,7 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
+import ix.core.History;
 import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.serialization.PrincipalDeserializer;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name="ix_core_edit")
+@History(store = false)
 public class Edit extends BaseModel {
 
 
