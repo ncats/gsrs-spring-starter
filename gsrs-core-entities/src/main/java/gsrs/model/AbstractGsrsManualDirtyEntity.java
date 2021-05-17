@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import gsrs.GsrsManualDirtyMaker;
 
 import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An {@link AbstractGsrsEntity} that allows for
@@ -18,24 +17,37 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
 
     @JsonIgnore
     @Transient
-    private transient Set<String> dirtyFields = new HashSet<>();
+    private transient Map<String, Boolean> dirtyFields = new ConcurrentHashMap<>();
 
     @MatchingIgnore
     @Override
     @JsonIgnore
     @Transient
     public Set<String> getDirtyFields() {
-        return dirtyFields;
+        return dirtyFields.keySet();
+    }
+    @Override
+    public boolean isDirty(String field){
+        return dirtyFields.containsKey(field);
     }
     @Override
     @JsonIgnore
     @Transient
     public void setIsDirty(String field) {
-        this.dirtyFields.add(Objects.requireNonNull(field));
+        this.dirtyFields.put(Objects.requireNonNull(field), Boolean.TRUE);
     }
 
     @Override
     public void clearDirtyFields() {
         dirtyFields.clear();
+    }
+
+    @Override
+    public void performIfNotDirty(String field, Runnable action) {
+        Objects.requireNonNull(action);
+        dirtyFields.computeIfAbsent(Objects.requireNonNull(field), k-> {
+            action.run();
+            return Boolean.TRUE;
+        });
     }
 }

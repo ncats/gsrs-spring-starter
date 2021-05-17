@@ -98,10 +98,13 @@ public class GsrsControllerConfiguration {
         return overrideErrorCodeIfNeeded(defaultStatus, queryParameters::get);
     }
 
-    public ResponseEntity<Object> handleNotFound(Map<String, String> queryParameters){
+    public ResponseEntity<Object> handleNotFound(Map<String, String> queryParameters, String statusMessage) {
         int status = overrideErrorCodeIfNeeded(404, queryParameters);
-        return new ResponseEntity<>( createStatusJson("not found", status), HttpStatus.valueOf(status));
+        return new ResponseEntity<>( createStatusJson(statusMessage, status), HttpStatus.valueOf(status));
 
+    }
+    public ResponseEntity<Object> handleNotFound(Map<String, String> queryParameters){
+        return handleNotFound(queryParameters, "not found");
     }
     public ErrorInfo createErrorStatusBody(Throwable t, int status,  WebRequest request){
         int statusToUse = overrideErrorCodeIfNeeded(status, request);

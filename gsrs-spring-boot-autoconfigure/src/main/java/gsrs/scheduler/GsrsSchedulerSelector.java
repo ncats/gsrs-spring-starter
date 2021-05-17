@@ -8,8 +8,9 @@ public class GsrsSchedulerSelector implements ImportSelector {
     @Override
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         return new String[]{
-                ScheduledTaskController.class.getName(),
                 GsrsSchedulerConfiguration.class.getName(),
+                ScheduledTaskController.class.getName(),
+                GsrsSchedulerTaskPropertiesConfiguration.class.getName(),
         };
     }
 }

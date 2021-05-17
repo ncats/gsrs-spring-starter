@@ -1,16 +1,59 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.AbstractNonAuditingGsrsEntity;
+import ix.ginas.models.serialization.GsrsDateDeserializer;
+import ix.ginas.models.serialization.GsrsDateSerializer;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
+import java.util.Date;
 
 @Entity
 @Table(name="ix_core_principal")
 @Inheritance
 @DiscriminatorValue("PRI")
-@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_principal_seq", allocationSize = 1)
-public class Principal extends IxModel {
+public class Principal extends AbstractNonAuditingGsrsEntity implements FetchableEntity{
+    @Id
+    //Ebean added GeneratedValue by default we have to be explicit in hibernate
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ix_core_principal_seq")
+    @SequenceGenerator(name = "PRINCIPAL_ID_SEQ", sequenceName = "ix_core_principal_seq", allocationSize = 1)
+    public Long id;
+    @Version
+    public Long version;
+
+    @JsonSerialize(using = GsrsDateSerializer.class)
+    @JsonDeserialize(using = GsrsDateDeserializer.class)
+    public Date created = TimeUtil.getCurrentDate();
+
+    @JsonSerialize(using = GsrsDateSerializer.class)
+    @JsonDeserialize(using = GsrsDateDeserializer.class)
+    public Date modified;
+
+    public boolean deprecated;
+
+
+
+    @PrePersist
+    private void markCreated(){
+        Date date =TimeUtil.getCurrentDate();
+        created = date;
+        modified= date;
+    }
+    @PreUpdate
+    private void markUpdated(){
+        Date date =TimeUtil.getCurrentDate();
+        modified= date;
+    }
+
+    @Override
+    public String fetchGlobalId() {
+        if(id!=null)return this.getClass().getName() + ":" + id.toString();
+        return null;
+    }
     // provider of this principal
     public String provider; 
     

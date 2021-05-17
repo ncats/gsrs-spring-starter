@@ -1,11 +1,16 @@
 package gsrs;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.events.CreateEditEvent;
 import gsrs.model.AbstractGsrsEntity;
+import gsrs.repository.EditRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
+import ix.core.models.Edit;
+import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.*;
@@ -17,6 +22,13 @@ public class GsrsEntityProcessorListener {
     private EntityProcessorFactory epf;
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
+
+    @Autowired
+    private EditRepository editRepository;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
     @PreUpdate
@@ -57,6 +69,15 @@ public class GsrsEntityProcessorListener {
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
+            //create and edit?
+           EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
+           if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
+               applicationEventPublisher.publishEvent(CreateEditEvent.builder()
+                       .kind(o.getClass())
+                       .id(ew.getEntityInfo().getNativeIdFor(o).get())
+                        .build());
+
+           }
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
         }

@@ -12,7 +12,6 @@
         <module>gsrs-core-test</module>
         <module>gsrs-spring-starter-tests</module>
         <module>gsrs-spring-legacy-structure-indexer</module>
-        <module>gsrs-gateway</module>
         <module>gsrs-discovery</module>
         <module>gsrs-spring-legacy-sequence-indexer</module>
         <module>gsrs-spring-legacy-cache</module>
@@ -22,17 +21,17 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.3.5.RELEASE</version>
+        <version>2.4.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <gsrs.version>0.6.2-SNAPSHOT</gsrs.version>
-        <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
+        <gsrs.version>0.6.3-SNAPSHOT</gsrs.version>
+        <spring-boot.version>2.4.5</spring-boot.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>0.6.3-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
 

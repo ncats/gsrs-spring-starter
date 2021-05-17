@@ -38,7 +38,14 @@ public class BackupEntity extends LongBaseModel{
 		
 	}
 
-
+	@Override
+	public String toString() {
+		return "BackupEntity{" +
+				"refid='" + refid + '\'' +
+				", kind='" + kind + '\'' +
+				", id=" + id +
+				"} " + super.toString();
+	}
 
 	public BackupEntity(boolean compressed){
 		this.compressed=compressed;
