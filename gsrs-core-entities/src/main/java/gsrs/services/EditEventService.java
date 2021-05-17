@@ -13,6 +13,10 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import javax.persistence.EntityManager;
 import java.util.Optional;
 
+/**
+ * A Service for creating new {@link Edit}
+ * objects.
+ */
 @Service
 public class EditEventService {
 
@@ -33,9 +37,6 @@ public class EditEventService {
             newEdit.newValue = ew.toFullJson();
             if(event.getComments() !=null){
                 newEdit.comments = event.getComments();
-            }
-            if(newEdit.version.trim().equals("0")){
-                System.out.println("here!!!!");
             }
             //set old value
             if(!("1".equals(newEdit.version))){

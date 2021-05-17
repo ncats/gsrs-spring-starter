@@ -25,27 +25,6 @@ import javax.persistence.Transient;
 @EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
 public abstract class AbstractGsrsEntity {
 
-    @JsonIgnore
-    @Transient
-    private JsonNode previousState;
-    @JsonIgnore
-    @Transient
-    private String previousVersion;
 
-    @PostLoad
-    public void updatePreviousState(){
-        EntityUtils.EntityWrapper<AbstractGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
-
-        this.previousState = ew.toFullJsonNode();
-        this.previousVersion = ew.getVersion().orElse(null);
-    }
-
-    public JsonNode getPreviousState(){
-        return previousState;
-    }
-
-    public String getPreviousVersion(){
-        return previousVersion;
-    }
 
 }
