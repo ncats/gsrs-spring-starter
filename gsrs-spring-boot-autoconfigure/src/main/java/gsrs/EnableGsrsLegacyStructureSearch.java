@@ -12,6 +12,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( { GsrsLegacyStructureIndexerSelector.class, SearchResultController.class})
+@Import( { GsrsLegacyStructureIndexerSelector.class})
 public @interface EnableGsrsLegacyStructureSearch {
 }

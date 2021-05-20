@@ -48,4 +48,14 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
     public void shutdown(){
         indexer.shutdown();
     }
+
+    @Override
+    public StructureIndexer.ResultEnumeration substructure(String query) throws Exception {
+         return indexer.substructure(query,0);
+    }
+
+    @Override
+    public StructureIndexer.ResultEnumeration similarity(String query, double threshold) throws Exception {
+        return indexer.similarity(query,threshold);
+    }
 }

@@ -3,9 +3,6 @@ package gsrs.structure.legacy;
 
 import gsrs.legacy.structureIndexer.LegacyStructureIndexerService;
 import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
-import ix.seqaln.SequenceIndexerEventListener;
-import ix.seqaln.configuration.LegacySequenceAlignmentConfiguration;
-import ix.seqaln.service.LegacySequenceIndexerService;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
