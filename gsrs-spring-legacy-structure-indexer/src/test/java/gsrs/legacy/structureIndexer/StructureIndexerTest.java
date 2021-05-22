@@ -1,5 +1,6 @@
 package gsrs.legacy.structureIndexer;
 
+import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.search.MolSearcherFactory;
@@ -37,7 +38,16 @@ public class StructureIndexerTest{
 	public void shutdown(){
 		structureIndexer.shutdown();
 	}
-	
+
+	@Test
+	public void directoryDoesNotExistShouldCreateIt() throws Exception {
+		shutdown();
+		IOUtil.deleteRecursively(tempDir);
+		assertFalse(tempDir.exists());
+		createIndexer();
+		ensureIndexing2StructuresWithSameIdReturnsTheIdTwiceWhenSearchMatches();
+	}
+
 	@Test
 	public void ensureIndexing2StructuresWithSameIdReturnsTheIdTwiceWhenSearchMatches() throws Exception{
 		String id="1234567";

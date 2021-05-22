@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 import java.util.Optional;
@@ -32,8 +33,8 @@ import java.util.Optional;
 @EnableJpaAuditing(dateTimeProviderRef = "timeTraveller")
 public class AuditConfig {
     @Bean
-    public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository) {
-        return new SecurityAuditor(principalRepository);
+    public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository, EntityManager em) {
+        return new SecurityAuditor(principalRepository, em);
     }
     @Bean
     @Primary
@@ -53,6 +54,7 @@ public class AuditConfig {
     public static class SecurityAuditor implements AuditorAware<Principal> {
         private PrincipalRepository principalRepository;
 
+        private EntityManager em;
         //use an LRU Cache of name look ups. without this on updates to Substances
         //we get a stackoverflow looking up the name over and over for some reason...
         private Map<String, Principal> principalCache = Caches.createLRUCache();
@@ -60,8 +62,9 @@ public class AuditConfig {
         public void clearCache(){
             principalCache.clear();
         }
-        public SecurityAuditor(PrincipalRepository principalRepository) {
+        public SecurityAuditor(PrincipalRepository principalRepository, EntityManager em) {
             this.principalRepository = principalRepository;
+            this.em = em;
         }
 
         @Override
@@ -79,15 +82,15 @@ public class AuditConfig {
             }
             System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
-            return Optional.ofNullable(principalCache.computeIfAbsent(name,
-                    n->{
-                try {
-                    Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
-                    return p;
-                }catch(Throwable t){
-                    t.printStackTrace();
-                    throw t;
-                }
+            Principal value = principalCache.computeIfAbsent(name,
+                    n -> {
+                        try {
+                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
+                            return p;
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                            throw t;
+                        }
                         //if name doesn't exist it will return null which won't get entered into the map and could
                         //cause a stackoverflow of constantly re-looking up a non-existant value
                         //TODO should we use configuration to add new user if missing?
@@ -96,7 +99,8 @@ public class AuditConfig {
 //                        }
 //                        throw new IllegalStateException("user name " + name + " not found");
 
-                    }) );
+                    });
+            return Optional.ofNullable((value ==null || em.contains(value))? value : em.merge(value));
         }
     }	
 }

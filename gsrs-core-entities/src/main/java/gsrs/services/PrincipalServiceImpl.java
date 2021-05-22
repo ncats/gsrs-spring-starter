@@ -24,14 +24,25 @@ public class PrincipalServiceImpl implements PrincipalService {
     }
 
     @Override
+    public Optional<Principal> findById(Long id) {
+        return principalRepository.findById(id);
+    }
+
+    @Override
+    public void clearCache() {
+        cache.clear();
+    }
+
+    @Override
     public Principal registerIfAbsent(String username){
         return cache.computeIfAbsent(username.toUpperCase(), name-> {
+            System.out.println("currently there are " + principalRepository.count() + " principals in db");
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
             if (alreadyInDb != null) {
                 return alreadyInDb;
             }
             System.out.println("creating principal " + username);
-            return principalRepository.save(new Principal(username, null));
+            return principalRepository.saveAndFlush(new Principal(username, null));
         });
     }
 }

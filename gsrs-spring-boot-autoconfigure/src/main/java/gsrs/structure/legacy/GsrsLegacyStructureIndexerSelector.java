@@ -10,7 +10,7 @@ public class GsrsLegacyStructureIndexerSelector implements ImportSelector {
     @Override
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         return new String[]{
-                LegacyStructureIndexerService.class.getName(),
+                GsrsLegacyStructureIndexerConfiguration.class.getName(),
                 StructureIndexerEventListener.class.getName()};
     }
 }

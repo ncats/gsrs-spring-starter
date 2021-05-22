@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +17,15 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
 
     private StandardizedStructureIndexer indexer;
     private File dir;
+
+    @PostConstruct
+    public void here(){
+        System.out.println("here!!!");
+    }
+
     @Autowired
     public LegacyStructureIndexerService(@Value("${ix.structure.base}") File dir) throws IOException {
+        IOUtil.mkdirs(dir);
         indexer =  new StandardizedStructureIndexer(StructureIndexer.open(dir));
         this.dir = dir;
     }
@@ -57,5 +65,12 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
     @Override
     public StructureIndexer.ResultEnumeration similarity(String query, double threshold) throws Exception {
         return indexer.similarity(query,threshold);
+    }
+
+
+
+    @Override
+    public long lastModified(){
+        return indexer.lastModified();
     }
 }
