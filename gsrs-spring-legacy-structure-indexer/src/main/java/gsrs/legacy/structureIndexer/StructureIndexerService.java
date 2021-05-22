@@ -17,6 +17,7 @@ public interface StructureIndexerService {
 
     StructureIndexer.ResultEnumeration similarity(String query, double threshold) throws Exception;
 
+    void shutdown();
 
     long lastModified();
 }

@@ -53,6 +53,7 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
         indexer.remove(null, id);
     }
     @PreDestroy
+    @Override
     public void shutdown(){
         indexer.shutdown();
     }
