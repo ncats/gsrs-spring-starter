@@ -16,7 +16,7 @@ import java.util.Date;
 @Table(name="ix_core_principal")
 @Inheritance
 @DiscriminatorValue("PRI")
-@SequenceGenerator(name = "PRINCIPAL_ID_SEQ", sequenceName = "ix_core_principal_seq", allocationSize = 1)
+@SequenceGenerator(name = "ix_core_principal_seq", sequenceName = "ix_core_principal_seq", allocationSize = 1)
 public class Principal extends AbstractNonAuditingGsrsEntity implements FetchableEntity{
     @Id
     //Ebean added GeneratedValue by default we have to be explicit in hibernate

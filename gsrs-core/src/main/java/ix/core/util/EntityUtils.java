@@ -2767,17 +2767,17 @@ public class EntityUtils {
 			return kind.getName() + ID_FIELD_NATIVE_SUFFIX + ":" + getIdString();
 		}
 
-		//TODO katzelda October 2020 : removed fetcher calls for now
 
-//		/**
-//		 * Returns null if not present
-//		 * @return
-//		 */
-//		@SuppressWarnings("unchecked")
-//
-//		private Object nativeFetch(){
-//			return kind.getFinder().byId(this.getIdNative());
-//		}
+		/**
+		 * Returns null if not present
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+
+		private Object nativeFetch(EntityManager entityManager){
+			return entityManager.find(kind.getEntityClass(), this.getIdNative());
+
+		}
 //
 //		/**
 //		 * Returns null if not present
@@ -2789,13 +2789,15 @@ public class EntityUtils {
 //		}
 //
 //
-//		// fetches from finder
-//		public Optional<EntityWrapper<?>> fetch() {
-//			if(ds!=null)return fetch(ds);
-//			Object o=nativeFetch();
-//			if(o==null)return Optional.empty();
-//			return Optional.of(EntityWrapper.of(o));
-//		}
+		// fetches from finder
+		public Optional<EntityWrapper<?>> fetch(EntityManager entityManager) {
+
+			Object o=nativeFetch(entityManager);
+			if(o==null){
+				return Optional.empty();
+			}
+			return Optional.of(EntityWrapper.of(o));
+		}
 //
 //		// fetches from finder
 //		public Optional<EntityWrapper<?>> fetch(String datasource) {

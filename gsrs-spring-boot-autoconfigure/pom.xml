@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.3-SNAPSHOT</version>
+        <version>0.6.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -26,12 +26,6 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-spring-legacy-structure-indexer</artifactId>
-            <version>${gsrs.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-sequence-indexer</artifactId>
             <version>${gsrs.version}</version>
             <optional>true</optional>
@@ -45,6 +39,12 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
+            <version>${gsrs.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-legacy-structure-indexer</artifactId>
             <version>${gsrs.version}</version>
             <optional>true</optional>
         </dependency>
@@ -134,6 +134,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
     </dependencies>
 
 </project>

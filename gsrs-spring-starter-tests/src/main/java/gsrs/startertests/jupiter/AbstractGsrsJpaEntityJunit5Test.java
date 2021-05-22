@@ -1,6 +1,7 @@
 package gsrs.startertests.jupiter;
 
 
+import gov.nih.ncats.common.io.IOUtil;
 import gsrs.AuditConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.payload.LegacyPayloadConfiguration;
@@ -8,6 +9,7 @@ import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.payload.LegacyPayloadService;
 import gsrs.springUtils.AutowireHelper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -67,6 +69,14 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
 
     @BeforeEach
     public void createPayloadDir() throws IOException {
+        //the static reference to the temp dir saves the directory across
+        //tests.  We only make it static so that we can reference it in the
+        //Initializers to override ix.home
+        //so manually delete it and re-create it
+        if(tempDir.exists()){
+            IOUtil.deleteRecursivelyQuitely(tempDir);
+            tempDir.mkdirs();
+        }
         if(! legacyPayloadConfiguration.getRootDir().exists()){
             Files.createDirectories(legacyPayloadConfiguration.getRootDir().toPath());
         }

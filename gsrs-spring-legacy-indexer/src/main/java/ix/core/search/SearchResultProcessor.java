@@ -50,7 +50,7 @@ public abstract class SearchResultProcessor<T, R> extends ResultProcessor<T, R> 
 
 
 	@Override
-	public Stream<R> map(T result) {
+	public Stream<? extends R> map(T result) {
 		try{
 			R r=instrument(result);
 			if(r==null)return Stream.empty();
