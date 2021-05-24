@@ -1,6 +1,7 @@
 package gsrs;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.CombinedEntityProcessor;
 import ix.core.EntityProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,7 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
             if(processors.isEmpty()){
                 return new NoOpEntityProcessor(k);
             }
+            processors.forEach(AutowireHelper.getInstance()::autowire);
             return new CombinedEntityProcessor(k, processors);
         });
     }

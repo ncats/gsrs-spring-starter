@@ -24,7 +24,10 @@ public class ConfigBasedEntityProcessorFactory extends AbstractEntityProcessorFa
         if(eps !=null){
             for(EntityProcessorConfig config: eps){
                 try {
-                    registar.accept(config.createNewEntityProcessorInstance());
+                    EntityProcessor newEntityProcessorInstance = config.createNewEntityProcessorInstance();
+                    //can't autowire here because the depenendencies might not be set yet!!
+//                    AutowireHelper.getInstance().autowire(newEntityProcessorInstance);
+                    registar.accept(newEntityProcessorInstance);
                 } catch (Exception e) {
                    log.error("could not create new entity Processor instance " + config, e);
                 }
