@@ -12,6 +12,7 @@ import gov.nih.ncats.common.util.Unchecked;
 import gsrs.model.GsrsApiAction;
 import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
+import ix.core.ResourceMethodReference;
 import ix.core.ResourceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
@@ -292,28 +293,28 @@ public class SchedulerPlugin{
 
         @JsonIgnore
         @GsrsApiAction("@disable")
-        public ResourceReference<ScheduledTask> getDisableAction () {
-            if(!this.isRunning())return null;
-            return FieldResourceReference.forRawField("@disable", this::disable);
+        public ResourceMethodReference<ScheduledTask> getDisableAction () {
+
+            return ResourceMethodReference.forMethod("@disable", this::disable);
         }
 
         @JsonIgnore
         @GsrsApiAction("@cancel")
-        public ResourceReference<ScheduledTask> getCancelAction () {
+        public ResourceMethodReference<ScheduledTask> getCancelAction () {
             if(!this.isRunning())return null;
-            return FieldResourceReference.forRawField("@cancel", this::cancel);
+            return ResourceMethodReference.forMethod("@cancel", this::cancel);
         }
         @JsonIgnore
         @GsrsApiAction("@enable")
-        public ResourceReference<ScheduledTask> getDiffLink () {
-            return FieldResourceReference.forRawField("@enable", this::enable);
+        public ResourceMethodReference<ScheduledTask> getEnableAction() {
+            return ResourceMethodReference.forMethod("@enable", this::enable);
 
         }
         @JsonIgnore
         @GsrsApiAction("@execute")
-        public ResourceReference<ScheduledTask> getExecuteAction () {
+        public ResourceMethodReference<ScheduledTask> getExecuteAction () {
     	      if(this.isRunning())return null;
-            return FieldResourceReference.forRawField("@execute", this::execute);
+            return ResourceMethodReference.forMethod("@execute", this::execute);
 
         }
 

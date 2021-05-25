@@ -23,4 +23,10 @@ public abstract class ScheduledTaskInitializer {
     public abstract void run(SchedulerPlugin.TaskListener l);
 
     public abstract String getDescription();
+
+    public SchedulerPlugin.ScheduledTask createTask(){
+        return SchedulerPlugin.ScheduledTask.of(getRunner())
+                .atCronTab(cron)
+                .description(getDescription());
+    }
 }

@@ -3,6 +3,7 @@ package gsrs.scheduler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -36,8 +37,8 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     }
 
-    private CachedSupplier<List<ScheduledTaskInitializer>> tasks = CachedSupplier.of(()->{
-        List<ScheduledTaskInitializer> l = new ArrayList<>(list.size());
+    private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
+        List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
         ObjectMapper mapper = new ObjectMapper();
         for(ScheduledTaskConfig config : list){
 
@@ -51,7 +52,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
                 throw new IllegalStateException(e);
             }
             AutowireHelper.getInstance().autowire(task);
-            l.add(task);
+            l.add(task.createTask());
 
 
         }
@@ -60,7 +61,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     });
 
 
-    public List<ScheduledTaskInitializer> getTasks(){
+    public List<SchedulerPlugin.ScheduledTask> getTasks(){
         return new ArrayList<>(tasks.get());
     }
 }

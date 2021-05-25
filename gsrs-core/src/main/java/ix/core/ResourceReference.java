@@ -24,7 +24,11 @@ public class ResourceReference <T>{
 		resourceLink=uri;
 		raw=sup;
 	}
-	
+
+
+	protected T invoke(){
+		return raw.get();
+	}
 	public String toString(){
 		return resourceLink;
 	}
@@ -44,7 +48,7 @@ public class ResourceReference <T>{
 			return EntityWrapper.of(raw.get()).toFullJsonNode();
 		}
 	}
-	
+
 	public static <T> ResourceReference<T> of(String uri, Supplier<T> sup){
 		return new ResourceReference<T>(uri, sup);
 	}

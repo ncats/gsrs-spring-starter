@@ -86,7 +86,11 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         }
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
-            Object resource =action.getValue(obj).get();
+            Optional<Object> value = action.getValue(obj);
+            if(!value.isPresent()){
+                continue;
+            }
+            Object resource = value.get();
             if(resource !=null) {
                 //GSRS 2.x RestUrlLink object has 2 fields : rul and type (for GET, DELETE etc)
                 GsrsApiAction gsrsApiAction = action.getAnnotation(GsrsApiAction.class);

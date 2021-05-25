@@ -1022,10 +1022,15 @@ public class EntityUtils {
 		 * @return
 		 */
 		public Object getRawValue() {
-			if(this.getValue() instanceof ResourceReference){
-				return ((ResourceReference) this.getValue()).rawJson();
+			T value = this.getValue();
+			if(value instanceof ResourceReference){
+				if(value instanceof ResourceMethodReference){
+					//invoke it!
+					return ((ResourceMethodReference)value).invoke();
+				}
+				return ((ResourceReference) value).rawJson();
 			}
-			return this.getValue();
+			return value;
 		}
 
         public String getDataSource() {
