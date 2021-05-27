@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface GroupRepository extends GsrsRepository<Group, Long> {
 
-    Group findByNameIgnoreCase(String name);
+    Group findByName(String name);
 
     List<Group> findGroupsByMembers(Principal member);
 }

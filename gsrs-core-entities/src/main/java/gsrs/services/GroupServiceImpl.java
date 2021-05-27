@@ -22,8 +22,8 @@ public class GroupServiceImpl implements GroupService{
 
     @Override
     public Group registerIfAbsent(String name) {
-        return cache.computeIfAbsent(name.toUpperCase(), n->{
-            Group g = repository.findByNameIgnoreCase(n);
+        return cache.computeIfAbsent(name, n->{
+            Group g = repository.findByName(n);
             if(g ==null){
                 g = new Group(n);
             }
