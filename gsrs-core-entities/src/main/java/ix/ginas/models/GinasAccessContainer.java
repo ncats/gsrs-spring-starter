@@ -12,8 +12,8 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Entity
-@Table(name = "ix_ginas_access")
+//Note: this is NOT an entity anymore. GSRS 2.x decided to store
+//access container data as JSON not a separate column...
 public class GinasAccessContainer {
 	
 	@Id

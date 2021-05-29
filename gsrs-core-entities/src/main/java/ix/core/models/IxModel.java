@@ -2,6 +2,7 @@ package ix.core.models;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -24,6 +25,10 @@ public class IxModel extends BaseModel {
     public Long id;
     @Version
     public Long version;
+
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JsonView(BeanViews.Full.class)
+    public Namespace namespace; // namespace of dictionary, ontology, etc.
 
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)

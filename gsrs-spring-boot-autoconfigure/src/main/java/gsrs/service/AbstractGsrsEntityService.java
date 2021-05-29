@@ -11,6 +11,7 @@ import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Edit;
+import ix.core.models.Namespace;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.LogUtil;
@@ -150,15 +151,34 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     /**
      * Create List of  new instances of your entity type from the provided JSON which
      * is a List of entities.
-     * Perform any object clean up or "data cleansing" here.
+     * Please override to perform any object clean up or "data cleansing" here.
      *
      * @param list the JSON to use; will never be null.
      *
      * @return a new List of instances will never be null and probably shouldn't be empty.
      *
      * @throws IOException if there's a problem processing the JSON.
+     *
+     * @implNote by default this will perform the following:
+     * <pre>
+     * {@code
+     *
+     *         List<T> l = new ArrayList<>(list.size());
+     *         for(JsonNode n : list){
+     *             l.add(fromNewJson(n));
+     *         }
+     *
+     *         return l;
+     *   }
+     *   </pre>
      */
-    protected abstract List<T> fromNewJsonList(JsonNode list) throws IOException;
+    protected List<T> fromNewJsonList(JsonNode list) throws IOException{
+        List<T> l = new ArrayList<>(list.size());
+        for(JsonNode n : list){
+            l.add(fromNewJson(n));
+        }
+        return l;
+    }
     /**
      * Create a instance of your entity type from the provided JSON representing
      * an updated version of a  record.
@@ -178,7 +198,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     /**
      * Create List of  instances of your entity type from the provided JSON which
      * is a List of updated versions of records.
-     * Perform any object clean up or "data cleansing" here  here but keep in mind different data cleansings
+     * please override to perform any object clean up or "data cleansing" here  here but keep in mind different data cleansings
      * might be done on new vs updated records.
      *
      * @param list the JSON to use; will never be null.
@@ -186,8 +206,26 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @return a new List of instances will never be null and probably shouldn't be empty.
      *
      * @throws IOException if there's a problem processing the JSON.
+     * @implNote by default this will perform the following:
+     * <pre>
+      * {@code
+      *
+      *         List<T> l = new ArrayList<>(list.size());
+      *         for(JsonNode n : list){
+      *             l.add(fromUpdatedJson(n));
+      *         }
+      *
+      *         return l;
+      *   }
+     *   </pre>
      */
-    protected abstract List<T> fromUpdatedJsonList(JsonNode list) throws IOException;
+    protected List<T> fromUpdatedJsonList(JsonNode list) throws IOException{
+        List<T> l = new ArrayList<>(list.size());
+        for(JsonNode n : list){
+            l.add(fromUpdatedJson(n));
+        }
+        return l;
+    }
 
     /**
      * Create a JSON representation of your entity.
