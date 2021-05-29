@@ -17,6 +17,8 @@
         <module>gsrs-spring-legacy-cache</module>
         <module>gsrs-spring-akka</module>
         <module>gsrs-scheduled-tasks</module>
+        <module>gsrs-rest-api</module>
+        <module>gsrs-controlled-vocabulary-api</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
