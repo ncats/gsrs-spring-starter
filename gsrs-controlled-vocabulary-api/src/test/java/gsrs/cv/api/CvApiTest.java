@@ -1,6 +1,7 @@
 package gsrs.cv.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.api.GsrsEntityRestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,5 +93,43 @@ public class CvApiTest {
         Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findById(1234L);
         assertTrue(opt.isPresent());
         assertEquals("ACCESS_GROUP", opt.get().getDomain());
+    }
+
+    @Test
+    public void exists() throws IOException {
+        String json = "{\n" +
+                "    \"found\": {\n" +
+                "        \"BENZOIC ACID, 2-(ACETYLSELENO)-\": {\n" +
+                "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
+                "            \"query\": \"BENZOIC ACID, 2-(ACETYLSELENO)-\",\n" +
+                "            \"url\": {\n" +
+                "                \"rel\": \"_self\",\n" +
+                "                \"href\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"7X1DH96Q9D\": {\n" +
+                "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
+                "            \"query\": \"7X1DH96Q9D\",\n" +
+                "            \"url\": {\n" +
+                "                \"rel\": \"_self\",\n" +
+                "                \"href\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
+                "            }\n" +
+                "        }\n" +
+                "    },\n" +
+                "    \"notFound\": [\n" +
+                "        \"ASPIRIN\"\n" +
+                "    ]\n" +
+                "}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/vocabularies/@exists"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        GsrsEntityRestTemplate.ExistsCheckResult existsCheckResult = api.exists("BENZOIC ACID, 2-(ACETYLSELENO)-", "7X1DH96Q9D", "ASPIRIN");
+
+        assertEquals(2, existsCheckResult.getFound().size());
+        assertEquals(1, existsCheckResult.getNotFound().size());
+
+        assertEquals("http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full", existsCheckResult.getFound().get("7X1DH96Q9D").getUrl().getHref());
     }
 }

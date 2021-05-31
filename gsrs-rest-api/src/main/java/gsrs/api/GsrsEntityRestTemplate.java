@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import gsrs.api.internal.WithoutContentPagedResult;
+import gsrs.controller.GsrsEntityController;
 import ix.core.validator.ValidationResponse;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
@@ -18,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.util.*;
 
 public abstract class GsrsEntityRestTemplate<T, I> {
@@ -65,12 +68,23 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         JsonNode node = mapper.readTree(response.getBody());
         return Optional.ofNullable(parseFromJson(node));
     }
-    public boolean exists(I id) throws IOException {
+    public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+id + ")?view=key",String.class);
         if(response.getStatusCodeValue() == 404) {
             return false;
         }
         return true;
+    }
+
+    public ExistsCheckResult exists(String... anyKindOfIdString) throws IOException{
+       List<String> list = new ArrayList<>(anyKindOfIdString.length);
+       for(String s : anyKindOfIdString){
+           if(s !=null){
+               list.add(s);
+           }
+       }
+
+        return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
     public Optional<PagedResult<T>> page(long top, long skip) throws JsonProcessingException {
@@ -147,5 +161,23 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
             //do nothing we will handle it downstream
         }
+    }
+
+    @Data
+    public static class ExistsCheckResult{
+        private Map<String, GsrsEntityController.EntityExists> found;
+        private List<String> notFound;
+    }
+    @Data
+    public static class EntityExists{
+        private String id;
+        private String query;
+        private RestUrl url;
+
+    }
+    @Data
+    public static class RestUrl{
+        private String rel;
+        private URL href;
     }
 }
