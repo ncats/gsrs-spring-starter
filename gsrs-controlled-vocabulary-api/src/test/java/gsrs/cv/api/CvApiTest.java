@@ -16,6 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.client.MockRestServiceServer;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
@@ -78,5 +79,18 @@ public class CvApiTest {
                 .andRespond(withServerError());
 
         assertThrows(IOException.class,()-> api.count());
+    }
+
+    @Test
+    public void getSingleRecord() throws IOException {
+        String json = "{\"id\":1795,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"domain\":\"ACCESS_GROUP\",\"vocabularyTermType\":\"ix.ginas.models.v1.ControlledVocabulary\",\"fields\":[\"ACCESS\"],\"editable\":false,\"filterable\":false,\"terms\":[{\"id\":43473,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"protected\",\"display\":\"PROTECTED\",\"filters\":[],\"hidden\":false,\"selected\":false},{\"id\":43474,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"admin\",\"display\":\"admin\",\"filters\":[],\"hidden\":false,\"selected\":false}]}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/vocabularies(1234)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findById(1234L);
+        assertTrue(opt.isPresent());
+        assertEquals("ACCESS_GROUP", opt.get().getDomain());
     }
 }
