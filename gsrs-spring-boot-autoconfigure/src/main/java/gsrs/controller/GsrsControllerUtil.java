@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class GsrsControllerUtil {
+public final class GsrsControllerUtil {
 
     private GsrsControllerUtil(){
         //can not instantiate

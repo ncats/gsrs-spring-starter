@@ -55,25 +55,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         return handleSingleObject(model, obj);
     }
 
-    /**
-     * The @ExposeResourceFor annotation in spring HATAEOS only allows mapping to a single class.
-     * This causes problems when the entity has subclasses (like GSRS Substance) the subclasses won't map
-     * and throw exceptions.  So this iteratively calls super classes until it finds a working entity link
-     * or gets all the way to Object.
-     * @param c the class to get the controller link for
-     * @return the {@link LinkBuilder} for that controller wrapped in an Optional; or empty if there is no
-     * entity associated with a controller.
-     * @throws IllegalArgumentException if the given class or any parent class does not have a controller.
-     */
-    private Optional<LinkBuilder> getEntityLinkForClassOrParentClass(Class<?> c){
-        do {
-            try {
-                return Optional.of(entityLinks.linkFor(c));
-            }catch(Exception e){}
-            c = c.getSuperclass();
-        }while(c !=null);
-        return Optional.empty();
-    }
+
 
     private GsrsUnwrappedEntityModel<?> handleSingleObject(GsrsUnwrappedEntityModel<?> model, Object obj) {
         EntityUtils.EntityInfo<?> info = EntityUtils.EntityWrapper.of(obj).getEntityInfo();
@@ -99,7 +81,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                 if (resource instanceof FieldResourceReference) {
                     String field = ((FieldResourceReference) resource).computedResourceLink();
 
-                    Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(obj.getClass());
+                    Optional<LinkBuilder> linkBuilder = GsrsLinkUtil.getEntityLinkForClassOrParentClass(obj.getClass(), entityLinks);
                     if(linkBuilder.isPresent()) {
                         model.add(
                                 GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder.get()
@@ -115,7 +97,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                 }else if(resource instanceof ObjectResourceReference){
                     ObjectResourceReference objResource = (ObjectResourceReference)resource;
-                    Optional<LinkBuilder> opt = getEntityLinkForClassOrParentClass(objResource.getEntityClass());
+                    Optional<LinkBuilder> opt = GsrsLinkUtil.getEntityLinkForClassOrParentClass(objResource.getEntityClass(), entityLinks);
                     if(opt.isPresent()) {
                         LinkBuilder linkBuilder = opt.get()
                                 .slash("(" + objResource.getId() + ")");
@@ -164,10 +146,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     }
 
     private Optional<LinkBuilder> getControllerLinkFor(GsrsUnwrappedEntityModel<?> model){
-        return getEntityLinkForClassOrParentClass(model.getObj().getClass());
+        return GsrsLinkUtil.getEntityLinkForClassOrParentClass(model.getObj().getClass(), entityLinks);
     }
     private Link  computeFieldLink(int collectionSize, Object entity, String id, String fieldPath, String rel){
-        Optional<LinkBuilder> opt = getEntityLinkForClassOrParentClass(entity.getClass());
+        Optional<LinkBuilder> opt = GsrsLinkUtil.getEntityLinkForClassOrParentClass(entity.getClass(), entityLinks);
         if(!opt.isPresent()){
             return null;
         }
@@ -181,27 +163,11 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
 
         Class<?> aClass = model.getObj().getClass();
-        Optional<LinkBuilder> linkBuilder = getEntityLinkForClassOrParentClass(aClass);
-        if(!linkBuilder.isPresent()){
-            return null;
-        }
-        String selfRel = "_self";
-        EntityMapperOptions options = aClass.getAnnotation(EntityMapperOptions.class);
-        if(options !=null){
-            selfRel = options.getSelfRel();
-        }
-
-        Link l= GsrsLinkUtil.adapt(id, linkBuilder.get()
-                .slash("("+id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-
-                .withRel(selfRel));
-        String query=l.toUri().getRawQuery();
-        if(query==null){
-            return l.withHref(l.getHref() +"?view=full");
-        }
-        return l.withHref(l.getHref() +"&view=full");
+        return GsrsLinkUtil.computeSelfLinkFor(entityLinks, aClass, id);
 
 
     }
+
+
 
 }

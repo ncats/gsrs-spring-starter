@@ -2,6 +2,7 @@ package gsrs.controller;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
@@ -29,10 +30,7 @@ import org.springframework.web.servlet.resource.ResourceUrlProvider;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -129,6 +127,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){
 
     }
+
+
     @Override
     @PostGsrsRestApiMapping("/@validate")
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -290,6 +290,33 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
+
+    @Override
+    @PostGsrsRestApiMapping("/@exists")
+    public ExistsCheckResult entitiesExists(@RequestBody List<String> idList, @RequestParam Map<String, String> queryParameters) throws Exception{
+       Map<String, EntityExists> foundMap = new LinkedHashMap<>();
+       List<String> notFound = new ArrayList<>();
+        for(String id : idList){
+            Optional<I> idOptional = getEntityService().getEntityIdOnlyBySomeIdentifier(id);
+            if(idOptional.isPresent()){
+                EntityExists exists = new EntityExists();
+                exists.setId(idOptional.get().toString());
+                exists.setQuery(id);
+                exists.setUrl(GsrsLinkUtil.computeSelfLinkFor(entityLinks, getEntityService().getEntityClass(),  idOptional.get().toString()));
+                foundMap.put(id, exists);
+            }else{
+                notFound.add(id);
+            }
+
+        }
+        ExistsCheckResult result = new ExistsCheckResult();
+        result.setFound(foundMap);
+        result.setNotFound(notFound);
+
+        return result;
+    }
+
+
 //TODO katzelda October 2020 : for now delay work on modern hibernate search use legacy lucene
 
 //    @Data

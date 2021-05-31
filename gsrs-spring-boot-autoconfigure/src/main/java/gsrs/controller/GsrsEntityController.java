@@ -2,6 +2,8 @@ package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import ix.core.validator.ValidationResponse;
+import lombok.Data;
+import org.springframework.hateoas.Link;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 
 public interface GsrsEntityController<T, I> {
@@ -44,4 +47,21 @@ public interface GsrsEntityController<T, I> {
 
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}" })
     ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
+
+
+    @PostGsrsRestApiMapping("/@exists")
+    ExistsCheckResult entitiesExists(@RequestBody List<String> idList, @RequestParam Map<String, String> queryParameters) throws Exception;
+
+    @Data
+    class ExistsCheckResult{
+        private Map<String, EntityExists> found;
+        private List<String> notFound;
+    }
+    @Data
+    class EntityExists{
+        private String id;
+        private String query;
+        private Link url;
+
+    }
 }
