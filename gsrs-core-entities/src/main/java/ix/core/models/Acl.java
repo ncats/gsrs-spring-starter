@@ -29,7 +29,9 @@ public class Acl extends LongBaseModel {
 
     @ManyToMany(cascade= CascadeType.ALL)
     @Basic(fetch= FetchType.EAGER)
-    @JoinTable(name="ix_core_acl_group")
+    @JoinTable(name="ix_core_acl_group", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_group_id")
+    })
     public List<Group> groups = new ArrayList<Group>();
 
     public Acl() {}

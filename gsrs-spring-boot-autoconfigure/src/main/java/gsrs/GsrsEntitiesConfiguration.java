@@ -5,6 +5,10 @@ import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.*;
+import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
+import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -38,6 +42,18 @@ public class GsrsEntitiesConfiguration {
         return new PrincipalServiceImpl(principalRepository);
     }
 
+    //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
+    //to be backwards compatible we have to tell hibernate to use Legacy Jpa (1.0)
+    //and not JPA 2 naming strategies.  This mostly affects join table names and columns
+    @Bean
+    public PhysicalNamingStrategy physical() {
+        return new PhysicalNamingStrategyStandardImpl();
+    }
+
+    @Bean
+    public ImplicitNamingStrategy implicit() {
+        return new ImplicitNamingStrategyLegacyJpaImpl();
+    }
     @Bean
     @ConditionalOnMissingBean
     public EditEventService EditEventService(){
