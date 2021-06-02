@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -52,6 +53,7 @@ public class GsrsEntityTestConfiguration {
     @Bean
     @Order
     @ConditionalOnMissingBean
+    @Primary
     public GsrsValidatorFactory defaultValidatorFactory(){
         return new TestGsrsValidatorFactory();
     }

@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.GsrsEntityRestTemplate;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.Optional;
 
 public class ControlledVocabularyApi extends GsrsEntityRestTemplate<AbstractGsrsControlledVocabularyDTO, Long> {
     public ControlledVocabularyApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, ObjectMapper mapper) {
@@ -15,6 +16,14 @@ public class ControlledVocabularyApi extends GsrsEntityRestTemplate<AbstractGsrs
     @Override
     protected AbstractGsrsControlledVocabularyDTO parseFromJson(JsonNode node) {
         return getObjectMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
+    }
+
+    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
+        Optional<AbstractGsrsControlledVocabularyDTO> opt= findByResolvedId(domain);
+        if(opt.isPresent()){
+            return Optional.of((T) opt.get());
+        }
+        return Optional.empty();
     }
 
 

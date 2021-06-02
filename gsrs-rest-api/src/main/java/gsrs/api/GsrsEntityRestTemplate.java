@@ -60,13 +60,17 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         throw new IOException("error getting count: " + response.getStatusCode().getReasonPhrase());
     }
 
-    public Optional<T> findById(I id) throws IOException {
-        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+id + ")",String.class);
+    public Optional<T> findByResolvedId(String anyKindOfId) throws IOException{
+        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+anyKindOfId + ")",String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
         }
         JsonNode node = mapper.readTree(response.getBody());
         return Optional.ofNullable(parseFromJson(node));
+
+    }
+    public Optional<T> findById(I id) throws IOException {
+        return findByResolvedId(id.toString());
     }
     public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+id + ")?view=key",String.class);

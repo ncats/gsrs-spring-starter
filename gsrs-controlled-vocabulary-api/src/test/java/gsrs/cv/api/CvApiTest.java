@@ -94,6 +94,34 @@ public class CvApiTest {
         assertTrue(opt.isPresent());
         assertEquals("ACCESS_GROUP", opt.get().getDomain());
     }
+    @Test
+    public void downcastDefaultCVSearch() throws IOException{
+        String json = "{\"id\":1795,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"domain\":\"ACCESS_GROUP\",\"vocabularyTermType\":\"ix.ginas.models.v1.ControlledVocabulary\",\"fields\":[\"ACCESS\"],\"editable\":false,\"filterable\":false,\"terms\":[{\"id\":43473,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"protected\",\"display\":\"PROTECTED\",\"filters\":[],\"hidden\":false,\"selected\":false},{\"id\":43474,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"admin\",\"display\":\"admin\",\"filters\":[],\"hidden\":false,\"selected\":false}]}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/vocabularies(ACCESS_GROUP)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<GsrsControlledVocabularyDTO> opt = api.findByDomain("ACCESS_GROUP");
+        assertTrue(opt.isPresent());
+        assertEquals("ACCESS_GROUP", opt.get().getDomain());
+
+    }
+
+    @Test
+    public void downcastCodeSystemSearch() throws IOException{
+        String json ="{\"id\":1803,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"domain\":\"CODE_SYSTEM\",\"vocabularyTermType\":\"ix.ginas.models.v1.CodeSystemControlledVocabulary\",\"fields\":[\"codes.codeSystem\"],\"editable\":true,\"filterable\":false,\"terms\":[{\"id\":43669,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"WHO-ATC\",\"display\":\"WHO-ATC\",\"description\":\"\",\"filters\":[],\"hidden\":false,\"selected\":false,\"systemCategory\":\"PHARMCLASS\"},{\"id\":43670,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"ITIS\",\"display\":\"ITIS\",\"description\":\"\",\"filters\":[],\"hidden\":false,\"selected\":false,\"systemCategory\":\"ORGANISM\"}]}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/vocabularies(CODE_SYSTEM)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+        assertTrue(opt.isPresent());
+        assertEquals("CODE_SYSTEM", opt.get().getDomain());
+        assertTrue(opt.get().getTerms().get(0) instanceof CodeSystemTermDTO);
+
+    }
 
     @Test
     public void exists() throws IOException {
