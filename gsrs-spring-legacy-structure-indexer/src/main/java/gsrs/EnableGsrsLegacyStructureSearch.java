@@ -1,7 +1,6 @@
 package gsrs;
 
-import gsrs.search.SearchResultController;
-import gsrs.sequence.search.legacy.GsrsLegacySequenceIndexerSelector;
+
 import gsrs.structure.legacy.GsrsLegacyStructureIndexerSelector;
 import org.springframework.context.annotation.Import;
 

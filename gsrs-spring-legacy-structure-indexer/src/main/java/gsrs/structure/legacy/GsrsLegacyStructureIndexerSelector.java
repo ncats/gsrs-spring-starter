@@ -1,7 +1,6 @@
 package gsrs.structure.legacy;
 
 
-import gsrs.legacy.structureIndexer.LegacyStructureIndexerService;
 import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;

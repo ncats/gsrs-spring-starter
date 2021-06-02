@@ -290,8 +290,6 @@ public class EntityPersistAdapter {
 
 //                    entityManager.merge(e);
                 }
-            } else {
-                log.warn("Entity bean [" + ew.getKind() + "]" + " doesn't have Id annotation!");
             }
 
 

@@ -1,11 +1,13 @@
-package gsrs.controller;
+package gsrs.scheduler.controller;
 
+import gsrs.controller.GetGsrsRestApiMapping;
+import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import ix.core.ResourceMethodReference;
-import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import org.quartz.Scheduler;
@@ -14,7 +16,6 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -22,7 +23,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @ExposesResourceFor(SchedulerPlugin.ScheduledTask.class)
 @GsrsRestApiController(context = "scheduledJobs")
@@ -139,7 +139,7 @@ public class ScheduledTaskController {
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
 
-        String field =GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
+        String field = GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
 
         EntityUtils.EntityWrapper<SchedulerPlugin.ScheduledTask> ew = EntityUtils.EntityWrapper.of(task.get());
 

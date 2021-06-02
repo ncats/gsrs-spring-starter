@@ -25,8 +25,7 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.servlet.resource.ResourceUrlProvider;
+
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;

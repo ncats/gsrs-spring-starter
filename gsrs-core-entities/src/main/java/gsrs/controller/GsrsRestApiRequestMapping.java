@@ -39,7 +39,7 @@ public @interface GsrsRestApiRequestMapping {
      * The placeholder String to represent an ID in the route;
      * by default it is "$ID". Whenever the route path contains
      * this placeholder, the placeholder will be replaced by the regular expression
-     * for that {@link IdHelper} implementation defined in the {@link AbstractGsrsEntityController}.
+     * for that {@link IdHelper} implementation defined in the GSRS controller.
      * @return A String can not be null or empty.
      */
     String idPlaceholder() default "$ID";
@@ -47,7 +47,7 @@ public @interface GsrsRestApiRequestMapping {
      * The placeholder String to represent "not an ID" in the route;
      * by default it is "$NOT_ID". Whenever the route path contains
      * this placeholder, the placeholder will be replaced by the regular expression
-     * for that {@link IdHelper} implementation defined in the {@link AbstractGsrsEntityController}.
+     * for that {@link IdHelper} implementation defined in the GSRS Controller.
      * @return A String can not be null or empty.
      */
     String notIdPlaceholder() default "$NOT_ID";

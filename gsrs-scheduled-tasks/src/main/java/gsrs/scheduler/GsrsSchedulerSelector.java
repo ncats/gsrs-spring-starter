@@ -1,6 +1,6 @@
 package gsrs.scheduler;
 
-import gsrs.controller.ScheduledTaskController;
+import gsrs.scheduler.controller.ScheduledTaskController;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 

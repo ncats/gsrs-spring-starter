@@ -1,7 +1,7 @@
 package gsrs.controller.hateoas;
 
+
 import com.fasterxml.jackson.annotation.JsonValue;
-import gsrs.controller.GsrsEntityController;
 
 /**
  * Special version of {@link GsrsUnwrappedEntityModel} that wraps

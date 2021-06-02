@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.5-SNAPSHOT</version>
+        <version>0.6.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -33,6 +33,11 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
             <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

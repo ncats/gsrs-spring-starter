@@ -1,8 +1,8 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import GsrsLinkUtil;
+import GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;

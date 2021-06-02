@@ -3,7 +3,6 @@ package gsrs.controller.hateoas;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.model.GsrsApiAction;
 import gsrs.model.Sizeable;
-import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
 import ix.core.util.EntityUtils;
