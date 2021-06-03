@@ -6,6 +6,7 @@ import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerFactory;
+import gsrs.search.SearchResultController;
 import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import gsrs.validator.ValidatorConfigConverter;
 import ix.core.search.text.Lucene4IndexServiceFactory;
@@ -66,7 +67,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(LambdaParseRegistry.class);
         componentsToInclude.add(RegisteredFunctionProperties.class);
         componentsToInclude.add(ExportController.class);
-
+        componentsToInclude.add(SearchResultController.class);
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
     }

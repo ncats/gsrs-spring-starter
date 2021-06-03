@@ -1,8 +1,6 @@
 package gsrs;
 
 import gsrs.cache.GsrsLegacyCacheSelector;
-import gsrs.security.GsrsLegacyAuthenticationSelector;
-import gsrs.security.LegacyAuthenticationConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

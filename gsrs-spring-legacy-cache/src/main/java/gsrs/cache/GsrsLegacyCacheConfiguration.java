@@ -11,6 +11,13 @@ public class GsrsLegacyCacheConfiguration {
     @Autowired
     private GsrsLegacyCachePropertyConfiguration configuration;
 
+    public GsrsLegacyCacheConfiguration(){
+
+    }
+    public GsrsLegacyCacheConfiguration(GsrsLegacyCachePropertyConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
     @Bean
     @ConditionalOnMissingBean(GsrsCache.class)
     public GsrsCache ixCache(){

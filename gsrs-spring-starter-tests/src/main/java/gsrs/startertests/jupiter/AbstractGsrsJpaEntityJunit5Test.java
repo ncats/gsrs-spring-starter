@@ -4,11 +4,15 @@ package gsrs.startertests.jupiter;
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.AuditConfig;
 import gsrs.EntityPersistAdapter;
+import gsrs.cache.GsrsCache;
+import gsrs.cache.GsrsLegacyCacheConfiguration;
+import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
 import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.payload.LegacyPayloadService;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.cache.IxCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,6 +48,7 @@ import java.nio.file.Files;
         ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
 
 })
+
 public abstract class AbstractGsrsJpaEntityJunit5Test {
 
 
@@ -64,6 +69,7 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private LegacyPayloadConfiguration legacyPayloadConfiguration;
+
 
 
 
@@ -114,5 +120,27 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
         public LegacyPayloadService legacyPayloadService( LegacyPayloadConfiguration conf) throws IOException {
             return new LegacyPayloadService(payloadRepository, conf, fileDataRepository);
         }
+
+        @Primary
+        @Bean
+        public GsrsLegacyCachePropertyConfiguration gsrsLegacyCachePropertyConfiguration(){
+            GsrsLegacyCachePropertyConfiguration conf = new GsrsLegacyCachePropertyConfiguration();
+            conf.setBase(new File(tempDir, "cache").getAbsolutePath());
+            conf.setDebugLevel(5);
+            return conf;
+        }
+        @Bean
+        @Primary
+        public GsrsLegacyCacheConfiguration legacyGsrsCache(GsrsLegacyCachePropertyConfiguration conf){
+            return new GsrsLegacyCacheConfiguration(conf);
+
+        }
+
+        @Bean
+        @Primary
+        public GsrsCache ixCache(GsrsLegacyCacheConfiguration conf){
+            return conf.ixCache();
+        }
+
     }
 }

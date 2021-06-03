@@ -36,6 +36,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-legacy-cache</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
