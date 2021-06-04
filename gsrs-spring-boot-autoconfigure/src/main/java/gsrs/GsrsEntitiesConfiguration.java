@@ -25,7 +25,7 @@ import gsrs.services.GroupServiceImpl;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 import ix.core.EbeanLikeNamingStrategy;
-import ix.core.CustomDatabaseIdentifierNamingStrategy;
+//import ix.core.CustomDatabaseIdentifierNamingStrategy;
 import ix.core.EbeanLikeImplicitNamingStategy;
 
 @Configuration(proxyBeanMethods = false)
