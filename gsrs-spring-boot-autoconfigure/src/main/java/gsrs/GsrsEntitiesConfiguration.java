@@ -1,8 +1,10 @@
 package gsrs;
 
 
+import ix.core.EbeanLikeImplicitNamingStategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -24,9 +26,6 @@ import gsrs.services.GroupService;
 import gsrs.services.GroupServiceImpl;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
-import ix.core.EbeanLikeNamingStrategy;
-//import ix.core.CustomDatabaseIdentifierNamingStrategy;
-import ix.core.EbeanLikeImplicitNamingStategy;
 
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
@@ -52,7 +51,7 @@ public class GsrsEntitiesConfiguration {
     //and not JPA 2 naming strategies.  This mostly affects join table names and columns
     @Bean
     public PhysicalNamingStrategy physical() {
-        return (PhysicalNamingStrategy) new EbeanLikeNamingStrategy();
+        return new PhysicalNamingStrategyStandardImpl();
     }
 
     @Bean
