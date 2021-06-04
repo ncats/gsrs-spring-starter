@@ -14,7 +14,7 @@ import java.util.Objects;
 @History(store=false)
 
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_backup_seq", allocationSize = 1)
-public class BackupEntity extends LongBaseModel{
+public class BackupEntity extends IxModel{
 
 	private static final EntityMapper em = EntityMapper.INTERNAL_ENTITY_MAPPER();
 

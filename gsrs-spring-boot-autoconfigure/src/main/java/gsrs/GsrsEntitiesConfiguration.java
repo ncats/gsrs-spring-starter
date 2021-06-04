@@ -1,27 +1,32 @@
 package gsrs;
 
 
-import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
-import gsrs.repository.GroupRepository;
-import gsrs.repository.PrincipalRepository;
-import gsrs.services.*;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
-import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
-import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
+import gsrs.repository.GroupRepository;
+import gsrs.repository.PrincipalRepository;
+import gsrs.services.EditEventService;
+import gsrs.services.GroupService;
+import gsrs.services.GroupServiceImpl;
+import gsrs.services.PrincipalService;
+import gsrs.services.PrincipalServiceImpl;
+import ix.core.EbeanLikeNamingStrategy;
+import ix.core.CustomDatabaseIdentifierNamingStrategy;
+import ix.core.EbeanLikeImplicitNamingStategy;
 
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
@@ -47,12 +52,12 @@ public class GsrsEntitiesConfiguration {
     //and not JPA 2 naming strategies.  This mostly affects join table names and columns
     @Bean
     public PhysicalNamingStrategy physical() {
-        return new PhysicalNamingStrategyStandardImpl();
+        return (PhysicalNamingStrategy) new EbeanLikeNamingStrategy();
     }
 
     @Bean
     public ImplicitNamingStrategy implicit() {
-        return new ImplicitNamingStrategyLegacyJpaImpl();
+        return new EbeanLikeImplicitNamingStategy();
     }
     @Bean
     @ConditionalOnMissingBean

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name="ix_core_filedata")
-@Inheritance
+@Inheritance(strategy= InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("FIG")
 public class FileData extends BaseModel {
     @Id
@@ -21,9 +21,10 @@ public class FileData extends BaseModel {
     public UUID id; // internal id
     public String mimeType;
     
+    
     @Lob
     @JsonIgnore
-    @Indexable(indexed=false)
+    @Indexable(indexed=false)    
     @Basic(fetch= FetchType.EAGER)
     public byte[] data;
 

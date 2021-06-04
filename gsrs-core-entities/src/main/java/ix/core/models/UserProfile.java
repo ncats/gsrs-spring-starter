@@ -53,7 +53,9 @@ public class UserProfile extends IxModel{
 	}
 
 	@ManyToMany(cascade = CascadeType.ALL)
-	@JoinTable(name = "ix_core_userprof_prop")
+    @JoinTable(name="ix_core_userprof_prop", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
 	public List<Value> properties = new ArrayList<Value>();
 
 	public UserProfile() {

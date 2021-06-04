@@ -40,7 +40,9 @@ public class Payload extends BaseModel {
     
 
     @ManyToMany(cascade= CascadeType.ALL)
-    @JoinTable(name="ix_core_payload_property")
+    @JoinTable(name="ix_core_payload_property", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Value> properties = new ArrayList<Value>();
 
     public Payload() {
