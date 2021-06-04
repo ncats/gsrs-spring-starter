@@ -6,7 +6,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name="ix_core_figure")
-@Inheritance
+@Inheritance(strategy= InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("FIG")
 public class Figure extends LongBaseModel {
 

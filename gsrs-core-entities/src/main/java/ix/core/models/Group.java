@@ -23,7 +23,9 @@ public class Group extends LongBaseModel {
 
     @ManyToMany(cascade= CascadeType.ALL)
     @Basic(fetch= FetchType.EAGER)
-    @JoinTable(name="ix_core_group_principal")
+    @JoinTable(name="ix_core_group_principal", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_principal_id")
+    })
     @JsonIgnore
     public Set<Principal> members = new HashSet<>();
 

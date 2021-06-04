@@ -24,7 +24,10 @@ public class Acl extends LongBaseModel {
 
     @ManyToMany(cascade= CascadeType.ALL)
     @Basic(fetch= FetchType.EAGER)
-    @JoinTable(name="ix_core_acl_principal")
+//    @JoinTable(name="ix_core_acl_principal")
+    @JoinTable(name="ix_core_acl_principal", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_principal_id")
+    })
     public List<Principal> principals = new ArrayList<Principal>();
 
     @ManyToMany(cascade= CascadeType.ALL)
