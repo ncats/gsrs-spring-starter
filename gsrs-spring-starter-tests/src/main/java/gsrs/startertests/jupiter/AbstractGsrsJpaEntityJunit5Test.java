@@ -26,6 +26,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -121,25 +122,30 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
             return new LegacyPayloadService(payloadRepository, conf, fileDataRepository);
         }
 
-        @Primary
+        @ConditionalOnMissingBean
         @Bean
+        @Primary
+        @Order
         public GsrsLegacyCachePropertyConfiguration gsrsLegacyCachePropertyConfiguration(){
             GsrsLegacyCachePropertyConfiguration conf = new GsrsLegacyCachePropertyConfiguration();
             conf.setBase(new File(tempDir, "cache").getAbsolutePath());
             conf.setDebugLevel(5);
             return conf;
         }
+
         @Bean
-        @Primary
+        @ConditionalOnMissingBean
+        @Order
         public GsrsLegacyCacheConfiguration legacyGsrsCache(GsrsLegacyCachePropertyConfiguration conf){
             return new GsrsLegacyCacheConfiguration(conf);
 
         }
 
         @Bean
-        @Primary
-        public GsrsCache ixCache(GsrsLegacyCacheConfiguration conf){
-            return conf.ixCache();
+        @ConditionalOnMissingBean(GsrsCache.class)
+        @Order
+        public GsrsCache gsrsCache(GsrsLegacyCachePropertyConfiguration conf){
+            return new IxCache(conf.createNewGateKeeper());
         }
 
     }

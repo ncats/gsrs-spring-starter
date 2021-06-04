@@ -1,6 +1,5 @@
 package ix.seqaln;
 
-import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
@@ -14,7 +13,6 @@ import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

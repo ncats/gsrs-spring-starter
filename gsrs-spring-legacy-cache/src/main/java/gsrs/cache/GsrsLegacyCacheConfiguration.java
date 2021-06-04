@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class GsrsLegacyCacheConfiguration {
@@ -17,7 +18,7 @@ public class GsrsLegacyCacheConfiguration {
     public GsrsLegacyCacheConfiguration(GsrsLegacyCachePropertyConfiguration configuration) {
         this.configuration = configuration;
     }
-
+    @Primary
     @Bean
     @ConditionalOnMissingBean(GsrsCache.class)
     public GsrsCache ixCache(){
