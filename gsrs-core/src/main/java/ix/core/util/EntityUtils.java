@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 
 import gsrs.model.GsrsApiAction;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.*;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
@@ -944,24 +945,21 @@ public class EntityUtils {
 			        		});
 	        		return Optional.of(EntityWrapper.of(value));
 				});
-				//TODO katzelda October 2020 : add support for API registered functions later
-				
-//				try{
-//				ApiFunctionFactory
-//					.getInstance(Play.application())
-//					.getRegisteredFunctions()
-//					.stream().forEach(rf->{
-//						registry.put(rf.getFunctionClass().getName(), (cpath,current)->{
-//							BiFunction<LambdaPath, Object, Optional<Object>> function =
-//									rf.getOperation();
-//							return function
-//										.apply((LambdaPath) cpath, (Object)current.getValue())
-//										.map(EntityWrapper::of);
-//						});
-//					});
-//				}catch(Exception e){
-//				    Logger.error(e.getMessage(),e);
-//				}
+
+				try{
+			StaticContextAccessor.getBean(LambdaParseRegistry.class).getRegisteredFunctions()
+					.stream().forEach(rf->{
+						registry.put(rf.getFunctionClass().getName(), (cpath,current)->{
+							BiFunction<LambdaPath, Object, Optional<Object>> function =
+									rf.getOperation();
+							return function
+										.apply((LambdaPath) cpath, (Object)current.getValue())
+										.map(EntityWrapper::of);
+						});
+					});
+				}catch(Exception e){
+				    log.error(e.getMessage(),e);
+				}
 				return registry;
 			});
 		

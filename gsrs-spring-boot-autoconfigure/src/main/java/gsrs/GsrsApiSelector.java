@@ -7,6 +7,7 @@ import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import gsrs.search.SearchResultController;
+import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import gsrs.validator.ValidatorConfigConverter;
 import ix.core.search.text.Lucene4IndexServiceFactory;
@@ -30,6 +31,7 @@ public class GsrsApiSelector implements ImportSelector {
 
         List<Class> componentsToInclude = new ArrayList<>();
         componentsToInclude.add(GsrsWebConfig.class);
+        componentsToInclude.add(StaticContextAccessor.class);
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(TextIndexerFactory.class);

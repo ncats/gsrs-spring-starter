@@ -196,7 +196,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         //match old Play version of GSRS which either return JSON for an object or raw string?
 
-        if(pojoPointer.isLeafRaw()){
+        if(pojoPointer.isLeafRaw() || at.get().getRawValue() instanceof String){
             return new ResponseEntity<>(at.get().getRawValue(), HttpStatus.OK);
         }else{
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(at.get().getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
