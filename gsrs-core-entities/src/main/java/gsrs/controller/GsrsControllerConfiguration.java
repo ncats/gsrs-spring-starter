@@ -113,9 +113,13 @@ public class GsrsControllerConfiguration {
 
 
     }
-    public ResponseEntity<Object> handleBadRequest(int defaultStatus, Map<String, String> queryParameters) {
+    public ResponseEntity<Object> handleBadRequest(int defaultStatus, String message, Map<String, String> queryParameters) {
         int status = overrideErrorCodeIfNeeded(defaultStatus, queryParameters);
-        return new ResponseEntity<>( createStatusJson("bad request", status), HttpStatus.valueOf(status));
+        return new ResponseEntity<>( createStatusJson(message, status), HttpStatus.valueOf(status));
+
+    }
+    public ResponseEntity<Object> handleBadRequest(int defaultStatus, Map<String, String> queryParameters) {
+        return handleBadRequest(defaultStatus, "bad request", queryParameters);
 
     }
     public ResponseEntity<Object> handleBadRequest(Map<String, String> queryParameters) {
