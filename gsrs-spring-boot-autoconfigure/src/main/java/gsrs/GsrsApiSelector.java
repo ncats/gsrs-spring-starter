@@ -6,6 +6,7 @@ import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerFactory;
+import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
 import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
@@ -43,6 +44,9 @@ public class GsrsApiSelector implements ImportSelector {
         }
         EnableGsrsApi.IndexValueMakerDetector indexValueMakerDetector = attributes.getEnum("indexValueMakerDetector");
         switch (indexValueMakerDetector){
+            case CONF:
+                componentsToInclude.add(ConfigBasedIndexValueMakerConfiguration.class);
+                break;
             case COMPONENT_SCAN:
                 componentsToInclude.add(ComponentScanIndexValueMakerConfiguration.class);
                 break;

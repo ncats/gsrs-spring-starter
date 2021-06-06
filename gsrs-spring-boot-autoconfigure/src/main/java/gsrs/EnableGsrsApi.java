@@ -39,6 +39,10 @@ public @interface EnableGsrsApi {
 
     enum IndexValueMakerDetector{
         /**
+         * Use a configurtion file to list the index value makers.
+         */
+        CONF,
+        /**
          * Add any {@link ix.core.search.text.IndexValueMaker} discovered by the Spring component scan,
          * this means that IndexValueMaker classes must be annotated with @Component.
          */
