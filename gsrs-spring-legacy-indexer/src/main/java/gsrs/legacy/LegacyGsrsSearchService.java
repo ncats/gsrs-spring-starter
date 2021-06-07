@@ -52,7 +52,10 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
         Map<String, List<? extends GsrsSuggestResult>> map = new LinkedHashMap<>();
         for(String field: defaultInstance.getSuggestFields()){
-            map.put(field, defaultInstance.suggest(field, query, max));
+            List<? extends GsrsSuggestResult> suggest = defaultInstance.suggest(field, query, max);
+            if(suggest !=null && !suggest.isEmpty()) {
+                map.put(field, suggest);
+            }
         }
         return map;
 
