@@ -1,6 +1,8 @@
 package ix.core.search;
 
-public class SuggestResult {
+import gsrs.legacy.GsrsSuggestResult;
+
+public class SuggestResult implements GsrsSuggestResult {
     CharSequence key, highlight;
     long weight=0;
     
@@ -17,7 +19,10 @@ public class SuggestResult {
     }
 
     
-    public CharSequence getKey () { return key; }
-    public CharSequence getHighlight () { return highlight; }
-    public Long getWeight () { return weight; }
+    @Override
+    public CharSequence getKey() { return key; }
+    @Override
+    public CharSequence getHighlight() { return highlight; }
+    @Override
+    public Long getWeight() { return weight; }
 }

@@ -14,6 +14,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 
 import gsrs.indexer.IndexValueMakerFactory;
+import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import ix.core.models.FV;
 import ix.core.models.Facet;
@@ -1299,7 +1300,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 
-	public List<SuggestResult> suggest(String field, CharSequence key, int max) throws IOException {
+	public List<? extends GsrsSuggestResult> suggest(String field, CharSequence key, int max) throws IOException {
 		SuggestLookup lookup = lookups.get(field);
 		if (lookup == null) {
 			log.debug("Unknown suggest field \"" + field + "\"");

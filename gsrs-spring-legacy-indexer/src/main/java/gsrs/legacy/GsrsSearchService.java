@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,4 +23,10 @@ public interface GsrsSearchService<T> {
     TextIndexer.TermVectors getTermVectorsFromQuery(String query, SearchOptions options, String field) throws IOException;
 
     SearchResult search(String query, SearchOptions options, Collection<?> subset) throws IOException;
+
+    Map<String, List<? extends GsrsSuggestResult>> suggest(String query, int max) throws IOException;
+    List<? extends GsrsSuggestResult> suggestField(String field, String query, int max) throws IOException;
+
+    Collection<String> getSuggestFields() throws IOException;
+
 }

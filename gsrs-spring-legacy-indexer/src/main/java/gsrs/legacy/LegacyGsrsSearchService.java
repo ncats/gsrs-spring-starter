@@ -17,8 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
 
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
 
@@ -34,6 +33,28 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
         gsrsRepository= repository;
         this.entityClass = entityClass;
+
+    }
+
+    @Override
+    public Collection<String> getSuggestFields() throws IOException {
+        return textIndexerFactory.getDefaultInstance().getSuggestFields();
+    }
+
+    @Override
+    public List<? extends GsrsSuggestResult> suggestField(String field, String query, int max) throws IOException {
+        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
+        return defaultInstance.suggest(field, query, max);
+
+    }
+    @Override
+    public Map<String, List<? extends GsrsSuggestResult>> suggest(String query, int max) throws IOException {
+        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
+        Map<String, List<? extends GsrsSuggestResult>> map = new LinkedHashMap<>();
+        for(String field: defaultInstance.getSuggestFields()){
+            map.put(field, defaultInstance.suggest(field, query, max));
+        }
+        return map;
 
     }
     @Override

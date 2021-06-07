@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.search.SearchOptions;
@@ -11,14 +12,12 @@ import ix.utils.Util;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -87,6 +86,26 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      * @return
      */
     protected abstract LegacyGsrsSearchService<T> getlegacyGsrsSearchService();
+
+    /*
+    GET     /suggest/@fields       ix.core.controllers.search.SearchFactory.suggestFields
+GET     /suggest/:field       ix.core.controllers.search.SearchFactory.suggestField(field: String, q: String, max: Int ?= 10)
+GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: String, max: Int ?= 10)
+
+
+     */
+    @GetGsrsRestApiMapping("/suggest/@fields")
+    public Collection<String> suggestFields() throws IOException {
+        return getlegacyGsrsSearchService().getSuggestFields();
+    }
+    @GetGsrsRestApiMapping("/suggest")
+    public Map<String, List<? extends GsrsSuggestResult>> suggest(@RequestParam(value ="q") String q, @RequestParam(value ="max", defaultValue = "10") int max) throws IOException {
+        return getlegacyGsrsSearchService().suggest(q, max);
+    }
+    @GetGsrsRestApiMapping("/suggest/{field}")
+    public List<? extends GsrsSuggestResult> suggestField(@PathVariable("field") String field,  @RequestParam("q") String q, @RequestParam(value ="max", defaultValue = "10") int max) throws IOException {
+        return getlegacyGsrsSearchService().suggestField(field, q, max);
+    }
 
     @GetGsrsRestApiMapping(value = "/search", apiVersions = 1)
     public ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
