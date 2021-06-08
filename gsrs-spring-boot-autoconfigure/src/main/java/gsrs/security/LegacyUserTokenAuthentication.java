@@ -4,7 +4,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 
 public class LegacyUserTokenAuthentication extends UsernamePasswordAuthenticationToken {
 
-    public LegacyUserTokenAuthentication(Object credentials) {
+    public LegacyUserTokenAuthentication( Object credentials) {
         super(null, credentials);
     }
 }

@@ -25,6 +25,8 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
 
+    @Autowired(required = false)
+    private UserTokenCache userTokenCache;
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         if(authentication instanceof UserProfilePasswordAuthentication){
@@ -73,6 +75,18 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
 
             }
             //TODO handle token and other types of authentication
+        }else if(userTokenCache !=null && authentication instanceof LegacyUserTokenAuthentication){
+            LegacyUserTokenAuthentication auth = (LegacyUserTokenAuthentication) authentication;
+            String token = (String) auth.getCredentials();
+            UserProfile up = userTokenCache.getUserProfileFromToken(token);
+            if(up !=null){
+
+                UserProfile refetched = repository.findByUser_Username(up.user.username);
+                if(refetched.acceptToken(token)){
+                    return new UserProfilePasswordAuthentication(refetched);
+                }
+            }
+
         }
         return null;
     }

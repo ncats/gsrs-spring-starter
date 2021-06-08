@@ -24,6 +24,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserProfileRepository repository;
 
+    @Autowired
+    private UserTokenCache userTokenCache;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
@@ -97,6 +100,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         if(auth ==null) {
             String token = request.getHeader("auth-token");
             if(token !=null){
+
                 auth = new LegacyUserTokenAuthentication(token);
             }
         }
