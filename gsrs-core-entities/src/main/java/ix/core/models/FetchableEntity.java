@@ -15,7 +15,7 @@ public interface FetchableEntity {
      * Note: this is less useful now that
      * {@link EntityUtils.EntityWrapper#getKey()} exists,
      * which returns a globally unique key that
-     * can be used for fetching the models as well.
+     * can be used for fetching the ix.ginas.models as well.
      * TODO: Refactor these to use the same mechanism by
      * default.
      * </p>

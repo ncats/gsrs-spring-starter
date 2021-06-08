@@ -42,17 +42,35 @@ public class IxModel extends BaseModel {
 
     public IxModel() {}
 
+    /**
+     * override this method to make any changes during a
+     * {@code @PrePersist} call.
+     * Please make sure to call {@code super.prePersist()}.
+     */
+    protected void prePersist(){
+
+    }
+    /**
+     * override this method to make any changes during a
+     * {@code @PreUpdate} call.
+     * Please make sure to call {@code super.preUpdate()}.
+     */
+    protected void preUpdate(){
+
+    }
 
     @PrePersist
     private void markCreated(){
         Date date =TimeUtil.getCurrentDate();
         created = date;
         modified= date;
+            prePersist();
     }
     @PreUpdate
     private void markUpdated(){
         Date date =TimeUtil.getCurrentDate();
         modified= date;
+        preUpdate();
     }
 
 	@Override

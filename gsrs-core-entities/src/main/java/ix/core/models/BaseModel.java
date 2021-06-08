@@ -92,7 +92,7 @@ public abstract class BaseModel extends AbstractGsrsManualDirtyEntity implements
 	
 	//katzelda October 2020: for now disable cache stuff we'll add ehcache support in spring later
 	//April 2020 moved most of the calls to set the cache to the controllers so
-	//the models don't have to know about the cache or require dependency injection
+	//the ix.ginas.models don't have to know about the cache or require dependency injection
 //	public void setMatchContextFromID(String contextId){
 //	    Key k = EntityWrapper.of(this).getKey();
 //	    setMatchContextProperty(IxCache.getMatchingContextByContextID(contextId, k));

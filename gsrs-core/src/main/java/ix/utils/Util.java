@@ -897,7 +897,7 @@ public class Util {
 	 * 
 	 * <p>
 	 * Note: This method exists here because ebean has difficulty dealing
-	 * with models embedded in other models. Ideally, GinasChemicalStructure
+	 * with ix.ginas.models embedded in other ix.ginas.models. Ideally, GinasChemicalStructure
 	 * would just implement a common interface with GinasCommonData, and the need
 	 * for this method is a good reminder that this could be refactored.
 	 * </p>

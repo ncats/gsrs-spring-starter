@@ -411,7 +411,7 @@ class ValidatorConfig{
 gsrs.validators.vocabularies = [
     {
         "validatorClass" = "gsrs.vocab.DuplicateDomainValidator",
-         "newObjClass" = "ix.ginas.models.v1.ControlledVocabulary",
+         "newObjClass" = "ix.ginas.ix.ginas.models.v1.ControlledVocabulary",
     }
 ]
 ```

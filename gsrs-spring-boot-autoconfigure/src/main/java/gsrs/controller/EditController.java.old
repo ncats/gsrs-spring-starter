@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import GsrsLinkUtil;
 import GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
-import ix.core.models.Edit;
+import ix.core.ix.ginas.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import org.springframework.beans.factory.annotation.Autowired;
