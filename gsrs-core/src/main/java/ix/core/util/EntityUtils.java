@@ -18,6 +18,7 @@ import ix.core.*;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
 import ix.core.models.*;
+import ix.core.util.pojopointer.extensions.RegisteredFunction;
 import ix.utils.PathStack;
 import ix.core.search.text.ReflectingIndexerAware;
 import ix.core.util.pojopointer.*;
@@ -953,7 +954,7 @@ public class EntityUtils {
 							BiFunction<LambdaPath, Object, Optional<Object>> function =
 									rf.getOperation();
 							return function
-										.apply((LambdaPath) cpath, (Object)current.getValue())
+										.apply((LambdaPath) cpath, current.getValue())
 										.map(EntityWrapper::of);
 						});
 					});
@@ -986,7 +987,26 @@ public class EntityUtils {
 	        
 	        do {
 	        	BiFunction<PojoPointer, EntityWrapper<?>, Optional<EntityWrapper<?>>> finder=
-	        	finders.get().get(cpath.getClass().getName());
+	        	finders.get().computeIfAbsent(cpath.getClass().getName(), n->{
+	        		//sometimes we load the finders too early?
+					//this way we re-check any registered functions
+					try {
+						for (RegisteredFunction rf : StaticContextAccessor.getBean(LambdaParseRegistry.class).getRegisteredFunctions()) {
+							if (n.equals(rf.getFunctionClass().getName())) {
+								BiFunction<LambdaPath, Object, Optional<Object>> function =
+										rf.getOperation();
+								return (arg1, arg2) -> function
+										.apply((LambdaPath) arg1, arg2.getValue())
+										.map(EntityWrapper::of);
+							}
+						}
+					}catch(Throwable t) {
+						log.error(t.getMessage(),t);
+					}
+					return null;
+
+
+				});
 	        	if(finder!=null){
 	        	    Optional<EntityWrapper<?>> found=finder.apply(cpath, current);
 	        		if(!found.isPresent())return found;
