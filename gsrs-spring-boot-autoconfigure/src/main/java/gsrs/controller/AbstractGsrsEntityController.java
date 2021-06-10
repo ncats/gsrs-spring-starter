@@ -226,7 +226,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             return new ResponseEntity<>( PagedResult.ofKeys(page), HttpStatus.OK);
 
         }
-        return new ResponseEntity<>(new PagedResult(page), HttpStatus.OK);
+        return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
     }
 
     private Sort parseSortFromOrderParam(String order){
@@ -249,7 +249,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @AllArgsConstructor
     public static class PagedResult<T>{
         private long total, count,skip, top;
-        private List<T> content;
+        private Object content;
 
         public static PagedResult<EntityUtils.Key> ofKeys(Page<?> page){
             return PagedResult.<EntityUtils.Key>builder()
@@ -261,12 +261,14 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                             .build();
 
         }
-        public PagedResult(Page<T> page){
+        public PagedResult(Page<T> page, Map<String, String> queryParameters){
             this.total = page.getTotalElements();
             this.count= page.getNumberOfElements();
             this.skip = page.getSize() * page.getNumber();
             this.top = page.getSize();
-            content = page.toList();
+            content = page.toList().stream().map(e->GsrsControllerUtil.enhanceWithView(page.toList(), queryParameters)).collect(Collectors.toList());
+
+
         }
     }
 

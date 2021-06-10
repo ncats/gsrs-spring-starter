@@ -2,7 +2,11 @@ package gsrs.controller.hateoas;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import ix.core.controllers.EntityFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.hateoas.Link;
@@ -23,22 +27,33 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
 
     @JsonIgnore
     private boolean isCompact;
-
+    @JsonIgnore
     private T obj;
+
     /**
      * This is the list of Links we will in-line these as well
      * using JsonAnyGetter on the getter below.
      */
-    private Map<String, Object> ourLinks = new HashMap<>();
+    private Map<String, Object> ourLinks = new LinkedHashMap<>();
 
-    public static <T> GsrsUnwrappedEntityModel<T> of(T obj){
+    public static <T> GsrsUnwrappedEntityModel<T> of(T obj, String view){
         if(obj instanceof Collection){
-            return new CollectionGsrsUnwrappedEntityModel<>(obj);
+            return new CollectionGsrsUnwrappedEntityModel<>(obj, view);
         }
-        return new GsrsUnwrappedEntityModel<T>(obj);
+        return new GsrsUnwrappedEntityModel<T>(obj, view, true);
     }
-    protected GsrsUnwrappedEntityModel(T obj) {
+    protected GsrsUnwrappedEntityModel(T obj, String view, boolean includeUnserialized) {
+
         this.obj = obj;
+        if(includeUnserialized) {
+            //katzelda June 2021: This is a terrible hack because HATEOS has its own jackson converter so we can't
+            //use our view=$X parameter like we can in our Spring bean converter because the HATEOS doesn't use it
+            //so the work around is to serialize it ourselves and then add it to the unwrapped properties map here
+            //so it looks like we serialized the object as expected with additional url properties...
+            EntityFactory.EntityMapper entityMapper = EntityFactory.EntityMapper.getByView(view);
+            this.ourLinks.putAll(entityMapper.convertValue(entityMapper.toJsonNode(obj), new TypeReference<Map<String, Object>>() {
+            }));
+        }
     }
 
 
@@ -68,7 +83,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     public void setCompact(boolean compact) {
         isCompact = compact;
     }
-    @JsonUnwrapped
+//    @JsonUnwrapped
     public T getObj() {
         return obj;
     }

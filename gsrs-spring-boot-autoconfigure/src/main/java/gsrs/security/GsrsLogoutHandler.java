@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 //@Service
 public class GsrsLogoutHandler implements LogoutHandler {
@@ -19,6 +20,8 @@ public class GsrsLogoutHandler implements LogoutHandler {
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response,
                        Authentication authentication) {
+        HttpSession session = request.getSession();
+        String sessionId = (String) session.getAttribute(UserTokenCache.SESSION);
 //        String userName = UserUtils.getAuthenticatedUserName();
 //        userCache..evictUser(userName);
     }

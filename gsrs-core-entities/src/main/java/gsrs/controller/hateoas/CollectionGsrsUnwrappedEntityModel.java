@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 class CollectionGsrsUnwrappedEntityModel<T> extends GsrsUnwrappedEntityModel<T> {
 
-    public CollectionGsrsUnwrappedEntityModel(T obj) {
-        super(obj);
+    public CollectionGsrsUnwrappedEntityModel(T obj, String view) {
+        super(obj, view, false);
     }
 
     @Override

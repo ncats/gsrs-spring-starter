@@ -49,7 +49,7 @@ public class ScheduledTaskController {
     public ResponseEntity<Object> getTaskByOrdinal(@RequestParam Map<String,String> queryParameters){
         List<SchedulerPlugin.ScheduledTask> list = gsrsSchedulerConfiguration.getTasks();
 
-        return new ResponseEntity(GsrsUnwrappedEntityModel.of(list), HttpStatus.OK);
+        return new ResponseEntity(GsrsControllerUtil.enhanceWithView(list, queryParameters), HttpStatus.OK);
     }
 
     @GetGsrsRestApiMapping({"({ID})","/{ID}"})

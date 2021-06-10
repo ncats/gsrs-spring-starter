@@ -200,6 +200,26 @@ public class EntityFactory {
             return new EntityMapper(BeanViews.Key.class);
         }
 
+        public static EntityMapper getByView(String view){
+            if(view ==null){
+                return COMPACT_ENTITY_MAPPER();
+            }
+            if(view.equalsIgnoreCase("full")){
+                return FULL_ENTITY_MAPPER();
+            }
+            if(view.equalsIgnoreCase("internal")){
+                return INTERNAL_ENTITY_MAPPER();
+            }
+            if(view.equalsIgnoreCase("key")){
+                return KEY_ENTITY_MAPPER();
+            }
+            //JsonDiff
+            if(view.equalsIgnoreCase("jsondiff")){
+                return JSON_DIFF_ENTITY_MAPPER();
+            }
+            return COMPACT_ENTITY_MAPPER();
+        }
+
         @Override
         public EntityMapper copy() {
             Class<?> view = _serializationConfig.getActiveView();

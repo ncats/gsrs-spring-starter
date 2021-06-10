@@ -20,15 +20,16 @@ import java.util.stream.Stream;
 
 @Component
 public class LegacyUserTokenCache implements UserTokenCache {
-	static String CACHE_NAME="TOKEN_CACHE";
-	static String CACHE_NAME_UP="TOKEN_UP_CACHE";
+		private static String CACHE_NAME="TOKEN_CACHE";
+		private static String CACHE_NAME_UP="TOKEN_UP_CACHE";
 
 	   static CachedSupplier<CacheManager> manager=CachedSupplier.of(()->CacheManager.getInstance());
 	   private Cache tokenCache=null;
-	   private ConcurrentHashMap<String,UserProfile> tokenCacheUserProfile=new ConcurrentHashMap<String,UserProfile>();
+	   private ConcurrentHashMap<String,UserProfile> tokenCacheUserProfile=new ConcurrentHashMap<>();
 	   private long lastCacheUpdate=-1;
 
 	   private UserProfileRepository userProfileRepository;
+
 
 		@Autowired
 	   public LegacyUserTokenCache(UserProfileRepository userProfileRepository){

@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.condition.PatternsRequestCondition;
@@ -64,6 +65,14 @@ public class GsrsWebConfig {
 //    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(){
 //        return new DynamicMappingJacksonHttpMessageConverter();
 //    }
+
+    @Bean
+    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(ObjectMapper objectMapper){
+        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+
+        jsonConverter.setObjectMapper(objectMapper);
+        return jsonConverter;
+    }
     @Bean
     public ObjectMapperResolver objectMapperResolver() {
         return new RequestMatchingEntityMapperResolver();

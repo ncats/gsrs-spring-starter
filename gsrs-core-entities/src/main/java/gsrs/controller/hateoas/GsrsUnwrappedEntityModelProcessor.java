@@ -115,8 +115,6 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                 String compactFieldName = f.getCompactViewFieldName();
                 String field = f.getName();
 
-
-                System.out.println(field);
                 Optional<Object> value = f.getValue(obj);
                 if(value.isPresent()) {
                     Link l=null;

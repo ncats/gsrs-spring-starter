@@ -166,20 +166,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                         entityManager.merge(etag);
                     }
                 });
-        //content is transient so don't need to worry about transforming results
         String view = request.getParameter("view");
-        if("key".equals(view)){
-            etag.setContent(results.stream().map(e->  {
-                Optional<EntityUtils.Key> opt = EntityUtils.EntityWrapper.of(e).getOptionalKey();
-                if(opt.isPresent()){
-                    return opt.get();
-                }
-                return e;
-            }
-            ).collect(Collectors.toList()));
-        }else {
-            etag.setContent(results);
+        Map<String,String> viewMap;
+        if(view ==null){
+            viewMap = Collections.emptyMap();
+        }else{
+            viewMap= Collections.singletonMap("view", view);
         }
+        //content is transient so don't need to worry about transforming results
+        etag.setContent(results.stream().map(r-> GsrsControllerUtil.enhanceWithView(r, viewMap)).collect(Collectors.toList()));
+
         etag.setSponosredResults(result.getSponsoredMatches());
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());

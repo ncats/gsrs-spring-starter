@@ -1,6 +1,10 @@
 package gsrs.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.controllers.EntityFactory;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
@@ -24,28 +28,32 @@ public final class GsrsControllerUtil {
                 String.valueOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)),
                 String.valueOf(request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)));
     }
-    public static Object enhanceWithView(Object obj,  Map<String, String> queryParameters) {
+    public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters) {
         return enhanceWithView(obj, queryParameters, null);
     }
-        public static Object enhanceWithView(Object obj,  Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
+
+    public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
         String view = queryParameters.get("view");
 
-        GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj);
+        GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj, view);
+
         if("compact".equals(view)){
             model.setCompact(true);
 
         }
+
         if(model !=null && additionalLinksConsumer !=null) {
             additionalLinksConsumer.accept(model);
         }
-        return model;
+
+        return StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).process(model);
     }
 
-    public static Object enhanceWithView(List<Object> list, Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
+    public static GsrsUnwrappedEntityModel enhanceWithView(List<Object> list, Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
         List<Object> modelList = new ArrayList<>(list.size());
         for(Object o : list){
             modelList.add(enhanceWithView(o, queryParameters, additionalLinksConsumer));
         }
-        return GsrsUnwrappedEntityModel.of(modelList);
+        return StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).process(GsrsUnwrappedEntityModel.of(modelList, (String) null));
     }
 }
