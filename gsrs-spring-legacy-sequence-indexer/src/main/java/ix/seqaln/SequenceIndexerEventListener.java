@@ -92,7 +92,7 @@ public class SequenceIndexerEventListener {
         });
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
         if(ew.isEntity() && ew.hasKey()) {
@@ -100,9 +100,9 @@ public class SequenceIndexerEventListener {
         }
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        EntityUtils.EntityWrapper ew = event.getSource();
+        EntityUtils.EntityWrapper ew = event.getSource().fetch(em).get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);

@@ -35,7 +35,7 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexUpdateEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+            applicationEventPublisher.publishEvent(new IndexUpdateEntityEvent(ew.getKey()));
         }
     }
     @PostRemove
@@ -44,7 +44,7 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(obj)));
+            applicationEventPublisher.publishEvent(new IndexRemoveEntityEvent(ew));
         }
     }
 }

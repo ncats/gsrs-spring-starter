@@ -71,27 +71,26 @@ public class TextIndexerEntityListener {
     @EventListener
     public void reindexing(MaintenanceModeEvent event) {
         autowireIfNeeded();
-            if(event.getSource().isInMaintenanceMode()){
-                textIndexerFactory.getDefaultInstance().newProcess();
-
-            }else{
-                textIndexerFactory.getDefaultInstance().doneProcess();
-            }
+        if(event.getSource().isInMaintenanceMode()){
+            textIndexerFactory.getDefaultInstance().newProcess();
+        }else{
+            textIndexerFactory.getDefaultInstance().doneProcess();
+        }
     }
 
 
-    @EventListener
+    @TransactionalEventListener
     public void updateEntity(IndexUpdateEntityEvent event) throws Exception {
 //        System.out.println("updating index " + obj);
         autowireIfNeeded();
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
-            EntityUtils.EntityWrapper ew = event.getSource();
+            EntityUtils.EntityWrapper ew = event.getSource().fetch(em).get();
             indexer.remove(ew);
             indexer.add(ew);
         }
     }
-    @EventListener
+    @TransactionalEventListener
     public void deleteEntity(IndexRemoveEntityEvent event) throws Exception {
 //        System.out.println("removing from index " + obj);
         autowireIfNeeded();

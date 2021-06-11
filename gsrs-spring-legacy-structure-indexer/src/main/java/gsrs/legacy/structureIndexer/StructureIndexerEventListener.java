@@ -79,7 +79,7 @@ public class StructureIndexerEventListener {
         });
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
         EntityUtils.Key key = ew.getKey();
@@ -88,7 +88,7 @@ public class StructureIndexerEventListener {
 
     @EventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        EntityUtils.EntityWrapper ew = event.getSource();
+        EntityUtils.EntityWrapper ew = event.getSource().fetch(em).get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);

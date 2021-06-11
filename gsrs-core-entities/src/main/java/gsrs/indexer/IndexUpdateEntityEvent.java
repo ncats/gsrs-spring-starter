@@ -4,12 +4,12 @@ import ix.core.util.EntityUtils;
 import org.springframework.context.ApplicationEvent;
 
 public class IndexUpdateEntityEvent extends ApplicationEvent {
-    public IndexUpdateEntityEvent(EntityUtils.EntityWrapper source) {
-        super(source);
+    public IndexUpdateEntityEvent(EntityUtils.Key key) {
+        super(key);
     }
 
     @Override
-    public EntityUtils.EntityWrapper getSource() {
-        return (EntityUtils.EntityWrapper) super.getSource();
+    public EntityUtils.Key getSource() {
+        return (EntityUtils.Key) super.getSource();
     }
 }
