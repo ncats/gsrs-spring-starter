@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class ReindexEntityEvent implements ReindexEvent {
+public class DoNotReindexEntityEvent implements ReindexEvent{
 
     private UUID reindexId;
     private EntityUtils.Key entityKey;

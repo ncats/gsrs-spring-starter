@@ -4,6 +4,7 @@ import gsrs.controller.ExportController;
 import gsrs.controller.GsrsWebConfig;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
+import gsrs.events.listeners.ReindexEventListener;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
@@ -33,6 +34,8 @@ public class GsrsApiSelector implements ImportSelector {
         List<Class> componentsToInclude = new ArrayList<>();
         componentsToInclude.add(GsrsWebConfig.class);
         componentsToInclude.add(StaticContextAccessor.class);
+        componentsToInclude.add(ReindexEventListener.class);
+
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(TextIndexerFactory.class);
