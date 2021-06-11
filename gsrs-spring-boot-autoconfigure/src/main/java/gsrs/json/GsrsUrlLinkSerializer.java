@@ -12,6 +12,8 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 
 import java.io.IOException;
+import java.util.Optional;
+
 @JsonComponent
 public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
     @Autowired
@@ -30,12 +32,16 @@ public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
             return;
         }
         initIfNeeded();
-        LinkBuilder linkBuilder = entityLinks.linkFor(gsrsUrlLink.getEntityClass())
-                .slash("(" + gsrsUrlLink.getId() + ")");
-        if(gsrsUrlLink.getFieldPath() !=null){
-            linkBuilder.slash(gsrsUrlLink.getFieldPath());
+        Optional<LinkBuilder> optionalLinkBuilder = GsrsLinkUtil.getEntityLinkForClassOrParentClass(gsrsUrlLink.getEntityClass(), entityLinks);
+        //there should be a found controller but unlikely event it doesn't don't throw an error
+        if(optionalLinkBuilder.isPresent()) {
+            LinkBuilder linkBuilder = optionalLinkBuilder.get()
+                    .slash("(" + gsrsUrlLink.getId() + ")");
+            if (gsrsUrlLink.getFieldPath() != null) {
+                linkBuilder.slash(gsrsUrlLink.getFieldPath());
+            }
+            String uri = GsrsLinkUtil.fieldLink(gsrsUrlLink.getId(), gsrsUrlLink.getFieldPath(), linkBuilder.withSelfRel()).toUri().toString(); // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+            provider.defaultSerializeValue(uri, jgen);
         }
-        String uri = GsrsLinkUtil.fieldLink(gsrsUrlLink.getId(), gsrsUrlLink.getFieldPath(), linkBuilder.withSelfRel()).toUri().toString(); // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-        provider.defaultSerializeValue(uri, jgen);
     }
 }
