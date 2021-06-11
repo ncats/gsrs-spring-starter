@@ -1,6 +1,7 @@
 package ix.core.search.text;
 
 import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
@@ -12,11 +13,13 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import javax.persistence.EntityManager;
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 
 /**
  * Hibernate Entity listener that will update our legacy {@link TextIndexer}.
@@ -27,6 +30,8 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
+    @Autowired
+    private EntityManager em;
 
     private void autowireIfNeeded(){
         if(textIndexerFactory==null) {
@@ -34,22 +39,35 @@ public class TextIndexerEntityListener {
         }
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void created(IndexCreateEntityEvent event) throws Exception{
         autowireIfNeeded();
         try {
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
-                if (event.shouldDeleteFirst()) {
-                    indexer.remove(event.getSource());
+                //refetch from db
+                Optional<EntityUtils.EntityWrapper<?>> opt = event.getSource().fetch(em);
+                if(opt.isPresent()) {
+                    EntityUtils.EntityWrapper ew = opt.get();
+
+                    if (event.shouldDeleteFirst()) {
+                        indexer.remove(ew);
+                    }
+                    indexer.add(ew);
                 }
-                indexer.add(event.getSource());
             }
         } catch (Throwable e) {
             throw new Exception(e);
         }
     }
-
+    @EventListener
+    public void reindexEntity(ReindexEntityEvent event) throws IOException {
+        autowireIfNeeded();
+        Optional<EntityUtils.EntityWrapper<?>> opt = event.getEntityKey().fetch(em);
+        if(opt.isPresent()){
+            textIndexerFactory.getDefaultInstance().add(opt.get());
+        }
+    }
     @EventListener
     public void reindexing(MaintenanceModeEvent event) {
         autowireIfNeeded();

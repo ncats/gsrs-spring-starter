@@ -25,7 +25,7 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexCreateEntityEvent(ew));
+            applicationEventPublisher.publishEvent(new IndexCreateEntityEvent(ew.getKey()));
         }
     }
 

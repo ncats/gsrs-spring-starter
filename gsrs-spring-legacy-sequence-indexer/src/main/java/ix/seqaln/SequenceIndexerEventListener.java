@@ -1,6 +1,7 @@
 package ix.seqaln;
 
 import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
@@ -15,15 +16,22 @@ import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
+import java.util.Optional;
 
 @Component
 public class SequenceIndexerEventListener {
 
     private final SequenceIndexerService indexer;
+    private EntityManager em;
+
     @Autowired
-    public SequenceIndexerEventListener(SequenceIndexerService indexer) {
+    public SequenceIndexerEventListener(EntityManager em, SequenceIndexerService indexer) {
+
+        this.em = em;
         this.indexer = indexer;
     }
 
@@ -35,15 +43,26 @@ public class SequenceIndexerEventListener {
         }
     }
 
+    @EventListener
+    public void reindexingEntity(ReindexEntityEvent event) throws IOException {
+        indexSequencesFor(event.getEntityKey());
+    }
 
-        @EventListener
+    @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
-        EntityUtils.EntityWrapper<?> ew = event.getSource();
-        if(!ew.isEntity() || !ew.hasKey()){
-            return;
+        indexSequencesFor(event.getSource());
+    }
+
+    private void indexSequencesFor(EntityUtils.Key source) {
+        Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch(em);
+        if(opt.isPresent()) {
+            EntityUtils.EntityWrapper<?> ew = opt.get();
+            if (!ew.isEntity() || !ew.hasKey()) {
+                return;
+            }
+            EntityUtils.Key k = ew.getKey();
+            addToIndex(ew, k);
         }
-        EntityUtils.Key k = ew.getKey();
-        addToIndex(ew, k);
     }
 
     private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k) {

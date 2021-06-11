@@ -6,13 +6,13 @@ import org.springframework.context.ApplicationEvent;
 public class IndexCreateEntityEvent extends ApplicationEvent {
     private boolean deleteFirst;
 
-    public IndexCreateEntityEvent(EntityUtils.EntityWrapper<?> source) {
-        super(source);
+    public IndexCreateEntityEvent(EntityUtils.Key key) {
+        super(key);
     }
 
     @Override
-    public EntityUtils.EntityWrapper<?> getSource() {
-        return (EntityUtils.EntityWrapper<?>) super.getSource();
+    public EntityUtils.Key  getSource() {
+        return (EntityUtils.Key ) super.getSource();
     }
 
     public boolean shouldDeleteFirst(){
