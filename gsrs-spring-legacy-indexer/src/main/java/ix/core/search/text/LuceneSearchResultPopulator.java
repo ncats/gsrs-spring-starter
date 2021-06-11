@@ -2,6 +2,7 @@ package ix.core.search.text;
 
 
 import gsrs.repository.GsrsRepository;
+import ix.core.controllers.EntityFactory;
 import ix.core.search.LazyList;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
@@ -112,8 +114,13 @@ class LuceneSearchResultPopulator {
 		}
 
 		@Override
+		@Transactional(readOnly = true)
 		public Object call() {
-			return gsrsRepository.findByKey(key).get();
+
+			Object ret= gsrsRepository.findByKey(key).get();
+			//this makes it a full fetch
+			EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(ret);
+			return ret;
 		}
 
 		@Override
