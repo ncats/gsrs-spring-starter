@@ -80,7 +80,7 @@ public class AuditConfig {
                 return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
-            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
+//            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
             Principal value = principalCache.computeIfAbsent(name,
                     n -> {

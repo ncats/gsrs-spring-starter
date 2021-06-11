@@ -43,17 +43,17 @@ public class ReindexEventListener {
     }
 
     @EventListener
-    public synchronized void reindexEntity(ReindexEvent event){
-        SingleThreadCounter c = reindexCounts.get(event.getReindexId());
+    public synchronized void reindexEntity(IncrementReindexEvent event){
+        SingleThreadCounter c = reindexCounts.get(event.getId());
         if(c !=null) {
             c.decrement();
 
             if (c.getAsLong() == 0L) {
-                reindexCounts.remove(event.getReindexId());
-                applicationEventPublisher.publishEvent(new EndReindexEvent(event.getReindexId()));
+                reindexCounts.remove(event.getId());
+                applicationEventPublisher.publishEvent(new EndReindexEvent(event.getId()));
                 if (reindexCounts.isEmpty()) {
                     //done!
-                    System.out.println("reindex for " + event.getReindexId() + " took " + Duration.ofMillis(System.currentTimeMillis() - reindexTimes.remove(event.getReindexId())));
+                    System.out.println("reindex for " + event.getId() + " took " + Duration.ofMillis(System.currentTimeMillis() - reindexTimes.remove(event.getId())));
                     inMaintenanceMode = false;
                     applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
                 }
