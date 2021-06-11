@@ -26,6 +26,7 @@ import java.util.UUID;
 @Entity
 @Table(name="ix_core_edit")
 @History(store = false)
+@Indexable(indexed = false)
 public class Edit extends BaseModel {
 
 

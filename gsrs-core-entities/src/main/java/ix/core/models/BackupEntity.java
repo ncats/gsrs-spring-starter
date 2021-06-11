@@ -12,7 +12,7 @@ import java.util.Objects;
 @Entity
 @Table(name="ix_core_backup")
 @History(store=false)
-
+@Indexable(indexed = false)
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_backup_seq", allocationSize = 1)
 public class BackupEntity extends IxModel{
 
