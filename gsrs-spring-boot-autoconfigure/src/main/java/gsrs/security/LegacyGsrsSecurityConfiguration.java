@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +14,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true,
@@ -21,8 +25,15 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
+    private LogoutHandler logoutHandler;
+    @Autowired
     LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
 
+
+    @Bean
+    public DefaultAuthenticationEventPublisher authenticationEventPublisher() {
+        return new DefaultAuthenticationEventPublisher();
+    }
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
     @Bean
@@ -49,6 +60,16 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
                 .csrf().disable()
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler())
                 .and().exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
+        .and()
+            .logout()
+                .logoutUrl("/logout")
+                .addLogoutHandler(logoutHandler)
+                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
+                .permitAll()
+                .and()
+
+                .formLogin()
+                .disable();
                 ;
 
         ;
@@ -88,7 +109,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-
+        auth.authenticationEventPublisher(authenticationEventPublisher());
         auth.eraseCredentials(false);
         auth.authenticationProvider(legacyGsrsAuthenticationProvider);
 //        auth.userDetailsService(gsrsUserProfileUserService());

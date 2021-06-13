@@ -1,6 +1,8 @@
 package gsrs.security;
 
+import gsrs.cache.GsrsCache;
 import gsrs.repository.PrincipalRepository;
+import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
 import ix.core.models.UserProfile;
@@ -26,6 +28,13 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private UserTokenCache userTokenCache;
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private GsrsCache gsrsCache;
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -101,10 +110,12 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String token = request.getHeader("auth-token");
             if(token !=null){
 
-                auth = new LegacyUserTokenAuthentication(token);
+                auth = new LegacyUserTokenAuthentication(userTokenCache.getUserProfileFromToken(token), token);
             }
         }
         if(auth !=null) {
+            //add a new Session each time !?
+
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
         filterChain.doFilter(request, response);

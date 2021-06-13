@@ -10,4 +10,6 @@ public interface UserTokenCache {
     void updateUserCache(UserProfile up);
 
     UserProfile getUserProfileFromToken(String token);
+
+    void evictUser(UserProfile up);
 }

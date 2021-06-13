@@ -1,6 +1,7 @@
 package gsrs.security;
 
 import gsrs.repository.PrincipalRepository;
+import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
 import ix.core.models.UserProfile;
@@ -19,8 +20,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
     @Autowired
     private UserProfileRepository repository;
 
-    @Autowired
-    private PrincipalRepository principalRepository;
+
 
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;

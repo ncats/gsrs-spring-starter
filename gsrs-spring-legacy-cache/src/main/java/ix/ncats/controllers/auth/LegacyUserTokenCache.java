@@ -81,6 +81,14 @@ public class LegacyUserTokenCache implements UserTokenCache {
 
 	@Override
 	@Transactional
+	public void evictUser(UserProfile up) {
+		updateIfNeeded();
+		tokenCache.remove(up.getComputedToken());
+		tokenCacheUserProfile.remove(up.user.username);
+	}
+
+	@Override
+	@Transactional
 	public UserProfile getUserProfileFromToken(String token) {
 		updateIfNeeded();
 		Element e=tokenCache.get(token);

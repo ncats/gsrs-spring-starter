@@ -1,12 +1,13 @@
 package gsrs.security;
 
+import ix.core.models.UserProfile;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-public class LegacyUserPassAuthentication extends UsernamePasswordAuthenticationToken {
+public class LegacyUserPassAuthentication extends AbstractGsrsAuthenticationToken {
 
-    public LegacyUserPassAuthentication(Object principal, Object credentials) {
+    public LegacyUserPassAuthentication(UserProfile principal, Object credentials) {
         super(principal, credentials);
     }
 

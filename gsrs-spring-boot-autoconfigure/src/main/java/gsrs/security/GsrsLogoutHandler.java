@@ -1,28 +1,38 @@
 package gsrs.security;
 
+import gsrs.repository.SessionRepository;
+import ix.core.models.Session;
+import ix.core.models.UserProfile;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
-//@Service
+import java.util.ArrayList;
+@Component
 public class GsrsLogoutHandler implements LogoutHandler {
 
-    private final UserTokenCache userCache;
+    @Autowired(required = false)
+    private UserTokenCache userTokenCache;
 
-    public GsrsLogoutHandler(UserTokenCache userCache) {
-        this.userCache = userCache;
-    }
+    @Autowired
+    private SessionRepository sessionRepository;
 
     @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response,
-                       Authentication authentication) {
-        HttpSession session = request.getSession();
-        String sessionId = (String) session.getAttribute(UserTokenCache.SESSION);
-//        String userName = UserUtils.getAuthenticatedUserName();
-//        userCache..evictUser(userName);
+    @Transactional
+    public void logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) {
+        if(authentication instanceof UserProfilePasswordAuthentication) {
+            UserProfile up = ((UserProfilePasswordAuthentication) authentication).getPrincipal();
+            if(up !=null) {
+                for (Session s : new ArrayList<>(sessionRepository.getActiveSessionsFor(up))) {
+                    s.expired = true;
+                    sessionRepository.saveAndFlush(s);
+                }
+                userTokenCache.evictUser(up);
+            }
+        }
     }
 }

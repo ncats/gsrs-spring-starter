@@ -1803,9 +1803,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		try {
 			LuceneSearchResultPopulator payload = new LuceneSearchResultPopulator(gsrsRepository, searchResult, hits, searcher);
-			//get everything, forever
-			if (options.getFetch() <= 0) {
-				payload.fetch();
+            //get everything, forever
+            //hard-coded for now
+            //katzelda Jan 2021 : fetching is now very fast so we can get everything always
+			if (true || options.getFetch() <= 0) {
+			    try {
+                    payload.fetch();
+                }finally{
+			        searchResult.done();
+                }
 			} else {
 				// we first block until we have enough result to show
 				// should be fetch plus a little extra padding (2 here)
