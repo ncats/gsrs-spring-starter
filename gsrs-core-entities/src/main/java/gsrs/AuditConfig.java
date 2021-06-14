@@ -74,11 +74,18 @@ public class AuditConfig {
             if(auth ==null || auth instanceof AnonymousAuthenticationToken){
                 return Optional.empty();
             }
-            String name = auth.getName();
+
             if(auth instanceof GsrsUserProfileDetails){
                 //refetch from repository because the one from the authentication is "detached"
                 return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
+            }
+            String name;
+            try {
+                 name = auth.getName();
+            }catch(NullPointerException e){
+                System.err.println("NPE on getName for class " + auth.getClass());
+                throw e;
             }
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 

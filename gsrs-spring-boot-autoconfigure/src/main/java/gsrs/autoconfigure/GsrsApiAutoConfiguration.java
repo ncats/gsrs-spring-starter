@@ -3,7 +3,8 @@ package gsrs.autoconfigure;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.RegisteredFunctionProperties;
 
-import gsrs.controller.ExportController;
+import gsrs.buildInfo.BuildInfoConfiguration;
+import gsrs.buildInfo.VersionFileBuildInfoFetcherConfiguation;
 import gsrs.controller.GsrsApiControllerAdvice;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.service.DefaultExportService;
@@ -19,7 +20,8 @@ import org.springframework.context.annotation.Import;
         GsrsApiControllerAdvice.class,
          GsrsFactoryConfiguration.class, ConfigBasedGsrsValidatorFactory.class,
         JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class,
-        GsrsExportConfiguration.class, DefaultExportService.class
+        GsrsExportConfiguration.class, DefaultExportService.class,
+        BuildInfoConfiguration.class, VersionFileBuildInfoFetcherConfiguation.class
         })
 public class GsrsApiAutoConfiguration {
 

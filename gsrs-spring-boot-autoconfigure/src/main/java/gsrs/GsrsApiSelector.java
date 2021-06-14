@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.controller.BuildInfoController;
 import gsrs.controller.ExportController;
 import gsrs.controller.GsrsWebConfig;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
@@ -35,7 +36,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(GsrsWebConfig.class);
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
-
+        componentsToInclude.add(BuildInfoController.class);
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(TextIndexerFactory.class);
