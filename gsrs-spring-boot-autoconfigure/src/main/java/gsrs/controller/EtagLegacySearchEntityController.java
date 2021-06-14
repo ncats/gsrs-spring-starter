@@ -3,6 +3,9 @@ package gsrs.controller;
 
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.model.GsrsUrlLink;
 import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportGenerator;
@@ -11,9 +14,12 @@ import ix.core.models.ETag;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.*;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.repository.core.EntityMetadata;
+import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -64,6 +70,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     private GsrsExportConfiguration gsrsExportConfiguration;
 
 
+
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);
@@ -82,6 +89,35 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/               ix.core.controllers.
 GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.controllers.v1.RouteFactory.createExport(context: String, etagId: String, format: String, publicOnly: Boolean ?=true)
 
      */
+    @GetGsrsRestApiMapping("/export")
+    public Object exportFormats(@RequestParam Map<String, String> parameters) throws Exception {
+        return gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext());
+    }
+
+    @GetGsrsRestApiMapping("/export/{etagId}")
+    public Object exportLinks(@PathVariable("etagId") String etagId,
+                              @RequestParam Map<String, String> parameters) throws Exception {
+        List<ExportLink> links = new ArrayList<>();
+         for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
+            links.add(ExportLink.builder()
+                    .displayname(fmt.getDisplayName())
+                    .extension(fmt.getExtension())
+
+                    .link(new GsrsUnwrappedEntityModel.RestUrlLink(GsrsLinkUtil.fieldLink(null,null, getLinkBuilderForEntity(getEntityService().getEntityClass()).get()
+                            .slash("export").slash(etagId).slash(fmt.getExtension())
+                            .withSelfRel() )
+                            .getHref()))
+                    .build());
+        }
+         return links;
+    }
+    @Data
+    @Builder
+    public static class ExportLink{
+        private String displayname;
+        private String extension;
+        private GsrsUnwrappedEntityModel.RestUrlLink link;
+    }
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
     public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, @PathVariable("format") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, @RequestParam(value ="filename", required= false) String fileName,
