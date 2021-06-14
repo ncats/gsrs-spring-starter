@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
 import org.springframework.core.io.Resource;
 
 import java.time.LocalDate;
@@ -15,7 +16,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 @ConfigurationProperties("build")
-@PropertySource("classpath:version.txt")
+@PropertySources({
+        @PropertySource("classpath:gsrs.starter.version.txt"),
+        @PropertySource(value = "classpath:version.txt", ignoreResourceNotFound = true)
+})
+
 @Data
 public class VersionFileBuildInfoFetcherConfiguation {
 

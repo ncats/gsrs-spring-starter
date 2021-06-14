@@ -11,6 +11,29 @@
 
     <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
 
+    <properties>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+    </properties>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/gsrs.starter.version.txt</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/gsrs.starter.version.txt</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
 
     <dependencies>
         <dependency>

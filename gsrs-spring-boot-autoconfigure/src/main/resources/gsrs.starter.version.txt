@@ -1,0 +1,3 @@
+build.version = @gsrs.version@
+build.time = @timestamp@
+build.commit= abc123
