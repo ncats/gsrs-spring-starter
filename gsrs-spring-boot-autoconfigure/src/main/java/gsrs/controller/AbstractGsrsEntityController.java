@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -86,6 +87,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return gsrsControllerConfiguration;
     }
 
+    protected EntityLinks getEntityLinks(){
+        return entityLinks;
+    }
+
+    protected Optional<LinkBuilder> getLinkBuilderForEntity(Class entity){
+        return GsrsLinkUtil.getEntityLinkForClassOrParentClass(entity, entityLinks);
+    }
     protected abstract GsrsEntityService<T, I> getEntityService();
 
     //    @GetGsrsRestApiMapping("/{id:$ID}/index")
@@ -213,7 +221,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping("")
-    public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "16") long top,
+    public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "10") long top,
                                        @RequestParam(value = "skip", defaultValue = "0") long skip,
                                        @RequestParam(value = "order", required = false) String order,
                                        @RequestParam Map<String, String> queryParameters){
