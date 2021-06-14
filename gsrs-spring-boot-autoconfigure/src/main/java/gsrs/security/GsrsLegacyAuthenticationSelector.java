@@ -10,7 +10,7 @@ public class GsrsLegacyAuthenticationSelector implements ImportSelector {
         return new String[]{
                 LegacyGsrsAuthenticationProvider.class.getName(),
                 LoginController.class.getName(),
-//                LegacyAuthenticationFilter.class.getName(),
+                GsrsSecurityEventConfiguration.class.getName(),
                 LegacyGsrsSecurityConfiguration.class.getName(),
 //                LegacyGsrsSecurityConfiguration2.class.getName()
                 LoginAndLogoutEventListener.class.getName(),

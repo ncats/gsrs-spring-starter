@@ -29,11 +29,9 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     @Autowired
     LegacyGsrsAuthenticationProvider legacyGsrsAuthenticationProvider;
 
+    @Autowired
+    DefaultAuthenticationEventPublisher defaultAuthenticationEventPublisher;
 
-    @Bean
-    public DefaultAuthenticationEventPublisher authenticationEventPublisher() {
-        return new DefaultAuthenticationEventPublisher();
-    }
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
     @Bean
@@ -109,7 +107,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationEventPublisher(authenticationEventPublisher());
+        auth.authenticationEventPublisher(defaultAuthenticationEventPublisher);
         auth.eraseCredentials(false);
         auth.authenticationProvider(legacyGsrsAuthenticationProvider);
 //        auth.userDetailsService(gsrsUserProfileUserService());
