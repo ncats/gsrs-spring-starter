@@ -84,7 +84,7 @@ public class BackupEntity extends IxModel{
 	public Object getInstantiated() throws Exception{
 		Class<?> cls= getKind();
 		if(cls==null){
-			throw new IllegalStateException("Kind is not set for object");
+			throw new IllegalStateException("Kind is not set for object " + kind);
 		}
 		
 		Object inst=em.readValue(getBytes(), cls);
