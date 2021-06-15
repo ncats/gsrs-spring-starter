@@ -22,6 +22,7 @@ import org.springframework.data.repository.core.EntityMetadata;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -118,6 +119,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         private String extension;
         private GsrsUnwrappedEntityModel.RestUrlLink link;
     }
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
     public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, @PathVariable("format") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, @RequestParam(value ="filename", required= false) String fileName,
@@ -136,7 +138,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
         //Not ideal, but gets around user problem
-        Stream<T> mstream = new EtagExportGenerator<T>(entityManager).generateExportFrom(getEntityService().getContext(), etagObj.get()).get();
+        Stream<T> mstream = new EtagExportGenerator<T>(entityManager, transactionManager).generateExportFrom(getEntityService().getContext(), etagObj.get()).get();
 
         //GSRS-699 REALLY filter out anything that isn't public unless we are looking at private data
 //        if(publicOnly){
@@ -156,7 +158,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
         p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
 
-        return new ResponseEntity<>(p.getMetaData(), HttpStatus.OK);
+        return new ResponseEntity<>(GsrsUnwrappedEntityModel.of(p.getMetaData()), HttpStatus.OK);
 
 
     }

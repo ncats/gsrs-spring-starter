@@ -11,11 +11,14 @@ import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestTemplate;
 
 
 import javax.persistence.EntityManager;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -41,8 +44,11 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
     private EntityManager entityManager;
 
-    public EtagExportGenerator(EntityManager entityManager){
+    private PlatformTransactionManager transactionManager;
+
+    public EtagExportGenerator(EntityManager entityManager, PlatformTransactionManager transactionManager){
         this.entityManager = Objects.requireNonNull(entityManager);
+        this.transactionManager = Objects.requireNonNull(transactionManager);
     }
     @Override
     public Supplier<Stream<T>> generateExportFrom(String context, ETag etag) {
@@ -92,7 +98,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
 
                     Consumer<JsonNode> arrayConsumer = a -> {
-
+                        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+                        transactionTemplate.executeWithoutResult( status->{
                         for (JsonNode sub : a) {
                             //GSRS-1760 using key view always now
 
@@ -107,16 +114,17 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                                 EntityUtils.EntityInfo ei = EntityUtils.getEntityInfoFor(sub.get("kind").asText());
                                 Object _id = ei.formatIdToNative(sub.get("idString").asText());
                                 EntityUtils.Key k = EntityUtils.Key.of(ei, _id);
-                                T obj = (T) entityManager.find(ei.getEntityClass(), _id);
-                                if(obj !=null){
-                                    yieldRecipe.returning(obj);
+                                Optional<EntityUtils.EntityWrapper<?>> opt = k.fetch(entityManager);
+                                if (opt.isPresent()) {
+                                    yieldRecipe.returning((T) opt.get().getValue());
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-
-
                         }
+
+
+                        });
                     };
 
                     arrayConsumer.accept(array);
@@ -124,6 +132,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                 })
                 .stream();
     }
+
+
 
     private JsonNode makePagedSubstanceRequest(String uri, int skip, int top, String context) {
 

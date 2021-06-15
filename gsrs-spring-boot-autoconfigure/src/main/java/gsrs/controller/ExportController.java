@@ -22,6 +22,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Controller for managing and downloading export results
@@ -44,8 +45,11 @@ public class ExportController {
      */
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("")
-    public List<ExportMetaData> myDownloads(Principal principal){
-        return exportService.getExplicitExportMetaData(principal.getName());
+    public ResponseEntity<Object> myDownloads(Principal principal, @RequestParam Map<String, String> parameters){
+        List<ExportMetaData> dataList = exportService.getExplicitExportMetaData(principal.getName());
+        return new ResponseEntity<>(
+                dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()),
+                HttpStatus.OK);
     }
 
     /**
@@ -65,7 +69,7 @@ public class ExportController {
         }
 
 
-        return new ResponseEntity<>(GsrsUnwrappedEntityModel.of(opt.get()), HttpStatus.OK);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(opt.get(), parameters), HttpStatus.OK);
     }
 
     /**
@@ -88,7 +92,7 @@ public class ExportController {
 
         }
         opt.get().cancel();
-        return new ResponseEntity<>(GsrsUnwrappedEntityModel.of(opt.get()), HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(opt.get(), parameters), HttpStatus.ACCEPTED);
     }
 
     /**
