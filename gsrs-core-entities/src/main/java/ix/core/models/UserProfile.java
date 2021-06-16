@@ -67,6 +67,11 @@ public class UserProfile extends IxModel{
 		regenerateKey();
 	}
 
+	//Needed for JSON
+	public String getIdentifier() {
+		return user.username;
+	}
+
 	public List<Role> getRoles() {
 		List<Role> rolekinds = new ArrayList<Role>();
 		if (this.rolesJSON != null) {
