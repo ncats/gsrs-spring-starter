@@ -4,6 +4,8 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.service.ExportService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,13 +48,47 @@ public class ExportController {
      */
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("")
-    public ResponseEntity<Object> myDownloads(Principal principal, @RequestParam Map<String, String> parameters){
-        List<ExportMetaData> dataList = exportService.getExplicitExportMetaData(principal.getName());
+    public ResponseEntity<Object> myDownloads(Principal principal,
+                                              @RequestParam(value ="rows", defaultValue = "16") int rows,
+                                              @RequestParam(value ="page", defaultValue = "1") int page,
+                                              @RequestParam Map<String, String> parameters){
+        List<ExportMetaData> dataList = getPagedDownloads(
+                exportService.getExplicitExportMetaData(principal.getName()),
+                rows, page);
+
         return new ResponseEntity<>(
-                dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()),
+                DownloadResultPage.builder()
+                        .page(page).row(rows)
+                .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
+                .build(),
                 HttpStatus.OK);
+
     }
 
+    private static List<ExportMetaData> getPagedDownloads(List<ExportMetaData> result, int rows,
+                                                         int page) {
+
+        List<ExportMetaData> jobs = new ArrayList<ExportMetaData>();
+
+        if (result.size() > 0) {
+            rows = Math.min(result.size(), Math.max(1, rows));
+            for (int i = (page - 1) * rows, j = 0; j < rows
+                    && i < result.size(); ++j, ++i) {
+                jobs.add(result.get(i));
+            }
+        }
+
+        return jobs;
+
+    }
+    @Data
+    @Builder
+    public static class DownloadResultPage{
+        public List<Object> downloads;
+        public int page;
+        public int row;
+
+    }
     /**
      * Get the current status of a particular export.
      * @param id the export id.
