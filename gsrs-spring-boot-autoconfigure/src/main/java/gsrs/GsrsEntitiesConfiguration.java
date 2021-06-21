@@ -27,6 +27,8 @@ import gsrs.services.GroupServiceImpl;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 
+import javax.persistence.EntityManager;
+
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
 @Import({StarterEntityRegistrar.class, GsrsRabbitMqConfiguration.class})
@@ -42,8 +44,8 @@ public class GsrsEntitiesConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public PrincipalService principalService(PrincipalRepository principalRepository){
-        return new PrincipalServiceImpl(principalRepository);
+    public PrincipalService principalService(PrincipalRepository principalRepository, EntityManager entityManager){
+        return new PrincipalServiceImpl(principalRepository, entityManager);
     }
 
     //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
@@ -65,8 +67,8 @@ public class GsrsEntitiesConfiguration {
     }
     @Bean
     @ConditionalOnMissingBean
-    public GroupService groupService(GroupRepository groupRepository){
-        return new GroupServiceImpl(groupRepository);
+    public GroupService groupService(GroupRepository groupRepository, EntityManager entityManager){
+        return new GroupServiceImpl(groupRepository, entityManager);
     }
     @Bean
     public TopicExchange substanceExchange(){

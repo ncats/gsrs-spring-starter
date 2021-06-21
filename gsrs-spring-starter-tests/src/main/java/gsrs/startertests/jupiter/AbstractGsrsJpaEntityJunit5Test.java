@@ -47,6 +47,7 @@ import java.nio.file.Files;
         ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
         ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
         ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
+        ClearDeserializerCachesBeforeEachExtension.class,
 
 })
 
@@ -71,7 +72,9 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private LegacyPayloadConfiguration legacyPayloadConfiguration;
 
-
+    @Autowired
+    @RegisterExtension
+    protected ClearDeserializerCachesBeforeEachExtension clearDeserializerCaches;
 
 
     @BeforeEach

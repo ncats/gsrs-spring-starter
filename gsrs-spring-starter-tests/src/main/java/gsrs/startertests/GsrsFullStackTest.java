@@ -5,6 +5,7 @@ import gsrs.EntityPersistAdapter;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.jupiter.ClearAuditorBeforeEachExtension;
+import gsrs.startertests.jupiter.ClearDeserializerCachesBeforeEachExtension;
 import gsrs.startertests.jupiter.ClearIxHomeExtension;
 import ix.core.models.Principal;
 import ix.core.search.text.Lucene4IndexServiceFactory;
@@ -30,6 +31,7 @@ import java.lang.annotation.*;
 @DirtiesContext
 @AutoConfigureTestDatabase
 @Import({ClearAuditorBeforeEachExtension.class , ClearIxHomeExtension.class,  AuditConfig.class, AutowireHelper.class,
+        ClearDeserializerCachesBeforeEachExtension.class,
 //        PrincipalRepository.class,
 //        ResetAllCacheSupplierBeforeEachExtension.class,
 //        ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,

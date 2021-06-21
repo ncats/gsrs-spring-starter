@@ -37,7 +37,7 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
     public void setup(){
         //have to hardcode this dependency because a DataTest which mocks out
         //the database with an in memory h2 doesn't do service scans etc to find and autowire this service!
-        principalService = new PrincipalServiceImpl(repository);
+        principalService = new PrincipalServiceImpl(repository, entityManager.getEntityManager());
     }
     @Test
     public void findByUsername(){
