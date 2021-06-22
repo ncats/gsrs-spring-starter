@@ -5,6 +5,7 @@ import gsrs.model.GsrsApiAction;
 import gsrs.model.Sizeable;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
+import ix.core.controllers.EntityFactory;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.*;
@@ -62,6 +63,10 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
     private GsrsUnwrappedEntityModel<?> handleSingleObject(GsrsUnwrappedEntityModel<?> model, Object obj) {
         EntityUtils.EntityInfo<?> info = EntityUtils.EntityWrapper.of(obj).getEntityInfo();
+        //this pre-fetches everything since some JSON results might require fetching from the db
+        //so this forces any lazy loaded fields to be populated
+        EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJsonNode(obj);
+
         CachedSupplier<String> idString = info.getIdString(obj);
         String id = idString.get();
         //always add self
