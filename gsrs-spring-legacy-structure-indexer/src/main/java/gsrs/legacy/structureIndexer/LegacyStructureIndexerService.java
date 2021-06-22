@@ -18,11 +18,6 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
     private StandardizedStructureIndexer indexer;
     private File dir;
 
-    @PostConstruct
-    public void here(){
-        System.out.println("here!!!");
-    }
-
     @Autowired
     public LegacyStructureIndexerService(@Value("${ix.structure.base}") File dir) throws IOException {
         IOUtil.mkdirs(dir);

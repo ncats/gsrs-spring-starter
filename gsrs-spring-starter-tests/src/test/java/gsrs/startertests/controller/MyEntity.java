@@ -32,10 +32,4 @@ public class MyEntity extends AbstractGsrsEntity {
     @Version
     private int version=1;
 
-
-
-    @PostLoad
-    public void postLoad(){
-        System.out.println("here!!!");
-    }
 }

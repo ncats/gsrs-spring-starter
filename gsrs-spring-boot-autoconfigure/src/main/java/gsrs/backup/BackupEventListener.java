@@ -23,11 +23,6 @@ public class BackupEventListener {
     @Autowired
     private BackupRepository backupRepository;
 
-    @PostConstruct
-    public void init(){
-
-        System.out.println("here");
-    }
 
     @TransactionalEventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
