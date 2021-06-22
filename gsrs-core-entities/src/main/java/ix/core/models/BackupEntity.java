@@ -8,6 +8,7 @@ import ix.utils.Util;
 import javax.persistence.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 @Table(name="ix_core_backup")
@@ -78,8 +79,26 @@ public class BackupEntity extends IxModel{
 			this.data=data;
 		}
 	}
-	
-	
+
+	/**
+	 * Like {@link #getInstantiated()} but instead of throwing
+	 * an error return {@link Optional#empty()}.
+	 * @return the instantiated entity that was backed up wrapped in an Optional
+	 * or empty if there was a problem.
+	 */
+	@JsonIgnore
+	public Optional<Object> getOptionalInstantiated(){
+		Class<?> cls= getKind();
+		if(cls ==null){
+			return Optional.empty();
+		}
+		try {
+			return Optional.of(em.readValue(getBytes(), cls));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Optional.empty();
+		}
+	}
 	@JsonIgnore
 	public Object getInstantiated() throws Exception{
 		Class<?> cls= getKind();
