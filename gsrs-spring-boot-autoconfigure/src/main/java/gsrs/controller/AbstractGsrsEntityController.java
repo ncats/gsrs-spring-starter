@@ -25,6 +25,7 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -111,7 +112,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @PostGsrsRestApiMapping()
-
+    @Transactional
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
@@ -147,6 +148,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
     @Override
     @PutGsrsRestApiMapping("")
+    @Transactional
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
@@ -221,6 +223,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping("")
+    @Transactional
     public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "10") long top,
                                        @RequestParam(value = "skip", defaultValue = "0") long skip,
                                        @RequestParam(value = "order", required = false) String order,
