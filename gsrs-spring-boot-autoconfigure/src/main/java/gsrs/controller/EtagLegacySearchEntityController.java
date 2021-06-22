@@ -10,6 +10,7 @@ import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportGenerator;
 import gsrs.service.ExportService;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
@@ -198,12 +199,6 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 .sha1OfRequest(request, "q", "facet")
                 .build();
 
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult( stauts -> {
-                    if (request.getParameter("export") == null) {
-                        entityManager.merge(etag);
-                    }
-                });
         String view = request.getParameter("view");
         Map<String,String> viewMap;
         if(view ==null){
@@ -211,11 +206,24 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else{
             viewMap= Collections.singletonMap("view", view);
         }
-        //content is transient so don't need to worry about transforming results
-        etag.setContent(results.stream().map(r-> GsrsControllerUtil.enhanceWithView(r, viewMap)).collect(Collectors.toList()));
 
-        etag.setSponosredResults(result.getSponsoredMatches());
-        etag.setFacets(result.getFacets());
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult( stauts -> {
+                    if (request.getParameter("export") == null) {
+                        entityManager.merge(etag);
+                    }
+            //content is transient so don't need to worry about transforming results
+            etag.setContent(results.stream().map(r-> {
+
+                return GsrsControllerUtil.enhanceWithView(r, viewMap);
+
+            }).collect(Collectors.toList()));
+
+            etag.setSponosredResults(result.getSponsoredMatches());
+            etag.setFacets(result.getFacets());
+                });
+
+
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
 

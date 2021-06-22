@@ -11,6 +11,7 @@ import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -39,6 +40,9 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
    @Autowired
    private EntityLinks entityLinks;
 
+
+
+    @Transactional(readOnly = true)
     @Override
     public GsrsUnwrappedEntityModel<?> process(GsrsUnwrappedEntityModel<?> model) {
         Object obj = model.getObj();

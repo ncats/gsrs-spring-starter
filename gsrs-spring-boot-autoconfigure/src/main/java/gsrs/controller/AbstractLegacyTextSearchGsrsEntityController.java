@@ -12,6 +12,7 @@ import ix.utils.Util;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -106,7 +107,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     public List<? extends GsrsSuggestResult> suggestField(@PathVariable("field") String field,  @RequestParam("q") String q, @RequestParam(value ="max", defaultValue = "10") int max) throws IOException {
         return getlegacyGsrsSearchService().suggestField(field, q, max);
     }
-
+    @Transactional
     @GetGsrsRestApiMapping(value = "/search", apiVersions = 1)
     public ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
                                            @RequestParam("top") Optional<Integer> top,
