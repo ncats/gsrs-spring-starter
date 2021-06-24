@@ -56,18 +56,55 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         }
     }
 
-
+    /**
+     * Adds the link as a {@link RestUrlLink} with a default type as GET.
+     * @param link the Link object containing the url and the rel value which will be used as the name.
+     * @return this
+     */
     @Override
     public GsrsUnwrappedEntityModel<T> add(Link link) {
          ourLinks.put(link.getRel().value(), new RestUrlLink(link.getHref()));
          return this;
     }
+    /**
+     * Adds the link as a as a plain String instead of as a {@link RestUrlLink}.
+     * @param link the Link object containing the url and the rel value which will be used as the name.
+     * @return this
+     */
+    public GsrsUnwrappedEntityModel<T> addRaw(Link link) {
+        ourLinks.put(link.getRel().value(), link.getHref());
+        return this;
+    }
+    /**
+     * Adds the link as a {@link RestUrlLink} with the given HTTP verb type.
+     * @param link the Link object containing the url and the rel value which will be used as the name.
+     * @param type the HTTP verb type (GET, POST etc) for this link.
+     * @return this
+     */
     public GsrsUnwrappedEntityModel<T> add(Link link, String type) {
         ourLinks.put(link.getRel().value(), new RestUrlLink(link.getHref(), type));
         return this;
     }
+
+    /**
+     * Adds the link as a {@link RestUrlLink} with a default type as GET.
+     * @param name the name of the field being linked.
+     * @param href the url as a String.
+     * @return this
+     */
     public GsrsUnwrappedEntityModel<T> addLink(String name, String href){
         ourLinks.put(name, new RestUrlLink(href));
+        return this;
+    }
+
+    /**
+     * Adds the link as a plain String instead of as a {@link RestUrlLink}.
+     * @param name the name of the field being linked.
+     * @param href the url as a String.
+     * @return this
+     */
+    public GsrsUnwrappedEntityModel<T> addRawLink(String name, String href){
+        ourLinks.put(name, href);
         return this;
     }
     @JsonAnyGetter

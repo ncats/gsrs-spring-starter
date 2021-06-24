@@ -72,7 +72,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
         //always add self
         Link link = computeSelfLink(model, id);
         if(link !=null) {
-            model.add(link);
+            model.addRaw(link);
         }
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
