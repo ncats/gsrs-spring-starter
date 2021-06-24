@@ -37,7 +37,7 @@ public class BackupEntityProcessorListener {
     @PostUpdate
     public void postPersist(Object o){
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
-        if(o instanceof BaseModel && ew.getEntityInfo().hasBackup()){
+        if(o instanceof FetchableEntity && ew.getEntityInfo().hasBackup()){
             initializer.get();
             try {
             BackupEntity be = new BackupEntity();
