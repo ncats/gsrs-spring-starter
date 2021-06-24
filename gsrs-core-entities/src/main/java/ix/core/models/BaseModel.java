@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 @MappedSuperclass
-//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public abstract class BaseModel extends AbstractGsrsManualDirtyEntity implements FetchableEntity {
 
 	public BaseModel(){

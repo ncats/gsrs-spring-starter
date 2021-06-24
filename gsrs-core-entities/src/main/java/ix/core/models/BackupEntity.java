@@ -10,6 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * A Backup record of a {@link FetchableEntity}.
+ */
 @Entity
 @Table(name="ix_core_backup")
 @History(store=false)
@@ -121,7 +124,7 @@ public class BackupEntity extends IxModel{
 		setIsDirty("data");
 	}
 	@JsonIgnore
-	public void setInstantiated(BaseModel o) throws Exception{
+	public void setInstantiated(FetchableEntity o) throws Exception{
 		kind=o.getClass().getName();
 		refid=o.fetchGlobalId();
 		String json = em.toJson(o);

@@ -2,6 +2,10 @@ package ix.core.models;
 
 import ix.core.util.EntityUtils;
 
+/**
+ * interface that has a method to get a "global ID" of an entity.
+ * This is used by the GSRS Backup system as an id of the entity.
+ */
 public interface FetchableEntity {
     /**
      * An implementation

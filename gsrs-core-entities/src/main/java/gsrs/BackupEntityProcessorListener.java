@@ -7,6 +7,7 @@ import gsrs.repository.BackupRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.BackupEntity;
 import ix.core.models.BaseModel;
+import ix.core.models.FetchableEntity;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,7 +41,7 @@ public class BackupEntityProcessorListener {
             initializer.get();
             try {
             BackupEntity be = new BackupEntity();
-            be.setInstantiated((BaseModel) o);
+            be.setInstantiated((FetchableEntity) o);
                 applicationEventPublisher.publishEvent(new BackupEvent(be));
             } catch (Exception e) {
                 Sneak.sneakyThrow(e);
