@@ -29,4 +29,9 @@ public interface GsrsSearchService<T> {
 
     Collection<String> getSuggestFields() throws IOException;
 
+    /**
+     * timestamp of last time the service was modified.
+     * @return
+     */
+    long getLastModified();
 }

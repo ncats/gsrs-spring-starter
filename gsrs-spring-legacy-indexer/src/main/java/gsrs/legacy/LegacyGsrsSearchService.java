@@ -24,9 +24,6 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
-    @Autowired
-    private IndexValueMakerFactory indexValueMakerFactory;
-
     private final GsrsRepository gsrsRepository;
     private final Class<T> entityClass;
 
@@ -34,6 +31,11 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         gsrsRepository= repository;
         this.entityClass = entityClass;
 
+    }
+
+    @Override
+    public long getLastModified() {
+        return textIndexerFactory.getDefaultInstance().lastModified();
     }
 
     @Override
