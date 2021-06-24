@@ -92,9 +92,17 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
     @Transactional( readOnly= true)
-    public void reindexAndWait(){
+    public void reindexAndWait(boolean wipeIndexFirst){
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
-        indexer.deleteAll();
+        if(wipeIndexFirst) {
+            indexer.deleteAll();
+        }else{
+            try {
+                indexer.removeAllType(entityClass);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         Pageable pageRequest = PageRequest.of(0, 200);
         Page<T> onePage = gsrsRepository.findAll(pageRequest);
 

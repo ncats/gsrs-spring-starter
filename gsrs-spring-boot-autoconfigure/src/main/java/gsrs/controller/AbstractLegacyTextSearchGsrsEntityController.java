@@ -37,9 +37,15 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //        super(context, idPattern);
 //    }
 
+    /**
+     * Force a reindex of all entities of this entity type.
+     * @param wipeIndex should the whole index be deleted before re-index begins;
+     *                  defaults to {@code false}.
+     * @return
+     */
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
-    public ResponseEntity forceFullReindex(){
-        getlegacyGsrsSearchService().reindexAndWait();
+    public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
+        getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     @GetGsrsRestApiMapping(value = "/search/@facets", apiVersions = 1)
