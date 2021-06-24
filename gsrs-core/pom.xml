@@ -12,6 +12,12 @@
     <artifactId>gsrs-core</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/pl.joegreen/lambda-from-string -->
+        <dependency>
+            <groupId>pl.joegreen</groupId>
+            <artifactId>lambda-from-string</artifactId>
+            <version>1.7</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

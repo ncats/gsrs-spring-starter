@@ -1,3 +1,4 @@
+package gsrs.coretests;
 
 import ix.core.models.Indexable;
 

@@ -1,3 +1,5 @@
+package gsrs.coretests;
+
 import ix.utils.UUIDUtil;
 import org.junit.jupiter.api.Test;
 
