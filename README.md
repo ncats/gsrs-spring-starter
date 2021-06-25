@@ -113,6 +113,39 @@ public class MyController extends AbstractGsrsEntityController<MyEntity, Long> {
   figure out how to make the route patterns for your particular ID type. Common ID types are 
   provided for you in the enum `IdHelpers` but it is also possible to make a custom implementation.
    
+#### Custom API Field Functions
+Sometimes you want to add custom functions to your API to be invoked on your entities.  There are a couple
+of different ways to do that.
+
+1. Override `handleSpecialField()` function.  The AbstractGsrsController class has a protected method
+that can be overridden to handle special field names.  This method is called when processing the route 
+   `api/v1/$context( $ID)/field` where `field` is a String that is usually a field or `/` separated path to walk the 
+   Object structure.  But sometimes we want special functions like `@edits` or a custom function just for your entity.
+   
+```java
+/**
+     * Handle special field mappings, this is where any special custom API fields (Like "@hierarchy for Substances)
+     * can go.
+     * @param entity the Entity to work on.
+     * @param field the field name;
+     * @return {@code null} if you don't handle this special field, Optional empty
+     * if you do handle this field and couldn't find it (so we can return a 404 type response) and
+     * an non-null Object inside the Optional to handle the field.
+     */
+    protected Optional<Object> handleSpecialFields(EntityUtils.EntityWrapper<T> entity, String field){
+        return null;
+    }
+```
+
+By overriding this method you can check what the field path is and if it's one of the special functions you want
+to handle you can perform your own processing and return the Object result.  If the field isn't a function you
+are able to handle return `null` and the GSRS Controller will try other ways to handle it. 
+If you return `Optional.empty()` then that means you tried to handle it but there was missing data
+and you want the API to return a 404.
+
+2. The other way to handle special functions is to write your own "POJO Pointer" Function.
+//TODO explain how to write custom POJO Pointer Expressions.
+   
 ### GsrsRestApiRequestMapping
 GSRS includes custom RequestMapping annotations that will automatically add the `api/v$version/$context` prefixes
 to controller routes.  There are annotations for each of the HTTP verbs such as `@GetGsrsRestApiMapping` and

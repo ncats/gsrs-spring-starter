@@ -177,6 +177,18 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return Optional.empty();
     }
 
+    /**
+     * Handle special field mappings, this is where any special custom API fields (Like "@hierarchy for Substances)
+     * can go.
+     * @param entity the Entity to work on.
+     * @param field the field name;
+     * @return {@code null} if you don't handle this special field, Optional empty
+     * if you do handle this field and couldn't find it (so we can return a 404 type response) and
+     * an non-null Object inside the Optional to handle the field.
+     */
+    protected Optional<Object> handleSpecialFields(EntityUtils.EntityWrapper<T> entity, String field){
+        return null;
+    }
 
     private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) {
         if(!opt.isPresent()){
@@ -197,6 +209,22 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
             }
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
+        }
+        if(field !=null){
+            Optional<Object> fieldOpt = handleSpecialFields(ew, field);
+            if(fieldOpt !=null){
+                if(fieldOpt.isPresent()){
+                    Object o = fieldOpt.get();
+                    if(o instanceof List){
+                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView((List) o, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+
+                    }else {
+                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(o, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+                    }
+                }else{
+                    return gsrsControllerConfiguration.handleNotFound(queryParameters);
+                }
+            }
         }
         PojoPointer pojoPointer = PojoPointer.fromURIPath(field);
 
