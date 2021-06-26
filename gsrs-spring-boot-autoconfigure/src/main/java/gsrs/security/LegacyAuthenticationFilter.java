@@ -1,22 +1,32 @@
 package gsrs.security;
 
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
+import ix.core.models.Session;
 import ix.core.models.UserProfile;
+import ix.utils.UUIDUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.*;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 //@Component
@@ -36,9 +46,38 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     private GsrsCache gsrsCache;
 
 
+    @Value("${server.servlet.session.cookie.name}")
+    private String sessionCookieName;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+        Authentication auth = null;
+        Cookie[] allCookies = request.getCookies();
+        if (allCookies != null) {
+            Cookie sessionCookie =
+                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionCookieName))
+                            .findFirst().orElse(null);
+            if(sessionCookie !=null){
+                String id = sessionCookie.getValue();
+                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
+                if(cachedSessionId !=null) {
+                    TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                    auth = transactionTemplate.execute(status ->{
+                        Session session = sessionRepository.findById(cachedSessionId).orElse(null);
+                        if(session !=null && !session.expired){
+                            session.accessed = TimeUtil.getCurrentTimeMillis();
+                            return new SessionIdAuthentication(session.profile, id);
+                        }
+                        return null;
+                    });
+
+                }
+            }
+
+        }
 //    }
 //
 //    @Override
@@ -52,8 +91,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 		authFac.registerAuthenticator(new UserKeyAuthenticator());
          */
 //        HttpServletRequest request = (HttpServletRequest) servletRequest;
-        Authentication auth = null;
-        if(authenticationConfiguration.isTrustheader()){
+
+        if(auth !=null && authenticationConfiguration.isTrustheader()){
 
             String username = request.getHeader(authenticationConfiguration.getUsernameheader());
             String email = request.getHeader(authenticationConfiguration.getUseremailheader());

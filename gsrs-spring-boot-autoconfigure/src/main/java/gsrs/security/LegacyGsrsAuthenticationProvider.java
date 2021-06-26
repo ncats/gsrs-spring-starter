@@ -4,6 +4,7 @@ import gsrs.repository.PrincipalRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
+import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -11,7 +12,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 //@Component
@@ -20,7 +23,8 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
     @Autowired
     private UserProfileRepository repository;
 
-
+    @Autowired
+    private SessionRepository sessionRepository;
 
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
@@ -28,7 +32,16 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
     @Autowired(required = false)
     private UserTokenCache userTokenCache;
     @Override
+    @Transactional
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        if(authentication instanceof SessionIdAuthentication){
+            SessionIdAuthentication sessionAuth= (SessionIdAuthentication)authentication;
+            Session session = sessionRepository.findById(UUID.fromString((String)sessionAuth.getCredentials())).orElse(null);
+            if(session !=null && !session.expired){
+
+                return new UserProfilePasswordAuthentication(session.profile);
+            }
+        }
         if(authentication instanceof UserProfilePasswordAuthentication){
             return authentication;
         }
@@ -94,6 +107,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
     @Override
     public boolean supports(Class<?> authentication) {
         return UserProfilePasswordAuthentication.class.isAssignableFrom(authentication)
+        || SessionIdAuthentication.class.isAssignableFrom(authentication)
         || LegacySsoAuthentication.class.isAssignableFrom(authentication)
                 || LegacyUserPassAuthentication.class.isAssignableFrom(authentication)
                 || LegacyUserTokenAuthentication.class.isAssignableFrom(authentication)

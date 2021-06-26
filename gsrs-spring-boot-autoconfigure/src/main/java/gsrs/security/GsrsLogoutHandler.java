@@ -33,6 +33,7 @@ public class GsrsLogoutHandler implements LogoutHandler {
                 }
                 userTokenCache.evictUser(up);
             }
+
         }
     }
 }

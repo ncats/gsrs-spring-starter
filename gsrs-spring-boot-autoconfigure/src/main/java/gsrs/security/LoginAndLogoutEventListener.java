@@ -1,5 +1,6 @@
 package gsrs.security;
 
+import gsrs.cache.GsrsCache;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Session;
@@ -21,12 +22,15 @@ public class LoginAndLogoutEventListener {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
+    @Autowired
+    private GsrsCache gsrsCache;
+
     @EventListener
     @Transactional
     public void onLogin(AuthenticationSuccessEvent event) {
         UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
 
-        System.out.println("Logged in user " + up);
+        System.out.println("Logged in user " + up + "  auth = " + event.getAuthentication());
 
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
         if(sessions.isEmpty()){

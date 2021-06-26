@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
@@ -32,6 +33,8 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     @Autowired
     DefaultAuthenticationEventPublisher defaultAuthenticationEventPublisher;
 
+    @Autowired
+    LegacyGsrsAuthenticationSuccessHandler legacyGsrsAuthenticationSuccessHandler;
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
     @Bean
@@ -56,18 +59,25 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 //                .and().formLogin();
 //                .and()
                 .csrf().disable()
+
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler())
                 .and().exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
         .and()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
             .logout()
                 .logoutUrl("/logout")
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
                 .permitAll()
                 .and()
-
-                .formLogin()
-                .disable();
+            .formLogin()
+                .successHandler(legacyGsrsAuthenticationSuccessHandler)
+                .loginProcessingUrl("/api/v1/whoami")
+                .and()
+//                .formLogin()
+//                .disable()
+        ;
                 ;
 
         ;
