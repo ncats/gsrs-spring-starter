@@ -116,7 +116,11 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                                 EntityUtils.Key k = EntityUtils.Key.of(ei, _id);
                                 Optional<EntityUtils.EntityWrapper<?>> opt = k.fetch(entityManager);
                                 if (opt.isPresent()) {
-                                    yieldRecipe.returning((T) opt.get().getValue());
+                                    T value = (T) opt.get().getValue();
+                                    if(value !=null){
+                                        EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJsonNode(value);
+                                    }
+                                    yieldRecipe.returning(value);
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();

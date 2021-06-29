@@ -58,6 +58,7 @@ public class LoginController {
         // Add a session cookie
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
+        sessionCookie.setHttpOnly(true);
         response.addCookie( sessionCookie );
         gsrsCache.setRaw(sessionId.toString(), sessionId);
         return new ResponseEntity<>(up, HttpStatus.OK);

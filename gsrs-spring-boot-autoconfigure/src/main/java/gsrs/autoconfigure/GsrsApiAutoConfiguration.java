@@ -21,7 +21,8 @@ import org.springframework.context.annotation.Import;
          GsrsFactoryConfiguration.class, ConfigBasedGsrsValidatorFactory.class,
         JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class,
         GsrsExportConfiguration.class, DefaultExportService.class,
-        BuildInfoConfiguration.class, VersionFileBuildInfoFetcherConfiguation.class
+        BuildInfoConfiguration.class, VersionFileBuildInfoFetcherConfiguation.class,
+        GsrsApiWebConfiguration.class
         })
 public class GsrsApiAutoConfiguration {
 

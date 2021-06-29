@@ -24,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -234,10 +235,19 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         //match old Play version of GSRS which either return JSON for an object or raw string?
 
-        if(pojoPointer.isLeafRaw() || at.get().getRawValue() instanceof String){
-            return new ResponseEntity<>(at.get().getRawValue(), HttpStatus.OK);
+        if(pojoPointer.isLeafRaw() /*|| at.get().getRawValue() instanceof String */){
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_PLAIN)
+                        .body(at.get().getRawValue());
+
         }else{
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(at.get().getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+            Object value = at.get().getValue();
+            if(value instanceof String){
+                //just a plain String - no links?
+                //if we pass it to the enhance view below it will error out
+                return new ResponseEntity<>(value, HttpStatus.OK);
+            }
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(value, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
     }
 
