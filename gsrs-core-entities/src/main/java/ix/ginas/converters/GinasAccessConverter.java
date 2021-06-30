@@ -39,7 +39,7 @@ public class GinasAccessConverter implements AttributeConverter<GinasAccessConta
 			for(Group g: access){
 				Long lid=g.id;
 				if(lid==null){
-					throw new IllegalStateException(g.name + " not persisted yet?");
+					throw new IllegalStateException("group " + g.name + " not persisted yet?");
 				}else{
 					bs.set(lid.intValue());
 				}
