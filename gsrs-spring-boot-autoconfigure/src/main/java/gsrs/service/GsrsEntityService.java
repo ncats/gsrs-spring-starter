@@ -68,7 +68,12 @@ public interface GsrsEntityService<T, I> {
      */
     Page page(Pageable pageable);
     @hasDataEntryRole
-    CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException;
+    CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) throws IOException;
+
+    @hasDataEntryRole
+    default CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException{
+        return createEntity(newEntityJson, false);
+    }
     @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 

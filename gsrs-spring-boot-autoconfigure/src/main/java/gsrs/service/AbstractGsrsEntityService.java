@@ -10,6 +10,7 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
+import gsrs.validator.ValidatorConfig;
 import ix.core.models.Edit;
 import ix.core.models.Namespace;
 import ix.core.util.EntityUtils;
@@ -280,16 +281,17 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
 
     @Override
-    public  CreationResult<T> createEntity(JsonNode newEntityJson){
+    public  CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad){
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        ValidatorConfig.METHOD_TYPE methodType = partOfBatchLoad? ValidatorConfig.METHOD_TYPE.BATCH : ValidatorConfig.METHOD_TYPE.CREATE;
         return transactionTemplate.execute( status-> {
             try {
                 T newEntity = fromNewJson(newEntityJson);
 
-                Validator<T> validator = validatorFactory.getSync().createValidatorFor(newEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
+                Validator<T> validator = validatorFactory.getSync().createValidatorFor(newEntity, null, methodType);
 
-                ValidationResponse<T> response = createValidationResponse(newEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
-                ValidatorCallback callback = createCallbackFor(newEntity, response, DefaultValidatorConfig.METHOD_TYPE.CREATE);
+                ValidationResponse<T> response = createValidationResponse(newEntity, null, methodType);
+                ValidatorCallback callback = createCallbackFor(newEntity, response, methodType);
                 validator.validate(newEntity, null, callback);
                 callback.complete();
 
