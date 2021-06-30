@@ -25,7 +25,7 @@ public class ConfigBasedGsrsValidatorFactory implements GsrsValidatorFactory {
 
     @Override
     public ValidatorFactory newFactory(String context) {
-        List<ValidatorConfig> configs = gsrsFactoryConfiguration.getValidatorConfigByContext(context);
+        List<? extends ValidatorConfig> configs = gsrsFactoryConfiguration.getValidatorConfigByContext(context);
         return new ValidatorFactory(configs, new ObjectMapper());
     }
 

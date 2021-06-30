@@ -20,7 +20,7 @@ public class ValidatorFactory {
     private final Map<ValidatorPlugin, ValidatorConfig> plugins = new LinkedHashMap<>();
 
 
-    public ValidatorFactory(List<ValidatorConfig> configs, ObjectMapper mapper){
+    public ValidatorFactory(List<? extends ValidatorConfig> configs, ObjectMapper mapper){
        for(ValidatorConfig conf : configs){
            try {
 
