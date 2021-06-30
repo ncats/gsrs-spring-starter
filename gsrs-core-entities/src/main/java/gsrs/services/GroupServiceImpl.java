@@ -4,6 +4,7 @@ import gsrs.repository.GroupRepository;
 import ix.core.models.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.persistence.EntityManager;
 import java.util.Map;
@@ -29,15 +30,22 @@ public class GroupServiceImpl implements GroupService{
     }
     @Override
     public Group registerIfAbsent(String name) {
+        boolean created[] = new boolean[]{false};
         Group  group= cache.computeIfAbsent(name, n->{
             Group g = repository.findByName(n);
             if(g ==null){
                 g = new Group(n);
+                created[0] = true;
             }
             return g;
         });
-        if(!entityManager.contains(group)){
-            return entityManager.merge(group);
+        if(TransactionSynchronizationManager.isActualTransactionActive()){
+            if(created[0]){
+                return repository.save(group);
+            }
+            if(!entityManager.contains(group)){
+                return entityManager.merge(group);
+            }
         }
         return group;
     }

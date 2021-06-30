@@ -5,6 +5,7 @@ import gsrs.repository.PrincipalRepository;
 import ix.core.models.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
@@ -41,6 +42,7 @@ public class PrincipalServiceImpl implements PrincipalService {
 
     @Override
     public Principal registerIfAbsent(String username){
+        Boolean[] created = new Boolean[]{Boolean.FALSE};
         Principal p= cache.computeIfAbsent(username.toUpperCase(), name-> {
             System.out.println("currently there are " + principalRepository.count() + " principals in db");
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
@@ -48,11 +50,18 @@ public class PrincipalServiceImpl implements PrincipalService {
                 return alreadyInDb;
             }
             System.out.println("creating principal " + username);
-            return principalRepository.saveAndFlush(new Principal(username, null));
+            created[0] = Boolean.TRUE;
+            return new Principal(username, null);
+//            return principalRepository.saveAndFlush(principal);
         });
         //entity might be detached
-        if(!entityManager.contains(p)){
-            return entityManager.merge(p);
+        if(TransactionSynchronizationManager.isActualTransactionActive()){
+            if(created[0].booleanValue()){
+                return principalRepository.saveAndFlush(p);
+            }
+            if(!entityManager.contains(p)){
+                return entityManager.merge(p);
+            }
         }
         return p;
     }

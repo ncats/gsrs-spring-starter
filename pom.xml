@@ -29,7 +29,7 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <gsrs.version>0.7.1-SNAPSHOT</gsrs.version>
+        <gsrs.version>0.7.2-SNAPSHOT</gsrs.version>
         <spring-boot.version>2.4.5</spring-boot.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>

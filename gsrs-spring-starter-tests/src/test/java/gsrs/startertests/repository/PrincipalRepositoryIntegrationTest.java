@@ -16,6 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +32,8 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
     @Autowired
     private PrincipalRepository repository;
 
-
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
     private PrincipalService principalService;
 
@@ -57,23 +61,30 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
     @Test
     public void ensureUsernamesAreCaseInsensitive() {
 
-        Principal p1= principalService.registerIfAbsent("TEST");
-        Principal p2=principalService.registerIfAbsent("test");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        transactionTemplate.executeWithoutResult(status ->{
+            Principal p1= principalService.registerIfAbsent("TEST");
+            Principal p2=principalService.registerIfAbsent("test");
 
 
-        assertThat(p1.id).isNotNull();
-        assertThat(p1.id).isEqualTo(p2.id);
+            assertThat(p1.id).isNotNull();
+            assertThat(p1.id).isEqualTo(p2.id);
+        });
+
     }
 
     @Test
     public void registerMultiple(){
-        Principal p1 = principalService.registerIfAbsent("name1");
-        Principal p2 = principalService.registerIfAbsent("name2");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        transactionTemplate.executeWithoutResult(status -> {
+            Principal p1 = principalService.registerIfAbsent("name1");
+            Principal p2 = principalService.registerIfAbsent("name2");
 
-        assertThat(p1.id).isNotEqualTo(p2.id);
-        Principal p3 = principalService.registerIfAbsent("name1");
-        assertThat(p1.id).isEqualTo(p3.id);
-        assertThat(p1.username).isEqualTo(p3.username);
+            assertThat(p1.id).isNotEqualTo(p2.id);
+            Principal p3 = principalService.registerIfAbsent("name1");
+            assertThat(p1.id).isEqualTo(p3.id);
+            assertThat(p1.username).isEqualTo(p3.username);
+        });
     }
 
 
