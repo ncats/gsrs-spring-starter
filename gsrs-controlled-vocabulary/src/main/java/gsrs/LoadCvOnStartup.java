@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManagerFactory;
@@ -30,8 +32,6 @@ public class LoadCvOnStartup implements ApplicationRunner {
     @Autowired
     private ControlledVocabularyRepository repository;
 
-    @Autowired
-    private UserProfileRepository userProfileRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -48,7 +48,7 @@ public class LoadCvOnStartup implements ApplicationRunner {
         System.out.println("RUNNING");
         System.out.println("reading property file at path '"+jsonPath + "'");
         JsonNode json;
-        try(InputStream in = getClass().getResourceAsStream(jsonPath)){
+        try(InputStream in = new ClassPathResource(jsonPath).getInputStream()){
             json = objectMapper.readValue(in, JsonNode.class);
 
         }
@@ -60,23 +60,5 @@ public class LoadCvOnStartup implements ApplicationRunner {
         repository.saveAll(cv);
         repository.flush();
 
-
-        UserProfile up = new UserProfile();
-        up.user = new Principal("admin", "admin@example.com");
-        up.setPassword("admin");
-        up.active=true;
-        up.deprecated=false;
-        up.setRoles(Arrays.asList(Role.values()));
-
-        userProfileRepository.saveAndFlush(up);
-
-        UserProfile up2 = new UserProfile();
-        up2.user = new Principal("user1", "user1@example.com");
-        up2.setPassword("user1");
-        up2.active=true;
-        up2.deprecated=false;
-        up2.setRoles(Arrays.asList(Role.Query));
-
-        userProfileRepository.saveAndFlush(up2);
     }
 }

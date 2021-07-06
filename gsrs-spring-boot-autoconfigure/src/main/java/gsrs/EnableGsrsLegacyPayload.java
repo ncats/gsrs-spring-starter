@@ -1,9 +1,6 @@
 package gsrs;
 
 import gsrs.payload.GsrsLegacyPayloadSelector;
-import gsrs.payload.LegacyPayloadConfiguration;
-import gsrs.security.GsrsLegacyAuthenticationSelector;
-import gsrs.security.LegacyAuthenticationConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

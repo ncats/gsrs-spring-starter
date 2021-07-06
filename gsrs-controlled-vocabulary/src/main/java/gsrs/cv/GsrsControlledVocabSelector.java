@@ -1,5 +1,6 @@
 package gsrs.cv;
 
+import gsrs.LoadCvOnStartup;
 import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.vocab.DuplicateDomainValidator;
 import org.springframework.context.annotation.ImportSelector;
@@ -13,7 +14,7 @@ public class GsrsControlledVocabSelector implements ImportSelector {
                 CvController.class.getName(),
                 CvLegacySearchService.class.getName(),
                 ControlledVocabularyEntityServiceImpl.class.getName(),
-
+                LoadCvOnStartup.class.getName(),
                 DuplicateDomainValidator.class.getName(),
 
         };

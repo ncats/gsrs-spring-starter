@@ -32,7 +32,7 @@ public class ControlledVocabulary extends IxModel {
     private static final long serialVersionUID = 5455592961232451608L;
 
     //We need to keep this JsonIgnore
-    //so when we generate the cv.json file
+    //so when we generate the cv .json file
     //the ids aren't included.  This causes a problem
     //on import because then the ids get re-used by ebean
     //since it prefetches them before we load!!
