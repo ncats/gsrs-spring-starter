@@ -59,8 +59,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @Autowired
     private EntityLinks entityLinks;
 
-    @Autowired
-    private PayloadService payloadService;
 
 //    /**
 //     * Create a new GSRS Controller with the given context.
@@ -148,6 +146,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @PostGsrsRestApiMapping("/@validate")
+    @Transactional
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
         ValidationResponse<T> resp = getEntityService().validateEntity(updatedEntityJson);
