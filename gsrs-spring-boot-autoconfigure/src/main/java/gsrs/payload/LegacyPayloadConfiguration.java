@@ -1,16 +1,9 @@
 package gsrs.payload;
 
-import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.sneak.Sneak;
-import gsrs.repository.FileDataRepository;
-import gsrs.repository.PayloadRepository;
-import gsrs.service.PayloadService;
 import ix.core.models.Payload;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -32,21 +25,21 @@ ix.core.files.persist.maxsize="30MB"
     private String location = PERSIST_LOCATION_DB;
     private DataSize maxsize = DataSize.ofMegabytes(30);
 
-    private File rootDir;
+    private File base;
 
     public File createNewSaveFileFor(Payload payload) {
-        return new File (rootDir, payload.id.toString());
+        return new File (base, payload.id.toString());
     }
 
     public boolean shouldPersistInDb(){
         return PERSIST_LOCATION_DB.equals(location);
     }
 
-    public void setRootDir(File rootDir){
-        this.rootDir = rootDir;
-        if(rootDir !=null){
+    public void setBase(File base){
+        this.base = base;
+        if(base !=null){
             try {
-                Files.createDirectories(rootDir.toPath());
+                Files.createDirectories(base.toPath());
             } catch (IOException e) {
                 Sneak.sneakyThrow(e);
             }
@@ -54,7 +47,7 @@ ix.core.files.persist.maxsize="30MB"
     }
 
     public Optional<File> getExistingFileFor(Payload payload){
-        File temp = new File(rootDir,payload.id.toString());
+        File temp = new File(base,payload.id.toString());
         if(temp.exists()){
             return Optional.of(temp);
         }

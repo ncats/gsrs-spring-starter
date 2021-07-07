@@ -87,8 +87,8 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
             IOUtil.deleteRecursivelyQuitely(tempDir);
             tempDir.mkdirs();
         }
-        if(! legacyPayloadConfiguration.getRootDir().exists()){
-            Files.createDirectories(legacyPayloadConfiguration.getRootDir().toPath());
+        if(! legacyPayloadConfiguration.getBase().exists()){
+            Files.createDirectories(legacyPayloadConfiguration.getBase().toPath());
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
             File payloadDir = new File(tempDir, "payload");
 
             Files.createDirectories(payloadDir.toPath());
-            conf.setRootDir(payloadDir);
+            conf.setBase(payloadDir);
             return conf;
         }
         @ConditionalOnMissingBean

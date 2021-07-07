@@ -1,7 +1,6 @@
 package gsrs.payload;
 
 import gov.nih.ncats.common.io.IOUtil;
-import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.service.PayloadService;
@@ -9,7 +8,6 @@ import ix.core.models.FileData;
 import ix.core.models.Payload;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
@@ -32,8 +30,8 @@ public class LegacyPayloadService implements PayloadService {
         this.payloadRepository = payloadRepository;
         this.configuration = configuration;
         this.fileDataRepository = fileDataRepository;
-        if(configuration.getRootDir() !=null){
-            Files.createDirectories(configuration.getRootDir().toPath());
+        if(configuration.getBase() !=null){
+            Files.createDirectories(configuration.getBase().toPath());
         }
     }
 
@@ -47,7 +45,7 @@ public class LegacyPayloadService implements PayloadService {
         }catch(NoSuchAlgorithmException e){
             throw new IOException(e);
         }
-        File tmp = File.createTempFile("___", ".tmp", configuration.getRootDir());
+        File tmp = File.createTempFile("___", ".tmp", configuration.getBase());
 
         long size=0L;
         try(OutputStream fos = new BufferedOutputStream(new FileOutputStream (tmp));
@@ -155,7 +153,7 @@ public class LegacyPayloadService implements PayloadService {
             Optional<FileData> data = fileDataRepository.findBySha1(payload.sha1);
             if(data.isPresent()){
                     //save to temp file?
-                File tmp = File.createTempFile("___", ".tmp", configuration.getRootDir());
+                File tmp = File.createTempFile("___", ".tmp", configuration.getBase());
                 try(InputStream in = new BufferedInputStream(new ByteArrayInputStream(data.get().data));
                     OutputStream out = new BufferedOutputStream(new FileOutputStream(tmp))
                 ){

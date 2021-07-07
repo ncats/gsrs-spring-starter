@@ -7,6 +7,7 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
@@ -28,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -56,6 +58,9 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Autowired
     private EntityLinks entityLinks;
+
+    @Autowired
+    private PayloadService payloadService;
 
 //    /**
 //     * Create a new GSRS Controller with the given context.
@@ -111,7 +116,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
 
-    @Override
+
+
+
+                                   @Override
     @PostGsrsRestApiMapping()
     @Transactional
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
