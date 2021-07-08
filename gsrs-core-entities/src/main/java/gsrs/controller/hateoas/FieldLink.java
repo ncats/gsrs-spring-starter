@@ -1,16 +1,20 @@
 package gsrs.controller.hateoas;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.hateoas.Affordance;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.LinkRelation;
+import org.springframework.hateoas.TemplateVariable;
+import org.springframework.hateoas.UriTemplate;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import gsrs.springUtils.StaticContextAccessor;
-import ix.core.plugins.IxContext;
 import lombok.Data;
-import org.springframework.hateoas.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A link that we have to modify ourselves
