@@ -2,6 +2,9 @@ package gsrs.controller.hateoas;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.plugins.IxContext;
 import lombok.Data;
 import org.springframework.hateoas.*;
 
@@ -40,16 +43,27 @@ class FieldLink extends Link {
         //GSRS api sometimes uses format $controller($id)
         //instead of $controller/$id
         //HATEOAS adds the slash to make it $controller/($id) so we have to fix it
-        String host = uri.getHost();
-        int port = uri.getPort();
-        String scheme = uri.getScheme();
+        
+        
+
         StringBuilder apiBuilder = new StringBuilder(apiPath.length() + 20);
-        if(scheme !=null){
-            apiBuilder.append(scheme+"://");
-        }
-        apiBuilder.append(host==null?"localhost": host);
-        if(port >=0){
-            apiBuilder.append(":"+port);
+        
+        String configHostAndPort = StaticContextAccessor.getBean(IxContext.class).getHost();
+        
+        
+        if(configHostAndPort==null) {
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String scheme = uri.getScheme();
+            if(scheme !=null){
+                apiBuilder.append(scheme+"://");
+            }
+            apiBuilder.append(host==null?"localhost": host);
+            if(port >=0){
+                apiBuilder.append(":"+port);
+            }
+        }else {
+            apiBuilder.append(configHostAndPort);
         }
 
         apiBuilder.append(apiPath);

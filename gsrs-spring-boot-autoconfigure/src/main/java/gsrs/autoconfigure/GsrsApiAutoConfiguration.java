@@ -1,18 +1,19 @@
 package gsrs.autoconfigure;
 
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.RegisteredFunctionProperties;
-
 import gsrs.buildInfo.BuildInfoConfiguration;
 import gsrs.buildInfo.VersionFileBuildInfoFetcherConfiguation;
 import gsrs.controller.GsrsApiControllerAdvice;
 import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.controller.hateoas.IxContext;
 import gsrs.service.DefaultExportService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.ConfigBasedGsrsValidatorFactory;
-import gsrs.GsrsFactoryConfiguration;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration
 //can't do component scan in autoconfiguration so manually import our components
@@ -22,7 +23,8 @@ import org.springframework.context.annotation.Import;
         JsonTypeIdResolverConfiguration.class, RegisteredFunctionProperties.class,
         GsrsExportConfiguration.class, DefaultExportService.class,
         BuildInfoConfiguration.class, VersionFileBuildInfoFetcherConfiguation.class,
-        GsrsApiWebConfiguration.class
+        GsrsApiWebConfiguration.class,
+        IxContext.class
         })
 public class GsrsApiAutoConfiguration {
 
