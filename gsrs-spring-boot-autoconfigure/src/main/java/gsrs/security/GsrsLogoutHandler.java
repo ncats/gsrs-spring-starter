@@ -1,17 +1,21 @@
 package gsrs.security;
 
-import gsrs.repository.SessionRepository;
-import ix.core.models.Session;
-import ix.core.models.UserProfile;
+import java.util.ArrayList;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
+import gsrs.repository.SessionRepository;
+import ix.core.models.Session;
+import ix.core.models.UserProfile;
 @Component
 public class GsrsLogoutHandler implements LogoutHandler {
 
@@ -20,7 +24,10 @@ public class GsrsLogoutHandler implements LogoutHandler {
 
     @Autowired
     private SessionRepository sessionRepository;
-
+    
+    @Value("${server.servlet.session.cookie.name}")
+    private String sessionCookieName;
+    
     @Override
     @Transactional
     public void logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) {
@@ -32,6 +39,15 @@ public class GsrsLogoutHandler implements LogoutHandler {
                     sessionRepository.saveAndFlush(s);
                 }
                 userTokenCache.evictUser(up);
+                Cookie cookie = new Cookie(sessionCookieName, null);
+                cookie.setMaxAge(-1);
+                
+                cookie.setHttpOnly(true);
+
+              //cookie.setSecure(true);
+                
+                //add cookie to response
+                httpServletResponse.addCookie(cookie);
             }
 
         }
