@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
@@ -31,8 +32,8 @@ public class GsrsLogoutHandler implements LogoutHandler {
     @Override
     @Transactional
     public void logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) {
-        if(authentication instanceof UserProfilePasswordAuthentication) {
-            UserProfile up = ((UserProfilePasswordAuthentication) authentication).getPrincipal();
+        if(authentication instanceof AbstractGsrsAuthenticationToken) {
+            UserProfile up = ((AbstractGsrsAuthenticationToken) authentication).getUserProfile();
             if(up !=null) {
                 for (Session s : new ArrayList<>(sessionRepository.getActiveSessionsFor(up))) {
                     s.expired = true;
