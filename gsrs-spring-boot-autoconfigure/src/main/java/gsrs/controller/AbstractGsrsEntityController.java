@@ -322,7 +322,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             this.count= page.getNumberOfElements();
             this.skip = page.getSize() * page.getNumber();
             this.top = page.getSize();
-            content = page.toList().stream().map(e->GsrsControllerUtil.enhanceWithView(page.toList(), queryParameters)).collect(Collectors.toList());
+            content = page.toList().stream().map(e->GsrsControllerUtil.enhanceWithView(e, queryParameters)).collect(Collectors.toList());
 
 
         }
