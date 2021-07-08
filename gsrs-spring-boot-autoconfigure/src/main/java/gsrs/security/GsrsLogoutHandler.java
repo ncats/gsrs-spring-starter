@@ -25,7 +25,7 @@ public class GsrsLogoutHandler implements LogoutHandler {
 
     @Autowired
     private SessionRepository sessionRepository;
-    
+
     @Value("${server.servlet.session.cookie.name}")
     private String sessionCookieName;
     
@@ -40,15 +40,32 @@ public class GsrsLogoutHandler implements LogoutHandler {
                     sessionRepository.saveAndFlush(s);
                 }
                 userTokenCache.evictUser(up);
-                Cookie cookie = new Cookie(sessionCookieName, null);
-                cookie.setMaxAge(-1);
-                
-                cookie.setHttpOnly(true);
 
-              //cookie.setSecure(true);
-                
+                // The following 3 cookies are present to ensure logout works
+                // TODO: figure out path and secure settings if necessary
+
+                Cookie cookie = new Cookie(sessionCookieName, null);
+                cookie.setMaxAge(0);
+                cookie.setPath("/");
+                cookie.setHttpOnly(true);
                 //add cookie to response
                 httpServletResponse.addCookie(cookie);
+
+                Cookie cookie2 = new Cookie(sessionCookieName, null);
+                cookie2.setMaxAge(0);                
+                cookie2.setHttpOnly(true);
+                cookie2.setPath("/api/v1");
+                //add cookie to response
+                httpServletResponse.addCookie(cookie2);
+
+                Cookie cookie3 = new Cookie(sessionCookieName, null);
+                cookie3.setMaxAge(0);                
+                cookie3.setHttpOnly(true);
+                //add cookie to response
+                httpServletResponse.addCookie(cookie3);
+
+
+
             }
 
         }
