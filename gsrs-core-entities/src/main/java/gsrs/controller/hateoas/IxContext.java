@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class IxContext {
     
-    @Value("${application.host}")
+    @Value("${application.host:#{null}}")
     private String host;
 
     
