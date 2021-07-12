@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 
 
 public interface Validator<T> {
+    
 	/**
 	 * Create an empty validator that returns an Validation
 	 * response that is marked as valid without

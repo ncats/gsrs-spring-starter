@@ -20,6 +20,7 @@ import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
@@ -288,7 +289,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             try {
                 T newEntity = fromNewJson(newEntityJson);
 
-                Validator<T> validator = validatorFactory.getSync().createValidatorFor(newEntity, null, methodType);
+                Validator<T> validator = validatorFactory.getSync().createValidatorFor(newEntity, null, methodType, ValidatorCategory.CATEGORY_ALL());
 
                 ValidationResponse<T> response = createValidationResponse(newEntity, null, methodType);
                 ValidatorCallback callback = createCallbackFor(newEntity, response, methodType);
@@ -403,7 +404,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, oldEntity -> {
                 	EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
                 	String oldJson = og.toFullJson();
-                	Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+                	Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE, ValidatorCategory.CATEGORY_ALL());
 
                 	ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
                 	ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
@@ -613,23 +614,28 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     }
 
     @Override
-    public ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception {
+    public ValidationResponse<T> validateEntity(JsonNode updatedEntityJson, ValidatorCategory cat) throws Exception {
         T updatedEntity = fromUpdatedJson(updatedEntityJson);
         //updatedEntity should have the same id
         I id = getIdFrom(updatedEntity);
 
-        Optional<T> opt = id==null? Optional.empty() : get(id);
+        //Optional.ofNullable(id).map(id->get(id)); ?
+        Optional<T> opt = (id==null ? Optional.empty() : get(id));
+        
         Validator<T> validator;
         ValidationResponse<T> response;
         ValidatorCallback callback;
+        
+        //If it's an update
         if(opt.isPresent()){
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), DefaultValidatorConfig.METHOD_TYPE.UPDATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, opt.get(), DefaultValidatorConfig.METHOD_TYPE.UPDATE, cat);
             response = createValidationResponse(updatedEntity, opt.orElse(null), DefaultValidatorConfig.METHOD_TYPE.UPDATE);
             callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
             validator.validate(updatedEntity, opt.orElse(null), callback);
 
+        //If it's new (insert)
         }else{
-            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE);
+            validator  = validatorFactory.getSync().createValidatorFor(updatedEntity, null, DefaultValidatorConfig.METHOD_TYPE.CREATE, cat);
             response = createValidationResponse(updatedEntity, opt.orElse(null), DefaultValidatorConfig.METHOD_TYPE.CREATE);
             callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.CREATE);
             validator.validate(updatedEntity, opt.orElse(null), callback);
