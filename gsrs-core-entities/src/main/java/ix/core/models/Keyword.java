@@ -1,5 +1,6 @@
 package ix.core.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.search.text.IndexableValue;
 import ix.core.search.text.IndexableValueFromRaw;
 import ix.core.search.text.ReflectingIndexerAware;
@@ -67,6 +68,7 @@ public class Keyword extends Value implements ReflectingIndexerAware {
     }
 
     @Override
+    @JsonIgnore
     public String getEmbeddedIndexFieldName() {
         return this.label;
     }
