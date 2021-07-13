@@ -87,7 +87,13 @@ public class ExportProcess<T> {
                     currentState = State.RUNNING;
 //                    System.out.println("Starting export");
                     sstream.peek(s -> {
-                        Unchecked.uncheck( () -> exporter.export(s));
+                        Unchecked.uncheck( () ->{
+                            try {
+                            exporter.export(s);
+                        }catch(Throwable t) {
+                            t.printStackTrace();
+                            throw t;
+                        }});
                         metaData.addRecord();
                     })
                     .anyMatch(m->{

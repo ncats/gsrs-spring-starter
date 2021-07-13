@@ -159,7 +159,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
         p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
 
-        return new ResponseEntity<>(GsrsUnwrappedEntityModel.of(p.getMetaData()), HttpStatus.OK);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
 
 
     }
