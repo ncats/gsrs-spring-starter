@@ -12,6 +12,7 @@ import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidatorCategory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -146,10 +147,15 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @PostGsrsRestApiMapping("/@validate")
-    @Transactional
+    @Transactional(readOnly = true)
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
-        ValidationResponse<T> resp = getEntityService().validateEntity(updatedEntityJson);
+        
+        ValidatorCategory vcat = Optional.ofNullable(queryParameters.get("category"))
+                                         .map(term->ValidatorCategory.of(term))
+                                         .orElse(ValidatorCategory.CATEGORY_ALL());
+        
+        ValidationResponse<T> resp = getEntityService().validateEntity(updatedEntityJson, vcat);
         //always send 200 even if validation has errors?
         return resp;
 

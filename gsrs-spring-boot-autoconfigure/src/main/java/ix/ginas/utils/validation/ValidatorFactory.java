@@ -1,14 +1,16 @@
 package ix.ginas.utils.validation;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.Validator;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import ix.core.validator.ValidatorCategory;
 
 /**
  * Created by katzelda on 5/7/18.
@@ -35,9 +37,11 @@ public class ValidatorFactory {
     }
 
 
-    public <T> Validator<T> createValidatorFor(T newValue, T oldValue, DefaultValidatorConfig.METHOD_TYPE methodType){
+    public <T> Validator<T> createValidatorFor(T newValue, T oldValue, DefaultValidatorConfig.METHOD_TYPE methodType, ValidatorCategory category){
         return plugins.entrySet().stream()
-                .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType) && e.getKey().supports(newValue, oldValue, methodType))
+                .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType))
+                .filter( e-> e.getKey().supports(newValue, oldValue, methodType))
+                .filter( e-> e.getKey().supportsCategory(newValue, oldValue, category))
                 .map(e -> (Validator<T>) e.getKey())
 //                .peek(v -> System.out.println("running validator : " + v))
                 .reduce(Validator.emptyValid(), Validator::combine);

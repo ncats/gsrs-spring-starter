@@ -6,6 +6,7 @@ import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.security.*;
 import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidatorCategory;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Page;
@@ -77,7 +78,11 @@ public interface GsrsEntityService<T, I> {
     @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
-    ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception;
+    default ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception{
+        return this.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());        
+    }
+    
+    ValidationResponse<T> validateEntity(JsonNode updatedEntityJson, ValidatorCategory cat) throws Exception;
 
     Optional<T> getEntityBySomeIdentifier(String id);
 

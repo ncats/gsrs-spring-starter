@@ -14,6 +14,7 @@ public interface Exporter<T> extends Closeable{
 		try {
 			it.forEachRemaining(t -> {
 				try {
+				    System.out.println("Trying export:" + t);
 					export(t);
 				} catch (Throwable e) {
 					e.printStackTrace();
