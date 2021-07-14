@@ -26,7 +26,7 @@ public class GsrsLogoutHandler implements LogoutHandler {
     @Autowired
     private SessionRepository sessionRepository;
 
-    @Value("${server.servlet.session.cookie.name}")
+    @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
     
     @Override

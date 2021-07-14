@@ -28,7 +28,10 @@ public class StaticContextAccessor {
     }
 
     public static <T> T getBean(Class<T> clazz) {
-        return instance.applicationContext.getBean(clazz);
+        if (instance != null && instance.applicationContext != null) {
+            return instance.applicationContext.getBean(clazz);
+        }
+        return null;
     }
 
 }
