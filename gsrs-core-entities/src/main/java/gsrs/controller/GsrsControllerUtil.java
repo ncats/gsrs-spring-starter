@@ -45,7 +45,7 @@ public final class GsrsControllerUtil {
         if(model !=null && additionalLinksConsumer !=null) {
             additionalLinksConsumer.accept(model);
         }
-
+        
         return StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).process(model);
     }
 

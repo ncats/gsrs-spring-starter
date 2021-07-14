@@ -38,6 +38,9 @@ public class Payload extends BaseModel {
     @Column(name="capacity")
     public Long size;
     
+    @Transient
+    public String url;
+    
 
     @ManyToMany(cascade= CascadeType.ALL)
     @JoinTable(name="ix_core_payload_property", inverseJoinColumns = {
@@ -66,4 +69,5 @@ public class Payload extends BaseModel {
 		if(this.id==null)return null;
 		return this.id.toString();
 	}
+	
 }

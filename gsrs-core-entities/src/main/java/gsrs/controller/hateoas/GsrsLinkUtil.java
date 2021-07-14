@@ -70,6 +70,7 @@ public final class GsrsLinkUtil {
                 .slash("("+ id +")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
 
                 .withRel(selfRel));
+        
         String query=l.toUri().getRawQuery();
         if(query==null){
             return l.withHref(l.getHref() +"?view=full");

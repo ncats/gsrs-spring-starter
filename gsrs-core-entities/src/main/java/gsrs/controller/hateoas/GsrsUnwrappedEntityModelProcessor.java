@@ -165,7 +165,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                 .withRel(rel)));
 
     }
-    private Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
+    public Link computeSelfLink(GsrsUnwrappedEntityModel<?> model, String id) {
 
 
         Class<?> aClass = model.getObj().getClass();
