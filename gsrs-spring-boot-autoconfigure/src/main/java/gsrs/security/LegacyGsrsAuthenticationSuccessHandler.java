@@ -28,7 +28,7 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
     private GsrsCache gsrsCache;
 
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
-    @Value("${server.servlet.session.cookie.name}")
+    @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
     @Override

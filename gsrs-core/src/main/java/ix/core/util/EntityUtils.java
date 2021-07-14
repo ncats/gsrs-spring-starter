@@ -947,20 +947,26 @@ public class EntityUtils {
 	        		return Optional.of(EntityWrapper.of(value));
 				});
 
-				try{
-			StaticContextAccessor.getBean(LambdaParseRegistry.class).getRegisteredFunctions()
-					.stream().forEach(rf->{
-						registry.put(rf.getFunctionClass().getName(), (cpath,current)->{
-							BiFunction<LambdaPath, Object, Optional<Object>> function =
-									rf.getOperation();
-							return function
+
+					LambdaParseRegistry bean = StaticContextAccessor.getBean(LambdaParseRegistry.class);
+					if(bean !=null) {
+						bean.getRegisteredFunctions()
+								.stream().forEach(rf -> {
+									try{
+									registry.put(rf.getFunctionClass().getName(), (cpath, current) -> {
+								BiFunction<LambdaPath, Object, Optional<Object>> function =
+										rf.getOperation();
+								return function
 										.apply((LambdaPath) cpath, current.getValue())
 										.map(EntityWrapper::of);
-						});
-					});
-				}catch(Exception e){
-				    log.error(e.getMessage(),e);
-				}
+							});
+							}catch(Exception e2){
+											log.error(e2.getMessage(),e2);
+										}
+							});
+
+					}
+
 				return registry;
 			});
 		

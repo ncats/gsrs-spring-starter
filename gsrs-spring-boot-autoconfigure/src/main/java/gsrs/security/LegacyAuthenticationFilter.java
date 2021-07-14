@@ -46,7 +46,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     private GsrsCache gsrsCache;
 
 
-    @Value("${server.servlet.session.cookie.name}")
+    @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
     @Autowired
