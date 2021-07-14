@@ -179,14 +179,23 @@ public class ExportController {
             return new ResponseEntity<>("could not find exported file from Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
+        
+        String filename = parameters.getOrDefault("filename", opt.get().getDisplayFilename());
+        
         File f = exportFile.get().getFile();
+        
+        
 
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
         return ResponseEntity.ok()
                 .contentLength(f.length())
+                .header("Content-disposition", "attachment; filename=" + filename)
+//                .contentType("application/x-download")
+                
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                
                 .body(resource);
     }
 

@@ -1,29 +1,31 @@
 package gsrs.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.CachedSupplier;
-import gov.nih.ncats.common.yield.Yield;
-import ix.core.controllers.EntityFactory;
-import ix.core.models.ETag;
-import ix.core.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.client.RestTemplate;
-
-
-import javax.persistence.EntityManager;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+
+import org.springframework.hateoas.UriTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.nih.ncats.common.yield.Yield;
+import ix.core.controllers.EntityFactory;
+import ix.core.models.ETag;
+import ix.core.util.EntityUtils;
 
 /**
  * An {@link ExportService} that uses a saved {@link ETag} and pulls out the original query
@@ -54,6 +56,7 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     public Supplier<Stream<T>> generateExportFrom(String context, ETag etag) {
 
         return ()-> Yield.<T>create(yieldRecipe-> {
+                    System.out.println("Making export:" + etag.uri);
                     String uriToUse = etag.uri;
                     JsonNode responseAsJson;
                     JsonNode array;
@@ -152,12 +155,23 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
             //doesn't have parameters
             cleanedUri += "?view=key&top=" + top + "&skip=" + skip;
         }
-//		System.out.println("cleaned uri = " + cleanedUri);
 //
 //        WSRequestHolder requestHolder = requestPluginCachedSupplier.get().createNewLoopbackRequestFrom(cleanedUri, request, context);
 
         //TODO consider using RestTemplateBuilder in configuration?
         RestTemplate restTemplate = new RestTemplate();
+        
+        // Tyler Peryea: This section is unforunately necessary as
+        // the restTemplate itself considers all URLs provided to be not-yet percent encoded
+        // so, in a rather silly turn of envents we need to UNencode the URL before sending it
+        // to restTemplate to be reencoded.
+        try {
+            cleanedUri = URLDecoder.decode(cleanedUri.toString(), "UTF-8");
+        } catch (UnsupportedEncodingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        } // java.net class
+        
         ResponseEntity<String> response = restTemplate.getForEntity(cleanedUri, String.class);
 
         //TODO handle errors or 404 ?
