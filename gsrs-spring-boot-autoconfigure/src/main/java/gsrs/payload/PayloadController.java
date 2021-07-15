@@ -53,7 +53,8 @@ public class PayloadController{
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @PostGsrsRestApiMapping("/upload")
-    public ResponseEntity<Object> handleFileUpload(MultipartHttpServletRequest mpreq,
+    public ResponseEntity<Object> handleFileUpload(
+//            MultipartHttpServletRequest mpreq,
 //          @RequestParam("file-type") String type, 
 //          @RequestParam("file-name") String name, 
           @RequestParam("file-name") MultipartFile file, 
@@ -68,6 +69,7 @@ public class PayloadController{
             Link l1=  StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).computeSelfLink(unwrapped, payload.id.toString());
             payload.url=l1.getHref() + "&format=raw";
             
+            System.out.println("has url");
             //OK to match GSRS 2.x API
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(payload, queryParameters), HttpStatus.OK);
     }
