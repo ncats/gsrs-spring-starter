@@ -2299,6 +2299,7 @@ public class EntityUtils {
 			try {
 				return Optional.ofNullable(m.invoke(entity));
 			} catch (Exception e) {
+				e.printStackTrace();
 				return Optional.empty();
 			}
 		}

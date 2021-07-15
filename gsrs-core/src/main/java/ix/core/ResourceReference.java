@@ -12,16 +12,21 @@ import lombok.extern.slf4j.Slf4j;
 
 
 import java.io.IOException;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 @Slf4j
 @JsonSerialize(using = ResourceReference.ResourceReferenceSerializer.class)
 public class ResourceReference <T>{
 	private String resourceLink;
 	private Supplier<T> raw;
-	
-	public ResourceReference(String uri, Supplier<T> sup){
-		resourceLink=uri;
+	private List<String> params;
+
+	public ResourceReference(String uri, Supplier<T> sup, String... params){
+		resourceLink = uri;
+		this.params = Collections.unmodifiableList(Arrays.asList(params));
+
 		raw=sup;
 	}
 
@@ -31,6 +36,10 @@ public class ResourceReference <T>{
 	}
 	public String toString(){
 		return resourceLink;
+	}
+
+	public List<String> getParams() {
+		return params;
 	}
 
 	public String computedResourceLink(){

@@ -23,6 +23,7 @@ public @interface GsrsApiAction {
      */
     String value();
 
+    boolean serializeUrlOnly() default false;
     /**
      * The HTTP verb Type; defaults to GET
      * @return

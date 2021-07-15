@@ -10,8 +10,8 @@ import java.util.function.Supplier;
 public class FieldResourceReference<T> extends ResourceReference<T> {
 
 
-    public FieldResourceReference(String uri, Supplier<T> sup) {
-        super(uri, sup);
+    public FieldResourceReference(String uri, Supplier<T> sup, String...params) {
+        super(uri, sup,params);
     }
     public static <T> FieldResourceReference<T> forField(String field, Supplier<T> supplier){
         return forField(field, false, supplier);
@@ -19,10 +19,13 @@ public class FieldResourceReference<T> extends ResourceReference<T> {
     public static <T> FieldResourceReference<T> forRawField(String field, Supplier<T> supplier){
         return forField(field, true, supplier);
     }
-    public static <T> FieldResourceReference<T> forField(String field, boolean isRaw, Supplier<T> supplier){
+    public static <T> FieldResourceReference<T> forField(String field, boolean isRaw, Supplier<T> supplier, String...params){
         Objects.requireNonNull(field);
         Objects.requireNonNull(supplier);
-        return new FieldResourceReference(isRaw? "$"+field : field, supplier);
+        return new FieldResourceReference(isRaw? "$"+field : field, supplier, params);
+    }
+    public static <T> FieldResourceReference<T> forSelf( Supplier<T> supplier, String...params){
+        return forField("", false, supplier, params);
     }
 
     //
