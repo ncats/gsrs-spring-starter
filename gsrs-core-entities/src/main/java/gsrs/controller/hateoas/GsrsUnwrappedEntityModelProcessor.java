@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -91,12 +93,39 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                     Optional<LinkBuilder> linkBuilder = GsrsLinkUtil.getEntityLinkForClassOrParentClass(obj.getClass(), entityLinks);
                     if(linkBuilder.isPresent()) {
-                        model.add(
-                                GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(), linkBuilder.get()
+                        List<String> params = ((FieldResourceReference<?>) resource).getParams();
+                        LinkBuilder innerBuilder;
+                        if(field ==null || field.isEmpty()) {
+                            //no field check for params
+                            if(params.isEmpty()){
+                                innerBuilder = linkBuilder.get()
+                                        .slash("(" + id + ")"); // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+
+                            }else{
+                                innerBuilder = linkBuilder.get()
+                                        .slash("(" + id + ")" + params.stream().collect(Collectors.joining("&","?",""))); // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+
+                            }
+                        }else{
+                            if(params.isEmpty()){
+                                innerBuilder = linkBuilder.get()
                                         .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-                                        .slash(field)
-                                        .withRel(action.getJsonFieldName())),
-                                type);
+                                        .slash(field);
+                            }else{
+                                innerBuilder = linkBuilder.get()
+                                        .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
+                                        .slash(field + params.stream().collect(Collectors.joining("&","?","")));
+                            }
+                        }
+
+
+                            Link fieldLink =  GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),
+                                                            innerBuilder.withRel(action.getJsonFieldName()));
+                        if(gsrsApiAction.serializeUrlOnly()){
+                            model.addRaw(fieldLink);
+                        }else {
+                            model.add(fieldLink, type);
+                        }
                     }
 
 //                String field = ((FieldResourceReference)resource).computedResourceLink();

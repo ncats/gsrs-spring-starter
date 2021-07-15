@@ -47,8 +47,10 @@ class FieldLink extends Link {
         //GSRS api sometimes uses format $controller($id)
         //instead of $controller/$id
         //HATEOAS adds the slash to make it $controller/($id) so we have to fix it
-        
-        
+        String query = uri.getRawQuery();
+        if(query !=null){
+            apiPath +="?"+query;
+        }
 
         StringBuilder apiBuilder = new StringBuilder(apiPath.length() + 20);
         

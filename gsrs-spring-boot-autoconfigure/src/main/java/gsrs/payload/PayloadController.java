@@ -53,21 +53,18 @@ public class PayloadController{
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @PostGsrsRestApiMapping("/upload")
-    public ResponseEntity<Object> handleFileUpload(MultipartHttpServletRequest mpreq,
-//          @RequestParam("file-type") String type, 
-//          @RequestParam("file-name") String name, 
-          @RequestParam("file-name") MultipartFile file, 
+    public ResponseEntity<Object> handleFileUpload(@RequestParam("file-name") MultipartFile file,
           @RequestParam Map<String, String> queryParameters) throws IOException {
 
         
    
             Payload payload = payloadService.createPayload(file.getOriginalFilename(), predictMimeTypeFromFile(file), file.getBytes(), PayloadService.PayloadPersistType.PERM);
-            GsrsUnwrappedEntityModel unwrapped = GsrsControllerUtil.enhanceWithView(payload, queryParameters);
+
 
             //This is a very hacky way to force things as expected
-            Link l1=  StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).computeSelfLink(unwrapped, payload.id.toString());
-            payload.url=l1.getHref() + "&format=raw";
-            
+//            Link l1=  StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).computeSelfLink(unwrapped, payload.id.toString());
+//            payload.url=l1.getHref() + "&format=raw";
+//
             //OK to match GSRS 2.x API
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(payload, queryParameters), HttpStatus.OK);
     }
@@ -103,23 +100,34 @@ public class PayloadController{
 
     @GetGsrsRestApiMapping("({id})")
     public Object get(@PathVariable("id") UUID id,
+                      @RequestParam("format" ) Optional<String> format,
                       @RequestParam Map<String, String> queryParameters) throws IOException {
         Optional<Payload> payloadOptional = payloadRepository.findById(id);
         if(payloadOptional.isPresent()){
-            Optional<File> in = payloadService.getPayloadAsFile(payloadOptional.get());
-            if(in.isPresent()){
-                String mimeType = payloadOptional.get().mimeType;
-                File file = in.get();
-                byte[] data;
-                try(InputStream stream = new BufferedInputStream(new FileInputStream(file))) {
-                    data= IOUtil.toByteArray(stream);
+            if(format.isPresent()){
+                //if user requests format=raw get the acutal file
+                if(!format.get().equalsIgnoreCase("raw")){
+                    return gsrsControllerConfiguration.handleBadRequest(400,"unknown format: " + format.get(), queryParameters);
                 }
-                return ResponseEntity.ok()
-                         .contentType(MediaType.parseMediaType(mimeType))
-                         .contentLength(file.length())
-                         .header(HttpHeaders.CONTENT_DISPOSITION,
-                                 "attachment; filename=\"" + payloadOptional.get().name + "\"")
-                         .body(data);
+                Optional<File> in = payloadService.getPayloadAsFile(payloadOptional.get());
+                if(in.isPresent()){
+
+
+                    String mimeType = payloadOptional.get().mimeType;
+                    File file = in.get();
+                    byte[] data;
+                    try(InputStream stream = new BufferedInputStream(new FileInputStream(file))) {
+                        data= IOUtil.toByteArray(stream);
+                    }
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(mimeType))
+                            .contentLength(file.length())
+                            .header(HttpHeaders.CONTENT_DISPOSITION,
+                                    "attachment; filename=\"" + payloadOptional.get().name + "\"")
+                            .body(data);
+                }
+                //if we're here we just want the metadata
+                return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(payloadOptional.get(), queryParameters), HttpStatus.OK);
 
             }
         }

@@ -1,6 +1,10 @@
 package ix.core.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.GsrsApiAction;
+import ix.core.FieldResourceReference;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -37,9 +41,7 @@ public class Payload extends BaseModel {
     public String mimeType; // mime type
     @Column(name="capacity")
     public Long size;
-    
-    @Transient
-    public String url;
+
     
 
     @ManyToMany(cascade= CascadeType.ALL)
@@ -51,7 +53,13 @@ public class Payload extends BaseModel {
     public Payload() {
     	
     }
-    
+
+    @JsonIgnore
+    @GsrsApiAction(value = "url", serializeUrlOnly = true)
+    public FieldResourceReference getUrl() {
+
+        return FieldResourceReference.forSelf( ()->this, "format=raw");
+    }
     public Value addIfAbsent (Value prop) {
         if (prop != null) {
             if (prop.id != null) 
