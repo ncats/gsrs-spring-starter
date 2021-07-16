@@ -23,9 +23,10 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     Stream<UserTokenInfo> streamAllTokenInfo();
 
     //this.user.username + this.key);
-
-    interface UserTokenInfo{
-         String getUsername();
-         String getKey();
+    @Data
+    @AllArgsConstructor
+    class UserTokenInfo{
+         private String username;
+         private String key;
     }
 }
