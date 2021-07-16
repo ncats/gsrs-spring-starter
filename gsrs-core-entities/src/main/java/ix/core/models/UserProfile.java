@@ -108,10 +108,12 @@ public class UserProfile extends IxModel{
 	}
 
 
-
-	public String getComputedToken() {
+	public String getComputedToken(){
+		return getComputedToken(this.user.username, this.key);
+	}
+	public static String getComputedToken(String username, String key) {
 		String date = "" + Util.getCanonicalCacheTimeStamp();
-		return Util.sha1(date + this.user.username + this.key);
+		return Util.sha1(date + username + key);
 	}
 
 	public Long getTokenTimeToExpireMS() {

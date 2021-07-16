@@ -65,6 +65,12 @@ public class LegacyUserTokenCache implements UserTokenCache {
 		}
 	}
 
+	private void updateUserCache(UserProfileRepository.UserTokenInfo info){
+			String identifier = info.getUsername();
+		tokenCache.put(new Element(UserProfile.getComputedToken(info.getUsername(), info.getKey()), identifier));
+		//TODO commented out moved to a computeIfAbsent
+//		tokenCacheUserProfile.put(identifier, up);
+	}
 	@Override
 	public void updateUserCache(UserProfile up) {
 		try{
@@ -95,7 +101,9 @@ public class LegacyUserTokenCache implements UserTokenCache {
 		if(e==null){
 			return null;
 		}
-		return (UserProfile)tokenCacheUserProfile.get(e.getObjectValue());
+		return (UserProfile)tokenCacheUserProfile.computeIfAbsent((String) e.getObjectValue(),
+				username ->userProfileRepository.findByUser_Username(username)
+				);
 	}
 	
 	
@@ -113,14 +121,21 @@ public class LegacyUserTokenCache implements UserTokenCache {
 	
 	private void updateUserProfileTokenCache(){
 	   	//TODO katzelda June 2021 : filter to only active ?
-    	try(Stream<UserProfile> stream=userProfileRepository.streamAll()){
-    		stream.forEach(up->{
-    			updateUserCache(up);
-    		});
-	    	lastCacheUpdate=Util.getCanonicalCacheTimeStamp();
-    	}catch(Exception e){
-    		e.printStackTrace();
-    		throw e;
-    	}
+//    	try(Stream<UserProfile> stream=userProfileRepository.streamAll()){
+//    		stream.forEach(up->{
+//    			updateUserCache(up);
+//    		});
+//	    	lastCacheUpdate=Util.getCanonicalCacheTimeStamp();
+//    	}catch(Exception e){
+//    		e.printStackTrace();
+//    		throw e;
+//    	}
+
+    	try(Stream<UserProfileRepository.UserTokenInfo> stream = userProfileRepository.streamAllTokenInfo()){
+    		stream.forEach(info->{
+    			updateUserCache(info);
+			});
+			lastCacheUpdate=Util.getCanonicalCacheTimeStamp();
+		}
     }	
 }
