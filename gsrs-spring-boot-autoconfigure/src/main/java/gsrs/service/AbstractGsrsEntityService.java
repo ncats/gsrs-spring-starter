@@ -21,6 +21,7 @@ import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCallback;
 import ix.core.validator.ValidatorCategory;
+import ix.ginas.models.NoIdGinasCommonData;
 import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
@@ -452,13 +453,16 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
 
                 		while (!changeStack.isEmpty()) {
-                			Object v = changeStack.pop();
-                			EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
-                			if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
-
-                				entityManager.merge(ewchanged.getValue());
-                			}
-                		}
+                            Object v = changeStack.pop();
+                            EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
+                            if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                                Object o =  ewchanged.getValue();
+                                if(o instanceof NoIdGinasCommonData) {    
+                                    ((NoIdGinasCommonData)o).forceUpdate();
+                                }
+                                entityManager.merge(o);
+                            }
+                        }
 
                 		//explicitly delete deleted things
                 		//This should ONLY delete objects which "belong"
