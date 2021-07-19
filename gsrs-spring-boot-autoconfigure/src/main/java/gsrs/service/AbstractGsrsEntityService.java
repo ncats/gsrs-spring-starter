@@ -1,6 +1,28 @@
 package gsrs.service;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
@@ -12,7 +34,7 @@ import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Edit;
-import ix.core.models.Namespace;
+import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.LogUtil;
@@ -25,21 +47,6 @@ import ix.ginas.utils.validation.ValidatorFactory;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Abstract implementation of {@link GsrsEntityService} to reduce most
@@ -452,13 +459,16 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
 
                 		while (!changeStack.isEmpty()) {
-                			Object v = changeStack.pop();
-                			EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
-                			if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
-
-                				entityManager.merge(ewchanged.getValue());
-                			}
-                		}
+                            Object v = changeStack.pop();
+                            EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
+                            if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                                Object o =  ewchanged.getValue();
+                                if(o instanceof ForceUpdatableModel) {    
+                                    ((ForceUpdatableModel)o).forceUpdate();
+                                }
+                                entityManager.merge(o);
+                            }
+                        }
 
                 		//explicitly delete deleted things
                 		//This should ONLY delete objects which "belong"
