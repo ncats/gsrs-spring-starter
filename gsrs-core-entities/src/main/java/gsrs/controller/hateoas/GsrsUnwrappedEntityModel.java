@@ -10,6 +10,7 @@ import ix.core.controllers.EntityFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.util.*;
@@ -107,6 +108,13 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         ourLinks.put(name, href);
         return this;
     }
+
+    @Override
+    @JsonIgnore
+    public Links getLinks() {
+        return super.getLinks();
+    }
+
     @JsonAnyGetter
     public Map<String, Object> getOurLinks() {
         return ourLinks;
