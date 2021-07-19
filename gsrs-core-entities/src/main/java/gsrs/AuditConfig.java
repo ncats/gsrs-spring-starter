@@ -80,12 +80,15 @@ public class AuditConfig {
                 return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
-            String name;
+            String name=null;
             try {
                  name = auth.getName();
             }catch(NullPointerException e){
                 System.err.println("NPE on getName for class " + auth.getClass());
                 throw e;
+            }
+            if(name ==null){
+                return Optional.empty();
             }
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
