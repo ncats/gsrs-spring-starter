@@ -111,8 +111,8 @@ public class ExportProcess<T> {
                     currentState = State.ERRORED_OUT;
                     throw t;
                 }finally{
-                    
-                    
+                    //close the exporter first this should flush out all data to the file
+                    IOUtil.closeQuietly(exporter);
                     try {
                     	File f=exportFile.getFile();
                     	
@@ -124,7 +124,7 @@ public class ExportProcess<T> {
                     metaData.finished=TimeUtil.getCurrentTimeMillis();
                     
                     IOUtil.closeQuietly(() ->  exportFile.saveMetaData(metaData));
-                    IOUtil.closeQuietly(exporter);
+
                     
                     
                     //IxCache.remove(metaData.getKey());
