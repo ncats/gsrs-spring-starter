@@ -13,6 +13,11 @@ public abstract class AbstractGsrsAuthenticationToken extends UsernamePasswordAu
     }
     @Override
     public String getName() {
-        return ((UserProfile)getPrincipal()).user.username;
+
+        UserProfile up = getUserProfile();
+        if(up ==null){
+            return null;
+        }
+        return up.user.username;
     }
 }
