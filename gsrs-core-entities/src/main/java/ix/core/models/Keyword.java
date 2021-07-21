@@ -5,6 +5,7 @@ import ix.core.search.text.IndexableValue;
 import ix.core.search.text.IndexableValueFromRaw;
 import ix.core.search.text.ReflectingIndexerAware;
 import ix.utils.PathStack;
+import ix.utils.pojopatch.PojoDiffAware;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -14,7 +15,7 @@ import java.util.function.Consumer;
 @DiscriminatorValue("KEY")
 @DynamicFacet(label="label", value="term")
 @Indexable
-public class Keyword extends Value implements ReflectingIndexerAware {
+public class Keyword extends Value implements ReflectingIndexerAware, PojoDiffAware{
     @Column(length=255)
 
     public String term;
@@ -71,5 +72,10 @@ public class Keyword extends Value implements ReflectingIndexerAware {
     @JsonIgnore
     public String getEmbeddedIndexFieldName() {
         return this.label;
+    }
+    @Override
+    public boolean pojoDiffEquivalentIdTo(String id) {
+        if(id==null)return false;
+        return Objects.equals(id, this.getValue());
     }
 }
