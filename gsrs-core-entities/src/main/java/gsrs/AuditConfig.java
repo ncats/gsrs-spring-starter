@@ -95,7 +95,7 @@ public class AuditConfig {
             Principal value = principalCache.computeIfAbsent(name,
                     n -> {
                         try {
-                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(name);
+                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
                             return p;
                         } catch (Throwable t) {
                             t.printStackTrace();
