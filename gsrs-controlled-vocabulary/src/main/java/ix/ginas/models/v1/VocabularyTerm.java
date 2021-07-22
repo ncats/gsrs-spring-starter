@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
 import ix.core.models.IxModel;
+import ix.core.models.ParentReference;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.serialization.KeywordDeserializer;
 import ix.ginas.models.serialization.KeywordListSerializer;
@@ -31,6 +32,7 @@ public class VocabularyTerm extends IxModel {
 	 */
 	@ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore //ignore in json to avoid infinite recursion
+	@ParentReference
 	private ControlledVocabulary owner;
 
 	

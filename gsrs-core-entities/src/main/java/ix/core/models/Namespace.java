@@ -18,7 +18,8 @@ public class Namespace extends LongBaseModel {
     @Column(unique=true)
     @Indexable(facet=true,name="Namespace")
     public String name;
-    
+
+    @ParentReference
     @ManyToOne(cascade = CascadeType.PERSIST)
     public Principal owner;
 
