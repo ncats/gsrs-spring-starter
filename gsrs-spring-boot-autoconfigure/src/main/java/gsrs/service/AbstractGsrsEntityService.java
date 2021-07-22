@@ -466,6 +466,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                                 if(o instanceof ForceUpdatableModel) {    
                                     ((ForceUpdatableModel)o).forceUpdate();
                                 }
+
                                 entityManager.merge(o);
                             }
                         }
