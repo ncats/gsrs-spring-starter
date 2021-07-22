@@ -57,7 +57,7 @@ public class AuditConfig {
         private EntityManager em;
         //use an LRU Cache of name look ups. without this on updates to Substances
         //we get a stackoverflow looking up the name over and over for some reason...
-        private Map<String, Principal> principalCache = Caches.createLRUCache();
+        private Map<String, Optional<Principal>> principalCache = Caches.createLRUCache();
 
         public void clearCache(){
             principalCache.clear();
@@ -80,37 +80,36 @@ public class AuditConfig {
                 return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
-            String name=null;
-            try {
-                 name = auth.getName();
-            }catch(NullPointerException e){
-                System.err.println("NPE on getName for class " + auth.getClass());
-                throw e;
-            }
+            String name = auth.getName();
+
             if(name ==null){
                 return Optional.empty();
             }
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
-            Principal value = principalCache.computeIfAbsent(name,
+            Optional<Principal> value = principalCache.computeIfAbsent(name,
                     n -> {
-                        try {
-                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
-                            return p;
-                        } catch (Throwable t) {
-                            t.printStackTrace();
-                            throw t;
-                        }
                         //if name doesn't exist it will return null which won't get entered into the map and could
                         //cause a stackoverflow of constantly re-looking up a non-existant value
+                        //so we save them as Optionals
                         //TODO should we use configuration to add new user if missing?
-//                        if(p !=null){
-//                            return p;
-//                        }
-//                        throw new IllegalStateException("user name " + name + " not found");
+                        try {
+                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
+                            return Optional.ofNullable(p);
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                            return Optional.empty();
+                        }
+
+
+
 
                     });
-            return Optional.ofNullable((value ==null || em.contains(value))? value : em.merge(value));
+            if(value.isPresent()){
+                Principal p = value.get();
+                return Optional.of(em.contains(p)? p : em.merge(p));
+            }
+            return value;
         }
     }	
 }
