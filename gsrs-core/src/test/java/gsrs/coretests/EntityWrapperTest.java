@@ -8,10 +8,7 @@ import org.junit.jupiter.api.Test;
 
 
 import javax.persistence.Entity;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -62,8 +59,7 @@ public class EntityWrapperTest{
 	}
 	
 	@Test
-	public void testRecurseDoesNotGetIntoInfiniteLoop() throws Exception {
-		try {
+	public void testRecurseDoesNotGetIntoInfiniteLoop()  {
 			Inception inc = new Inception();
 			Set<String> expectedVisited = new HashSet<String>();
 			expectedVisited.add("root");
@@ -76,9 +72,22 @@ public class EntityWrapperTest{
 			});
 
 			assertEquals(expectedVisited, pathsVisited);
-		} catch (Throwable t) {
-			t.printStackTrace();
-			throw t;
-		}
+	}
+	@Test
+	public void recurseWithParent(){
+		Inception inc = new Inception();
+		Set<String> expectedVisited = new HashSet<String>();
+		expectedVisited.add("root");
+		expectedVisited.add("root_realChild");
+		Set<String> pathsVisited = new HashSet<String>();
+		List<Object> parentsSeen = new LinkedList<>();
+		EntityWrapper.of(inc).traverse().execute((parent, path, ew) -> {
+			assertTrue(expectedVisited.contains(path.toPath()));
+			pathsVisited.add(path.toPath());
+			parentsSeen.add(parent==null? null: parent.getValue());
+		});
+
+		assertEquals(expectedVisited, pathsVisited);
+		assertEquals(Arrays.asList(null, inc), parentsSeen);
 	}
 }

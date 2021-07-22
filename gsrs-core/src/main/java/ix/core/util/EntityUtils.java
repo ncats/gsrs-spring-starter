@@ -2917,10 +2917,20 @@ public class EntityUtils {
         }
 	}
 
+	@FunctionalInterface
+	public interface DepthFirstEntityTraversalConsumer{
+		/**
+		 * Consume an entity traversing the object stack.
+		 * @param parent the parent entity at this point in the stack, may be null if there is no parent.
+		 * @param pathStack the current {@link PathStack}.
+		 * @param current the current entity at this point in the stack.
+		 */
+		void consume(EntityWrapper parent, PathStack pathStack, EntityWrapper current);
+	}
 	//Not sure how this should be parameterized
 	public static class EntityTraverser {
 		private PathStack path;
-		private BiConsumer<PathStack, EntityWrapper> listens = null;
+		private DepthFirstEntityTraversalConsumer listens = null;
 		LinkedReferenceSet<Object> prevEntities; // protect against infinite
 		// recursion
 		EntityWrapper estart; // seed
@@ -2942,20 +2952,33 @@ public class EntityUtils {
 			return this;
 		}
 
+		/**
+		 * Legacy traversal that does not pass along the parent entity.
+		 * @param listens
+		 */
 		public void execute(BiConsumer<PathStack, EntityWrapper> listens) {
-			this.listens = listens;
-			next(estart);
+			if(listens ==null){
+				this.listens =null;
+			}else {
+				this.listens = (p, s, o) -> listens.accept(s, o);
+			}
+			next(null, estart);
 		}
 
-		private void next(EntityWrapper<?> ew) {
-			instrument(ew);
+		public void execute(DepthFirstEntityTraversalConsumer consumer) {
+			this.listens = consumer;
+			next(null, estart);
+		}
+
+		private void next(EntityWrapper<?>parent, EntityWrapper<?> ew) {
+			instrument(parent, ew);
 		}
 
 		// not thread safe at all. Never call this directly
-		private void instrument(EntityWrapper<?> ew) {
+		private void instrument(EntityWrapper<?>parent, EntityWrapper<?> ew) {
 			if(!prevEntities.contains(ew.getValue())){
 				if (this.listens != null){
-					listens.accept(path, ew); // listener caller
+					listens.consume(parent, path, ew); // listener caller
 				}
 				//May 18, 2018, Clinical Trial Testing purpose
 				/*System.out.println(prevEntities.asStream()
@@ -2973,7 +2996,7 @@ public class EntityUtils {
 							fi.k().forEach(fi.v(), (i, o) -> {
 								path.pushAndPopWith(String.valueOf(i), () -> {
 									if(o !=null) {
-										next(EntityWrapper.of(o));
+										next(ew, EntityWrapper.of(o));
 									}
 								});
 							});
@@ -2984,7 +3007,7 @@ public class EntityUtils {
 					ew.streamFieldsAndValues(EntityInfo::isPlainOldEntityField).forEach(fi -> {
 						path.pushAndPopWith(fi.k().getName(), () -> {
 							if(fi.v() !=null) {
-								next(EntityWrapper.of(fi.v()));
+								next(ew, EntityWrapper.of(fi.v()));
 							}
 						});
 					});
@@ -2994,7 +3017,7 @@ public class EntityUtils {
 							t.k().forEach(t.v(), (i, o) -> {
 								path.pushAndPopWith(String.valueOf(i), () -> {
 									if(o !=null) {
-										next(EntityWrapper.of(o));
+										next(ew,EntityWrapper.of(o));
 									}
 								});
 							});
@@ -3003,7 +3026,7 @@ public class EntityUtils {
 
 					ew.streamMethodsAndValues(m -> !m.isArrayOrCollection()).forEach(t -> {
 						path.pushAndPopWith(t.k().getName(), () -> {
-							next(EntityWrapper.of(t.v()));
+							next(ew,EntityWrapper.of(t.v()));
 						});
 					});// each non-array
 
