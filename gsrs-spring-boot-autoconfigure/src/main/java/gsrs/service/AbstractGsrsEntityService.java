@@ -365,7 +365,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return saved;
     }
 
-    protected T fixUpdatedIfNeeded(T oldEntity, T updatedEntity){
+    protected T fixUpdatedIfNeeded(T updatedEntity){
         return updatedEntity;
     }
     @Override
@@ -452,7 +452,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		} else {
                 			LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                 		}
-                		oldEntity = fixUpdatedIfNeeded(oldEntity, oldEntity);
+                		oldEntity = fixUpdatedIfNeeded(oldEntity);
                 		//This is the last line of defense for making sure that the patch worked
                 		//Should throw an exception here if there's a major problem
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
