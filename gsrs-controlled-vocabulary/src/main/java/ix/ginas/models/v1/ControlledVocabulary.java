@@ -62,7 +62,7 @@ public class ControlledVocabulary extends IxModel {
     }
 
     private String vocabularyTermType = ControlledVocabulary.class.getName();
-
+    
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonSerialize(using = KeywordListSerializer.class)
     @JsonDeserialize(contentUsing = KeywordDeserializer.class)
@@ -71,6 +71,22 @@ public class ControlledVocabulary extends IxModel {
     @JsonView(BeanViews.Full.class)
     //example of using new EntityMapperOptions annotation to collapse fields to make link out to "_fields" in compact view
     @EntityMapperOptions(linkoutInCompactView = true)
+    
+    //H2 & postGRE
+    @JoinTable(name="ix_ginas_controlled_vocab_core_v", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
+    
+//    TODO: Oracle
+//    @JoinTable(name="ix_ginas_controlled_vocab_ix_core", inverseJoinColumns = {
+//            @JoinColumn(name="ix_core_value_id")
+//    })
+
+//  TODO: MariaDB and mysql
+//  @JoinTable(name="ix_ginas_controlled_vocab_core_value", inverseJoinColumns = {
+//          @JoinColumn(name="ix_core_value_id")
+//  })
+    
     public List<Keyword> fields = new ArrayList<>();
 
     public boolean editable = true;
