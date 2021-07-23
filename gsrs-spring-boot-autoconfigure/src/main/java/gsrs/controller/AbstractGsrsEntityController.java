@@ -249,9 +249,11 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         //match old Play version of GSRS which either return JSON for an object or raw string?
 
         if(pojoPointer.isLeafRaw() /*|| at.get().getRawValue() instanceof String */){
+            Object rawValue = at.get().getRawValue();
+
             return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_PLAIN)
-                        .body(at.get().getRawValue());
+                    .contentType(rawValue instanceof JsonNode? MediaType.APPLICATION_JSON: MediaType.TEXT_PLAIN)
+                        .body(rawValue);
 
         }else{
             Object value = at.get().getValue();
