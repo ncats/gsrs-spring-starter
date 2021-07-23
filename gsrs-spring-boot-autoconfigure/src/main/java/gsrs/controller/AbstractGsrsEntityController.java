@@ -250,9 +250,12 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
         if(pojoPointer.isLeafRaw() /*|| at.get().getRawValue() instanceof String */){
             Object rawValue = at.get().getRawValue();
-
+            //force raw value to be String
+            if(rawValue !=null && !(rawValue instanceof String)){
+                rawValue = rawValue.toString();
+            }
             return ResponseEntity.ok()
-                    .contentType(rawValue instanceof JsonNode? MediaType.APPLICATION_JSON: MediaType.TEXT_PLAIN)
+                    .contentType(MediaType.TEXT_PLAIN)
                         .body(rawValue);
 
         }else{

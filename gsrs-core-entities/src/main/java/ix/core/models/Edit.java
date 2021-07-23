@@ -114,7 +114,9 @@ public class Edit extends BaseModel {
     @JsonIgnore
     @GsrsApiAction(value= "oldValue", serializeUrlOnly = true)
     public FieldResourceReference<JsonNode> getOldValueReference() {
-
+        if(oldValue ==null){
+            return null;
+        }
         return FieldResourceReference.forRawFieldAsJson("oldValue", oldValue);
     }
     @JsonIgnore
