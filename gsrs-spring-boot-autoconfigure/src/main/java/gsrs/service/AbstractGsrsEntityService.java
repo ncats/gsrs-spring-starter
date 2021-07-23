@@ -311,6 +311,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                     return builder.build();
                 }
+                newEntity = JsonEntityUtil.fixOwners(newEntity, true);
+
                 T createdEntity = transactionalPersist(newEntity);
                 AbstractEntityCreatedEvent<T> event = newCreationEvent(createdEntity);
                 if(event !=null) {
