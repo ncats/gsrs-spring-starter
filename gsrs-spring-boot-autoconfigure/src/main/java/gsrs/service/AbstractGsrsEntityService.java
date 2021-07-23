@@ -425,7 +425,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		} else {
                 			LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                 		}
-                		oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity));
+                		oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
                 		//This is the last line of defense for making sure that the patch worked
                 		//Should throw an exception here if there's a major problem
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
