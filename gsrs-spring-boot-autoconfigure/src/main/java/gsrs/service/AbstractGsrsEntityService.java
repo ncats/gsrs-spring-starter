@@ -366,6 +366,12 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return saved;
     }
 
+    /**
+     * Override this method if any post processing on an entity to be updated needs to be done.
+     * @apiNote by default this just return updatedEntity as is.
+     * @param updatedEntity the entity being updated; should never be null.
+     * @return the Entity to update.
+     */
     protected T fixUpdatedIfNeeded(T updatedEntity){
         return updatedEntity;
     }
