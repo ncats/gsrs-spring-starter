@@ -36,8 +36,8 @@ public final class GsrsControllerUtil {
         String view = queryParameters.get("view");
 
         GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj, view);
-
-        if("compact".equals(view)){
+        //default view is compact
+        if(view==null || "compact".equals(view)){
             model.setCompact(true);
 
         }
