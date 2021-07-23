@@ -14,6 +14,7 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import gsrs.json.JsonEntityUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -378,35 +379,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                 //updatedEntity should have the same id
                 I id = getIdFrom(updatedEntity);
-        /*
-        Optional<T> opt = get(id);
-        if(!opt.isPresent()){
-            return UpdateResult.<T>builder().status(UpdateResult.STATUS.NOT_FOUND).build();
-        }
 
-        T oldEntity = opt.get();
-        String oldJson =null;
-        if(oldEntity instanceof AbstractGsrsEntity){
-            AbstractGsrsEntity gsrsEntity = (AbstractGsrsEntity) oldEntity;
-            //a postLoad should now set the old json so let's reuse it
-
-            JsonNode previousState =gsrsEntity.getPreviousState();
-            if(previousState ==null){
-                gsrsEntity.updatePreviousState();
-                gsrsEntity.getPreviousState();
-            }
-            if(previousState!=null) {
-                oldJson = previousState.toString();
-            }
-        }
-        //this is to trigger the postLoad !? not sure why we need to do this but without it it won't call postLoad
-//        entityManager.refresh(oldEntity);
-        updatedEntity = fixUpdatedIfNeeded(oldEntity, updatedEntity);
-
-        if(oldJson ==null) {
-            oldJson = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(oldEntity);
-        }
-        */
                 UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
                 EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, oldEntity -> {
                 	EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
@@ -452,7 +425,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		} else {
                 			LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                 		}
-                		oldEntity = fixUpdatedIfNeeded(oldEntity);
+                		oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity));
                 		//This is the last line of defense for making sure that the patch worked
                 		//Should throw an exception here if there's a major problem
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
