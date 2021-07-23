@@ -112,13 +112,13 @@ public class Edit extends BaseModel {
 //    }
 
     @JsonIgnore
-    @GsrsApiAction("oldValue")
+    @GsrsApiAction(value= "oldValue", serializeUrlOnly = true)
     public FieldResourceReference<JsonNode> getOldValueReference() {
 
         return FieldResourceReference.forRawFieldAsJson("oldValue", oldValue);
     }
     @JsonIgnore
-    @GsrsApiAction("newValue")
+    @GsrsApiAction(value="newValue", serializeUrlOnly = true)
     public ResourceReference<JsonNode> getNewValueReference() {
         //we will always have new value
 
@@ -127,7 +127,7 @@ public class Edit extends BaseModel {
     
 
     @JsonIgnore
-    @GsrsApiAction("diff")
+    @GsrsApiAction(value = "diff", serializeUrlOnly = true)
     public ResourceReference<JsonNode> getDiffLink () {
         return FieldResourceReference.forRawField("diff", this::getDiff);
 
