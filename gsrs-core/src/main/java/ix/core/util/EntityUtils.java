@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
-
+import gsrs.SpecialFieldsProperties;
 import gsrs.model.GsrsApiAction;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.*;
@@ -1133,23 +1133,33 @@ public class EntityUtils {
 		//Some simple factory helper methods
 
 		//TODO katzelda October 2020 : for now remove exact fields list we can implement this support later
-//		public Set<String> getSponsoredFields() {
-//			return SpecialFieldFactory
-//					.getInstance(Play.application())
-//					.getRegisteredResourcesFor(this)
-//					;
-//		}
+		//TODO tylerperyea July 2021 : It's later, we need to support this.
+		public Set<String> getSpecialFields() {
+		    return StaticContextAccessor.getOptionalBean(SpecialFieldsProperties.class)
+		    .map(sfp->sfp.getExactsearchfields().stream()
+		            
+		            .filter(m->this.getName().equals(m.get("class")))
+		            // Spring / HOCON parser parses JSON array as LinkedHashMap
+		            // with integer keys. Must transform to a list
+		            .flatMap(m->((Map<?,String>) m.get("fields")).values().stream())
+
+		            .collect(Collectors.toSet())
+		            )
+		    .orElse(new HashSet<>());
+		    
+		}
+
+        //TODO katzelda October 2020: for now don't implement fieldName decororator... is that a legacy UI thing?
+//      public FieldNameDecorator getFieldNameDecorator() {
+//          return FieldNameDecoratorFactory
+//                  .getInstance(Play.application())
+//                  .getSingleResourceFor(this);
+//      }
+		
 
 		public boolean storeHistory() {
 			return storeHistory;
 		}
-
-		//TODO katzelda October 2020: for now don't implement fieldName decororator... is that a legacy UI thing?
-//		public FieldNameDecorator getFieldNameDecorator() {
-//			return FieldNameDecoratorFactory
-//					.getInstance(Play.application())
-//					.getSingleResourceFor(this);
-//		}
 
 
 		public boolean isExplicitDeletable(){

@@ -39,6 +39,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(BuildInfoController.class);
         switch(indexerType){
             case LEGACY: {
+                componentsToInclude.add(SpecialFieldsProperties.class);
                 componentsToInclude.add(TextIndexerFactory.class);
                 componentsToInclude.add(TextIndexerConfig.class);
                 componentsToInclude.add(TextIndexerEntityListener.class);

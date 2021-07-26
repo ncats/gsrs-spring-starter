@@ -104,7 +104,7 @@ class LuceneSearchResultPopulator {
 			}
 		}
 
-	private static class EntityFetcher implements LazyList.NamedCallable<Key, Object>{
+	public static class EntityFetcher implements LazyList.NamedCallable<Key, Object>{
 		private Key key;
 		private GsrsRepository gsrsRepository;
 
