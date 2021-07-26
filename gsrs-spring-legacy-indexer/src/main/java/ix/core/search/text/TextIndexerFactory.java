@@ -22,7 +22,6 @@ public class TextIndexerFactory {
 
     private ConcurrentMap<File, TextIndexer> indexers = new ConcurrentHashMap<>();
 
-    private Map<String, Boolean> deepKindMap = new ConcurrentHashMap<>();
     @Value("${ix.home:ginas.ix}")
     private String defaultDir;
     @Autowired
@@ -45,6 +44,7 @@ public class TextIndexerFactory {
                 .map(cf->cf.getDeepFields()
                 .stream()
                 .map(s->{
+                    System.out.println("HEY!:" + s);
                     try{
                         return EntityUtils.getEntityInfoFor(s).getTypeAndSubTypes();
                     }catch(Exception e){
@@ -78,8 +78,8 @@ public class TextIndexerFactory {
     }
 
 
-        private boolean isDeepKind(EntityUtils.EntityWrapper ew){
-        return deepKindMap.computeIfAbsent(ew.getKind(), k->deepKinds.contains(k));
+    private boolean isDeepKind(EntityUtils.EntityWrapper ew){
+        return deepKinds.contains(ew.getKind());
     }
 
     public TextIndexer getDefaultInstance(){

@@ -148,8 +148,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         if(auth ==null) {
             String token = request.getHeader("auth-token");
             if(token !=null){
-
-                auth = new LegacyUserTokenAuthentication(userTokenCache.getUserProfileFromToken(token), token);
+                UserProfile up = userTokenCache.getUserProfileFromToken(token);
+                if(up!=null) {
+                    auth = new LegacyUserTokenAuthentication(up, token);
+                }
             }
         }
         if(auth !=null) {
