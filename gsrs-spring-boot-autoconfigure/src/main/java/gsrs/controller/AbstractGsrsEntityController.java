@@ -1,7 +1,9 @@
 package gsrs.controller;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
@@ -36,6 +38,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
@@ -59,6 +63,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Autowired
     private EntityLinks entityLinks;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
 
 //    /**
@@ -263,7 +271,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             if(value instanceof String){
                 //just a plain String - no links?
                 //if we pass it to the enhance view below it will error out
-                return new ResponseEntity<>(value, HttpStatus.OK);
+                Map<String,String> wrapMap = new HashMap<>();
+                wrapMap.put("value", (String) value);
+                JsonNode json;
+                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
+                json = jsonwrap.get("value");
+                return new ResponseEntity<>(json, HttpStatus.OK);
+                //return new ResponseEntity<>(value, HttpStatus.OK);
             }
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(value, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }

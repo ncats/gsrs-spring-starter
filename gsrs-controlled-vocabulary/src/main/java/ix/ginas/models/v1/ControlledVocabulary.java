@@ -62,20 +62,21 @@ public class ControlledVocabulary extends IxModel {
     }
 
     private String vocabularyTermType = ControlledVocabulary.class.getName();
-    
-    @ManyToMany(cascade = CascadeType.ALL)
-    @JsonSerialize(using = KeywordListSerializer.class)
-    @JsonDeserialize(contentUsing = KeywordDeserializer.class)
-    @Indexable(name = "Field")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    @JsonView(BeanViews.Full.class)
-    //example of using new EntityMapperOptions annotation to collapse fields to make link out to "_fields" in compact view
-    @EntityMapperOptions(linkoutInCompactView = true)
+
+//fields is a deprecated part of the data model and is turned off on 27 July 2021 to avoid errors
+//    @ManyToMany(cascade = CascadeType.ALL)
+//    @JsonSerialize(using = KeywordListSerializer.class)
+//    @JsonDeserialize(contentUsing = KeywordDeserializer.class)
+//    @Indexable(name = "Field")
+//    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+//    @JsonView(BeanViews.Full.class)
+//    //example of using new EntityMapperOptions annotation to collapse fields to make link out to "_fields" in compact view
+//    @EntityMapperOptions(linkoutInCompactView = true)
     
     //H2 & postGRE
-    @JoinTable(name="ix_ginas_controlled_vocab_core_v", inverseJoinColumns = {
-            @JoinColumn(name="ix_core_value_id")
-    })
+    //@JoinTable(name="ix_ginas_controlled_vocab_core_v", inverseJoinColumns = {
+    //        @JoinColumn(name="ix_core_value_id")
+    //})
     
 //    TODO: Oracle
 //    @JoinTable(name="ix_ginas_controlled_vocab_ix_core", inverseJoinColumns = {
@@ -87,7 +88,7 @@ public class ControlledVocabulary extends IxModel {
 //          @JoinColumn(name="ix_core_value_id")
 //  })
     
-    public List<Keyword> fields = new ArrayList<>();
+    //public List<Keyword> fields = new ArrayList<>();
 
     public boolean editable = true;
 
@@ -122,11 +123,11 @@ public class ControlledVocabulary extends IxModel {
         setIsDirty("terms");
     }
 
-    public void addField(Keyword keyword) {
-
-        this.fields.add(keyword);
-        setIsDirty("fields");
-    }
+//    public void addField(Keyword keyword) {
+//
+//        this.fields.add(keyword);
+//        setIsDirty("fields");
+//    }
 
     public void setVocabularyTermType(String vocabularyTermType) {
         this.vocabularyTermType = vocabularyTermType;
