@@ -99,11 +99,15 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         if(wipeIndexFirst) {
             indexer.deleteAll();
         }else{
-            try {
-                indexer.removeAllType(entityClass);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            EntityUtils.getEntityInfoFor(entityClass).getTypeAndSubTypes()
+                    .forEach(ei->{
+                        try {
+                            indexer.removeAllType(ei.getEntityClass());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
         }
         Pageable pageRequest = PageRequest.of(0, 200);
         Page<T> onePage = gsrsRepository.findAll(pageRequest);
