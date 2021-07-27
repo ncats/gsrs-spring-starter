@@ -56,6 +56,7 @@ public class TestSetParentReferenceFromJSON {
         @JsonIgnore
         @ParentReference
         @EqualsAndHashCode.Exclude
+        @ToString.Exclude
         private Object owner;
 
 
@@ -73,7 +74,13 @@ public class TestSetParentReferenceFromJSON {
         @JsonIgnore
         @ParentReference
         @EqualsAndHashCode.Exclude
+        @ToString.Exclude
         private Object owner;
+
+        @Indexable
+        public List<Bar> getBars() {
+            return bars;
+        }
     }
 
 
@@ -152,11 +159,61 @@ public class TestSetParentReferenceFromJSON {
         assertEquals("{\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}]}", json);
 
 
+
         Foo fromJson = jacksonTester.parse(json).getObject();
         assertNull(fromJson.getBars().get(0).getOwner());
         assertNull(fromJson.getBars().get(1).getOwner());
         Foo fixed = JsonEntityUtil.fixOwners(fromJson);
         assertEquals(fixed, fixed.getBars().get(0).getOwner());
         assertEquals(fixed, fixed.getBars().get(1).getOwner());
+    }
+
+    @Test
+    public void serializeWithBazAndFooMultipleBars() throws IOException {
+        Foo foo = Foo.builder().bars(
+                Arrays.asList(
+                        Bar.builder().barName("myBar").build(),
+                        Bar.builder().barName("bar2").build()
+                ))
+                .baz(Baz.builder()
+                        .bazName("myBaz").build())
+                .build();
+
+        String json = jacksonTester.write(foo).getJson();
+        assertEquals("{\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}],\"baz\":{\"bazName\":\"myBaz\"}}", json);
+
+
+        Foo fromJson = jacksonTester.parse(json).getObject();
+        assertNull(fromJson.getBars().get(0).getOwner());
+        assertNull(fromJson.getBars().get(1).getOwner());
+        Foo fixed = JsonEntityUtil.fixOwners(fromJson);
+        assertEquals(fixed, fixed.getBars().get(0).getOwner());
+        assertEquals(fixed, fixed.getBars().get(1).getOwner());
+
+        assertEquals(fixed, fixed.getBars().get(1).getOwner());
+    }
+
+    @Test
+    public void serializeWithABazAndSubBarsAndSetFixOwners() throws IOException {
+        Foo foo = Foo.builder().baz(
+                Baz.builder()
+                        .bazName("myBaz")
+                        .bars(Arrays.asList(
+                                Bar.builder().barName("myBar").build(),
+                                Bar.builder().barName("bar2").build()
+                        ))
+                        .build()).build();
+        String json = jacksonTester.write(foo).getJson();
+        assertEquals("{\"baz\":{\"bazName\":\"myBaz\",\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}]}}", json);
+
+
+        Foo fromJson = jacksonTester.parse(json).getObject();
+        assertNull(fromJson.getBaz().getOwner());
+        assertNull(fromJson.getBaz().getBars().get(0).getOwner());
+        assertNull(fromJson.getBaz().getBars().get(1).getOwner());
+        Foo fixed = JsonEntityUtil.fixOwners(fromJson);
+        assertEquals(fixed, fixed.getBaz().getOwner());
+        assertEquals(fixed.getBaz(), fixed.getBaz().getBars().get(0).getOwner());
+        assertEquals(fixed.getBaz(), fixed.getBaz().getBars().get(1).getOwner());
     }
 }
