@@ -296,7 +296,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return transactionTemplate.execute( status-> {
             try {
                 T newEntity = fromNewJson(newEntityJson);
-
+                newEntity = JsonEntityUtil.fixOwners(newEntity, true);
                 Validator<T> validator = validatorFactory.getSync().createValidatorFor(newEntity, null, methodType, ValidatorCategory.CATEGORY_ALL());
 
                 ValidationResponse<T> response = createValidationResponse(newEntity, null, methodType);
@@ -383,7 +383,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         return transactionTemplate.execute( status-> {
             try {
-                T updatedEntity = fromUpdatedJson(updatedEntityJson);
+                T updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
 
                 //updatedEntity should have the same id
                 I id = getIdFrom(updatedEntity);
