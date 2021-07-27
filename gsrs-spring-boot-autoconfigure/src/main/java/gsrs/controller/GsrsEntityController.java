@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ public interface GsrsEntityController<T, I> {
                                         Principal principal) throws Exception;
 
     @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**"  })
-    ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request);
+    ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam(value="urldecode", required = false) Boolean urlDecode, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException;
 
     @GetGsrsRestApiMapping("/@count")
     long getCount();

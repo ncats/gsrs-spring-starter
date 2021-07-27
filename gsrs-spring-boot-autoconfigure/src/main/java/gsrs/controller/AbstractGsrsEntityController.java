@@ -36,6 +36,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.*;
 import java.util.logging.Level;
@@ -190,8 +192,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**" })
-    public ResponseEntity<Object> getFieldById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters, HttpServletRequest request){
-        return returnOnySpecifiedFieldPartFor(getEntityService().getEntityBySomeIdentifier(id), queryParameters, request);
+    public ResponseEntity<Object> getFieldById(@PathVariable("id") String id,
+                                               @RequestParam(value="urldecode", required = false) Boolean urlDecode,
+                                               @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
+        return returnOnySpecifiedFieldPartFor(getEntityService().getEntityBySomeIdentifier(id), urlDecode, queryParameters, request);
     }
 
 
@@ -212,11 +216,17 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return null;
     }
 
-    private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) {
+    private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt,
+                                                                  @RequestParam("urldecode") Boolean urlDecode,
+                                                                  @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
         if(!opt.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
         String field = GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
+        //handle urldecode
+        if(Boolean.TRUE.equals(urlDecode)){
+            field =URLDecoder.decode(field, "UTF-8");
+        }
         EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
         if(field !=null && field.startsWith("@edits")){
             Optional<EditRepository> editRepository = editRepository();

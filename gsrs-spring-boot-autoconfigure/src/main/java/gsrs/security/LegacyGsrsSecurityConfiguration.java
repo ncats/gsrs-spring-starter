@@ -10,6 +10,7 @@ import org.springframework.security.authentication.DefaultAuthenticationEventPub
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,6 +19,9 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
+
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true,
         proxyTargetClass = true,
@@ -37,6 +41,21 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     LegacyGsrsAuthenticationSuccessHandler legacyGsrsAuthenticationSuccessHandler;
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
+    @Bean
+    public HttpFirewall allowUrlEncodedPercentHttpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        //to allow for url decoding
+        firewall.setAllowUrlEncodedPercent(true);
+        //our pojo pointer functions sometimes have semicolons
+        firewall.setAllowSemicolon(true);
+        return firewall;
+    }
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+        super.configure(web);
+        web.httpFirewall(allowUrlEncodedPercentHttpFirewall());
+
+    }
     @Bean
     public LegacyAuthenticationFilter legacyAuthenticationFilter(){
         return new LegacyAuthenticationFilter();
