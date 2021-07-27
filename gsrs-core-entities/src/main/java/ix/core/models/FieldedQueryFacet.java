@@ -60,7 +60,7 @@ public class FieldedQueryFacet implements Serializable{
 	
 	
 	private static String getDisplayField(String field){
-		return null;
+		return field;
 	}
 
 	public String getLuceneField(){

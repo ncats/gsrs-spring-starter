@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 import javax.annotation.PostConstruct;
 
 /**
@@ -34,4 +36,8 @@ public class StaticContextAccessor {
         return null;
     }
 
+    public static <T> Optional<T> getOptionalBean(Class<T> clazz) {
+        return Optional.ofNullable(getBean(clazz));
+        
+    }
 }

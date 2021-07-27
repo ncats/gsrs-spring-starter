@@ -16,6 +16,7 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
 import ix.core.models.Facet;
 import ix.core.models.FacetFilter;
@@ -1777,19 +1778,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	// This is the most important method, everything goes here
 	protected SearchResult search(GsrsRepository gsrsRepository,  IndexSearcher searcher, SearchResult searchResult, Query query, Filter filter)
 			throws IOException {
-		SearchOptions options = searchResult.getOptions();
-
-//		if (DEBUG(1)) {
-//			log.debug("## Query: " + query + " Filter: " + (filter != null ? filter.getClass() : "none")
-//					+ " Options:" + options);
-//		}
-
-		long start = TimeUtil.getCurrentTimeMillis();
-
 		final TopDocs hits;
 
 		try (TaxonomyReader taxon = new DirectoryTaxonomyReader(taxonWriter)) {
-		    hits=firstPassLuceneSearch(searcher,taxon,searchResult,filter, query);
+		    hits=firstPassLuceneSearch(searcher,taxon,searchResult,filter, query, gsrsRepository);
 		}
 
 //		if (DEBUG(1)) {
@@ -1806,62 +1798,38 @@ public class TextIndexer implements Closeable, ProcessListener {
             //get everything, forever
             //hard-coded for now
             //katzelda Jan 2021 : fetching is now very fast so we can get everything always
-			if (true || options.getFetch() <= 0) {
-			    try {
-                    payload.fetch();
-                }finally{
-			        searchResult.done();
-                }
-			} else {
-				// we first block until we have enough result to show
-				// should be fetch plus a little extra padding (2 here)
-				// why 2?
-			    // TODO: should we really block here?
-				int fetch = options.getFetch() + EXTRA_PADDING;
-
-				payload.fetch(fetch);
-
-				if (hits.totalHits > fetch) {
-					// now queue the payload so the remainder is fetched in
-					// the background
-					// fetchQueue.put(payload);
-					// The problem here is that the searcher may have changed since the last time, so this isn't strictly guaranteed to be consistent
-
-					threadPool.submit(() -> {
-						try {
-							withSearcher(s->{
-									long tstart = System.currentTimeMillis();
-									log.debug(Thread.currentThread() + ": fetching payload " + payload.hits.totalHits
-											+ " for " + payload.result);
-									payload.setSearcher(s);
-									try{
-										payload.fetch();
-									}catch(InterruptedException e){
-										throw new IOException(e); //just to make it throw through withSearcher
-									}
-									log.debug(Thread.currentThread() + ": ## fetched " + payload.result.size()
-											+ " for result " + payload.result + " in "
-											+ String.format("%1$dms", System.currentTimeMillis() - tstart));
-								return payload;
-							});
-						} catch (Exception e) {
-							e.printStackTrace();
-							log.error("Error in processing payload", e);
-						}
-
-					});
-				} else {
-					searchResult.done();
-				}
-
-			}
+            try {
+                payload.fetch();
+            } finally {
+                searchResult.done();
+            }
 		} catch (Exception ex) {
+		    searchResult.done();
 			ex.printStackTrace();
 			log.trace("Can't queue fetch results!", ex);
 		}
 
 		return searchResult;
 	}
+	
+	/**
+     * Performs a basic Lucene query using the provided Filter and Query, and any other
+     * refining information from the SearchResult options. Facet results are placed in
+     * the provided SearchResult, and the TopDocs hits from the Lucene search are returned.
+     *
+     * @param searcher
+     * @param taxon
+     * @param searchResult
+     * @param ifilter
+     * @param query
+     * @return
+     * @throws IOException
+     */
+    public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query
+            
+            ) throws IOException{
+        return firstPassLuceneSearch(searcher, taxon, searchResult,ifilter,query, null);
+    }
 
 	/**
 	 * Performs a basic Lucene query using the provided Filter and Query, and any other
@@ -1876,7 +1844,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * @return
 	 * @throws IOException
 	 */
-	public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query) throws IOException{
+	public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query,
+	        
+	        GsrsRepository gsrsRepository) throws IOException{
 		final TopDocs hits;
 		SearchOptions options = searchResult.getOptions();
 		FacetsCollector facetCollector = new FacetsCollector();
@@ -1976,14 +1946,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 		//Promote special matches
-		if(searchResult.getOptions().getKindInfo() !=null){
+		if(searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
 		    //TODO katzelda October 2020 : don't support sponsored fields yet that's a Substance only thing
 		    //Special "promoted" match types
-//			Set<String> sponsoredFields = searchResult.getOptions()
-//			                                           .getKindInfo()
-//			                                           .getSponsoredFields();
-            Set<String> sponsoredFields = new HashSet<>();
-			if (searchResult.getQuery() != null) {
+			Set<String> sponsoredFields =  searchResult.getOptions()
+			                                           .getKindInfo()
+			                                           .getSpecialFields();
+			System.out.println("special fields:" + sponsoredFields);
+			if (searchResult.getQuery() != null ) {
 				try {
 				    for (String sp : sponsoredFields) {
 						String theQuery = "\"" + toExactMatchString(
@@ -2011,14 +1981,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 						for (int j = 0; j < td.scoreDocs.length; j++) {
 							Document doc = searcher.doc(td.scoreDocs[j].doc);
 							//TODO katzelda October 2020 : don't do sponsored yet
-//							try {
-//								Key k = Key.of(doc);
-//								searchResult.addSponsoredNamedCallable(new EntityFetcher<>(k));
-//							} catch (Exception e) {
-//								e.printStackTrace();
-//
-//								log.error(e.getMessage());
-//							}
+							try {
+								Key k = LuceneSearchResultPopulator.keyOf(doc);
+								
+								searchResult.addSponsoredNamedCallable(new LuceneSearchResultPopulator.EntityFetcher(k,gsrsRepository));
+							} catch (Exception e) {
+								e.printStackTrace();
+								log.error(e.getMessage());
+							}
 						}
 
 					}
@@ -2043,9 +2013,30 @@ public class TextIndexer implements Closeable, ProcessListener {
             //which we haven't implemented substances yet and also it appears to be a play legacy ui only
             //to convert json lucene index field to human readable name
 
-//			FieldNameDecorator fnd=FieldNameDecoratorFactory
-//										.getInstance(Play.application())
-//										.getSingleResourceFor(entityMeta);
+            //
+            // TP July 2021: Actually it's used by the beta UI too. It'd be
+            // great if it wasn't used by the
+            // beta UI, since the data dictionary could be used instead, but
+            // alas we are where we are.
+            // We need to turn this back on.
+            FieldNameDecorator fndt = (f) -> f;
+
+            // TODO: this is unforgivable reflection of an entity layer in the
+            // base
+            // layer, but there isn't an existing ported factory like there was
+            // in play yet
+            if ("ix.ginas.models.v1.Substance".equals(entityMeta.getName())) {
+                try {
+                fndt = (FieldNameDecorator) EntityUtils
+                        .getEntityInfoFor(
+                                "ix.ginas.utils.SubstanceFieldNameDecorator")
+                        .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+            FieldNameDecorator fnd=fndt;
+
 
 			getQueryBreakDownFor(query).stream().forEach(oq->{
 				try{
@@ -2074,7 +2065,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 												.withExplicitQuery(newQuery)
 												.withExplicitMatchType(oq.v())
                                         //TODO katzelda October 2020 : only fieldname decorator is substancefieldname decorator
-//												.withExplicitDisplayField(fnd.getDisplayName(lv.label))
+									    //TODO tyler July 2021 : Yes, but we still need it to work
+												.withExplicitDisplayField(fnd.getDisplayName(lv.label))
 												);
 								});
 						}
@@ -2630,11 +2622,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				markChange();
 	}
+	
 
 	public void removeAllType(EntityInfo<?> ei) throws Exception{
-		TermQuery q = new TermQuery(new Term(FIELD_KIND, ei.getName()));
-        indexerService.deleteDocuments(q);
-        listenersDeleteDocuments(q);
+	    ei.getTypeAndSubTypes()
+    	  .forEach(ee->{
+    	        TermQuery q = new TermQuery(new Term(FIELD_KIND, ee.getName()));
+    	        indexerService.deleteDocuments(q);
+    	        listenersDeleteDocuments(q);
+    	  });
+	    
+        
 		markChange();
 	}
 

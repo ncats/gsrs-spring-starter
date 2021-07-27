@@ -1,14 +1,13 @@
 package ix.core.search.text;
 
-import gov.nih.ncats.common.util.CachedSupplier;
-import lombok.Data;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
+import lombok.Data;
 
 /**
  * Configuration properties for the Legacy TextIndexer
@@ -26,6 +25,17 @@ public class TextIndexerConfig {
 
     @Value("#{new Integer('${ix.fetchWorkerCount:4}')}")
     private int fetchWorkerCount = 4;
-    @Value("${ix.index.deepfields:}")
-    private List<String> deepFields = new ArrayList<>();
+    
+//    @Value("${ix.index.deepfields:}")
+//    private List<String> deepFields = new ArrayList<>();
+    
+    @Value("#{new String('${ix.index.deepfieldsraw:}').split(';')}")
+    private String[] deepFieldsRaw;
+    
+    
+    public List<String> getDeepFields(){
+        return Arrays.stream(deepFieldsRaw).collect(Collectors.toList());
+    }
+    
+    
 }
