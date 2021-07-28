@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.search.text.IndexableValue;
 import ix.core.search.text.IndexableValueFromRaw;
 import ix.core.search.text.ReflectingIndexerAware;
+import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.PathStack;
 import ix.utils.pojopatch.PojoDiffAware;
 
@@ -61,11 +62,7 @@ public class Keyword extends Value implements ReflectingIndexerAware, PojoDiffAw
     //katzelda Nov 2020: these methods for new ReflectingIndexerAware interface were added so we dont hardcode Keyword into indexer
     @Override
     public void index(PathStack currentPathStack, Consumer<IndexableValue> consumer) {
-        if(label ==null){
-            return;
-        }
-        consumer.accept(new IndexableValueFromRaw( this.label, this.getValue(), currentPathStack.toPath()).dynamic().suggestable());
-
+            consumer.accept(new IndexableValueFromRaw(currentPathStack.getFirst(), this.term, currentPathStack.toPath()));
     }
 
     @Override

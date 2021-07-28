@@ -1952,7 +1952,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Set<String> sponsoredFields =  searchResult.getOptions()
 			                                           .getKindInfo()
 			                                           .getSpecialFields();
-			System.out.println("special fields:" + sponsoredFields);
+
 			if (searchResult.getQuery() != null ) {
 				try {
 				    for (String sp : sponsoredFields) {
@@ -2004,9 +2004,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		collectBasicFacets(lspResult.getFacets(), searchResult);
 
+		
 		collectLongRangeFacets(facetCollector, searchResult);
 
-		if(textIndexerConfig.isFieldsuggest() && options.getKind()!=null){
+		if(options.getIncludeBreakdown() && textIndexerConfig.isFieldsuggest() && options.getKind()!=null){
 			EntityInfo<?> entityMeta= EntityUtils.getEntityInfoFor(options.getKind());
 
 			//TODO katzelda October 2020 : only fieldname decorator is substancefieldname decorator
