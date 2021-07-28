@@ -3,6 +3,7 @@ package ix.core.search;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.controllers.RequestOptions;
+import ix.core.search.SearchOptions.Builder;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.utils.Util;
@@ -528,7 +529,26 @@ public class SearchOptions implements RequestOptions {
 			this.params=params;
 			return this;
 		}
+	    public Builder includeFacets(boolean f) {
+            this.includeFacets=f;
+            return this;
+        }
+        public Builder includeBreakdown(boolean b) {
+            this.includeBreakdown=b;
+            return this;
+        }
 
+        public Builder promoteSpecialMatches(boolean p) {
+            this.promoteSpecialMatches=p;
+            return this;
+        }
+
+        public Builder simpleSearchOnly(boolean s) {
+            this.includeFacets=!s;
+            this.includeBreakdown=!s;
+            this.promoteSpecialMatches=!s;
+            return this;
+        }
 		public SearchOptions build() {
 			return new SearchOptions(this);
 		}
