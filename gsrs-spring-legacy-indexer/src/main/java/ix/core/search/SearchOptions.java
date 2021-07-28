@@ -93,6 +93,10 @@ public class SearchOptions implements RequestOptions {
 	private List<String> order = new ArrayList<String>();
 	private List<String> expand = new ArrayList<String>();
 	private List<SearchTermFilter> termFilters = new ArrayList<SearchTermFilter>();
+	
+    private boolean includeFacets = true;
+    private boolean includeBreakdown = true;
+    private boolean promoteSpecialMatches = true;
 
 	public SearchOptions() {
 	}
@@ -106,6 +110,9 @@ public class SearchOptions implements RequestOptions {
 		this.setTop(Math.max(1, top));
 		this.skip = Math.max(0, skip);
 		this.setFdim(Math.max(1, fdim));
+        this.includeFacets = includeFacets;
+        this.includeBreakdown=includeBreakdown;
+        this.promoteSpecialMatches = promoteSpecialMatches;
 	}
 
 	public SearchOptions(Map<String, String[]> params) {
@@ -165,7 +172,13 @@ public class SearchOptions implements RequestOptions {
 		     	}, ()->{
 		     		if(getKind()==null)return null;
 		     		return getKind().getName();	
-		     	})
+		     	}),
+		     	ofBoolean("includeFacets", a->setIncludeFacets(a), ()->includeFacets, true),
+                ofBoolean("includeBreakdown", a->setIncludeBreakdown(a), ()->includeBreakdown, true),
+                ofBoolean("promoteSpecialMatches", a->setPromoteSpecialMatches(a), ()->promoteSpecialMatches, true),
+                ofBoolean("simpleSearchOnly", a->setSimpleSearchOnly(a),
+                        ()->!(includeFacets||includeBreakdown||promoteSpecialMatches), false)
+		     	
      	)
      	.collect(Collectors.toMap(a->a.name(), a->a));
      });
@@ -378,6 +391,10 @@ public class SearchOptions implements RequestOptions {
 		private int fetch=DEFAULT_FETCH_SIZE;
 		private int fdim=DEFAULT_FDIM;
 		private boolean sideway=true;
+
+        private boolean includeFacets=true;
+        private boolean includeBreakdown=true;
+        private boolean promoteSpecialMatches =true;
 		
 		private String filter;
 		
@@ -413,6 +430,9 @@ public class SearchOptions implements RequestOptions {
 			expand(new ArrayList<String>(so.expand));
 			termFilters(new ArrayList<SearchTermFilter>(so.termFilters));
 			longRangeFacets(new ArrayList<FacetLongRange>(so.longRangeFacets));
+			includeFacets(so.getIncludeFacets());
+			includeBreakdown(so.getIncludeBreakdown());
+			promoteSpecialMatches(so.getPromoteSpecialMatches());
 			return this;
 		}
 
@@ -641,8 +661,41 @@ public class SearchOptions implements RequestOptions {
 	}
 
 	public boolean setWait(boolean wait) {
-		this.wait = wait;
-		return wait;
+	    this.wait = wait;
+	    return wait;
 	}
 
+	public boolean setIncludeFacets(boolean includeThem) {
+	    this.includeFacets=includeThem;
+	    return includeThem;
+	}
+
+	public boolean setIncludeBreakdown(boolean includeBreakdown) {
+	    this.includeBreakdown= includeBreakdown;
+	    return includeBreakdown;
+	}
+
+	public boolean setPromoteSpecialMatches(boolean promoteSpecialMatches) {
+	    this.promoteSpecialMatches=promoteSpecialMatches;
+	    return promoteSpecialMatches;
+	}
+
+	public boolean setSimpleSearchOnly(boolean simpleSearch) {
+	    this.promoteSpecialMatches = !simpleSearch;
+	    this.includeBreakdown=!simpleSearch;
+	    this.includeFacets=!simpleSearch;
+	    return simpleSearch;
+	}
+
+	public boolean getIncludeFacets() {
+	    return this.includeFacets;
+	}
+
+	public boolean getIncludeBreakdown() {
+	    return  this.includeBreakdown;
+	}
+
+	public boolean getPromoteSpecialMatches()  {
+	    return this.promoteSpecialMatches;
+	}
 }
