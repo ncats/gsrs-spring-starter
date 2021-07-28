@@ -31,7 +31,11 @@ public class BeanViews {
 
 
     public static class Private {}
-    
+
+    /**
+     * The "Deprecated" view is a way to annotate that some JSON property should essentially never be serialized
+     * but can still be found via the PojoPointer.
+     */
     public static class Deprecated {}
 }
 /*
