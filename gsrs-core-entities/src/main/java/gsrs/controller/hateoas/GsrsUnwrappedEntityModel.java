@@ -46,6 +46,9 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     protected GsrsUnwrappedEntityModel(T obj, String view, boolean includeUnserialized) {
 
         this.obj = obj;
+        //TODO: this needs to support cases where obj is primative/String
+        //it currently errors out in such a case.
+        
         if(includeUnserialized) {
             //katzelda June 2021: This is a terrible hack because HATEOS has its own jackson converter so we can't
             //use our view=$X parameter like we can in our Spring bean converter because the HATEOS doesn't use it

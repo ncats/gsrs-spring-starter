@@ -281,7 +281,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }else{
             Object value = at.get().getValue();
             boolean isPrimitiveOrWrapped = (value!=null)?
-                    ClassUtils.isPrimitiveOrWrapper(value.getClass()):true;
+                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
             
             if(isPrimitiveOrWrapped){
                 //just a plain String - no links?
