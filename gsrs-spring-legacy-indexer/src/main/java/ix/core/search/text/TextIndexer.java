@@ -1952,7 +1952,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Set<String> sponsoredFields =  searchResult.getOptions()
 			                                           .getKindInfo()
 			                                           .getSpecialFields();
-			System.out.println("special fields:" + sponsoredFields);
+
 			if (searchResult.getQuery() != null ) {
 				try {
 				    for (String sp : sponsoredFields) {
