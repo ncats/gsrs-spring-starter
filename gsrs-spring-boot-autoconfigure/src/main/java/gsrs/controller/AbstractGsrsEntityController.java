@@ -22,6 +22,8 @@ import lombok.Data;
 //import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
 //import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
 import lombok.NoArgsConstructor;
+
+import org.apache.commons.lang3.ClassUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -278,11 +280,14 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
         }else{
             Object value = at.get().getValue();
-            if(value instanceof String){
+            boolean isPrimitiveOrWrapped = (value!=null)?
+                    ClassUtils.isPrimitiveOrWrapper(value.getClass()):true;
+            
+            if(isPrimitiveOrWrapped){
                 //just a plain String - no links?
                 //if we pass it to the enhance view below it will error out
-                Map<String,String> wrapMap = new HashMap<>();
-                wrapMap.put("value", (String) value);
+                Map<String,Object> wrapMap = new HashMap<>();
+                wrapMap.put("value",value);
                 JsonNode json;
                 JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
                 json = jsonwrap.get("value");
