@@ -8,6 +8,7 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.utils.Util;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.http.HttpStatus;

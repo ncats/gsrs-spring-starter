@@ -230,7 +230,7 @@ public final class GateKeeperFactory {
                     if (principal instanceof UserDetails) {
                         return ((UserDetails) principal).getUsername();
                     } else {
-                        return principal.toString();
+                        return authentication.getName();
                     }
                 }
             }
