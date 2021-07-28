@@ -31,6 +31,8 @@ public class BeanViews {
 
 
     public static class Private {}
+    
+    public static class Deprecated {}
 }
 /*
 

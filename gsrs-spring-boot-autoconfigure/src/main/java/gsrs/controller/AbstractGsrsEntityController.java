@@ -10,8 +10,10 @@ import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
@@ -279,22 +281,29 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                         .body(rawValue);
 
         }else{
-            Object value = at.get().getValue();
-            boolean isPrimitiveOrWrapped = (value!=null)?
-                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
+            EntityWrapper ewv = at.get();
             
-            if(isPrimitiveOrWrapped){
-                //just a plain String - no links?
-                //if we pass it to the enhance view below it will error out
-                Map<String,Object> wrapMap = new HashMap<>();
-                wrapMap.put("value",value);
-                JsonNode json;
-                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
-                json = jsonwrap.get("value");
-                return new ResponseEntity<>(json, HttpStatus.OK);
-                //return new ResponseEntity<>(value, HttpStatus.OK);
+            if(!ewv.isEntity()) {
+                JsonNode jsn=ewv.toFullJsonNode();
+                if(jsn.isValueNode()) {
+                    return new ResponseEntity<>(jsn, HttpStatus.OK);
+                }
             }
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(value, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+//            boolean isPrimitiveOrWrapped = (value!=null)?
+//                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
+//            
+//            if(isPrimitiveOrWrapped){
+//                //just a plain String - no links?
+//                //if we pass it to the enhance view below it will error out
+//                Map<String,Object> wrapMap = new HashMap<>();
+//                wrapMap.put("value",value);
+//                JsonNode json;
+//                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
+//                json = jsonwrap.get("value");
+//                return new ResponseEntity<>(json, HttpStatus.OK);
+//                //return new ResponseEntity<>(value, HttpStatus.OK);
+//            }
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ewv.getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
     }
 

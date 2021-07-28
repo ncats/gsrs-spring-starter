@@ -46,7 +46,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     protected GsrsUnwrappedEntityModel(T obj, String view, boolean includeUnserialized) {
 
         this.obj = obj;
-        //TODO: this needs to support cases where obj is primative/String
+        //TODO: this needs to support cases where obj is primitive/String
         //it currently errors out in such a case.
         
         if(includeUnserialized) {
