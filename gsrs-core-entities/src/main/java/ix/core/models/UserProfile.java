@@ -19,7 +19,6 @@ import java.util.UUID;
 @Table(name = "ix_core_userprof")
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_userprof_seq", allocationSize = 1)
 @EntityListeners(UserProfileEntityProcessor.class)
-@Indexable(indexed = false)
 public class UserProfile extends IxModel{
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
@@ -108,7 +107,7 @@ public class UserProfile extends IxModel{
 		return this.getRoles().contains(role);
 	}
 
-
+	@Indexable(indexed = false)
 	public String getComputedToken(){
 		return getComputedToken(this.user.username, this.key);
 	}
@@ -154,6 +153,7 @@ public class UserProfile extends IxModel{
 		this.salt = Util.generateSalt();
 		this.hashp = Util.encrypt(password, this.salt);
 	}
+	@Indexable(indexed = false)
 	@JsonIgnore
 	public String getEncodePassword(){
 		return salt.length()+"$"+salt+hashp;
