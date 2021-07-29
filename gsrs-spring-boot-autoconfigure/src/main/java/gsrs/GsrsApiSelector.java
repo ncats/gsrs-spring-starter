@@ -16,7 +16,7 @@ import gsrs.validator.ValidatorConfigConverter;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerEntityListener;
-import ix.core.search.text.TextIndexerFactory;
+import ix.core.search.text.TextIndexerSingletonConfiguration;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import ix.core.util.pojopointer.URIPojoPointerParser;
 import org.springframework.context.annotation.ImportSelector;
@@ -40,7 +40,7 @@ public class GsrsApiSelector implements ImportSelector {
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(SpecialFieldsProperties.class);
-                componentsToInclude.add(TextIndexerFactory.class);
+                componentsToInclude.add(TextIndexerSingletonConfiguration.class);
                 componentsToInclude.add(TextIndexerConfig.class);
                 componentsToInclude.add(TextIndexerEntityListener.class);
                 componentsToInclude.add(Lucene4IndexServiceFactory.class);
