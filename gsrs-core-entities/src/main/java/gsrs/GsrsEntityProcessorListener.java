@@ -11,6 +11,8 @@ import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.*;
@@ -31,6 +33,7 @@ public class GsrsEntityProcessorListener {
 
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
+    @Transactional
     @PreUpdate
     public void preUpdate(Object o){
         try {
@@ -43,6 +46,7 @@ public class GsrsEntityProcessorListener {
     }
 
     @PostUpdate
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postUpdate(Object o){
         try {
             initializer.get();
@@ -55,6 +59,7 @@ public class GsrsEntityProcessorListener {
     }
 
     @PrePersist
+    @Transactional
     public void prePersist(Object o){
         try {
             initializer.get();
@@ -65,6 +70,7 @@ public class GsrsEntityProcessorListener {
     }
 
     @PostPersist
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postPersist(Object o){
         try {
             initializer.get();
@@ -84,6 +90,7 @@ public class GsrsEntityProcessorListener {
     }
 
     @PreRemove
+    @Transactional
     public void preRemove(Object o){
         try {
             initializer.get();
@@ -93,6 +100,7 @@ public class GsrsEntityProcessorListener {
         }
     }
     @PostRemove
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postRemove(Object o){
         try {
             initializer.get();
@@ -102,6 +110,7 @@ public class GsrsEntityProcessorListener {
         }
     }
     @PostLoad
+    @Transactional
     public void postLoad(Object o){
         try {
             initializer.get();
