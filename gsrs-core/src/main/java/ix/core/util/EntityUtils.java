@@ -2815,7 +2815,6 @@ public class EntityUtils {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		@Transactional(readOnly = true)		
 		private Object nativeFetch(EntityManager entityManager){
 		    return entityManager.find(kind.getEntityClass(), this.getIdNative());
 
