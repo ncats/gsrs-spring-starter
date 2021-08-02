@@ -58,13 +58,23 @@ public class StandardizedStructureIndexer {
 
 
     public static Chemical getStandardized(Chemical m) {
-
-
         m.aromatize();
-
-
         return standardizeCharges(m);
-
+    }
+    public static Chemical getSSSStandardized(Chemical mol) {
+        boolean hasStars = mol.atoms()
+                .filter(a->a.isQueryAtom())
+                .filter(a->"*".equals(a.getSymbol()))
+                .findAny().isPresent();
+        if(hasStars) {
+            try {
+                String m2 = mol.toMol();
+                m2=m2.replace(" * ", " A ");
+                mol = Chemical.parse(m2);
+            } catch (IOException e) {}
+        }
+        Chemical cc= getStandardized(mol);
+        return cc;
     }
 
     public static Chemical getMolecule(String str) {
@@ -209,20 +219,20 @@ public class StandardizedStructureIndexer {
     }
 
     public ResultEnumeration substructure(Chemical query, Filter... filters) throws Exception {
-        return delegate.substructure(getStandardized(query), filters);
+        return delegate.substructure(getSSSStandardized(query), filters);
     }
 
     public ResultEnumeration substructure(Chemical query, int max, int nthreads, Filter... filters)
             throws Exception {
-        return delegate.substructure(getStandardized(query), max, nthreads, filters);
+        return delegate.substructure(getSSSStandardized(query), max, nthreads, filters);
     }
 
     public ResultEnumeration substructure(Chemical query, int max, int nthreads) throws Exception {
-        return delegate.substructure(getStandardized(query), max, nthreads);
+        return delegate.substructure(getSSSStandardized(query), max, nthreads);
     }
 
     public ResultEnumeration substructure(Chemical query) throws Exception {
-        return delegate.substructure(getStandardized(query));
+        return delegate.substructure(getSSSStandardized(query));
     }
 
     public ResultEnumeration substructure(String query, Filter... filters) throws Exception {

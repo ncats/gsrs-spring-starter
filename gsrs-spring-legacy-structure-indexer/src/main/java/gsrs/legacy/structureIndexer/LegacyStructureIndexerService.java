@@ -55,6 +55,8 @@ public class LegacyStructureIndexerService implements StructureIndexerService{
 
     @Override
     public StructureIndexer.ResultEnumeration substructure(String query) throws Exception {
+         System.out.println("GOT:");
+         System.out.println(query);
          return indexer.substructure(query,0);
     }
 
