@@ -136,6 +136,16 @@ public class EntityPersistAdapter {
 
     }
 
+    /**
+     * Perform the following {@link ChangeOperation} to the given Entity referenced by its key.
+     * If the Key references an entity that does not exist, then no changes are performed;
+     * otherwise the changeop is invoked and the entity is changed as an edit.
+     * @param key  The Key to the entity to change; can not be null but may point to an entity that doesn't exist yet.
+     * @param changeOp the {@link ChangeOperation} to perform; can not be null.
+     * @param <T> the type of the entity.
+     * @return the EntityWrapper of the updated entity or {@code null} if no change was performed.
+     * @throws NullPointerException if any parameter is null.
+     */
     public <T> EntityWrapper change(Key key, ChangeOperation<T> changeOp) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(changeOp);
@@ -154,7 +164,10 @@ public class EntityPersistAdapter {
         try {
             //we have to split this into 2 lines so Java 8 correct infers T
             Optional<T> opt = findByKey(entityManager, key);
-
+            //sometimes we ask for a key that doesn't exist yet.
+            if(!opt.isPresent()){
+                return null;
+            }
             EntityWrapper<T> ew = EntityWrapper.of(opt.get()); // supplies
                                                                         // the
                                                                         // object
