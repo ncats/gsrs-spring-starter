@@ -13,8 +13,10 @@ import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.SpecialFieldsProperties;
 import gsrs.model.GsrsApiAction;
+import gsrs.repository.GsrsRepository;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.*;
+import ix.core.controllers.EntityFactory;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
 import ix.core.models.*;
@@ -30,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.jboss.jandex.Index;
 import org.reflections.Reflections;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import gov.nih.ncats.common.Tuple;
 
@@ -2813,23 +2815,18 @@ public class EntityUtils {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-
+		@Transactional(readOnly = true)		
 		private Object nativeFetch(EntityManager entityManager){
-			return entityManager.find(kind.getEntityClass(), this.getIdNative());
+		    return entityManager.find(kind.getEntityClass(), this.getIdNative());
 
 		}
-//
-//		/**
-//		 * Returns null if not present
-//		 * @return
-//		 */
-//		@SuppressWarnings("unchecked")
-//		private Object nativeFetch(String datasource){
-//			return kind.getFinder(datasource).byId(this.getIdNative());
-//		}
-//
-//
-		// fetches from finder
+		
+		/**
+		 * Uses the supplied {@link EntityManager} to find the entity
+		 * referenced by this key. 
+		 * 
+		 */
+		@Transactional(readOnly = true)
 		public Optional<EntityWrapper<?>> fetch(EntityManager entityManager) {
 
 			Object o=nativeFetch(entityManager);
@@ -2838,14 +2835,18 @@ public class EntityUtils {
 			}
 			return Optional.of(EntityWrapper.of(o));
 		}
-//
-//		// fetches from finder
-//		public Optional<EntityWrapper<?>> fetch(String datasource) {
-//			Object o=nativeFetch(datasource);
-//			if(o==null)return Optional.empty();
-//			return Optional.of(EntityWrapper.of(o));
-//		}
-
+		
+		/**
+         * Uses the supplied {@link GsrsRepository} to find the entity
+         * referenced by this key. Note that this seems to work more reliably
+         * than with the {@link EntityManager} version for reasons not 
+         * well understood.
+         * 
+         */
+        @Transactional(readOnly = true)
+        public <T,I> Optional<EntityWrapper<T>> fetch(GsrsRepository<T,I> gsrsRepo) {
+            return gsrsRepo.findByKey(this).map(t->EntityWrapper.of(t));
+        }
 
 		/**
 		 * Returns a {@link Tuple} of the ID field and ID 
