@@ -54,6 +54,7 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -1456,6 +1457,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 				if (!terms.isEmpty()){
 					f = new TermsFilter(terms);
 				}
+				terms.forEach(tt->{
+				    System.out.println(tt+"\t" + tt.text());
+				});
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
 					Stream<Key> ids = subset.stream()
@@ -1464,8 +1468,18 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 					searchResult.setRank(comp);
 				}
-			} else if (options.getKind() != null) {
-				f = createKindArrayFromOptions(options);
+			} 
+			if (options.getKind() != null) {
+			    if(f==null) {
+			        f = createKindArrayFromOptions(options);
+			    }else {
+			        BooleanFilter bf = new BooleanFilter();
+			        bf.add(f,Occur.MUST);
+			        bf.add(createKindArrayFromOptions(options),Occur.MUST);
+			        f=bf;
+//                    
+//			        f = Filter.f
+			    }
 			} else{
 				f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
 			}
