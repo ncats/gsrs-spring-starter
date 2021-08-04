@@ -1451,16 +1451,12 @@ public class TextIndexer implements Closeable, ProcessListener {
     		return query;
 		};
 		Supplier<Filter> fs = ()->{
-		    System.out.println("kind:" + options.getKind());
 			Filter f = null;
 			if (subset != null) {
 				List<Term> terms = getTerms(subset);
 				if (!terms.isEmpty()){
 					f = new TermsFilter(terms);
 				}
-				terms.forEach(tt->{
-				    System.out.println(tt+"\t" + tt.text());
-				});
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
 					Stream<Key> ids = subset.stream()
@@ -1478,10 +1474,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			        bf.add(f,Occur.MUST);
 			        bf.add(createKindArrayFromOptions(options),Occur.MUST);
 			        f=bf;
-//                    
-//			        f = Filter.f
 			    }
 			} else{
+			    //TODO: Unclear if this works as intended
 			    if(f==null) {
 			        f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
 			    }else {
@@ -1491,7 +1486,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                     f=bf;
 			    }
 			}
-			System.out.println(f);
 			return f;
 		};
 		Query q=qs.get();
