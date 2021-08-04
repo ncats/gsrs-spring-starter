@@ -54,6 +54,7 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -1464,10 +1465,26 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 					searchResult.setRank(comp);
 				}
-			} else if (options.getKind() != null) {
-				f = createKindArrayFromOptions(options);
+			} 
+			if (options.getKind() != null) {
+			    if(f==null) {
+			        f = createKindArrayFromOptions(options);
+			    }else {
+			        BooleanFilter bf = new BooleanFilter();
+			        bf.add(f,Occur.MUST);
+			        bf.add(createKindArrayFromOptions(options),Occur.MUST);
+			        f=bf;
+			    }
 			} else{
-				f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
+			    //TODO: Unclear if this works as intended
+			    if(f==null) {
+			        f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
+			    }else {
+			        BooleanFilter bf = new BooleanFilter();
+                    bf.add(f,Occur.MUST);
+                    bf.add(new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false"),Occur.MUST);
+                    f=bf;
+			    }
 			}
 			return f;
 		};

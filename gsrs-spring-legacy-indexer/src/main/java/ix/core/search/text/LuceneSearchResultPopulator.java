@@ -116,7 +116,7 @@ class LuceneSearchResultPopulator {
 		@Override
 		@Transactional(readOnly = true)
 		public Object call() {
-
+		    
 			Object ret= gsrsRepository.findByKey(key).get();
 			//this makes it a full fetch
 			EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(ret);
