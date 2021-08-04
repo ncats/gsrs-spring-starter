@@ -1451,6 +1451,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     		return query;
 		};
 		Supplier<Filter> fs = ()->{
+		    System.out.println("kind:" + options.getKind());
 			Filter f = null;
 			if (subset != null) {
 				List<Term> terms = getTerms(subset);
@@ -1481,8 +1482,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 //			        f = Filter.f
 			    }
 			} else{
-				f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
+			    if(f==null) {
+			        f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
+			    }else {
+			        BooleanFilter bf = new BooleanFilter();
+                    bf.add(f,Occur.MUST);
+                    bf.add(new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false"),Occur.MUST);
+                    f=bf;
+			    }
 			}
+			System.out.println(f);
 			return f;
 		};
 		Query q=qs.get();
