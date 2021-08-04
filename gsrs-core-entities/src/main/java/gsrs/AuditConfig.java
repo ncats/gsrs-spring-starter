@@ -5,6 +5,8 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsUserProfileDetails;
 import ix.core.models.Principal;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -31,11 +33,13 @@ import java.util.Optional;
  */
 @Configuration
 @EnableJpaAuditing(dateTimeProviderRef = "timeTraveller")
+@Slf4j
 public class AuditConfig {
     @Bean
     public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository, EntityManager em) {
         return new SecurityAuditor(principalRepository, em);
     }
+    
     @Bean
     @Primary
     public DateTimeProvider timeTraveller(){
@@ -68,7 +72,7 @@ public class AuditConfig {
         }
 
         @Override
-
+        @Transactional
         public Optional<Principal> getCurrentAuditor() {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if(auth ==null || auth instanceof AnonymousAuthenticationToken){
@@ -85,6 +89,8 @@ public class AuditConfig {
             if(name ==null){
                 return Optional.empty();
             }
+            //
+            log.debug("looking up principal for " + name + " from class "+ auth.getClass());
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
 
             Optional<Principal> value = principalCache.computeIfAbsent(name,
@@ -97,12 +103,8 @@ public class AuditConfig {
                             Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
                             return Optional.ofNullable(p);
                         } catch (Throwable t) {
-                            t.printStackTrace();
                             return Optional.empty();
                         }
-
-
-
 
                     });
             if(value.isPresent()){
