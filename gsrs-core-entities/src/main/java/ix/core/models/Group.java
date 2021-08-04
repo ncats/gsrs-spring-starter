@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -31,6 +32,19 @@ public class Group extends LongBaseModel {
 
     public Group(){
         //required for hibernate?
+    }
+    @JsonIgnore
+    public Set<Principal> getMembers(){
+        return members;
+    }
+    public void addMember(Principal p){
+        getMembers().add(Objects.requireNonNull(p));
+        setIsDirty("members");
+    }
+    public void removeMember(Principal p){
+        Objects.requireNonNull(p);
+        getMembers().remove(p);
+        setIsDirty("members");
     }
    @JsonCreator
     public Group(@JsonProperty("name") String name) {

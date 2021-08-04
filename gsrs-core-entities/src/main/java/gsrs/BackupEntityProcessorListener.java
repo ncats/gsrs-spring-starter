@@ -22,16 +22,23 @@ import javax.persistence.EntityManager;
 import javax.persistence.PostPersist;
 import javax.persistence.PostUpdate;
 
+/**
+ * JPA Entity Listener
+ * that will create {@link BackupEvent}s
+ * if the entity being Persisted or Updated
+ * is both a {@link FetchableEntity}
+ * and should be backed up determined by
+ * {@link EntityUtils.EntityInfo#hasBackup()}.
+ */
 public class BackupEntityProcessorListener {
 
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()-> AutowireHelper.getInstance().autowire(this));
 
     @Autowired
-    private BackupRepository backupRepository;
-
-    @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    //TODO do we need to handle Remove?
 
     @PostPersist
     @PostUpdate
@@ -42,7 +49,8 @@ public class BackupEntityProcessorListener {
             try {
             BackupEntity be = new BackupEntity();
             be.setInstantiated((FetchableEntity) o);
-                applicationEventPublisher.publishEvent(new BackupEvent(be));
+
+            applicationEventPublisher.publishEvent(new BackupEvent(be));
             } catch (Exception e) {
                 Sneak.sneakyThrow(e);
             }

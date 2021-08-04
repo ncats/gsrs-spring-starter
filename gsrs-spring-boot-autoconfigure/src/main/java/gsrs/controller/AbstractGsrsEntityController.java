@@ -317,7 +317,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Override
     @GetGsrsRestApiMapping("")
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "10") long top,
                                        @RequestParam(value = "skip", defaultValue = "0") long skip,
                                        @RequestParam(value = "order", required = false) String order,

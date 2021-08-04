@@ -1,6 +1,8 @@
 package gsrs;
 
 
+import gsrs.repository.UserProfileRepository;
+import gsrs.services.*;
 import ix.core.EbeanLikeImplicitNamingStategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
@@ -21,11 +23,6 @@ import org.springframework.context.annotation.Import;
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
-import gsrs.services.EditEventService;
-import gsrs.services.GroupService;
-import gsrs.services.GroupServiceImpl;
-import gsrs.services.PrincipalService;
-import gsrs.services.PrincipalServiceImpl;
 
 import javax.persistence.EntityManager;
 
@@ -69,6 +66,12 @@ public class GsrsEntitiesConfiguration {
     @ConditionalOnMissingBean
     public GroupService groupService(GroupRepository groupRepository, EntityManager entityManager){
         return new GroupServiceImpl(groupRepository, entityManager);
+    }
+    @Bean
+    @ConditionalOnMissingBean
+    public UserProfileService userProfileService(GroupService groupService, UserProfileRepository userProfileRepository,
+                                                 GroupRepository groupRepository, EntityManager entityManager){
+        return new UserProfileService( userProfileRepository, groupService, groupRepository, entityManager);
     }
     @Bean
     public TopicExchange substanceExchange(){

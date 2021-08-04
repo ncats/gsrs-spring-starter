@@ -10,6 +10,13 @@ import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 import java.io.IOException;
 
+/**
+ * JPA Entity Listener that will fire
+ * index events on
+ * PostPersist, PostUpdate and PostRemove
+ * if the entity being persisted/updated/removed is indexable
+ * determined by {@link EntityUtils.EntityWrapper#shouldIndex()}.
+ */
 public class IndexerEntityListener {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -20,8 +27,7 @@ public class IndexerEntityListener {
         }
     }
     @PostPersist
-    public void indexNewEntity(Object obj) throws IOException {
-//        System.out.println("adding to index " + obj);
+    public void indexNewEntity(Object obj){
         autowireIfNeeded();
         EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
@@ -30,8 +36,7 @@ public class IndexerEntityListener {
     }
 
     @PostUpdate
-    public void updateEntity(Object obj) throws Exception {
-//        System.out.println("updating index " + obj);
+    public void updateEntity(Object obj) {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
@@ -39,8 +44,7 @@ public class IndexerEntityListener {
         }
     }
     @PostRemove
-    public void deleteEntity(Object obj) throws Exception {
-//        System.out.println("removing from index " + obj);
+    public void deleteEntity(Object obj){
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
