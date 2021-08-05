@@ -48,24 +48,26 @@ public class UserController {
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
 
+    @GetMapping("api/v1/admin/groups/@names")
+    @Transactional(readOnly = true)
+    public List<String> getGroupNames(){
+        return groupRepository.findAllGroupNames();
+    }
     @GetMapping("api/v1/users")
     @Transactional(readOnly = true)
-    public ResponseEntity<Object> users(@RequestParam(value = "top", defaultValue = "10") long top,
-                                        @RequestParam(value = "skip", defaultValue = "0") long skip,
+    public List<UserProfile> userSummary(
                                         @RequestParam Map<String, String> queryParameters) {
+        //only need user, email created modified active/inactive
+        //this selected/fetched query is to only fetch the columns we need in the admin panel api
+        //the Summary nested objects are to preserve the same json structure as if we returned the real
+        //objects with empty everything else we don't read.
 
+        return userProfileRepository.findAll();
 
-        Page<UserProfile> users = userProfileRepository.findAll(new OffsetBasedPageRequest(skip, top));
-        String view = queryParameters.get("view");
-        if ("key".equals(view)) {
-            return new ResponseEntity<>(AbstractGsrsEntityController.PagedResult.ofKeys(users), HttpStatus.OK);
-
-        }
-        return new ResponseEntity<>(new AbstractGsrsEntityController.PagedResult(users, queryParameters), HttpStatus.OK);
     }
 
     @GetMapping({"api/v1/users({ID})", "api/v1/users/{ID}"})
-    public ResponseEntity<Object> getSingleRecord(@RequestParam("ID") String idOrName, @RequestParam Map<String, String> queryParameters) {
+    public ResponseEntity<Object> getSingleRecord(@PathVariable("ID") String idOrName, @RequestParam Map<String, String> queryParameters) {
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (opt.isPresent()) {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(opt.get(), queryParameters), HttpStatus.OK);

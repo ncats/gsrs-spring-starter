@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Stream;
 
 @Repository
@@ -22,10 +24,21 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     @Query("select e.user.username as username, e.key from UserProfile e")
     Stream<UserTokenInfo> streamAllTokenInfo();
 
-    //this.user.username + this.key);
+    @Query("select e.user.username as username, e.user.email as email, e.user.created," +
+            "e.user.modified, e.id, e.active from UserProfile e")
+    List<UserProfileSummary> listSummary();
 
     interface UserTokenInfo{
          String getUsername();
          String getKey();
+    }
+
+    interface UserProfileSummary{
+        String getUsername();
+        String getEmail();
+        Date getCreated();
+        Date getModified();
+        Long getId();
+        Boolean getActive();
     }
 }

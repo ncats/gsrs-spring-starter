@@ -61,6 +61,11 @@ public class LoginController {
         sessionCookie.setHttpOnly(true);
         response.addCookie( sessionCookie );
         gsrsCache.setRaw(sessionId.toString(), sessionId);
-        return new ResponseEntity<>(up, HttpStatus.OK);
+        //we actually want to include the computed token here
+        //which we jsonignore otherwise
+
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(up,parameters, m->{
+            m.addKeyValuePair("computedToken", ((UserProfile)m.getObj()).getComputedToken());
+        }), HttpStatus.OK);
     }
 }

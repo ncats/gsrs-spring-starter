@@ -23,7 +23,7 @@ public class UserProfile extends IxModel{
 
 	// is the profile currently active? authorization should take
 	// this into account
-	public boolean active;
+	public boolean active = false;
 
 	private String hashp;
 	private String salt;
@@ -113,7 +113,7 @@ public class UserProfile extends IxModel{
 	public boolean hasRole(Role role) {
 		return this.getRoles().contains(role);
 	}
-
+	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
 		return getComputedToken(this.user.username, this.key);

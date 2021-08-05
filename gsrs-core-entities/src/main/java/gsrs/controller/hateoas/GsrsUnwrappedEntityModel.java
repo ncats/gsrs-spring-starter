@@ -102,6 +102,17 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
     }
 
     /**
+     * Adds the and additional key-value pair object to the JSON.
+     * @param key the name of the key.
+     * @param value the value to add.
+     * @return this
+     */
+    public GsrsUnwrappedEntityModel<T> addKeyValuePair(String key, Object value){
+        ourLinks.put(key, value);
+        return this;
+    }
+
+    /**
      * Adds the link as a plain String instead of as a {@link RestUrlLink}.
      * @param name the name of the field being linked.
      * @param href the url as a String.
