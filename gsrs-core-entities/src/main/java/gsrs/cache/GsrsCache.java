@@ -49,4 +49,6 @@ public interface GsrsCache extends Closeable {
     void setMatchingContext(String contextID, EntityUtils.Key key, Map<String, Object> matchingContext);
 
     Map<String, Object> getMatchingContextByContextID(String contextID, EntityUtils.Key key);
+
+    Object getConfiguration();
 }

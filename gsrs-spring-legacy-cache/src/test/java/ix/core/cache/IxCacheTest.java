@@ -31,7 +31,7 @@ public class IxCacheTest {
 		IxCache = new IxCache( new GateKeeperFactory.Builder(100, ONE_HR,ONE_HR)
 							.cacheAdapter(new FileDbCache(tmpDir.getRoot(), "testCache",true))
 				.useNonEvictableCache(50, ONE_HR, ONE_HR)
-							.build().create());
+							.build().create(), null);
 	}
 
 	@After

@@ -148,7 +148,7 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
         @ConditionalOnMissingBean(GsrsCache.class)
         @Order
         public GsrsCache gsrsCache(GsrsLegacyCachePropertyConfiguration conf){
-            return new IxCache(conf.createNewGateKeeper());
+            return new IxCache(conf.createNewGateKeeper(), conf);
         }
 
     }

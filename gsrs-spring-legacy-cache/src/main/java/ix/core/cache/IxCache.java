@@ -3,6 +3,7 @@ package ix.core.cache;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.cache.GsrsCache;
+import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil.TypedCallable;
 import net.sf.ehcache.Element;
@@ -31,13 +32,17 @@ public class IxCache implements GsrsCache {
 
     private GateKeeper gateKeeper;
 
+    private GsrsLegacyCachePropertyConfiguration configuration;
 
-
-    public IxCache(GateKeeper gateKeeper) {
+    public IxCache(GateKeeper gateKeeper, GsrsLegacyCachePropertyConfiguration configuration) {
         this.gateKeeper =gateKeeper;
+        this.configuration= configuration;
     }
 
-
+    @Override
+    public Object getConfiguration() {
+        return configuration;
+    }
 
     @PreDestroy
     @Override
