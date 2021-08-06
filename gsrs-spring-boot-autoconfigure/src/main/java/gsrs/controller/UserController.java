@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
@@ -20,10 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.swing.text.html.Option;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @hasAdminRole
@@ -70,7 +68,7 @@ public class UserController {
     public ResponseEntity<Object> getSingleRecord(@PathVariable("ID") String idOrName, @RequestParam Map<String, String> queryParameters) {
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (opt.isPresent()) {
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(opt.get(), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceUserProfile(opt.get(), queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -92,7 +90,7 @@ public class UserController {
             //TODO move this to UserProfile service?
             up.deactivate();
             userProfileRepository.saveAndFlush(up);
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(up, queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -123,7 +121,7 @@ public class UserController {
             //as admins we don't need to check if the old password matches we can force update the password
             up.setPassword(passwordChangeRequest.getNewPassword());
             userProfileRepository.saveAndFlush(up);
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(up, queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -149,7 +147,7 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
             @RequestParam Map<String, String> queryParameters) {
 
 
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(
+        return new ResponseEntity<>(enhanceUserProfile(
                 userProfileService.createNewUserProfile(newUserRequest.createValidatedNewUserRequest()), queryParameters), HttpStatus.OK);
     }
     @Transactional
@@ -169,8 +167,18 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
         if(!opt.get().user.username.equals(requestedUsername)){
             return gsrsControllerConfiguration.handleBadRequest(400, "username doesn't match", queryParameters);
         }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(
+        return new ResponseEntity<>(enhanceUserProfile(
                 userProfileService.updateUserProfile(validatedNewUserRequest), queryParameters), HttpStatus.OK);
+    }
+
+    private GsrsUnwrappedEntityModel enhanceUserProfile(UserProfile up, Map<String, String> queryParameters){
+        return GsrsControllerUtil.enhanceWithView(up, queryParameters, m->{
+            UserProfile profile= ((UserProfile)m.getObj());
+            List<Group> groups = groupRepository.findGroupsByMembers(profile.user);
+
+                m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
+
+        });
     }
 }
 

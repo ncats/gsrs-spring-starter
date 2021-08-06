@@ -150,10 +150,19 @@ public class UserProfileService {
     public UserProfile updateUserProfile(ValidatedNewUserRequest newUserRequest) {
 
         synchronized (this) {
+            /*
+
+
+        private final Set<String> groups;
+        private final Set<Role> roles;
+             */
             UserProfile oldUser = userProfileRepository.findByUser_Username(newUserRequest.getUsername());
             if (oldUser == null) {
                 throw new IllegalArgumentException("The username \"" + newUserRequest.getUsername() + "\" not found");
 
+            }
+            if(newUserRequest.getEmail() !=null){
+                oldUser.user.email= newUserRequest.getEmail();
             }
             if(newUserRequest.getPassword() !=null){
                 oldUser.setPassword(newUserRequest.getPassword());
@@ -170,6 +179,9 @@ public class UserProfileService {
             if(newUserRequest.getGroups() !=null){
 
                 groupService.updateUsersGroups(oldUser.user, newUserRequest.getGroups());
+            }
+            if(newUserRequest.getRoles() !=null){
+                oldUser.setRoles(newUserRequest.getRoles());
             }
             return oldUser;
         }

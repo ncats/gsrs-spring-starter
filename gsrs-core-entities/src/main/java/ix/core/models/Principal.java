@@ -105,7 +105,4 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
     public boolean isAdmin () {
     	return admin; 
     }
-
-
-    
 }
