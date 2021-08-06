@@ -1,7 +1,6 @@
 package gsrs.controller;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.hateoas.GsrsLinkUtil;
@@ -9,23 +8,16 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
-import gsrs.service.PayloadService;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 //import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
 //import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
 //import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
-import lombok.NoArgsConstructor;
 
-import org.apache.commons.lang3.ClassUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -36,7 +28,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -44,9 +35,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 
 /**
@@ -347,34 +335,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             return Sort.by(Sort.Direction.ASC, order.substring(1));
         }
         return Sort.by(Sort.Direction.ASC, order);
-    }
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PagedResult<T>{
-        private long total, count,skip, top;
-        private Object content;
-
-        public static PagedResult<EntityUtils.Key> ofKeys(Page<?> page){
-            return PagedResult.<EntityUtils.Key>builder()
-                   .total( page.getTotalElements())
-                    .count(page.getNumberOfElements())
-                    .skip( page.getSize() * page.getNumber())
-                    .top( page.getSize())
-                    .content( page.toList().stream().map(e->EntityUtils.EntityWrapper.of(e).getKey()).collect(Collectors.toList()))
-                            .build();
-
-        }
-        public PagedResult(Page<T> page, Map<String, String> queryParameters){
-            this.total = page.getTotalElements();
-            this.count= page.getNumberOfElements();
-            this.skip = page.getSize() * page.getNumber();
-            this.top = page.getSize();
-            content = page.toList().stream().map(e->GsrsControllerUtil.enhanceWithView(e, queryParameters)).collect(Collectors.toList());
-
-
-        }
     }
 
     @Override
