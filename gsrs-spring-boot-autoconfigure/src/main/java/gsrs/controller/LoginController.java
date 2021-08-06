@@ -59,7 +59,10 @@ public class LoginController {
 
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
         Optional<Session> session = sessions.stream().findFirst();
+
+        //session could be empty if we restarted or erased sessions on the server and a browser kept old sesion info
         // Add a session cookie
+
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
         sessionCookie.setHttpOnly(true);

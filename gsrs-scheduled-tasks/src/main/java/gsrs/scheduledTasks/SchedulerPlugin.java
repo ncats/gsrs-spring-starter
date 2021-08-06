@@ -292,29 +292,34 @@ public class SchedulerPlugin{
 
 
         @JsonIgnore
-        @GsrsApiAction("@disable")
-        public ResourceMethodReference<ScheduledTask> getDisableAction () {
-
-            return ResourceMethodReference.forMethod("@disable", this::disable);
+        @GsrsApiAction(value ="@disable", serializeUrlOnly = true)
+        public FieldResourceReference<ScheduledTask> getDisableAction () {
+            if(!this.enabled){
+                return null;
+            }
+            return FieldResourceReference.forField("@disable", this::disable);
         }
 
         @JsonIgnore
-        @GsrsApiAction("@cancel")
-        public ResourceMethodReference<ScheduledTask> getCancelAction () {
+        @GsrsApiAction(value ="@cancel", serializeUrlOnly = true)
+        public FieldResourceReference<ScheduledTask> getCancelAction () {
             if(!this.isRunning())return null;
-            return ResourceMethodReference.forMethod("@cancel", this::cancel);
+            return FieldResourceReference.forField("@cancel", this::cancel);
         }
         @JsonIgnore
-        @GsrsApiAction("@enable")
-        public ResourceMethodReference<ScheduledTask> getEnableAction() {
-            return ResourceMethodReference.forMethod("@enable", this::enable);
+        @GsrsApiAction(value ="@enable", serializeUrlOnly = true)
+        public FieldResourceReference<ScheduledTask> getEnableAction() {
+    	    if(this.enabled){
+    	        return null;
+            }
+            return FieldResourceReference.forField("@enable", this::enable);
 
         }
         @JsonIgnore
-        @GsrsApiAction("@execute")
-        public ResourceMethodReference<ScheduledTask> getExecuteAction () {
+        @GsrsApiAction(value = "@execute", serializeUrlOnly = true)
+        public FieldResourceReference<ScheduledTask> getExecuteAction () {
     	      if(this.isRunning())return null;
-            return ResourceMethodReference.forMethod("@execute", this::execute);
+            return FieldResourceReference.forField("@execute", this::execute);
 
         }
 

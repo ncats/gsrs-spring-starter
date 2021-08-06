@@ -31,7 +31,7 @@ public class ResourceReference <T>{
 	}
 
 
-	protected T invoke(){
+	public T invoke(){
 		return raw.get();
 	}
 	public String toString(){
