@@ -2,6 +2,7 @@ package gsrs;
 
 
 import gsrs.repository.UserProfileRepository;
+import gsrs.security.AdminService;
 import gsrs.services.*;
 import ix.core.EbeanLikeImplicitNamingStategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
@@ -44,7 +45,10 @@ public class GsrsEntitiesConfiguration {
     public PrincipalService principalService(PrincipalRepository principalRepository, EntityManager entityManager){
         return new PrincipalServiceImpl(principalRepository, entityManager);
     }
-
+    @Bean
+    public AdminService adminService(){
+        return new AdminService();
+    }
     //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
     //to be backwards compatible we have to tell hibernate to use Legacy Jpa (1.0)
     //and not JPA 2 naming strategies.  This mostly affects join table names and columns
