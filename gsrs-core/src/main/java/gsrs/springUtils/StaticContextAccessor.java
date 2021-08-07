@@ -17,6 +17,12 @@ import lombok.extern.slf4j.Slf4j;
  * This class is used to get a Bean
  * in the Spring {@link ApplicationContext}
  * even in a static context.
+ * 
+ * It is also used as way of accessing other global-scope
+ * resources from a static context. The use of this class
+ * is discouraged as there is usually a way to have a Bean
+ * autowired or access the global-scope resource in a more
+ * orthodox way.
  *
  * This implementation was taken from
  * <a href="https://stackoverflow.com/a/17660150">https://stackoverflow.com/a/17660150</a>
@@ -27,7 +33,9 @@ public class StaticContextAccessor {
 
     private static StaticContextAccessor instance;
 
-    
+    // This is a hack to have a global-last ditch
+    // place for things to run on final shutdown. This is
+    // mostly used by tests.
     private List<Runnable> doFinally= new ArrayList<>();
     
     @Autowired
@@ -38,6 +46,17 @@ public class StaticContextAccessor {
         instance = this;
     }
     
+    /**
+     * Register a {@link Runnable} to execute on the eventual
+     * shutdown of the application. While most shutdown procedures
+     * should be controlled by a specific service, there are some times
+     * when a specific task must be performed after almost every other
+     * service has been shutdown. The only current use of this method
+     * is to signal deletion of a temporary file after a test is completed
+     * AND the application has been shut down. Use of this method is discouraged.
+     *  
+     * @param r
+     */
     public static void addStaticShutdownRunnable(Runnable r) {
         if(instance!=null) {
             instance.addShutdownRunnable(r);
@@ -46,13 +65,23 @@ public class StaticContextAccessor {
         }
     }
     
+    /**
+     * Register a {@link Runnable} to execute on the eventual
+     * shutdown of the application. While most shutdown procedures
+     * should be controlled by a specific service, there are some times
+     * when a specific task must be performed after almost every other
+     * service has been shutdown. The only current use of this method
+     * is to signal deletion of a temporary file after a test is completed
+     * AND the application has been shut down. Use of this method is discouraged.
+     *  
+     * @param r
+     */
     public void addShutdownRunnable(Runnable r) {
         this.doFinally.add(r);
     }
     
     @PreDestroy
-    public void testDestroy() {
-//        System.out.println("REMOVE");
+    private void testDestroy() {
         doFinally.forEach(r->{
             try {
                 r.run();
