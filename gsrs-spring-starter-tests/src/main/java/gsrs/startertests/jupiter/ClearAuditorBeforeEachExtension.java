@@ -44,6 +44,10 @@ public class ClearAuditorBeforeEachExtension implements BeforeEachCallback {
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) throws Exception {
-        ((AuditConfig.SecurityAuditor)auditor).clearCache();
+        //TODO: this isn't always of this type ... there may have been
+        // a change since the time this was originally written?
+        if(auditor instanceof AuditConfig.SecurityAuditor) {
+            ((AuditConfig.SecurityAuditor)auditor).clearCache();
+        }
     }
 }

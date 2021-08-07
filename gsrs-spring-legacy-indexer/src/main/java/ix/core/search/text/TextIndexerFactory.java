@@ -44,7 +44,6 @@ public class TextIndexerFactory {
                 .map(cf->cf.getDeepFields()
                 .stream()
                 .map(s->{
-                    System.out.println("HEY!:" + s);
                     try{
                         return EntityUtils.getEntityInfoFor(s).getTypeAndSubTypes();
                     }catch(Exception e){

@@ -1,19 +1,13 @@
 package gsrs.startertests.jupiter;
 
 
-import gov.nih.ncats.common.io.IOUtil;
-import gsrs.AuditConfig;
-import gsrs.EntityPersistAdapter;
-import gsrs.cache.GsrsCache;
-import gsrs.cache.GsrsLegacyCacheConfiguration;
-import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
-import gsrs.payload.LegacyPayloadConfiguration;
-import gsrs.repository.FileDataRepository;
-import gsrs.repository.PayloadRepository;
-import gsrs.payload.LegacyPayloadService;
-import gsrs.springUtils.AutowireHelper;
-import ix.core.cache.IxCache;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,12 +22,20 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import gov.nih.ncats.common.io.IOUtil;
+import gsrs.AuditConfig;
+import gsrs.EntityPersistAdapter;
+import gsrs.cache.GsrsCache;
+import gsrs.cache.GsrsLegacyCacheConfiguration;
+import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.payload.LegacyPayloadService;
+import gsrs.repository.FileDataRepository;
+import gsrs.repository.PayloadRepository;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.cache.IxCache;
 
 /**
  * Abstract class that autoregisters some GSRS Junit 5 Extensions (what Junit 4 called "Rules")
@@ -42,7 +44,9 @@ import java.nio.file.Files;
  * make the TextIndexer write the index to a temporary folder for each test.
  */
 @ContextConfiguration(initializers = AbstractGsrsJpaEntityJunit5Test.Initializer.class)
-@Import({ClearAuditorBeforeEachExtension.class , ClearIxHomeExtension.class,  AuditConfig.class, AutowireHelper.class,
+@Import({ClearAuditorBeforeEachExtension.class , 
+//    ClearIxHomeExtension.class,  
+    AuditConfig.class, AutowireHelper.class,
         EntityPersistAdapter.class, EntityPersistAdapter.class, AbstractGsrsJpaEntityJunit5Test.PayloadTestConf.class,
         ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
         ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
@@ -53,17 +57,37 @@ import java.nio.file.Files;
 
 public abstract class AbstractGsrsJpaEntityJunit5Test {
 
-
-    @TempDir
+   // TP: @TempDir actually deletes at the wrong time, since it's
+   //     after the TEST but before the application is shutdown
+   //     this leads to errors about textindex/structureindex/sequenceindexer
+   //     not finding files they already have open.
+    
+//    @TempDir
     protected static File tempDir;
+    
+    // TP: these 2 methods make up for the shortcomings
+    // of @TempDir
+    
+    @BeforeAll
+    public static void loadFile() throws IOException {
+        tempDir = Files.createTempDirectory("gsrs").toFile();
+    }
+   
+    
+    @AfterEach
+    public void deleteFile() throws IOException {
+        StaticContextAccessor.addStaticShutdownRunnable(()->{
+            IOUtil.deleteRecursivelyQuitely(tempDir);
+        });
+    }
 
 //    @MockBean
     @Autowired
     protected EntityPersistAdapter epa;
 
-    @Autowired
-    @RegisterExtension
-    protected ClearIxHomeExtension clearTextIndexerRule;
+//    @Autowired
+//    @RegisterExtension
+//    protected ClearIxHomeExtension clearTextIndexerRule;
 
     @Autowired
     @RegisterExtension
@@ -79,18 +103,26 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
 
     @BeforeEach
     public void createPayloadDir() throws IOException {
+        
+        //TP: the following snippet was also problematic since it would
+        // delete files AFTER the application got running
+        // instead, it's probably better to remove only at shutdown each time
+        
         //the static reference to the temp dir saves the directory across
         //tests.  We only make it static so that we can reference it in the
         //Initializers to override ix.home
         //so manually delete it and re-create it
-        if(tempDir.exists()){
-            IOUtil.deleteRecursivelyQuitely(tempDir);
-            tempDir.mkdirs();
-        }
+//        if(tempDir.exists()){
+//            IOUtil.deleteRecursivelyQuitely(tempDir);
+//            tempDir.mkdirs();
+//        }
+        
+        
         if(! legacyPayloadConfiguration.getBase().exists()){
             Files.createDirectories(legacyPayloadConfiguration.getBase().toPath());
         }
     }
+    
 
     static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override

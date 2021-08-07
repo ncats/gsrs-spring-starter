@@ -27,7 +27,9 @@ import java.lang.annotation.*;
 @ContextConfiguration
 @DirtiesContext
 @DataJpaTest
-@Import({ClearAuditorBeforeEachExtension.class , ClearIxHomeExtension.class,  AuditConfig.class, AutowireHelper.class,
+@Import({ClearAuditorBeforeEachExtension.class , 
+//    ClearIxHomeExtension.class,  
+    AuditConfig.class, AutowireHelper.class,
         ClearDeserializerCachesBeforeEachExtension.class,
 //        PrincipalRepository.class,
 //        ResetAllCacheSupplierBeforeEachExtension.class,
