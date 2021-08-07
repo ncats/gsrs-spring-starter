@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.services.BackupService;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
@@ -10,6 +11,7 @@ public class GsrsBackupSelector implements ImportSelector {
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         //TODO should we enable something to turn on the entity listener?
         return new String[]{
+                BackupService.class.getName(),
                 BackupEventListener.class.getName()};
     }
 }

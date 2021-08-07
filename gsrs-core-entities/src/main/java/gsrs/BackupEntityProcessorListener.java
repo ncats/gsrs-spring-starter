@@ -3,6 +3,7 @@ package gsrs;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.events.BackupEvent;
+import gsrs.events.RemoveBackupEvent;
 import gsrs.repository.BackupRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.BackupEntity;
@@ -20,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 
 /**
@@ -38,7 +40,7 @@ public class BackupEntityProcessorListener {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    //TODO do we need to handle Remove?
+
 
     @PostPersist
     @PostUpdate
@@ -59,23 +61,13 @@ public class BackupEntityProcessorListener {
         }
     }
 
-//    @PostUpdate
-//    public void postUpdate(Object o){
-//        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
-//        if(o instanceof BaseModel && ew.getEntityInfo().hasBackup()){
-//            initializer.get();
-//            BaseModel bm = (BaseModel)o;
-//            //this check is done if somehow it's an update but the old version isn't in the backup table
-//            BackupEntity be = backupRepository.findByRefid(bm.fetchGlobalId()).orElseGet(()-> new BackupEntity());
-//
-//            try {
-//                be.setInstantiated((BaseModel) o);
-//                backupRepository.saveAndFlush(be);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//
-//        }
-//    }
+    @PostRemove
+    public void postRemove(Object o){
+        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
+        if(o instanceof FetchableEntity && ew.getEntityInfo().hasBackup()){
+            initializer.get();
+            applicationEventPublisher.publishEvent(RemoveBackupEvent.createFrom((FetchableEntity) o));
+        }
+    }
+
 }
