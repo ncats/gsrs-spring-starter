@@ -1388,6 +1388,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             }
             // add ROOT prefix to all term queries (containing '_') where not
             // otherwise specified
+            
             qtext = ROOT_CONTEXT_ADDER.matcher(qtext).replaceAll(ROOT + "_$1");
 
             // If there's an error parsing, it probably needs to have
@@ -1395,7 +1396,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             Query q = null;
             try {
-                if (qtext.contains("*")) {
+                if (qtext.contains("*") && !qtext.equals("*:*")) {
                     q = super.parse(qtext);
                 } else {
                     q = oldQParser.parse(qtext);
@@ -1435,7 +1436,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		Supplier<Query> qs = ()->{
 		    Query query=null;
-    		if (qtext == null) {
+    		if (qtext == null || qtext.equals("*:*")) {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
@@ -1443,7 +1444,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                     turnOnSuffixSearchIfNeeded(qtext, parser);
     				query = parser.parse(qtext);
     			} catch (ParseException ex) {
-    				ex.printStackTrace();
     				log.warn("Can't parse query expression: " + qtext, ex);
     				throw new IllegalStateException(ex);
     			}
@@ -1609,7 +1609,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 					log.debug("Sort field (rev=" + rev + "): " + sf);
 					fields.add(sf);
 				} else {
-					//System.out.println("Couldn't find sorter:" + f + " in " + sorters.keySet().toString());
 					log.warn("Unknown sort field: \"" + f + "\"");
 				}
 			}
@@ -1617,7 +1616,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (!fields.isEmpty()) {
 				sorter = new Sort(fields.toArray(new SortField[0]));
 			}
-
 
 		}
 		return sorter;
@@ -1773,7 +1771,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			DrillSideways.DrillSidewaysResult swResult = sideway.search(ddq, filter, null, options.max(),
 					sorter, false, false);
-
+			
 
 
 			/*
@@ -2519,7 +2517,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
-
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
 				this.instrumentIndexableValue(fieldCollector, iv);
 			});
@@ -3018,7 +3015,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try {
 			closeable.close();
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+//			System.out.println(e.getMessage());
 		}
 	}
 
@@ -3057,8 +3054,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if(indexableValue.isDynamicFacet()){
 			createDynamicField(fields,indexableValue);
 			if(indexableValue.sortable()){
-				//System.out.println("Dynamic sortable");
 				sorters.put(SORT_PREFIX + indexableValue.name(), SortField.Type.STRING);
+				
 				fields.accept(new StringField(SORT_PREFIX + indexableValue.name(), indexableValue.value().toString(), store));
 			}
 			return;
@@ -3121,6 +3118,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (indexableValue.sortable()) {
 				String f = SORT_PREFIX + full;
 				sorters.put(f, SortField.Type.DOUBLE);
+				                
 				fields.accept(new DoubleField(f, dval.doubleValue(), NO));
 				sorterAdded = true;
 			}
@@ -3164,7 +3162,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 					fields.accept(new FacetField(dim, indexableValue.splitPath(text)));
 				} else {
-//                    System.out.println("full index path = " + full + "  = " + text + " fname = " + fname + " raw name = " + name);
                     if(indexableValue.useFullPath()){
                         facetsConfig.setMultiValued(full, true);
                         facetsConfig.setRequireDimCount(full, true);
@@ -3197,6 +3194,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			// mechanism
 			if (indexableValue.sortable() && !sorterAdded) {
 				sorters.put(SORT_PREFIX + full, SortField.Type.STRING);
+				
 				fields.accept(new StringField(SORT_PREFIX + full, text, store));
 			}
 			// Added exact match
@@ -3227,8 +3225,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
+		
 		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
-
 		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
         tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
 

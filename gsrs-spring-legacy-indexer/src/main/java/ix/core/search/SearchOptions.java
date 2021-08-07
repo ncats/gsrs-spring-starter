@@ -510,6 +510,13 @@ public class SearchOptions implements RequestOptions {
 			this.order = order;
 			return this;
 		}
+		public Builder addOrder(String orderBy) {
+            if(this.order==null) {
+                this.order=new ArrayList<>();
+            }
+            this.order.add(orderBy);
+            return this;
+        }
 
 		public Builder expand(List<String> expand) {
 			this.expand = expand;
