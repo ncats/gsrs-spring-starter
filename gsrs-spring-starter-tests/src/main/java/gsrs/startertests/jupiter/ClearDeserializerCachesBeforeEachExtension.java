@@ -2,7 +2,9 @@ package gsrs.startertests.jupiter;
 
 
 import gsrs.AuditConfig;
+import gsrs.services.GroupService;
 import gsrs.services.GroupServiceImpl;
+import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 import ix.core.models.Principal;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -40,10 +42,10 @@ import org.springframework.data.domain.AuditorAware;
 public class ClearDeserializerCachesBeforeEachExtension implements BeforeEachCallback {
 
     @Autowired
-    private PrincipalServiceImpl principalService;
+    private PrincipalService principalService;
 
     @Autowired
-    private GroupServiceImpl groupService;
+    private GroupService groupService;
 
 
     @Override

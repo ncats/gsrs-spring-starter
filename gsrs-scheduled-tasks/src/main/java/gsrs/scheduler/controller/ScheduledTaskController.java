@@ -1,12 +1,10 @@
 package gsrs.scheduler.controller;
 
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.GsrsRestApiController;
+import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
+import gsrs.security.hasAdminRole;
 import ix.core.ResourceMethodReference;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
@@ -24,8 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@hasAdminRole
 @ExposesResourceFor(SchedulerPlugin.ScheduledTask.class)
-@GsrsRestApiController(context = "scheduledJobs")
+@GsrsRestApiController(context = "scheduledjobs")
 public class ScheduledTaskController {
 
     @Autowired
@@ -37,8 +36,6 @@ public class ScheduledTaskController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
-    @Autowired
-    private EntityLinks entityLinks;
 
     @GetGsrsRestApiMapping("/@count")
     public int count(){
@@ -46,10 +43,13 @@ public class ScheduledTaskController {
     }
 
     @GetGsrsRestApiMapping({"/",""})
-    public ResponseEntity<Object> getTaskByOrdinal(@RequestParam Map<String,String> queryParameters){
+    public ResponseEntity<Object> getTaskByOrdinal(@RequestParam(value ="top", defaultValue = "10") long top,
+                                                   @RequestParam(value ="skip", defaultValue = "0") long skip,
+                                                   @RequestParam Map<String,String> queryParameters){
         List<SchedulerPlugin.ScheduledTask> list = gsrsSchedulerConfiguration.getTasks();
 
-        return new ResponseEntity(GsrsControllerUtil.enhanceWithView(list, queryParameters), HttpStatus.OK);
+
+        return new ResponseEntity(new PagedResult(list, top, skip, queryParameters), HttpStatus.OK);
     }
 
     @GetGsrsRestApiMapping({"({ID})","/{ID}"})
@@ -63,7 +63,7 @@ public class ScheduledTaskController {
         if(!task.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
-        return new ResponseEntity(GsrsUnwrappedEntityModel.of(task.get()), HttpStatus.OK);
+        return new ResponseEntity(GsrsControllerUtil.enhanceWithView(task.get(), queryParameters), HttpStatus.OK);
     }
     @GetGsrsRestApiMapping({"({ID})/@execute","/{ID}/@execute"})
     public ResponseEntity<Object> executeTask(@PathVariable("ID") int index, @RequestParam Map<String,String> queryParameters){
@@ -76,7 +76,7 @@ public class ScheduledTaskController {
         if(!task.isPresent()){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
-        return new ResponseEntity(GsrsUnwrappedEntityModel.of(task.get().getExecuteAction().invoke()), HttpStatus.OK);
+        return new ResponseEntity(GsrsControllerUtil.enhanceWithView(task.get().getExecuteAction().invoke(), queryParameters), HttpStatus.OK);
 
     }
 

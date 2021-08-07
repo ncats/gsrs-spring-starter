@@ -1,8 +1,6 @@
 package gsrs;
 
-import gsrs.controller.BuildInfoController;
-import gsrs.controller.ExportController;
-import gsrs.controller.GsrsWebConfig;
+import gsrs.controller.*;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
@@ -37,6 +35,8 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
         componentsToInclude.add(BuildInfoController.class);
+        componentsToInclude.add(UserController.class);
+        componentsToInclude.add(HealthController.class);
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(SpecialFieldsProperties.class);

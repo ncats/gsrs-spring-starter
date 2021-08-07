@@ -9,10 +9,7 @@ import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Entity
@@ -26,7 +23,7 @@ public class UserProfile extends IxModel{
 
 	// is the profile currently active? authorization should take
 	// this into account
-	public boolean active;
+	public boolean active = false;
 
 	private String hashp;
 	private String salt;
@@ -49,8 +46,13 @@ public class UserProfile extends IxModel{
 		return key;
 	}
 
+	public void deactivate(){
+		active=false;
+		setIsDirty("active");
+	}
 	public void regenerateKey() {
 		key = Util.generateRandomString(20);
+		setIsDirty("key");
 	}
 
 	@ManyToMany(cascade = CascadeType.ALL)
@@ -65,6 +67,7 @@ public class UserProfile extends IxModel{
 	public UserProfile(Principal user) {
 		this.user = user;
 		regenerateKey();
+		setIsDirty("user");
 	}
 
 	//Needed for JSON
@@ -78,11 +81,14 @@ public class UserProfile extends IxModel{
 			try {
 				ObjectMapper om = new ObjectMapper();
 				List l = om.readValue(rolesJSON, List.class);
-				for (Object o : l) {
-					try {
-						rolekinds.add(Role.valueOf(o.toString()));
-					} catch (Exception e) {
-						e.printStackTrace();
+				//roleJSON might be "null"
+				if(l !=null) {
+					for (Object o : l) {
+						try {
+							rolekinds.add(Role.valueOf(o.toString()));
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			} catch (Exception e) {
@@ -92,21 +98,22 @@ public class UserProfile extends IxModel{
 		return rolekinds;
 	}
 
-	public void setRoles(List<Role> rolekinds) {
+	public void setRoles(Collection<Role> rolekinds) {
 		ObjectMapper om = new ObjectMapper();
 		rolesJSON = om.valueToTree(rolekinds).toString();
+		setIsDirty("rolesJSON");
 	}
 
 	public void addRole(Role role) {
 		List<Role> roles = getRoles();
 		roles.add(role);
-		setRoles(new ArrayList<Role>(new LinkedHashSet<Role>(roles)));
+		setRoles(new LinkedHashSet<>(roles));
 	}
 
 	public boolean hasRole(Role role) {
 		return this.getRoles().contains(role);
 	}
-
+	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
 		return getComputedToken(this.user.username, this.key);
@@ -152,6 +159,8 @@ public class UserProfile extends IxModel{
 		}
 		this.salt = Util.generateSalt();
 		this.hashp = Util.encrypt(password, this.salt);
+		setIsDirty("salt");
+		setIsDirty("hashp");
 	}
 	@Indexable(indexed = false)
 	@JsonIgnore
