@@ -1,23 +1,37 @@
 package ix.core.search;
 
+import java.io.Serializable;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.IxContext;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
-
 import ix.utils.Util;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-
-import java.io.Serializable;
-import java.lang.ref.SoftReference;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 //TODO katzelda October 2020 : caching in a later sprint
 //@CacheStrategy(evictable=false)
 public class SearchResultContext {
@@ -82,7 +96,6 @@ public class SearchResultContext {
     	}
 
     	public void onStatusChange(SearchResultContext.Status newStatus, SearchResultContext.Status oldStatus){
-//    		System.out.println("Status changed called");
     		if(newStatus == Status.Determined ||
     			newStatus== Status.Done ||
     			newStatus == Status.Failed){
@@ -104,9 +117,13 @@ public class SearchResultContext {
     }
 
     public SearchResultContext () {
-    	//TODO: This assumption isn't always correct
+    	//TODO: This assumption isn't always correct, use application.host instead
         try{
-            this.setGeneratingUrl(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString());
+//            getEffectiveAdaptedURI
+            IxContext ixc =StaticContextAccessor.getBean(IxContext.class);
+            
+            
+            this.setGeneratingUrl(ixc.getEffectiveAdaptedURI().toString());
         }catch(Exception e){
             this.setGeneratingUrl(null);
         }
@@ -266,7 +283,6 @@ public class SearchResultContext {
     	Iterator<SoftReference<StatusChangeListener>> iter = listeners.iterator();
         List<StatusChangeListener> tocall = new ArrayList<>();
         while(iter.hasNext()){
-        	System.out.println("Notifying");
         	SearchResultContext.StatusChangeListener l = iter.next().get();
             if(l ==null){
                 iter.remove();
@@ -306,18 +322,26 @@ public class SearchResultContext {
     
     //TODO: rewrite this to allow moving to core
 
+    //TODO: TP: this must be part of bigger Link code refactoring concerning URLs
+    //which are handled in a few different ways now.
     @JsonProperty("url")
     public String getUrl(){
-		return ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        if(this.getKey()!=null) {
+            
+            EntityLinks entityLinks=StaticContextAccessor.getBean(EntityLinks.class);
+            return GsrsLinkUtil.adapt(this.getKey(),entityLinks.linkFor(SearchResultContext.class).slash("(" + this.getKey() + ")").withSelfRel()).getHref();
+        }
+		return null;
     }
     //TODO katzelda October 2020: the Play version the result was saved in cache should we rethink this?
-	/*
+	// TP August 2021: this is still needed, because it's how asynchronous URLs are made
+	// otherwise you can't easily get focused results 
     @JsonProperty("results")
     public String getResultUrl(){
-    	return Global.getHost() + getResultCall().url();
+        //This may not be ideal, we'll see
+    	return getUrl() + "/results";
     }
 
-	 */
     @JsonProperty("generatingUrl")
     public String getGeneratingUrl(){
     	return originalRequest ;
@@ -410,43 +434,6 @@ public class SearchResultContext {
     	}
     }
     
-    //TODO katzelda October 2020 : ehcache in later sprint
-//    public static SearchResultContextOrSerialized getContextForKey(String key){
-//    	SearchResultContext context=null;
-//    	SerailizedSearchResultContext serial=null;
-//        try {
-//            Object value = IxCache.get(key);
-////			System.out.println("cache value " + value);
-//            if (value != null) {
-//            	if(value instanceof SearchResultContext){
-//                    context = (SearchResultContext)value;
-//            	}else if(value instanceof SearchResult){
-//            		SearchResult result = (SearchResult)value;
-//            		context = new SearchResultContext(result);
-//
-//                    Logger.debug("status: key="+key+" finished="+context.isFinished());
-//            	}
-//            }else{
-//            	String spkey  = SearchResultContext.getSerializedKey(key);
-//            	Object value2 = IxCache.getRaw(spkey);
-//
-////				System.out.println("serialized key " + spkey);
-////				System.out.println("value2 " + value2);
-//            	if(value2 !=null && value2 instanceof SerailizedSearchResultContext){
-//            		serial=(SerailizedSearchResultContext)value2;
-//            	}
-//            }
-//        }catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//	    if(context!=null){
-//	    	context.setKey(key);
-//	    	return new SearchResultContextOrSerialized(context);
-//	    }else if(serial !=null){
-//	    	return new SearchResultContextOrSerialized(serial);
-//	    }
-//	    return null;
-//    }
 
 	public void setStart(Long start) {
 		this.start = start;

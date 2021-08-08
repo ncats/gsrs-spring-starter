@@ -51,8 +51,8 @@ public final class CvUtils {
             String domain = cvValue.at("/domain").asText();
             JsonNode vtype = cvValue.at("/vocabularyTermType");
             String termType = null;
-            System.out.println("cvValue = " + cvValue);
-            System.out.println("vType =  " + vtype);
+//            System.out.println("cvValue = " + cvValue);
+//            System.out.println("vType =  " + vtype);
             if (!vtype.isTextual()) {
                 ObjectNode objn = (ObjectNode) cvValue;
                 //Sometimes stored as an object, instead of a text value

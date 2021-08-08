@@ -44,6 +44,7 @@ class FieldLink extends Link {
         if(field !=null){
             apiPath = apiPath.replace("/**", "/"+field);
         }
+        
         //GSRS api sometimes uses format $controller($id)
         //instead of $controller/$id
         //HATEOAS adds the slash to make it $controller/($id) so we have to fix it
@@ -54,23 +55,25 @@ class FieldLink extends Link {
 
         StringBuilder apiBuilder = new StringBuilder(apiPath.length() + 20);
         
-        String configHostAndPort = StaticContextAccessor.getBean(IxContext.class).getHost();
+        String configHostAndPort = StaticContextAccessor.getBean(IxContext.class).getEffectiveHostURI();
+        apiBuilder.append(configHostAndPort);
         
+        //factored this part out
         
-        if(configHostAndPort==null) {
-            String host = uri.getHost();
-            int port = uri.getPort();
-            String scheme = uri.getScheme();
-            if(scheme !=null){
-                apiBuilder.append(scheme+"://");
-            }
-            apiBuilder.append(host==null?"localhost": host);
-            if(port >=0){
-                apiBuilder.append(":"+port);
-            }
-        }else {
-            apiBuilder.append(configHostAndPort);
-        }
+//        if(configHostAndPort==null) {
+//            String host = uri.getHost();
+//            int port = uri.getPort();
+//            String scheme = uri.getScheme();
+//            if(scheme !=null){
+//                apiBuilder.append(scheme+"://");
+//            }
+//            apiBuilder.append(host==null?"localhost": host);
+//            if(port >=0){
+//                apiBuilder.append(":"+port);
+//            }
+//        }else {
+//            apiBuilder.append(configHostAndPort);
+//        }
 
         apiBuilder.append(apiPath);
         this.link = link.withHref(apiBuilder.toString());
