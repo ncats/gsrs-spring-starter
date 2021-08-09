@@ -21,7 +21,7 @@ import java.util.Date;
 public class IxModel extends BaseModel {
     @Id
      //Ebean added GeneratedValue by default we have to be explicit in hibernate
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "LONG_SEQ_ID")
+    @GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
     public Long id;
     @Version
     public Long version;

@@ -1,12 +1,29 @@
 package gsrs.search;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.repository.ETagRepository;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
@@ -16,24 +33,6 @@ import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import javax.servlet.http.HttpServletRequest;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @ExposesResourceFor(SearchResultContext.class)
 @Slf4j
@@ -71,17 +70,18 @@ public class SearchResultController {
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
     @Transactional
-    @GetGsrsRestApiMapping(value = {"({key})/result","/{key}/result"})
+    @GetGsrsRestApiMapping(value = {"({key})/results","/{key}/results"})
     public ResponseEntity<Object> getSearchResultContextResult(@PathVariable("key") String key,
                                                         @RequestParam(required = false, defaultValue = "10") int top,
                                                         @RequestParam(required = false, defaultValue = "0") int skip,
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
-                                                        @RequestParam Map<String, String> queryParameters,
+                                                        @RequestParam(required = false) String query,
+                                                        @RequestParam MultiValueMap<String, String> queryParameters,
                                                                HttpServletRequest request) throws URISyntaxException {
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
-            return gsrsControllerConfiguration.handleNotFound(queryParameters);
+            return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
         }
         if(!possibleContext.hasFullContext()){
             HttpHeaders headers = new HttpHeaders();
@@ -92,15 +92,14 @@ public class SearchResultController {
 
 
         URI originalURI = new URI(ctx.getGeneratingUrl());
-        String query = originalURI.getQuery();
-        //TODO clean this up make regex static final
-        String[] paramGroups = query.split("&");
-        Map<String, String[]> paramMap = new HashMap<>();
-        for(String g : paramGroups){
-            String parts[] = g.split("=");
-            paramMap.computeIfAbsent(parts[0], a -> new String[1])[0]=parts[1];
-        }
-
+        
+        //Play used a Map<String,String[]> while Spring uses a MultiMap<String,String>
+        Map<String, String[]> paramMap =queryParameters.entrySet().stream()
+                .map(Tuple::of)
+                .map(Tuple.vmap(sl->sl.toArray(new String[0])))
+                .collect(Tuple.toMap())
+                ;
+        
         SearchRequest searchRequest = new SearchRequest.Builder()
                 .top(top)
                 .skip(skip)
@@ -120,7 +119,7 @@ public class SearchResultController {
 
         SearchOptions so = searchRequest.getOptions();
 
-        String viewType=queryParameters.get("view");
+        String viewType=queryParameters.getFirst("view");
 
         if("key".equals(viewType)){
             List<EntityUtils.Key> klist=new ArrayList<EntityUtils.Key>();

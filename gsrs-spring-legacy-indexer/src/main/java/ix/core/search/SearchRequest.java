@@ -98,6 +98,10 @@ public class SearchRequest {
 			opBuilder.order(order);
 			return this;
 		}
+		public Builder addOrder(String orderBy) {
+		    opBuilder.addOrder(orderBy);
+		    return this;
+		}
 
 		public Builder expand(List<String> expand) {
 			opBuilder.expand(expand);

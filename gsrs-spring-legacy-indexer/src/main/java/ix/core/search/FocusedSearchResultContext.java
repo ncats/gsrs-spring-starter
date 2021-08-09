@@ -22,7 +22,6 @@ class FocusedSearchResultContext extends SearchResultContext {
 		ctx.setAdapter(adapter);
 	}
 	public SearchResult getAdapted(SearchRequest opt) {
-		System.out.println("Getting adapted");
 		return ctx.getAdapted(opt);
 	}
 	public Future<Void> getDeterminedFuture() {
