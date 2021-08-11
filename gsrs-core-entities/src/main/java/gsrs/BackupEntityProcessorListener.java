@@ -5,6 +5,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.events.BackupEvent;
 import gsrs.events.RemoveBackupEvent;
 import gsrs.repository.BackupRepository;
+import gsrs.services.BackupService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.BackupEntity;
 import ix.core.models.BaseModel;
@@ -39,26 +40,26 @@ public class BackupEntityProcessorListener {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    @Autowired
+    private BackupService backupService;
 
 
 
     @PostPersist
     @PostUpdate
     public void postPersist(Object o){
-        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
-        if(o instanceof FetchableEntity && ew.getEntityInfo().hasBackup()){
-            initializer.get();
-            try {
-            BackupEntity be = new BackupEntity();
-            be.setInstantiated((FetchableEntity) o);
+        initializer.get();
+         try {
+           backupService.backupIfNeeded(o, be-> {
 
-            applicationEventPublisher.publishEvent(new BackupEvent(be));
-            } catch (Exception e) {
-                Sneak.sneakyThrow(e);
-            }
+               applicationEventPublisher.publishEvent(new BackupEvent(be));
+           });
 
 
+        } catch (Exception e) {
+            Sneak.sneakyThrow(e);
         }
+
     }
 
     @PostRemove

@@ -1,16 +1,26 @@
 package gsrs.events;
 
 import ix.core.models.BackupEntity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.context.ApplicationEvent;
 
-public class BackupEvent extends ApplicationEvent {
+import java.util.UUID;
 
-    public BackupEvent(BackupEntity backupEntity) {
-        super(backupEntity);
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BackupEvent {
+
+    private BackupEntity source;
+
+    private UUID reBackupTaskId;
+
+    public BackupEvent(BackupEntity source){
+        this.source = source;
     }
 
-    @Override
-    public BackupEntity getSource() {
-        return (BackupEntity) super.getSource();
-    }
 }

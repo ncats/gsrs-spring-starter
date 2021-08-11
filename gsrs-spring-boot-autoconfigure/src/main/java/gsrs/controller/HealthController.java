@@ -32,7 +32,7 @@ public class HealthController {
     @Autowired(required = false)
     private GsrsCache gsrsCache;
 
-    private long startTime =-1;
+    private long startTime =System.currentTimeMillis();
 
     @EventListener(ApplicationReadyEvent.class)
     public void startTime(ApplicationReadyEvent event){
