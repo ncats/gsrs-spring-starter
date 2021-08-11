@@ -4,32 +4,26 @@ import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.events.BackupEvent;
 import gsrs.events.RemoveBackupEvent;
 import gsrs.repository.BackupRepository;
-import gsrs.repository.GsrsRepository;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.BackupEntity;
 import ix.core.models.FetchableEntity;
 import ix.core.util.EntityUtils;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -38,12 +32,13 @@ public class BackupService {
     @Autowired
     private BackupRepository backupRepository;
 
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-
     private Map<UUID, CountDownLatch> latchMap = new ConcurrentHashMap<>();
 
     private Map<UUID, TaskProgress> taskProgressMap = new ConcurrentHashMap<>();
+
+    /**
+     * Holds the progress of a given Backup Task.
+     */
     @Data
     @Builder
     public static class TaskProgress{
@@ -55,27 +50,35 @@ public class BackupService {
         @Setter(AccessLevel.NONE)
         private CountDownLatch latch;
 
+        /**
+         * Increment the number of records processed by 1.
+         */
         public synchronized void increment(){
             currentCount++;
             if(listener !=null){
                 listener.accept(this);
             }
-            if(currentCount >=totalCount){
+            if(latch !=null && currentCount >=totalCount){
                 latch.countDown();
             }
         }
     }
-//    @Autowired
-//    public BackupService(BackupRepository backupRepository, EntityManager em,
-//                         ApplicationEventPublisher applicationEventPublisher){
-//        this.backupRepository = backupRepository;
-//        this.em = em;
-//        this.applicationEventPublisher = applicationEventPublisher;
-//    }
 
-
+    /**
+     * Run through all the entities in the given repository fetching by Pageable sizes
+     * and save all the backup-able records as new Backups in the Backup table replacing
+     * and previous backup that previously existed.
+     * @param repository the repository to query (can not be null).
+     * @param pageable the Pageable size used to fetch records by this pageable size.
+     * @param listener for each record that is successfully backed up this listener
+     *                 will be consumed.  This is usually used to update some kind of progress bar.
+     *
+     * @throws NullPointerException if    repository or pageable are null.
+     * @implSpec This is annotated as Transactional read only because this thread is doing only a read
+     * of the repository, the actual saving in the backup table is done in other background threads.
+     */
     @Transactional(readOnly = true)
-    public void reBackupAllEntitiesOfType(GsrsRepository repository, Consumer<TaskProgress> listener){
+    public void reBackupAllEntitiesOfType(JpaRepository repository, Pageable pageable,  Consumer<TaskProgress> listener){
 
         long total = repository.count();
 
@@ -92,28 +95,42 @@ public class BackupService {
                 .build());
 
         boolean[] wait = new boolean[1];
-        try(Stream<Object> o = repository.findAll().stream()){
+        Pageable currentPageable = pageable;
 
-            o.forEach( e->{
-                System.out.println("for each "+ e);
-                wait[0]=true;
-                backupIfNeededAsync(e, source->{
-                    BackupEvent event = BackupEvent.builder()
-                            .source(source)
-                            .reBackupTaskId(rebackUpId)
-                            .build();
-                    System.out.println("publishing " + event);
+        while(currentPageable !=null){
+            Page page = repository.findAll(currentPageable);
+            try(Stream<Object> o = page.stream()){
 
-                    try {
-                        backup(event);
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
+                o.forEach( e->{
+                    wait[0]=true;
 
+                    backupIfNeeded(e, source->{
+                        BackupEvent event = BackupEvent.builder()
+                                .source(source)
+                                .reBackupTaskId(rebackUpId)
+                                .build();
+                        //this is a terrible hack to get the bean reference for AOP so we make
+                        //new transaction boundaries even though we are calling methods from this class.
+                        BackupService backupBean = StaticContextAccessor.getBean(BackupService.class);
+
+
+                        try {
+                            backupBean.backupAsync(event);
+                        } catch (Exception exception) {
+                            exception.printStackTrace();
+                        }
+
+                    });
                 });
-            });
 
+            }
+            if(page.hasNext()){
+                currentPageable = page.nextPageable();
+            }else{
+                currentPageable=null;
+            }
         }
+
         if(wait[0]) {
             try {
                 latch.await();
@@ -127,6 +144,7 @@ public class BackupService {
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void backupIfNeededAsync(Object o, Consumer<BackupEntity> consumer){
         backupIfNeeded(o, consumer);
     }
@@ -144,13 +162,16 @@ public class BackupService {
 
         }
     }
-
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void backupAsync(BackupEvent event) throws Exception {
+        backup(event);
+    }
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void backup(BackupEvent event) throws Exception {
         BackupEntity be = event.getSource();
         UUID rebackupId = event.getReBackupTaskId();
         if(rebackupId !=null){
-            System.out.println("here!!!");
             TaskProgress progress = taskProgressMap.get(rebackupId);
             if(progress !=null) {
                 progress.increment();
