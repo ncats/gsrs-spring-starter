@@ -105,7 +105,7 @@ public class OffsetBasedPageRequest implements Pageable, Serializable{
 
     @Override
     public boolean hasPrevious() {
-        return offset > limit;
+        return offset > 0;
     }
 
 
