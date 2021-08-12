@@ -92,7 +92,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
          */
 //        HttpServletRequest request = (HttpServletRequest) servletRequest;
 
-        if(auth !=null && authenticationConfiguration.isTrustheader()){
+        System.out.println("AUTH IS:" + auth);
+        // why != null? that doesn't sound right ...
+        // changing to ==null
+        if(auth ==null && authenticationConfiguration.isTrustheader()){
 
             String username = request.getHeader(authenticationConfiguration.getUsernameheader());
             String email = request.getHeader(authenticationConfiguration.getUseremailheader());
