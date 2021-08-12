@@ -127,16 +127,18 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
         System.out.println("injected Principal is " + principal);
+        
         GsrsEntityService<T, I> entityService = getEntityService();
         System.out.println("found entityService " + entityService);
-        
+        AbstractGsrsEntityService.CreationResult<T> result =null;
         try {        
-            AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
+            result = entityService.createEntity(newEntityJson);
     
+            System.out.println("Got result:" + result);
             if(result.isCreated()){
                 return new ResponseEntity<>(result.getCreatedEntity(), HttpStatus.CREATED);
             }
-        }catch(Exception e) {
+        }catch(Throwable e) {
             e.printStackTrace();
             throw new IOException(e);
         }
