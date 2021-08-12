@@ -33,6 +33,7 @@ ix.authentication.autoregisteractive=true
 
     private String usernameheader;
     private String useremailheader;
+    private String userrolesheader;
 
 
 }

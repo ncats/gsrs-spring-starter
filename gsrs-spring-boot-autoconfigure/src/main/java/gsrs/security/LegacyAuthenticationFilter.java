@@ -6,6 +6,7 @@ import gsrs.repository.PrincipalRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
+import ix.core.models.Role;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import ix.utils.UUIDUtil;
@@ -26,6 +27,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -97,22 +100,41 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         // changing to ==null
         if(auth ==null && authenticationConfiguration.isTrustheader()){
 
-            String username = request.getHeader(authenticationConfiguration.getUsernameheader());
-            String email = request.getHeader(authenticationConfiguration.getUseremailheader());
-            if(username !=null && email !=null){
+            String username = Optional.ofNullable(authenticationConfiguration.getUsernameheader())
+                                      .map(e->request.getHeader(e))
+                                      .orElse(null);
+            String email =    Optional.ofNullable(authenticationConfiguration.getUseremailheader())
+                                      .map(e->request.getHeader(e))
+                                      .orElse(null);
+            List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
+                    .map(e->request.getHeader(e))
+                    .map(v->Arrays.stream(v.split(";"))
+                                  .map(r->r.trim())
+                                  .map(r->Role.valueOf(r))
+                                  .collect(Collectors.toList())
+                        )
+                    .orElse(null);
+            
+                    
+            if(username !=null){
                 UserProfile up = repository.findByUser_Username(username);
+                System.out.println("found un:" + up);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(username, email);
                     up = new UserProfile(p);
                     if(authenticationConfiguration.isAutoregisteractive()){
                         up.active = true;
                     }
+                    up.setRoles(roles);
+                    
                     up.systemAuth = false;
+                    System.out.println("registering un:" + up);
                     //should cascade new Principal
                     repository.saveAndFlush(up);
                 }
                 if(up !=null){
                     auth = new UserProfilePasswordAuthentication(up);
+                    
                 }
             }
         }
@@ -159,6 +181,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         if(auth !=null) {
             //add a new Session each time !?
+            
+            //TODO: perhaps allow a short-circuit here if auth is outsourced
 
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
