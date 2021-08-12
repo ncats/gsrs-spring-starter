@@ -15,7 +15,7 @@ import javax.persistence.MappedSuperclass;
 public abstract class LongBaseModel extends BaseModel {
 
     @Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "LONG_SEQ_ID")
+	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 
 //    @GeneratedValue //Ebean added GeneratedValue by default we have to be explicit in hibernate
 //	@Id

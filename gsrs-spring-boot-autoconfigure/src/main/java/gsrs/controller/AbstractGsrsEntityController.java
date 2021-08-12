@@ -120,7 +120,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
 
-                                   @Override
+    @Override
     @PostGsrsRestApiMapping()
     @Transactional
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
@@ -129,10 +129,16 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         System.out.println("injected Principal is " + principal);
         GsrsEntityService<T, I> entityService = getEntityService();
         System.out.println("found entityService " + entityService);
-        AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
-
-        if(result.isCreated()){
-            return new ResponseEntity<>(result.getCreatedEntity(), HttpStatus.CREATED);
+        
+        try {        
+            AbstractGsrsEntityService.CreationResult<T> result = entityService.createEntity(newEntityJson);
+    
+            if(result.isCreated()){
+                return new ResponseEntity<>(result.getCreatedEntity(), HttpStatus.CREATED);
+            }
+        }catch(Exception e) {
+            e.printStackTrace();
+            throw new IOException(e);
         }
 
         return new ResponseEntity<>(result.getValidationResponse(),gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));

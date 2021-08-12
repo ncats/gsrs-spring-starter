@@ -14,6 +14,8 @@ public class EntityProcessorConfig {
     private Class entityClassName;
     @JsonProperty("processor")
     private Class processor;
+    
+    @JsonProperty("with")
     private Map with;
 
 
