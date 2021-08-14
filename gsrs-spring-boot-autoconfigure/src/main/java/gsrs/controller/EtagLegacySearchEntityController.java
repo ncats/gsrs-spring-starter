@@ -208,6 +208,15 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         
         
+        //Due to the way that hibernate works, the series of fetches that may have happened
+        //before this line could include some staged insert/update statements
+        //that haven't been executed. The entities which remain attached at this time
+        //may expect that they will be updated/created at the next non-readonly
+        //transaction. If we clear the entityManager, this detaches the objects
+        //and the updates/inserts won't happen. This shouldn't be necessary, ultimately,
+        //and it's worth tracking down WHY some entities become flagged as dirty/updated
+        //from simple fetches that happen before this.
+        // 
         entityManager.clear();
         
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
