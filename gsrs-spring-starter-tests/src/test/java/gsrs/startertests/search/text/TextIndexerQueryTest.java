@@ -66,6 +66,9 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         Document doc5 = new Document();
         doc5.add(new TextField("code", "brentuximab vedotin", NO));
         indexer.addDoc(doc5);
+        Document doc6 = new Document();
+        doc6.add(new TextField("text", indexer.toExactMatchString("prentuximab vedoton"), NO));
+        indexer.addDoc(doc6);
         
         Query q = indexer.getQueryParser().parse("\"brentuximab vedot*\"");
         
@@ -99,6 +102,9 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         Document doc5 = new Document();
         doc5.add(new TextField("text", indexer.toExactMatchString("not actually brentuximab vedotin"), NO));
         indexer.addDoc(doc5);
+        Document doc6 = new Document();
+        doc6.add(new TextField("text", indexer.toExactMatchString("prentuximab vedoton"), NO));
+        indexer.addDoc(doc6);
         
         Query q = indexer.getQueryParser().parse("\"^brentuximab vedot*\"");
         
@@ -111,6 +117,44 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         });
 
         assertEquals(2, hits.totalHits);
+
+    }
+    
+
+    @Test
+    public void confirmContainsPhraseWildcardGetsPhraseResults() throws Exception{
+
+        Document doc1 = new Document();
+        doc1.add(new TextField("text", indexer.toExactMatchString("brentuximab vedotin"), NO));
+        indexer.addDoc(doc1);
+        Document doc2 = new Document();
+        doc2.add(new TextField("text", indexer.toExactMatchString("brentuximab vedoton"), NO));
+        indexer.addDoc(doc2);
+        Document doc3 = new Document();
+        doc3.add(new TextField("text", indexer.toExactMatchString("brentuximab vevoton"), NO));
+        indexer.addDoc(doc3);
+        Document doc4 = new Document();
+        doc4.add(new TextField("text", indexer.toExactMatchString("brentuximad vevoton"), NO));
+        indexer.addDoc(doc4);
+        Document doc5 = new Document();
+        doc5.add(new TextField("text", indexer.toExactMatchString("not actually brentuximab vedotin"), NO));
+        indexer.addDoc(doc5);
+        
+        Document doc6 = new Document();
+        doc6.add(new TextField("text", indexer.toExactMatchString("prentuximab vedoton"), NO));
+        indexer.addDoc(doc6);
+        
+        Query q = indexer.getQueryParser().parse("\"*rentuximab vedot*\"");
+        
+
+        SearchResult sr=SearchResult.createBuilder().build();
+        TopDocs hits = indexer.withSearcher(searcher->{
+            try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
+                return indexer.firstPassLuceneSearch(searcher,taxon,sr,null, q);
+            }
+        });
+
+        assertEquals(4, hits.totalHits);
 
     }
 

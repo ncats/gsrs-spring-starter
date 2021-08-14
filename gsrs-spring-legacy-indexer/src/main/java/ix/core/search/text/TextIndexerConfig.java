@@ -21,6 +21,10 @@ public class TextIndexerConfig {
     private boolean fieldsuggest;
     @Value("#{new Boolean('${ix.textindex.shouldLog:false}')}")
     private boolean shouldLog;
+    
+    
+    
+    
 //    private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
 
     @Value("#{new Integer('${ix.fetchWorkerCount:4}')}")
@@ -31,6 +35,9 @@ public class TextIndexerConfig {
     
     @Value("#{new String('${ix.index.deepfieldsraw:}').split(';')}")
     private String[] deepFieldsRaw;
+    
+    @Value("#{new Boolean('${ix.index.rootIndexOnly:false}')}")
+    private boolean rootIndexOnly;
     
     
     public List<String> getDeepFields(){

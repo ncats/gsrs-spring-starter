@@ -122,7 +122,7 @@ public class SearchResultController {
         String viewType=queryParameters.getFirst("view");
 
         if("key".equals(viewType)){
-            List<EntityUtils.Key> klist=new ArrayList<EntityUtils.Key>();
+            List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
             results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
             resultSet=klist;
         }else{

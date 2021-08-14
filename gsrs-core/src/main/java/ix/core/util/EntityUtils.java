@@ -533,6 +533,10 @@ public class EntityUtils {
 			return ei.isEntity();
 		}
 		
+		public boolean isRootIndex() {
+		    return ei.isRootIndex();
+		}
+		
 		public boolean isArrayOrCollection() {
 			return Collection.class.isAssignableFrom(ei.getEntityClass()) || ei.getEntityClass().isArray();
 		}
@@ -1059,6 +1063,7 @@ public class EntityUtils {
 			return value;
 		}
 
+		//TODO: deprecate?
         public String getDataSource() {
             return this.ei.datasource;
         }
@@ -1068,6 +1073,7 @@ public class EntityUtils {
 
 	public static class EntityInfo<T> {
 	    
+	    //TODO: deprecate?
 	    private String datasource=null;
 	    
 		private final Class<T> cls;

@@ -5,6 +5,7 @@ import gov.nih.ncats.common.util.TimeUtil;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.models.Facet;
+import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 
@@ -235,7 +236,7 @@ public class SearchResult {
      *  false will return available records immediately
      * @return
      */
-    public int copyKeysTo(List<Key> list, int start, int count, boolean wait) {
+    public int copyKeysTo(List<ix.core.util.EntityUtils.Key> list, int start, int count, boolean wait) {
 
         // It may be that the page that is being fetched is not yet
         // complete. There are 2 options here then. The first is to

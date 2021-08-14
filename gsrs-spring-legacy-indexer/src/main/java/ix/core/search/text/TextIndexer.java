@@ -1351,6 +1351,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             oldQParser = new QueryParser(string, indexAnalyzer);
             // setDefaultOperator(QueryParser.AND_OPERATOR);
+            //TP 08/14/2021 simplifying how this is done
+            this.setAllowLeadingWildcard(true);
+            oldQParser.setAllowLeadingWildcard(true);
         }
 
         @Override
@@ -1374,7 +1377,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                             low, high, trq.includesLower(),
                             trq.includesUpper());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.warn("problem parsing numeric range", e);
                 }
             }
 
@@ -1404,8 +1407,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             } catch (Exception e) {
                 // This is not a good way to deal with dangling quotes, but it
-                // is A
-                // way to do it
+                // is A way to do it
                 try {
                     q = super.parse("\"" + qtext + "\"");
                 } catch (Exception e2) {
@@ -1441,7 +1443,6 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
-                    turnOnSuffixSearchIfNeeded(qtext, parser);
     				query = parser.parse(qtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1964,17 +1965,20 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if(searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
 		    //TODO katzelda October 2020 : don't support sponsored fields yet that's a Substance only thing
 		    //Special "promoted" match types
-			Set<String> sponsoredFields =  searchResult.getOptions()
+			Set<String> specialExactMatchFields =  searchResult.getOptions()
 			                                           .getKindInfo()
 			                                           .getSpecialFields();
 
 			if (searchResult.getQuery() != null ) {
 				try {
-				    for (String sp : sponsoredFields) {
-						String theQuery = "\"" + toExactMatchString(
+				    // Look through each of the special fields and see if there's an exact match for one of them,
+				    // if there IS, promote it
+				    for (String sp : specialExactMatchFields) {
+						String theQuery = "\"" + toExactMatchQueryString(
 								TextIndexer.replaceSpecialCharsForExactMatch(searchResult.getQuery().trim().replace("\"", ""))).toLowerCase() + "\"";
+						//Set the default query field to the special field
 						QueryParser parser = new IxQueryParser(sp, indexerService.getIndexAnalyzer());
-
+						
 						Query tq = parser.parse(theQuery);
 						if(lsp instanceof DrillSidewaysLuceneSearchProvider){
 							DrillDownQuery ddq2 = new DrillDownQuery(facetsConfig, tq);
@@ -2001,8 +2005,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 								
 								searchResult.addSponsoredNamedCallable(new LuceneSearchResultPopulator.EntityFetcher(k,gsrsRepository));
 							} catch (Exception e) {
-								e.printStackTrace();
-								log.error(e.getMessage());
+								log.error("error adding special match callable", e);
 							}
 						}
 
@@ -2115,17 +2118,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 //		return withSearcher(s -> q1.rewrite(s.getIndexReader()));
 //	}
 
-    private void turnOnSuffixSearchIfNeeded(String q, QueryParser parser) {
-
-        if(q ==null || q.isEmpty()){
-            return;
-        }
-        String queryPart = q.substring(q.indexOf(':')+1);
-        if(!queryPart.isEmpty() && queryPart.charAt(0) == '*'){
-            //suffix search
-            parser.setAllowLeadingWildcard(true);
-        }
-    }
 
     /**
 	 * Prepare a given query to be more specified by restricting it to the field
@@ -2457,15 +2449,17 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
 		Objects.requireNonNull(ew);
 
-			if(!ew.shouldIndex() || (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()))){
-//				if (DEBUG(2)) {
-//					log.debug(">>> Not indexable " + ew.getValue());
-//				}
-				return;
-			}
-//			if (DEBUG(2)){
-//				log.debug(">>> Indexing " + ew.getValue() + "...");
-//			}
+		//Don't index if any of the following:
+		// 1. The entity doesn't have an Indexable annotation OR
+		// 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
+		// 3. Reindexing is happening and the entity has already been indexed
+		if(     !ew.shouldIndex() ||
+		        (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
+		        (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()))  
+		        ){
+		    return;
+		}
+
 
         try{
 
@@ -2560,7 +2554,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 //                log.debug("<<< " + ew.getValue());
 //            }
 		}catch(Exception e){
-			e.printStackTrace();
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}
 	}
@@ -2934,7 +2927,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					scheduler.awaitTermination(1, TimeUnit.MINUTES);
 					flushDaemon.execute();
 				} catch (Throwable e) {
-					e.printStackTrace();
+				    log.warn("problem shutting down textindexer", e);
 					throw new RuntimeException(e);
 				}
 			}
@@ -2971,7 +2964,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				try {
 					threadPool.awaitTermination(1, TimeUnit.MINUTES);
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.warn("problem shutting down textindexer threadpool", e);
 				}
 			}
 			isShutDown = true;
@@ -3206,6 +3199,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static String toExactMatchString(String in){
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
+	
+	public static String toExactMatchQueryString(String in){
+        return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
+    }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
 
@@ -3221,10 +3218,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 				qtext = qtext.replace(TextIndexer.GIVEN_STOP_WORD, TextIndexer.STOP_WORD);
 	 */
 
+	//TODO: this is a fairly hacky way to try to recreate simple character sequence-level
+	//functionality within lucene, and there needs to be a better way
 	private static String transformQueryForExactMatch(String in){
 
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
+		
 		
 		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
 		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);

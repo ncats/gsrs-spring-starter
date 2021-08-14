@@ -13,6 +13,7 @@ import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexer.IxQueryParser;
 
 public class QueryParseTest {
+
     
     @Test
     public void confirmSimpleWildcardQueryIsNotComplex() throws Exception{
