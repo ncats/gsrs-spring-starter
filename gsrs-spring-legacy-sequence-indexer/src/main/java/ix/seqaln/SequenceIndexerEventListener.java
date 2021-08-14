@@ -1,14 +1,11 @@
 package ix.seqaln;
 
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
-import gsrs.indexer.IndexCreateEntityEvent;
-import gsrs.indexer.IndexRemoveEntityEvent;
-import gsrs.indexer.IndexUpdateEntityEvent;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.models.SequenceEntity;
-import ix.core.util.EntityUtils;
-import ix.seqaln.service.SequenceIndexerService;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.persistence.EntityManager;
+
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
@@ -18,16 +15,27 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import javax.persistence.EntityManager;
-import java.io.IOException;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexEntityEvent;
+import gsrs.indexer.IndexCreateEntityEvent;
+import gsrs.indexer.IndexRemoveEntityEvent;
+import gsrs.indexer.IndexUpdateEntityEvent;
+import gsrs.springUtils.GsrsSpringUtils;
+import ix.core.models.SequenceEntity;
+import ix.core.util.EntityUtils;
+import ix.seqaln.service.SequenceIndexerService;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class SequenceIndexerEventListener {
 
     private final SequenceIndexerService indexer;
     private EntityManager em;
 
+    private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
     public SequenceIndexerEventListener(EntityManager em, SequenceIndexerService indexer) {
 
@@ -40,6 +48,9 @@ public class SequenceIndexerEventListener {
         if(event.getSource().isInMaintenanceMode()){
             //begin
             indexer.removeAll();
+            inMaintenanceMode.set(true);
+        }else{
+            inMaintenanceMode.set(false);
         }
     }
 
@@ -87,7 +98,7 @@ public class SequenceIndexerEventListener {
                     indexer.add(k.getIdString(), str.toString());
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                log.warn("Error indexing sequence", e);
             }
         });
     }

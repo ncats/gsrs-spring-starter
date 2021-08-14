@@ -46,17 +46,17 @@ public class StructureIndexerEventListener {
     @EventListener
     public void reindexEntity(ReindexEntityEvent event){
 
-        indexSequences(event.getEntityKey());
+        indexStructures(event.getEntityKey());
     }
 
 
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
         EntityUtils.Key key = event.getSource();
-        indexSequences(key);
+        indexStructures(key);
     }
 
-    private void indexSequences(EntityUtils.Key key) {
+    private void indexStructures(EntityUtils.Key key) {
         Optional<EntityUtils.EntityWrapper<?>> opt = key.fetch(em);
         if(opt.isPresent()) {
             EntityUtils.EntityWrapper<?> ew = opt.get();

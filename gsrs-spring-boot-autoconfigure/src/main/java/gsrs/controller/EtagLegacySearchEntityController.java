@@ -206,27 +206,27 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else{
             viewMap= Collections.singletonMap("view", view);
         }
-
+        
+        
+        entityManager.clear();
+        
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult( stauts -> {
                     if (request.getParameter("export") == null) {
                         entityManager.merge(etag);
                     }
-            //content is transient so don't need to worry about transforming results
-            etag.setContent(results.stream().map(r-> {
-
-                return GsrsControllerUtil.enhanceWithView(r, viewMap);
-
-            }).collect(Collectors.toList()));
-
-            etag.setSponosredResults(result.getSponsoredMatches());
-            etag.setFacets(result.getFacets());
                 });
-
-
+        
+        //content is transient so don't need to worry about transforming results
+        etag.setContent(results.stream().map(r-> {
+            return GsrsControllerUtil.enhanceWithView(r, viewMap);
+        }).collect(Collectors.toList()));
+        
+        
+        etag.setSponosredResults(result.getSponsoredMatches());
+        etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
-
 
         return etag;
     }

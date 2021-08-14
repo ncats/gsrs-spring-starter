@@ -95,7 +95,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
          */
 //        HttpServletRequest request = (HttpServletRequest) servletRequest;
 
-        System.out.println("AUTH IS:" + auth);
+        
+        // TODO: TP changed below, but needs feedback
         // why != null? that doesn't sound right ...
         // changing to ==null
         if(auth ==null && authenticationConfiguration.isTrustheader()){
@@ -118,7 +119,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     
             if(username !=null){
                 UserProfile up = repository.findByUser_Username(username);
-                System.out.println("found un:" + up);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(username, email);
                     up = new UserProfile(p);
@@ -128,7 +128,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     up.setRoles(roles);
                     
                     up.systemAuth = false;
-                    System.out.println("registering un:" + up);
                     //should cascade new Principal
                     repository.saveAndFlush(up);
                 }

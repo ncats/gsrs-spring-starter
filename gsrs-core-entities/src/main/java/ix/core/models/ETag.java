@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.EntityMapperOptions;
+import ix.core.History;
 import ix.core.controllers.RequestOptions;
 import ix.utils.Util;
 
@@ -16,6 +17,8 @@ import java.util.*;
 @Entity
 @Table(name = "ix_core_etag")
 @Indexable(indexed = false)
+
+@History(store = false)
 @JsonPropertyOrder(
 { "id", 
   "version", 

@@ -11,9 +11,12 @@ import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.utils.Util;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -37,6 +40,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
 //        super(context, idPattern);
 //    }
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -114,7 +119,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     public List<? extends GsrsSuggestResult> suggestField(@PathVariable("field") String field,  @RequestParam("q") String q, @RequestParam(value ="max", defaultValue = "10") int max) throws IOException {
         return getlegacyGsrsSearchService().suggestField(field, q, max);
     }
-    @Transactional
+    
     @GetGsrsRestApiMapping(value = "/search", apiVersions = 1)
     public ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
                                            @RequestParam("top") Optional<Integer> top,
@@ -152,16 +157,31 @@ SearchRequest req = builder
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
         }
         List<Object> results = new ArrayList<>();
+        
+        SearchResult fresult=result;
+        
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(true);        
+        transactionTemplate.executeWithoutResult( stauts -> {
+            //this looks wrong, because we're not skipping
+            //anything, but it's actually right,
+            //because the original request did the skipping.
+            //This mechanism should probably be worked out
+            //better, as it's not consistent.
+            
+            //Note that the SearchResult uses a LazyList,
+            //but this is copying to a real list, this will
+            //trigger direct fetches from the lazylist.
+            //With proper caching there should be no further
+            //triggered fetching after this.
+            
+            fresult.copyTo(results, 0, top.orElse(10), true); 
+                });
 
-        result.copyTo(results, 0, top.orElse(10), true); //this looks wrong, because we're not skipping
-        //anything, but it's actually right,
-        //because the original request did the skipping.
-        //This mechanism should probably be worked out
-        //better, as it's not consistent.
-
-
+        
         //even if list is empty we want to return an empty list not a 404
-        return new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
+        ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
+        return ret;
     }
 
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);

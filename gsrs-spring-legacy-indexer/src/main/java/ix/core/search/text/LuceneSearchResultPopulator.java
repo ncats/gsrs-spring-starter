@@ -104,23 +104,33 @@ class LuceneSearchResultPopulator {
 			}
 		}
 
-	public static class EntityFetcher implements LazyList.NamedCallable<Key, Object>{
+	public static class EntityFetcher<T> implements LazyList.NamedCallable<Key, Object>{
 		private Key key;
 		private GsrsRepository gsrsRepository;
+		private T _cached = null;
+		
 
 		public EntityFetcher(Key key, GsrsRepository gsrsRepository) {
 			this.key = key;
 			this.gsrsRepository = gsrsRepository;
 		}
 
+		//TODO: the features from 2.X regarding caching and
+		// alternative fetches should be ported
+		//
+		// I'm not sure the @Transactional annotation does what
+		// it is intended to do here
 		@Override
 		@Transactional(readOnly = true)
-		public Object call() {
-		    
-			Object ret= gsrsRepository.findByKey(key).get();
-			//this makes it a full fetch
-			EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(ret);
-			return ret;
+		public T call() {
+		    if(_cached!=null) return _cached;
+		    Object ret= gsrsRepository.findByKey(key).get();
+			//this forces a full fetch
+		    //but thats not always ideal as sometimes things are thrown away
+		    //TODO: discuss this
+			EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(ret);
+			_cached=(T)ret;
+			return _cached;
 		}
 
 		@Override
