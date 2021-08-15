@@ -1,8 +1,10 @@
 package gsrs.controller;
 
+import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -70,7 +72,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .build();
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
-        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), GsrsSpringUtils.getFullUrlFrom(request));
+        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
 
 
         //indexer.extractFullFacetQuery(this.query, this.options, field);
@@ -90,7 +92,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .build();
 
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
-        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), GsrsSpringUtils.getFullUrlFrom(request));
+        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
 
     }
 
@@ -156,27 +158,35 @@ SearchRequest req = builder
         } catch (Exception e) {
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
         }
-        List<Object> results = new ArrayList<>();
         
         SearchResult fresult=result;
         
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);        
-        transactionTemplate.executeWithoutResult( stauts -> {
-            //this looks wrong, because we're not skipping
+        List results = (List) transactionTemplate.execute(stauts -> {
+            //the top and skip settings  look wrong, because we're not skipping
             //anything, but it's actually right,
             //because the original request did the skipping.
             //This mechanism should probably be worked out
             //better, as it's not consistent.
-            
+
             //Note that the SearchResult uses a LazyList,
             //but this is copying to a real list, this will
             //trigger direct fetches from the lazylist.
             //With proper caching there should be no further
             //triggered fetching after this.
-            
-            fresult.copyTo(results, 0, top.orElse(10), true); 
-                });
+
+            String viewType=queryParameters.get("view");
+            if("key".equals(viewType)){
+                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(top.orElse(10));
+                fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
+                return klist;
+            }else{
+                List tlist = new ArrayList<>(top.orElse(10));
+                fresult.copyTo(tlist, 0, top.orElse(10), true);
+                return tlist;
+            }
+        });
 
         
         //even if list is empty we want to return an empty list not a 404

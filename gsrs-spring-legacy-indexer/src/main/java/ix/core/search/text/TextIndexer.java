@@ -111,6 +111,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     private static final String ANALYZER_FIELD = "M_FIELD";
 	private static final String ANALYZER_MARKER_FIELD = "ANALYZER_MARKER";
 	private static final String ANALYZER_VAL_PREFIX = "ANALYZER_";
+	private static final int DEFAULT_ANALYZER_MATCH_FIELD_LIMIT = 25; // number of narrowing fields to show
 	
 	
 	private static final char SORT_DESCENDING_CHAR = '$';
@@ -2073,7 +2074,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					}
 					LuceneSearchProvider lsp2 = new BasicLuceneSearchProvider(null, f, options.max());
 					LuceneSearchProviderResult res=lsp2.search(searcher, taxon,oq.k(),facetCollector2);
-					res.getFacets().getAllDims(options.getFdim()).forEach(fr->{
+					res.getFacets().getAllDims(DEFAULT_ANALYZER_MATCH_FIELD_LIMIT).forEach(fr->{
 						if(fr.dim.equals(TextIndexer.ANALYZER_FIELD)){
 
 						Arrays.stream(fr.labelValues).forEach(lv->{

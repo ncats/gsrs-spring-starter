@@ -82,6 +82,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                         //text searches and substructure searches have a content
                         //but sequence searches do not... so need to hit their results url
                         //or maybe change what url the etag saves?
+                        //TP: This shouldn't be the case ... if it is, there's been 
+                        // a misunderstanding at some point that needs to be corrected
                         if (array == null) {
                             JsonNode results = responseAsJson.get("results");
                             if (results != null) {
@@ -150,10 +152,10 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of pagged results
         if (cleanedUri.indexOf('?') > 0) {
             //has parameters so append
-            cleanedUri += "&view=key&top=" + top + "&skip=" + skip;
+            cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         } else {
             //doesn't have parameters
-            cleanedUri += "?view=key&top=" + top + "&skip=" + skip;
+            cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         }
 //
 //        WSRequestHolder requestHolder = requestPluginCachedSupplier.get().createNewLoopbackRequestFrom(cleanedUri, request, context);
@@ -161,17 +163,16 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         //TODO consider using RestTemplateBuilder in configuration?
         RestTemplate restTemplate = new RestTemplate();
         
-        // Tyler Peryea: This section is unforunately necessary as
+        // Tyler Peryea: This section is unfortunately necessary as
         // the restTemplate itself considers all URLs provided to be not-yet percent encoded
-        // so, in a rather silly turn of envents we need to UNencode the URL before sending it
-        // to restTemplate to be reencoded.
+        // so, in a rather silly turn of events we need to UNencode the URL before sending it
+        // to restTemplate to be re-encoded.
         try {
             cleanedUri = URLDecoder.decode(cleanedUri.toString(), "UTF-8");
         } catch (UnsupportedEncodingException e1) {
-            // TODO Auto-generated catch block
             e1.printStackTrace();
         } // java.net class
-        
+        System.out.println("Actually using:" + cleanedUri);
         ResponseEntity<String> response = restTemplate.getForEntity(cleanedUri, String.class);
 
         //TODO handle errors or 404 ?

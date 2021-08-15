@@ -2,6 +2,8 @@ package gsrs.controller.hateoas;
 
 import java.net.URI;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,8 +35,20 @@ public class IxContext {
         return URI.create(uri.toString().replace(uhost,rhost));
     }
     
+    
     public URI getEffectiveAdaptedURI() {
         return getEffectiveAdaptedURI(ServletUriComponentsBuilder.fromCurrentRequestUri().build().toUri());
+    }
+    
+    public URI getEffectiveAdaptedURI(HttpServletRequest req) {
+        String url="";
+        String queryString = req.getQueryString();
+        if(queryString ==null || queryString.isEmpty()){
+            url= req.getRequestURL().toString();
+        }else {
+            url= req.getRequestURL().toString() + "?" + req.getQueryString();
+        }
+        return getEffectiveAdaptedURI(URI.create(url));
     }
     
     private String requestHostAndPort(URI uri) {

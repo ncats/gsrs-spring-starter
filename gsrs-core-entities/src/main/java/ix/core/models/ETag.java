@@ -3,7 +3,10 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+import gsrs.controller.hateoas.IxContext;
 import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.EntityMapperOptions;
 import ix.core.History;
 import ix.core.controllers.RequestOptions;
@@ -188,7 +191,7 @@ public class ETag extends IxModel {
 		private String filter;
 
 		public Builder fromRequest(HttpServletRequest req) {
-			uri= GsrsSpringUtils.getFullUrlFrom(req);
+			uri= StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(req).toString();
 			path = req.getContextPath();
 			query = Util.canonicalizeQuery(req);
 			method = req.getMethod();

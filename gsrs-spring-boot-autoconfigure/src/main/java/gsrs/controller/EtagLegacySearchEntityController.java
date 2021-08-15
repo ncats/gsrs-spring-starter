@@ -227,9 +227,14 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 });
         
         //content is transient so don't need to worry about transforming results
-        etag.setContent(results.stream().map(r-> {
-            return GsrsControllerUtil.enhanceWithView(r, viewMap);
-        }).collect(Collectors.toList()));
+        if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
+            etag.setContent(results.stream().map(r-> {
+                return GsrsControllerUtil.enhanceWithView(r, viewMap);
+            }).collect(Collectors.toList()));
+        }else {
+            etag.setContent(results);
+        }
+       
         
         
         etag.setSponosredResults(result.getSponsoredMatches());

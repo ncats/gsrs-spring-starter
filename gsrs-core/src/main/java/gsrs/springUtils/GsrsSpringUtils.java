@@ -3,6 +3,8 @@ package gsrs.springUtils;
 import gov.nih.ncats.common.util.Unchecked;
 
 import javax.servlet.http.HttpServletRequest;
+
+import java.net.URI;
 import java.util.function.Consumer;
 
 public class GsrsSpringUtils {
@@ -10,7 +12,10 @@ public class GsrsSpringUtils {
     private GsrsSpringUtils(){
         //can not instantiate
     }
+    
+    @Deprecated
     public static String getFullUrlFrom(HttpServletRequest req) {
+      
         String queryString = req.getQueryString();
         if(queryString ==null || queryString.isEmpty()){
             return req.getRequestURL().toString();
