@@ -1,11 +1,15 @@
 package gsrs.springUtils;
 
-import gov.nih.ncats.common.util.Unchecked;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.net.URI;
-import java.util.function.Consumer;
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.common.util.Unchecked;
 
 public class GsrsSpringUtils {
 
@@ -22,6 +26,14 @@ public class GsrsSpringUtils {
         }else {
             return req.getRequestURL().toString() + "?" + req.getQueryString();
         }
+    }
+    
+    public static Map<String,List<String>> toHeadersMap(HttpServletRequest parentRequest){
+        Map<String, List<String>> headers = StreamUtil.forEnumeration(parentRequest.getHeaderNames())
+                .map(n->Tuple.of(n,n))
+                .map(Tuple.vmap(n->StreamUtil.forEnumeration(parentRequest.getHeaders(n)).collect(Collectors.toList())))
+                .collect(Tuple.toMap());
+        return headers;
     }
 
     public static void tryTaskAtMost(Unchecked.ThrowingRunnable t, Consumer<Throwable> cons, int n) {

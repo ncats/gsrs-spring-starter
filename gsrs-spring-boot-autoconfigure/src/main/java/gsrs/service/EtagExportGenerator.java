@@ -1,8 +1,8 @@
 package gsrs.service;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.net.URLDecoder;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -11,8 +11,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
+import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.hateoas.UriTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -23,6 +28,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.yield.Yield;
+import gsrs.controller.hateoas.HttpRequestHolder;
+import gsrs.controller.hateoas.LoopbackWebRequestHelper;
+import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.util.EntityUtils;
@@ -39,7 +48,6 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     private static final Pattern removeSkipPattern = Pattern.compile("(&skip=\\d+)");
     private static final Pattern removeViewPattern = Pattern.compile("(&view=\\s+)");
 
-
     private ObjectMapper mapper = new ObjectMapper();
 
 
@@ -47,16 +55,18 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     private EntityManager entityManager;
 
     private PlatformTransactionManager transactionManager;
+    
+    private HttpRequestHolder initiatingRequest;
 
-    public EtagExportGenerator(EntityManager entityManager, PlatformTransactionManager transactionManager){
+    public EtagExportGenerator(EntityManager entityManager, PlatformTransactionManager transactionManager, HttpRequestHolder request){
         this.entityManager = Objects.requireNonNull(entityManager);
         this.transactionManager = Objects.requireNonNull(transactionManager);
+        this.initiatingRequest=request;
     }
     @Override
     public Supplier<Stream<T>> generateExportFrom(String context, ETag etag) {
 
         return ()-> Yield.<T>create(yieldRecipe-> {
-                    System.out.println("Making export:" + etag.uri);
                     String uriToUse = etag.uri;
                     JsonNode responseAsJson;
                     JsonNode array;
@@ -65,10 +75,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
                     do {
                         responseAsJson = makePagedSubstanceRequest(uriToUse, 0, etag.total, context);
-//			System.out.println(responseAsJson);
                         JsonNode finished = responseAsJson.get("finished");
                         if (finished != null && !finished.asBoolean()) {
-//				System.out.println("not finished yet... waiting");
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException e) {
@@ -145,7 +153,6 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
 
     private JsonNode makePagedSubstanceRequest(String uri, int skip, int top, String context) {
-
         String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
         cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
         cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
@@ -157,23 +164,18 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
             //doesn't have parameters
             cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         }
-//
-//        WSRequestHolder requestHolder = requestPluginCachedSupplier.get().createNewLoopbackRequestFrom(cleanedUri, request, context);
 
         //TODO consider using RestTemplateBuilder in configuration?
         RestTemplate restTemplate = new RestTemplate();
         
-        // Tyler Peryea: This section is unfortunately necessary as
-        // the restTemplate itself considers all URLs provided to be not-yet percent encoded
-        // so, in a rather silly turn of events we need to UNencode the URL before sending it
-        // to restTemplate to be re-encoded.
-        try {
-            cleanedUri = URLDecoder.decode(cleanedUri.toString(), "UTF-8");
-        } catch (UnsupportedEncodingException e1) {
-            e1.printStackTrace();
-        } // java.net class
-        System.out.println("Actually using:" + cleanedUri);
-        ResponseEntity<String> response = restTemplate.getForEntity(cleanedUri, String.class);
+        HttpRequestHolder reqHolder = HttpRequestHolder.builder()
+                .url(cleanedUri)
+                .method(HttpMethod.GET)
+                .build();
+        
+        reqHolder=StaticContextAccessor.getBean(LoopbackWebRequestHelper.class).createNewLoopbackRequestFrom(reqHolder,initiatingRequest);
+        
+        ResponseEntity<String> response = reqHolder.execute(restTemplate);
 
         //TODO handle errors or 404 ?
         try {

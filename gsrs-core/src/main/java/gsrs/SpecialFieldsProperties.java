@@ -11,14 +11,13 @@ import java.util.Map;
 public class SpecialFieldsProperties {
 
     private List<Map<String, Object>> exactsearchfields;
-//.exactsearchfields
 
     public List<Map<String, Object>> getExactsearchfields() {
         return exactsearchfields;
     }
 
-    public void setExactsearchfields(List<Map<String, Object>> registeredfunctions) {
-        this.exactsearchfields = registeredfunctions;
+    public void setExactsearchfields(List<Map<String, Object>> exactsearchfields) {
+        this.exactsearchfields = exactsearchfields;
     }
 
 

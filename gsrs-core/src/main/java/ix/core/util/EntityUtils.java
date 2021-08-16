@@ -1138,22 +1138,35 @@ public class EntityUtils {
 
 		Map<String, MethodOrFieldMeta> apiFields;
 
+		private Set<String> specialFields=null;
+		
 		//Some simple factory helper methods
 
 		//TODO katzelda October 2020 : for now remove exact fields list we can implement this support later
 		//TODO tylerperyea July 2021 : It's later, we need to support this.
 		public Set<String> getSpecialFields() {
-		    return StaticContextAccessor.getOptionalBean(SpecialFieldsProperties.class)
+		    if(specialFields!=null)return specialFields;
+		    
+		    specialFields= StaticContextAccessor.getOptionalBean(SpecialFieldsProperties.class)
 		    .map(sfp->sfp.getExactsearchfields().stream()
 		            
 		            .filter(m->this.getName().equals(m.get("class")))
 		            // Spring / HOCON parser parses JSON array as LinkedHashMap
 		            // with integer keys. Must transform to a list
-		            .flatMap(m->((Map<?,String>) m.get("fields")).values().stream())
 
+                    .map(m->{
+                        if(m instanceof Map) {
+                            return (Collection<String>)(((Map<?,String>) m.get("fields")).values());
+                        }else {
+                            return (Collection<String>)m;
+                        }
+                    })
+                    
+		            .flatMap(m->m.stream())
 		            .collect(Collectors.toSet())
 		            )
 		    .orElse(new HashSet<>());
+		    return specialFields;
 		    
 		}
 
