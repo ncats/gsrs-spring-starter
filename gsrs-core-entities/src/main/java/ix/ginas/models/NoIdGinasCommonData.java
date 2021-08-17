@@ -111,8 +111,16 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
         return deprecated;
     }
 
-    public void setDeprecated(boolean deprecated) {
+    /**
+     * Mark this record as deprecated or not.
+     * @param deprecated
+     * @apiNote this method is not called setDepreated because of problems
+     * of mixing Hibernate and Jackson setters causes hibernate to update
+     * the entity everytime we deserialize.
+     */
+    public void deprecate(boolean deprecated) {
         this.deprecated = deprecated;
+        setIsDirty("deprecated");
     }
 
     @JsonIgnore
