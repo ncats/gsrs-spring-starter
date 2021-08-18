@@ -16,9 +16,9 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "vocabularyTermType")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = GsrsControlledVocabularyDTO.class, name = "ix.ginas.models.v1.ControlledVocabulary"),
-        @JsonSubTypes.Type(value = GsrsFragmentControlledVocabularyDTO.class, name = "ix.ginas.models.v1.FragmentControlledVocabulary"),
-        @JsonSubTypes.Type(value = GsrsCodeSystemControlledVocabularyDTO.class, name = "ix.ginas.models.v1.CodeSystemControlledVocabulary")
+        @JsonSubTypes.Type(value = GsrsControlledVocabularyDTO.class, name = GsrsControlledVocabularyDTO.TERM_TYPE),
+        @JsonSubTypes.Type(value = GsrsFragmentControlledVocabularyDTO.class, name = GsrsFragmentControlledVocabularyDTO.TERM_TYPE),
+        @JsonSubTypes.Type(value = GsrsCodeSystemControlledVocabularyDTO.class, name = GsrsCodeSystemControlledVocabularyDTO.TERM_TYPE)
 })
 public class AbstractGsrsControlledVocabularyDTO {
 
