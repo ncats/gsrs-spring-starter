@@ -17,6 +17,9 @@ import ix.core.ResourceReference;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
+
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 
 import javax.persistence.*;
@@ -43,10 +46,21 @@ public class Edit extends BaseModel {
 
         return edit;
     }
+    
+    
     @JsonIgnore
     @Id
-    @GeneratedValue
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false)    
+    
+//    @JsonIgnore
+//    @Id
+//    @GeneratedValue
     public UUID id; // internal random id
+    
 
     //don't use @CreateDate annotation here just set it on creation time and mark it final
     public final Long created = TimeUtil.getCurrentTimeMillis();
