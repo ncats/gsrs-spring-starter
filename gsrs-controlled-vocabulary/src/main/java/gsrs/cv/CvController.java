@@ -15,6 +15,8 @@ import ix.ginas.models.v1.ControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -33,6 +35,8 @@ public class CvController extends EtagLegacySearchEntityController<CvController,
 
     @Autowired
     private ControlledVocabularyEntityService entityService;
+
+
 
     @Override
     protected CvLegacySearchService getlegacyGsrsSearchService() {

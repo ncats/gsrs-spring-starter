@@ -1,30 +1,20 @@
 package gsrs.cv.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.api.GsrsEntityRestTemplate;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-
 import java.io.IOException;
 import java.util.Optional;
 
-public class ControlledVocabularyApi extends GsrsEntityRestTemplate<AbstractGsrsControlledVocabularyDTO, Long> {
-    public ControlledVocabularyApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, ObjectMapper mapper) {
-        super(restTemplateBuilder, baseUrl, "vocabularies", mapper);
-    }
+public interface ControlledVocabularyApi {
+    <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException;
 
-    @Override
-    protected AbstractGsrsControlledVocabularyDTO parseFromJson(JsonNode node) {
-        return getObjectMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
-    }
+    long count() throws IOException;
 
-    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
-        Optional<AbstractGsrsControlledVocabularyDTO> opt= findByResolvedId(domain);
-        if(opt.isPresent()){
-            return Optional.of((T) opt.get());
-        }
-        return Optional.empty();
-    }
+    <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) throws IOException;
 
+    Optional<AbstractGsrsControlledVocabularyDTO> findById(Long id) throws IOException;
 
+    boolean existsById(Long id) throws IOException;
+
+    <T extends AbstractGsrsControlledVocabularyDTO> T create(T dto) throws IOException;
+
+    <T extends AbstractGsrsControlledVocabularyDTO> T update(T dto) throws IOException;
 }

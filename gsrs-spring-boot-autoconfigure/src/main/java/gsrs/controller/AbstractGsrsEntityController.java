@@ -376,7 +376,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                 EntityExists exists = new EntityExists();
                 exists.setId(idOptional.get().toString());
                 exists.setQuery(id);
-                exists.setUrl(GsrsLinkUtil.computeSelfLinkFor(entityLinks, getEntityService().getEntityClass(),  idOptional.get().toString()));
+                exists.setUrl(GsrsLinkUtil.computeSelfLinkFor(entityLinks, getEntityService().getEntityClass(),  idOptional.get().toString()).getHref());
                 foundMap.put(id, exists);
             }else{
                 notFound.add(id);

@@ -5,15 +5,12 @@ import gsrs.api.GsrsEntityRestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.client.MockRestServiceServer;
 
 import java.io.IOException;
@@ -24,7 +21,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import static org.junit.jupiter.api.Assertions.*;
 //@SpringBootTest
-@RestClientTest(ControlledVocabularyApi.class)
+@RestClientTest(ControlledVocabularyRestApi.class)
 public class CvApiTest {
 
     @Autowired
@@ -36,14 +33,14 @@ public class CvApiTest {
     @Autowired
     RestTemplateBuilder restTemplateBuilder;
     @Autowired
-    private ControlledVocabularyApi api;
+    private ControlledVocabularyRestApi api;
 
     @TestConfiguration
     static class Testconfig{
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(RestTemplateBuilder restTemplateBuilder){
 
-            return new ControlledVocabularyApi(restTemplateBuilder, "http://example.com", new ObjectMapper());
+            return new ControlledVocabularyRestApi(restTemplateBuilder, "http://example.com", new ObjectMapper());
         }
     }
     @BeforeEach
@@ -130,18 +127,12 @@ public class CvApiTest {
                 "        \"BENZOIC ACID, 2-(ACETYLSELENO)-\": {\n" +
                 "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
                 "            \"query\": \"BENZOIC ACID, 2-(ACETYLSELENO)-\",\n" +
-                "            \"url\": {\n" +
-                "                \"rel\": \"_self\",\n" +
-                "                \"href\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
-                "            }\n" +
+                "            \"url\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
                 "        },\n" +
                 "        \"7X1DH96Q9D\": {\n" +
                 "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
                 "            \"query\": \"7X1DH96Q9D\",\n" +
-                "            \"url\": {\n" +
-                "                \"rel\": \"_self\",\n" +
-                "                \"href\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
-                "            }\n" +
+                "            \"url\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n"+
                 "        }\n" +
                 "    },\n" +
                 "    \"notFound\": [\n" +
@@ -158,6 +149,6 @@ public class CvApiTest {
         assertEquals(2, existsCheckResult.getFound().size());
         assertEquals(1, existsCheckResult.getNotFound().size());
 
-        assertEquals("http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full", existsCheckResult.getFound().get("7X1DH96Q9D").getUrl().getHref());
+        assertEquals("http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full", existsCheckResult.getFound().get("7X1DH96Q9D").getUrl());
     }
 }

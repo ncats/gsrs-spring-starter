@@ -291,7 +291,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @Override
     public  CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad){
-        System.out.println("Creating .. " + newEntityJson);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         ValidatorConfig.METHOD_TYPE methodType = partOfBatchLoad? ValidatorConfig.METHOD_TYPE.BATCH : ValidatorConfig.METHOD_TYPE.CREATE;
         return transactionTemplate.execute( status-> {

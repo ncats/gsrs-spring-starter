@@ -12,8 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.hateoas.Link;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -51,6 +50,12 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     protected ObjectMapper getObjectMapper(){
         return mapper;
     }
+
+    protected abstract I getIdFrom(T dto);
+
+
+
+
     public long count() throws IOException {
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/@count",String.class);
 
@@ -92,7 +97,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
 
     public Optional<PagedResult<T>> page(long top, long skip) throws JsonProcessingException {
-        ResponseEntity<String> response = restTemplate.getForEntity("/?top=" + top +"&skip=" + skip,String.class);
+        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/?top=" + top +"&skip=" + skip,String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
         }
@@ -105,6 +110,30 @@ public abstract class GsrsEntityRestTemplate<T, I> {
             return Optional.of(result.toPagedResult(content));
         }
         return Optional.of(result.toPagedResult(Collections.emptyList()));
+    }
+
+     public T create(T dto) throws IOException {
+         ResponseEntity<String> response =  restTemplate.postForEntity(prefix,dto,String.class);
+         if(!response.getStatusCode().is2xxSuccessful()) {
+             throw new IOException("error creating new entity: " + response.getStatusCode().getReasonPhrase());
+         }
+         JsonNode node = mapper.readTree(response.getBody());
+         return parseFromJson(node);
+     }
+
+    public T update(T dto) throws IOException{
+        I id = getIdFrom(dto);
+        //rest template PUT is void need to use lower level exchange to get response obj...
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<T> entity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<String> response =  restTemplate.exchange(prefix+"("+id+")", HttpMethod.PUT, entity,String.class);
+        if(!response.getStatusCode().is2xxSuccessful()) {
+            throw new IOException("error creating new entity: " + response.getStatusCode().getReasonPhrase());
+        }
+        JsonNode node = mapper.readTree(response.getBody());
+        return parseFromJson(node);
     }
 
     protected abstract T parseFromJson(JsonNode node);
@@ -169,19 +198,14 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     @Data
     public static class ExistsCheckResult{
-        private Map<String, GsrsEntityController.EntityExists> found;
+        private Map<String, EntityExists> found;
         private List<String> notFound;
     }
     @Data
     public static class EntityExists{
         private String id;
         private String query;
-        private RestUrl url;
+        private String url;
 
-    }
-    @Data
-    public static class RestUrl{
-        private String rel;
-        private URL href;
     }
 }

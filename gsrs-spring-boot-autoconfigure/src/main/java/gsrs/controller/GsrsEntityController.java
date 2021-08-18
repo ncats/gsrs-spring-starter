@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ public interface GsrsEntityController<T, I> {
     class EntityExists{
         private String id;
         private String query;
-        private Link url;
+        private String url;
 
     }
 }
