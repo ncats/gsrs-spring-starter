@@ -476,7 +476,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		try {
                 			T saved = transactionalUpdate(oldEntity, oldJson);
                 			System.out.println("updated entity = " + saved);
+                			String internalJSON = EntityWrapper.of(saved).toInternalJson();
+                			System.out.println("updated entity full eager fetch = " + internalJSON.hashCode());
                 			builder.updatedEntity(saved);
+                			
                 			builder.status(UpdateResult.STATUS.UPDATED);
 
                 			return Optional.of(saved);
