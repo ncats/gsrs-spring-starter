@@ -12,6 +12,29 @@ upon the ones listed before it.  Clients do not need to use all of these modules
         that can be used by many microservices that aren't specific to one microservice.
 * `gsrs-spring-starter-tests` Test helper classes 
 
+## Installing the GSRS Starter
+
+Note: It's not typically necessary to build and install the GSRS starter package directly as it
+can be retrieved from maven central. However, to make changes or get the most up-to-date snapshot
+of the starter code you'll need to build from source.
+
+
+At the time of this writing, to install the GSRS starter from this source repository, you must first install 
+some dependency jars into your local maven direcotry. To do this, run the following command:
+
+```
+./installExtraJars.sh
+```
+
+Then to install simply run:
+```
+./mvnw clean -U install -DskipTests
+```
+
+This will build and install the gsrs-starter packages to your local maven repository for use in
+other entity starters / spring applications.
+
+
 ## Attempt at maintaining Backwards Compatibility
 
 An attempt has been made to make sure that the REST API is close enough to
