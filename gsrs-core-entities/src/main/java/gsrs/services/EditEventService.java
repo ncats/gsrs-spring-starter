@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.util.Optional;
 
 /**
@@ -20,7 +22,9 @@ import java.util.Optional;
 @Service
 public class EditEventService {
 
-    @Autowired
+//    @Autowired
+
+    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager entityManager;
 
     @Autowired

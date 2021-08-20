@@ -7,6 +7,7 @@ import gsrs.security.GsrsUserProfileDetails;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -20,6 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 import java.util.Optional;
@@ -35,9 +38,15 @@ import java.util.Optional;
 @EnableJpaAuditing(dateTimeProviderRef = "timeTraveller")
 @Slf4j
 public class AuditConfig {
+
+    @PersistenceContext(unitName =  "defaultEntityManager")
+    private EntityManager entityManager;
+    
     @Bean
-    public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository, EntityManager em) {
-        return new SecurityAuditor(principalRepository, em);
+    public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository
+//            , @Qualifier("defaultEntityManager")  EntityManager em
+            ) {
+        return new SecurityAuditor(principalRepository, entityManager);
     }
     
     @Bean

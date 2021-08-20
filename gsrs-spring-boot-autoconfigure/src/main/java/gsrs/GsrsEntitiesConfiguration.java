@@ -14,6 +14,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
@@ -26,6 +27,7 @@ import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
@@ -42,7 +44,7 @@ public class GsrsEntitiesConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public PrincipalService principalService(PrincipalRepository principalRepository, EntityManager entityManager){
+    public PrincipalService principalService(PrincipalRepository principalRepository, @Qualifier("defaultEntityManager") EntityManager entityManager){
         return new PrincipalServiceImpl(principalRepository, entityManager);
     }
     @Bean
@@ -68,13 +70,13 @@ public class GsrsEntitiesConfiguration {
     }
     @Bean
     @ConditionalOnMissingBean
-    public GroupService groupService(GroupRepository groupRepository, EntityManager entityManager){
+    public GroupService groupService(GroupRepository groupRepository,  @Qualifier("defaultEntityManager") EntityManager entityManager){
         return new GroupServiceImpl(groupRepository, entityManager);
     }
     @Bean
     @ConditionalOnMissingBean
     public UserProfileService userProfileService(GroupService groupService, UserProfileRepository userProfileRepository,
-                                                 GroupRepository groupRepository, EntityManager entityManager){
+                                                 GroupRepository groupRepository, @Qualifier("defaultEntityManager") EntityManager entityManager){
         return new UserProfileService( userProfileRepository, groupService, groupRepository, entityManager);
     }
     @Bean

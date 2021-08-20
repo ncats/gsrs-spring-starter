@@ -54,7 +54,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private ETagRepository eTagRepository;
 
-    @PersistenceContext
+    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager entityManager;
 
     @Autowired

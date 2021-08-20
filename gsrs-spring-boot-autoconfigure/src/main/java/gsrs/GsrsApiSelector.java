@@ -1,11 +1,21 @@
 package gsrs;
 
-import gsrs.controller.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.context.annotation.ImportSelector;
+import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.type.AnnotationMetadata;
+
+import gsrs.controller.BuildInfoController;
+import gsrs.controller.ExportController;
+import gsrs.controller.GsrsWebConfig;
+import gsrs.controller.HealthController;
+import gsrs.controller.UserController;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
-import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
 import gsrs.springUtils.StaticContextAccessor;
@@ -17,13 +27,9 @@ import ix.core.search.text.TextIndexerEntityListener;
 import ix.core.search.text.TextIndexerSingletonConfiguration;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import ix.core.util.pojopointer.URIPojoPointerParser;
-import org.springframework.context.annotation.ImportSelector;
-import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.type.AnnotationMetadata;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-
+@Slf4j
 public class GsrsApiSelector implements ImportSelector {
     @Override
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
@@ -31,6 +37,8 @@ public class GsrsApiSelector implements ImportSelector {
         EnableGsrsApi.IndexerType indexerType = attributes.getEnum("indexerType");
 
         List<Class> componentsToInclude = new ArrayList<>();
+        
+        componentsToInclude.add(DefaultDataSourceConfig.class);
         componentsToInclude.add(GsrsWebConfig.class);
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
@@ -79,7 +87,9 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(RegisteredFunctionProperties.class);
         componentsToInclude.add(ExportController.class);
         componentsToInclude.add(SearchResultController.class);
+        
         return componentsToInclude.stream().map(Class::getName)
-                .peek(c-> System.out.println(c)).toArray(i-> new String[i]);
+                .peek(c-> log.debug("including:" + c))
+                .toArray(i-> new String[i]);
     }
 }
