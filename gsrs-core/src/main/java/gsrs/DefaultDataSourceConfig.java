@@ -112,18 +112,24 @@ public class DefaultDataSourceConfig {
         
         
         Map<String,String> map = new HashMap<>();
+//spring.jpa.hibernate.use-new-id-generator-mappings
         
         Optional<String> dialect = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.database-platform", "spring.jpa.database-platform");
         Optional<String> ddlSetting = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.ddl-auto", "spring.jpa.hibernate.ddl-auto", "update");
         Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql");
-        
+        Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
+                
+
         log.debug("dialect:" + dialect.orElse(null));
         log.debug("Show SQL:" + showSQL.orElse(null));
         log.debug("DDL:" + ddlSetting.orElse(null));
+        log.debug("use-new-id-generator-mappings:" + newIDGen.orElse(null));
         
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
         showSQL.ifPresent(d->map.put("hibernate.show_sql", d));
         dialect.ifPresent(d->map.put("hibernate.dialect", d));
+        //need to test
+        newIDGen.ifPresent(d->map.put("hibernate.use-new-id-generator-mappings", d));
         
         return map;
     }
