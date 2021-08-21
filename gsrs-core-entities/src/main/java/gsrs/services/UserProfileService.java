@@ -35,7 +35,6 @@ public class UserProfileService {
 
     private GroupRepository groupRepository;
 
-//    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager entityManager;
 
     @Autowired

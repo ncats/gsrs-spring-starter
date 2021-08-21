@@ -39,12 +39,12 @@ import java.util.Optional;
 @Slf4j
 public class AuditConfig {
 
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
     
     @Bean
     public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository
-//            , @Qualifier("defaultEntityManager")  EntityManager em
+//            , @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
             ) {
         return new SecurityAuditor(principalRepository, entityManager);
     }

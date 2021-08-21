@@ -19,7 +19,6 @@ public class PrincipalServiceImpl implements PrincipalService {
 
     private final PrincipalRepository principalRepository;
 
-//    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager entityManager;
 
 

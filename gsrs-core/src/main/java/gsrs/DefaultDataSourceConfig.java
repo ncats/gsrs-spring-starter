@@ -54,7 +54,7 @@ public class DefaultDataSourceConfig {
     
     //These below shouldn't have to change and are built from the constants above
     protected static final String NAME_DATA_SOURCE = PERSIST_UNIT + "DataSource";
-    protected static final String NAME_ENTITY_MANAGER = PERSIST_UNIT + "EntityManager";
+    public static final String NAME_ENTITY_MANAGER = PERSIST_UNIT + "EntityManager";
     protected static final String NAME_DATA_SOURCE_PROPERTIES = PERSIST_UNIT + "DataSourceProperties";
     protected static final String NAME_TRANSACTION_MANAGER = PERSIST_UNIT + "TransactionManager";
     

@@ -44,7 +44,7 @@ public class GsrsEntitiesConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public PrincipalService principalService(PrincipalRepository principalRepository, @Qualifier("defaultEntityManager") EntityManager entityManager){
+    public PrincipalService principalService(PrincipalRepository principalRepository, @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER) EntityManager entityManager){
         return new PrincipalServiceImpl(principalRepository, entityManager);
     }
     @Bean
@@ -70,13 +70,13 @@ public class GsrsEntitiesConfiguration {
     }
     @Bean
     @ConditionalOnMissingBean
-    public GroupService groupService(GroupRepository groupRepository,  @Qualifier("defaultEntityManager") EntityManager entityManager){
+    public GroupService groupService(GroupRepository groupRepository,  @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER) EntityManager entityManager){
         return new GroupServiceImpl(groupRepository, entityManager);
     }
     @Bean
     @ConditionalOnMissingBean
     public UserProfileService userProfileService(GroupService groupService, UserProfileRepository userProfileRepository,
-                                                 GroupRepository groupRepository, @Qualifier("defaultEntityManager") EntityManager entityManager){
+                                                 GroupRepository groupRepository, @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER) EntityManager entityManager){
         return new UserProfileService( userProfileRepository, groupService, groupRepository, entityManager);
     }
     @Bean

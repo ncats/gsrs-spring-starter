@@ -1,5 +1,6 @@
 package gsrs.legacy.structureIndexer;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
@@ -26,13 +27,12 @@ public class StructureIndexerEventListener {
     private final StructureIndexerService indexer;
 //    private final EntityManager em;
 
-    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager em;
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
     public StructureIndexerEventListener(StructureIndexerService indexer,
-            @Qualifier("defaultEntityManager")  EntityManager em
+            @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
             ) {
         this.indexer = indexer;
         this.em = em;

@@ -19,6 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
@@ -37,14 +38,13 @@ public class SequenceIndexerEventListener {
     private final SequenceIndexerService indexer;
 //    private EntityManager em;
     
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager em;
 
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
     public SequenceIndexerEventListener(
-//            @Qualifier("defaultEntityManager") EntityManager em, 
             SequenceIndexerService indexer) {
 
         this.indexer = indexer;

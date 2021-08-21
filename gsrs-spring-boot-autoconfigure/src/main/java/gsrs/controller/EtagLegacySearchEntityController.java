@@ -2,6 +2,7 @@ package gsrs.controller;
 
 
 import gov.nih.ncats.common.util.Unchecked;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -54,7 +55,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private ETagRepository eTagRepository;
 
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
     @Autowired
