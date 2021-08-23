@@ -115,4 +115,17 @@ public @interface EnableGsrsApi {
      * @return the {@link IndexValueMakerDetector} can not be null.
      */
     IndexValueMakerDetector indexValueMakerDetector() default IndexValueMakerDetector.COMPONENT_SCAN;
+
+    /**
+     * Default DataSourceConfig to use, if not specified uses {@link DefaultDataSourceConfig}.
+     * @return
+     */
+    Class defaultDatabaseSourceConfig() default DefaultDataSourceConfig.class;
+
+    /**
+     * Any additional database configuations aside from the one specified as {#defaultDatabaseSourceConfig()}.
+     * If not specified then return an empty array.
+     * @return
+     */
+    Class[] additionalDatabaseSourceConfigs() default {};
 }

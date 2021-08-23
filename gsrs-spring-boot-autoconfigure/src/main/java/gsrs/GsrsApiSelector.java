@@ -38,7 +38,12 @@ public class GsrsApiSelector implements ImportSelector {
 
         List<Class> componentsToInclude = new ArrayList<>();
         
-        componentsToInclude.add(DefaultDataSourceConfig.class);
+        componentsToInclude.add(attributes.getClass("defaultDatabaseSourceConfig"));
+
+        for(Class c : attributes.getClassArray("additionalDatabaseSourceConfigs")){
+            componentsToInclude.add(c);
+        }
+
         componentsToInclude.add(GsrsWebConfig.class);
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
