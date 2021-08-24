@@ -1,15 +1,19 @@
 package gsrs.controller;
 
 
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.model.GsrsUrlLink;
 import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportGenerator;
 import gsrs.service.ExportService;
+import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.search.SearchResult;
@@ -120,12 +124,20 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         private String extension;
         private GsrsUnwrappedEntityModel.RestUrlLink link;
     }
+    
+
+    
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
-    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, @PathVariable("format") String format,
-                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, @RequestParam(value ="filename", required= false) String fileName,
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
+                                               @PathVariable("format") String format,
+                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
+                                               @RequestParam(value ="filename", required= false) String fileName,
                                                Principal prof,
-                                               @RequestParam Map<String, String> parameters) throws Exception {
+                                               @RequestParam Map<String, String> parameters,
+                                               HttpServletRequest request
+                                               
+            ) throws Exception {
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
@@ -138,8 +150,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
 
 
+        
         //Not ideal, but gets around user problem
-        Stream<T> mstream = new EtagExportGenerator<T>(entityManager, transactionManager).generateExportFrom(getEntityService().getContext(), etagObj.get()).get();
+        Stream<T> mstream = new EtagExportGenerator<T>(entityManager, transactionManager, HttpRequestHolder.fromRequest(request))
+                .generateExportFrom(getEntityService().getContext(), etagObj.get())
+                .get();
 
         //GSRS-699 REALLY filter out anything that isn't public unless we are looking at private data
 //        if(publicOnly){

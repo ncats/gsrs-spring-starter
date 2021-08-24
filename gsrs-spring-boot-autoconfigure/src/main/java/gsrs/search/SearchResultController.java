@@ -90,8 +90,6 @@ public class SearchResultController {
         }
         SearchResultContext ctx=possibleContext.getContext();
 
-
-        URI originalURI = new URI(ctx.getGeneratingUrl());
         
         //Play used a Map<String,String[]> while Spring uses a MultiMap<String,String>
         Map<String, String[]> paramMap =queryParameters.entrySet().stream()
