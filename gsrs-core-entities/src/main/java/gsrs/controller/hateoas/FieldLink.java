@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import gsrs.controller.GsrsControllerUtil;
 import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkRelation;
@@ -34,12 +35,17 @@ class FieldLink extends Link {
         URI uri = link.toUri();
 //        System.out.println("orl url =" + uri);
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?
+        String rootPath = GsrsControllerUtil.getRootUrlPath();
+        String currentPath = uri.getRawPath();
+        //the root should be a subString of the currentPath...
+        String downStream = currentPath.replace(rootPath, "");
         String apiPath;
+
         if(id !=null) {
-            apiPath = "/api/v1" + uri.getRawPath()
+            apiPath = "/api/v1" + downStream
                     .replace("/(" + id + ")", "(" + id + ")");
         }else{
-            apiPath = "/api/v1" + uri.getRawPath();
+            apiPath = "/api/v1" + downStream;
         }
         if(field !=null){
             apiPath = apiPath.replace("/**", "/"+field);

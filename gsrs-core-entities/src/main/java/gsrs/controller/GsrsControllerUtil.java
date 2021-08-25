@@ -5,6 +5,7 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.controllers.EntityFactory;
+import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
@@ -18,6 +19,12 @@ public final class GsrsControllerUtil {
 
     private GsrsControllerUtil(){
         //can not instantiate
+    }
+
+    public static String getRootUrlPath(){
+        String url= StaticContextAccessor.getBean(EntityLinks.class).linkFor(RelativePathDummyObject.class).toUri().getRawPath();
+        url.replace(RelativePathDummyObject.ROUTE_PATH,"");
+        return url;
     }
 
     public static String getEndWildCardMatchingPartOfUrl(HttpServletRequest request) {

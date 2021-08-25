@@ -33,7 +33,7 @@ import gsrs.validator.ConfigBasedGsrsValidatorFactory;
         GsrsApiWebConfiguration.class,
         IxContext.class,
         LoopbackWebRequestHelper.class,
-        HttpLoopBackConfig.class
+        HttpLoopBackConfig.class,
 })
 public class GsrsApiAutoConfiguration {
 

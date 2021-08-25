@@ -1,5 +1,6 @@
 package gsrs.controller.hateoas;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +26,8 @@ public class HttpLoopBackConfig {
     private int port;
     
     
-    private List<Map<String, Object>> requests;
+    private List<Map<String, Object>> requests = new ArrayList<>();
+
     public String getProtocol() {
         return protocol;
     }
