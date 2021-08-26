@@ -30,6 +30,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 @Configuration(proxyBeanMethods = false)
+
+//TODO: Discuss the meaning of this in the context of
+// explicit datasource configurations and lack of
+// automatic JPA repositories
 @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
 @Import({StarterEntityRegistrar.class, GsrsRabbitMqConfiguration.class})
 public class GsrsEntitiesConfiguration {
