@@ -1,5 +1,6 @@
 package gsrs.services;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.CreateEditEvent;
 import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
@@ -24,7 +25,7 @@ public class EditEventService {
 
 //    @Autowired
 
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
     @Autowired

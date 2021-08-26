@@ -66,6 +66,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @PersistenceContext
     private EntityManager entityManager;
+    
     @Autowired
     private PlatformTransactionManager transactionManager;
 
