@@ -7,6 +7,9 @@ import java.util.Optional;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
+import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -20,6 +23,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 
+import ix.core.EbeanLikeImplicitNamingStategy;
 import lombok.extern.slf4j.Slf4j;
 
 // first link used in approach below.
@@ -101,7 +105,18 @@ public class DefaultDataSourceConfig {
         
     }
     
-    
+    //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
+    //to be backwards compatible we have to tell hibernate to use Legacy Jpa (1.0)
+    //and not JPA 2 naming strategies.  This mostly affects join table names and columns
+    @Bean
+    public PhysicalNamingStrategy physical() {
+        return new PhysicalNamingStrategyStandardImpl();
+    }
+
+    @Bean
+    public ImplicitNamingStrategy implicit() {
+        return new EbeanLikeImplicitNamingStategy();
+    }
     // TODO: This needs to be thought about for what properties are needed
     // beyond the few specified here.
     private Map<String,?> additionalJpaProperties(){
