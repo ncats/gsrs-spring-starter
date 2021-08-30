@@ -1,21 +1,30 @@
 package gsrs;
 
-import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.events.CreateEditEvent;
-import gsrs.model.AbstractGsrsEntity;
-import gsrs.repository.EditRepository;
-import gsrs.springUtils.AutowireHelper;
-import ix.core.EntityProcessor;
-import ix.core.models.Edit;
-import ix.core.util.EntityUtils;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+
+import javax.persistence.PostLoad;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import javax.persistence.*;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.events.CreateEditEvent;
+import gsrs.repository.EditRepository;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.EntityProcessor;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class GsrsEntityProcessorListener {
@@ -33,15 +42,44 @@ public class GsrsEntityProcessorListener {
 
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
+   
+    private HashSet<Key> working =new LinkedHashSet<>();
+    
+    // TP 08-27-2021: In general this shouldn't be necessary,
+    // but if a new transactional operation inside a preUpdate
+    // hook gets called, this sometimes tries to re-run all preUpdate
+    // hooks at the "close" of that transaction. Setting proper isolation
+    // levels should help prevent this, but this isn't always obvious.
+    // At the time of this comment it's not necessary in any known code
+    // to have this on. But it may turn out to be necessary.
+    private static boolean PREVENT_RECURSION=false;
+    
+    
     @Transactional
     @PreUpdate
     public void preUpdate(Object o){
+        Key k=null;
+        if(PREVENT_RECURSION) {
+            k=EntityWrapper.of(o).getKey();
+            if(working.contains(k)) {
+                log.warn("PostUpdate called, but already updating record for:" + k);
+                return;
+            }
+        }
+        
         try {
+            if(PREVENT_RECURSION) {
+                working.add(k);
+            }
             initializer.get();
             entityPersistAdapter.preUpdateBeanDirect(o, ()->epf.getCombinedEntityProcessorFor(o).preUpdate(o));
 
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
+        } finally {
+            if(PREVENT_RECURSION) {
+                working.remove(k);
+            }
         }
     }
 

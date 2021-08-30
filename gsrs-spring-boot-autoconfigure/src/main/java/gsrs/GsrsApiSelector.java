@@ -1,17 +1,8 @@
 package gsrs;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.context.annotation.ImportSelector;
-import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.type.AnnotationMetadata;
-
-import gsrs.controller.BuildInfoController;
-import gsrs.controller.ExportController;
-import gsrs.controller.GsrsWebConfig;
-import gsrs.controller.HealthController;
-import gsrs.controller.UserController;
+import gsrs.controller.*;
+import gsrs.controller.hateoas.HttpLoopBackConfig;
+import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
@@ -27,6 +18,12 @@ import ix.core.search.text.TextIndexerEntityListener;
 import ix.core.search.text.TextIndexerSingletonConfiguration;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import ix.core.util.pojopointer.URIPojoPointerParser;
+import org.springframework.context.annotation.ImportSelector;
+import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.type.AnnotationMetadata;
+
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -37,7 +34,7 @@ public class GsrsApiSelector implements ImportSelector {
         EnableGsrsApi.IndexerType indexerType = attributes.getEnum("indexerType");
 
         List<Class> componentsToInclude = new ArrayList<>();
-        
+
         componentsToInclude.add(attributes.getClass("defaultDatabaseSourceConfig"));
 
         for(Class c : attributes.getClassArray("additionalDatabaseSourceConfigs")){
@@ -50,6 +47,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(BuildInfoController.class);
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
+        componentsToInclude.add(RelativePathController.class);
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(SpecialFieldsProperties.class);
@@ -92,7 +90,11 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(RegisteredFunctionProperties.class);
         componentsToInclude.add(ExportController.class);
         componentsToInclude.add(SearchResultController.class);
-        
+
+
+        componentsToInclude.add(LoopbackWebRequestHelper.class);
+        componentsToInclude.add(HttpLoopBackConfig.class);
+
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> log.debug("including:" + c))
                 .toArray(i-> new String[i]);
