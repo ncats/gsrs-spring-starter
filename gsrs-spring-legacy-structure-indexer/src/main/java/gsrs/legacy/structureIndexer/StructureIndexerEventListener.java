@@ -1,5 +1,6 @@
 package gsrs.legacy.structureIndexer;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
@@ -8,11 +9,14 @@ import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,12 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class StructureIndexerEventListener {
 
     private final StructureIndexerService indexer;
-    private final EntityManager em;
+//    private final EntityManager em;
 
+    private EntityManager em;
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
-    public StructureIndexerEventListener(StructureIndexerService indexer, EntityManager em) {
+    public StructureIndexerEventListener(StructureIndexerService indexer,
+            @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
+            ) {
         this.indexer = indexer;
         this.em = em;
     }

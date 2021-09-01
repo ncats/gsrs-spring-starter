@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
@@ -30,7 +31,8 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
-    @Autowired
+//    @Autowired
+    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager em;
 
     private void autowireIfNeeded(){

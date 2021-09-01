@@ -24,7 +24,7 @@ public abstract class AbstractIndexValueMakerFactory implements IndexValueMakerF
     private ConcurrentHashMap<Class, List<IndexValueMaker>> valueMakersMap = new ConcurrentHashMap<>();
     private final CachedSupplier<Void> initializer = INDEX_VALUE_MAKER_INTIALIZATION_GROUP.add(
             CachedSupplier.ofInitializer(()->{
-                //clear Map incase this is not the first time this is run we don't want to double register
+                //clear Map in case this is not the first time this is run we don't want to double register
                             valueMakersMap.clear();
                             registerIndexValueMakers(i->{
                                 if(i !=null) {

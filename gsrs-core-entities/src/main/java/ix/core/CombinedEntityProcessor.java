@@ -31,7 +31,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.prePersist(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }
@@ -42,7 +42,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.postPersist(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }
@@ -53,7 +53,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.preRemove(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }
@@ -64,7 +64,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.preUpdate(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
             log.warn(e.getMessage(),e);
             }
         }
@@ -75,7 +75,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.postRemove(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }
@@ -88,7 +88,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.postUpdate(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }
@@ -100,7 +100,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
         for(EntityProcessor<? super K> processor : list){
             try{
                 processor.postLoad(obj);
-            }catch(Exception e){
+            }catch(Throwable e){
                 log.warn(e.getMessage(),e);
             }
         }

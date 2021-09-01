@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,7 +41,8 @@ public class UserProfileService {
     public UserProfileService(UserProfileRepository userProfileRepository,
                               GroupService groupService,
                               GroupRepository groupRepository,
-                              EntityManager entityManager) {
+                              EntityManager entityManager
+                              ) {
         this.userProfileRepository = userProfileRepository;
         this.groupService = groupService;
         this.groupRepository = groupRepository;

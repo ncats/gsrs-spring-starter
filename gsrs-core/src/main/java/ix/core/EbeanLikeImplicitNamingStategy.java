@@ -16,7 +16,9 @@ public class EbeanLikeImplicitNamingStategy extends ImplicitNamingStrategyLegacy
     @Override
     protected Identifier toIdentifier(String stringForm,
             MetadataBuildingContext buildingContext) {
-        return super.toIdentifier(STRATEGY_INSTANCE.columnName(stringForm), buildingContext);
+        Identifier id = super.toIdentifier(STRATEGY_INSTANCE.columnName(stringForm), buildingContext);
+//        System.out.println("ID from:" + stringForm + " is " + id.toString());
+        return id;
     }
 //
 //    @Override

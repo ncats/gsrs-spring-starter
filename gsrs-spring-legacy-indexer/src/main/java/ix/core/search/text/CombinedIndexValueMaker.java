@@ -21,7 +21,7 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
         list.forEach(i -> {
             try {
                 i.createIndexableValues(t, c);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
 //		        Logger.error("Trouble creating index for:" + EntityWrapper.of(t).getKey(), e);
             }

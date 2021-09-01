@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,13 @@ public class GsrsSecurityUtils {
             return null;
         }
         return auth.getPrincipal();
+    }
+    public static Optional<String> getCurrentUsername(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if(auth ==null){
+            return Optional.empty();
+        }
+        return Optional.of(auth.getName());
     }
     public static boolean hasAnyRoles(Collection<Role> roles){
         return hasAnyRoles((String[]) roles.stream().map(r -> r.name()).toArray(size-> new String[size]));

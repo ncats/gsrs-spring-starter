@@ -5,18 +5,21 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
@@ -33,13 +36,17 @@ import lombok.extern.slf4j.Slf4j;
 public class SequenceIndexerEventListener {
 
     private final SequenceIndexerService indexer;
+//    private EntityManager em;
+    
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager em;
+
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
-    public SequenceIndexerEventListener(EntityManager em, SequenceIndexerService indexer) {
+    public SequenceIndexerEventListener(
+            SequenceIndexerService indexer) {
 
-        this.em = em;
         this.indexer = indexer;
     }
 

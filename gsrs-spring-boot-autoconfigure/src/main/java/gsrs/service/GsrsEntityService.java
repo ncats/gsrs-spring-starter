@@ -3,6 +3,7 @@ package gsrs.service;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
+import gsrs.EntityPersistAdapter;
 import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.security.*;
 import ix.core.validator.ValidationResponse;
@@ -75,6 +76,10 @@ public interface GsrsEntityService<T, I> {
     default CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException{
         return createEntity(newEntityJson, false);
     }
+
+    @hasUpdateRole
+    UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception;
+
     @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
