@@ -379,6 +379,34 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     protected T fixUpdatedIfNeeded(T updatedEntity){
         return updatedEntity;
     }
+
+    @Override
+    public UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        return transactionTemplate.execute( status-> {
+            UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
+            EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, changeOperation::apply);
+
+            if(savedVersion ==null){
+                status.setRollbackOnly();
+                builder.status(UpdateResult.STATUS.ERROR);
+            }else {
+                builder.status(UpdateResult.STATUS.UPDATED);
+                builder.updatedEntity(savedVersion.getValue());
+
+                //only publish events if we save!
+                AbstractEntityUpdatedEvent<T> event = newUpdateEvent(savedVersion.getValue());
+                if(event !=null) {
+                    applicationEventPublisher.publishEvent(event);
+                    if (gsrsRabbitMqConfiguration.isEnabled() && exchangeName != null) {
+                        rabbitTemplate.convertAndSend(exchangeName, substanceUpdatedKey, event);
+                    }
+                }
+
+            }
+            return builder.build();
+        });
+    }
     @Override
 
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
