@@ -17,6 +17,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,9 +38,6 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
 
     @Autowired
     private ObjectMapper objectMapper;
-
-//    @Autowired
-//    private CvSearchService searchService;
 
 
     @Override
@@ -65,11 +63,13 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
     @Override
+    @Transactional
     protected ControlledVocabulary update(ControlledVocabulary controlledVocabulary) {
         return repository.saveAndFlush(controlledVocabulary);
     }
@@ -111,6 +111,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     }
 
     @Override
+    @Transactional
     protected ControlledVocabulary create(ControlledVocabulary controlledVocabulary) {
         try {
             return repository.saveAndFlush(controlledVocabulary);
@@ -126,17 +127,14 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ControlledVocabulary> get(Long id) {
         return repository.findById(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ControlledVocabulary> flexLookup(String someKindOfId) {
-//        Matcher matcher = NUMBER_PATTERN.matcher(someKindOfId);
-//        if(matcher.find()){
-//            //is an id - this shouldn't happen anymore since we changed the routing to ignore ID
-//            return get(parseIdFromString(someKindOfId));
-//        }
         //is the string a domain?
         List<ControlledVocabulary> list = repository.findByDomain(someKindOfId);
         if(list.isEmpty()){
