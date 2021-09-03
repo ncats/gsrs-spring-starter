@@ -109,7 +109,7 @@ public class GsrsEntityProcessorListener {
 
     @PostPersist
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void postPersist(Object o){
+    public void postPersist(Object o) throws EntityProcessor.FailProcessingException {
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
@@ -122,8 +122,9 @@ public class GsrsEntityProcessorListener {
                         .build());
 
            }
-        } catch (EntityProcessor.FailProcessingException e) {
+        } catch (Throwable e) {
             log.error("error calling entityProcessor", e);
+            throw e;
         }
     }
 
