@@ -1408,7 +1408,7 @@ public class PojoDiff {
 				setObjectAt(src,subPath,fetched,visited);
 				
 			}else{
-				System.out.println("not able to add:" + fetched.getClass());
+				System.out.println("not able to add:" + fetched.getClass() + " with path" + lastPath);
 			}
 			changeChain.addAll(visited);
 		}
