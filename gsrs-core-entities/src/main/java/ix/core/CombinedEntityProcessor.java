@@ -7,6 +7,28 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Wraps multiple {@link EntityProcessor}s behind a single implementation
+ * so we can propagate to many processors but only need to hold a reference to one object.
+ * IF any of the wrapped processors throw a Throwable, that throwable is caught, logged
+ * and the CombinedEntityProcessor will continue to call the other processors.
+ *
+ * @implSpec The implementation of each method is basically:
+ * <pre>
+ * {@code
+ * public void prePersist( Object o){
+ *     for(EntityProcessor p : list){
+ *         try{
+ *             p.prePersist(o);
+ *         }catch(Throwable t){
+ *             log.warn(t);
+ *         }
+ *     }
+ * }
+ * }
+ * </pre>
+ * @param <K>
+ */
 @Slf4j
 public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     private final List<EntityProcessor<? super K>> list;

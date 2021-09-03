@@ -109,22 +109,25 @@ public class GsrsEntityProcessorListener {
 
     @PostPersist
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void postPersist(Object o) throws EntityProcessor.FailProcessingException {
+    public void postPersist(Object o) {
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
-            //create and edit?
-           EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
-           if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
-               applicationEventPublisher.publishEvent(CreateEditEvent.builder()
-                       .kind(o.getClass())
-                       .id(ew.getEntityInfo().getNativeIdFor(o).get())
-                        .build());
 
-           }
         } catch (Throwable e) {
+            //I don't think this can happen CombinedEntityProcessor should
+            //catch all throwables
             log.error("error calling entityProcessor", e);
-            throw e;
+
+        }
+        //create an edit?
+        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
+        if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
+            applicationEventPublisher.publishEvent(CreateEditEvent.builder()
+                    .kind(o.getClass())
+                    .id(ew.getEntityInfo().getNativeIdFor(o).get())
+                    .build());
+
         }
     }
 
