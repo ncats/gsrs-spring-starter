@@ -35,7 +35,7 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
                         }
                     }
                     if(indexer !=null) {
-                        AutowireHelper.getInstance().autowire(indexer);
+                        indexer = AutowireHelper.getInstance().autowireAndProxy(indexer);
                     }
                     return indexer;
                 })

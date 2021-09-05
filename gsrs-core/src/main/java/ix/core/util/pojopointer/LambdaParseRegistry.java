@@ -73,8 +73,7 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 					try {
 						String className = (String) m.get("class");
 						Class<?> c = ClassUtils.forName(className, null);
-						RegisteredFunction rf = (RegisteredFunction) c.getDeclaredConstructor().newInstance();
-						AutowireHelper.getInstance().autowire(rf);
+						RegisteredFunction rf = AutowireHelper.getInstance().autowireAndProxy( (RegisteredFunction)  c.getDeclaredConstructor().newInstance());
 
 						LambdaArgumentParser p = rf.getFunctionURIParser();
 						System.out.println("Found special Function:" + p.getKey());

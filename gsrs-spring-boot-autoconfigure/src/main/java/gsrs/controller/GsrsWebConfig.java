@@ -156,7 +156,7 @@ public class GsrsWebConfig {
                                        throw new IllegalStateException("error instantiating idHelper class", e);
                                    }
                                    //inject anything if needed
-                                   AutowireHelper.getInstance().autowire(idHelper);
+                                   idHelper = AutowireHelper.getInstance().autowireAndProxy(idHelper);
                                }else{
                                    idHelper= commonIdHelper;
                                }

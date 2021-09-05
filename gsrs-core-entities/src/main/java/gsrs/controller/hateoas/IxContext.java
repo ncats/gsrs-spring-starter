@@ -6,6 +6,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import gsrs.springUtils.StaticContextAccessor;
@@ -71,6 +74,8 @@ public class IxContext {
         StringBuilder apiBuilder = new StringBuilder();
         
         if(configHostAndPort==null) {
+            RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+
             URI uri = ServletUriComponentsBuilder.fromCurrentRequestUri().build().toUri();
             apiBuilder.append(requestHostAndPort(uri));
         }else {

@@ -11,6 +11,7 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 public abstract class AbstractEntityProcessorFactory implements EntityProcessorFactory {
@@ -70,8 +71,9 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
             if(processors.isEmpty()){
                 return new NoOpEntityProcessor(k);
             }
-            processors.forEach(AutowireHelper.getInstance()::autowire);
-            return new CombinedEntityProcessor(k, processors);
+
+            return AutowireHelper.getInstance().autowireAndProxy(new CombinedEntityProcessor(k,
+                    processors.stream().map( p-> AutowireHelper.getInstance().autowireAndProxy(p)).collect(Collectors.toSet())));
         });
     }
 

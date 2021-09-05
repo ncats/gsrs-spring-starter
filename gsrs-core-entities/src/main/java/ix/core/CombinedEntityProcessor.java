@@ -1,6 +1,7 @@
 package ix.core;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     }
 
     @Override
+    @Transactional
     public void prePersist(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{
@@ -60,6 +62,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     }
 
     @Override
+    @Transactional
     public void postPersist(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{
@@ -71,6 +74,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     }
 
     @Override
+    @Transactional
     public void preRemove(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{
@@ -93,6 +97,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     }
 
     @Override
+    @Transactional
     public void postRemove(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{
@@ -106,6 +111,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
 
 
     @Override
+    @Transactional
     public void postUpdate(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{
@@ -118,6 +124,7 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
     }
 
     @Override
+    @Transactional
     public void postLoad(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{

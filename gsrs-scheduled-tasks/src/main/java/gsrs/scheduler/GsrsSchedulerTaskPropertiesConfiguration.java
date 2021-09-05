@@ -51,7 +51,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
                 e.printStackTrace();
                 throw new IllegalStateException(e);
             }
-            AutowireHelper.getInstance().autowire(task);
+            task = AutowireHelper.getInstance().autowireAndProxy(task);
             l.add(task.createTask());
 
 

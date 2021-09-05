@@ -37,8 +37,8 @@ public class GsrsExportConfiguration {
             for(Class c : entry.getValue()){
                 try {
                     ExporterFactory factory = (ExporterFactory)c.newInstance();
-                    AutowireHelper.getInstance().autowire(factory);
-                    list.add(factory);
+
+                    list.add(AutowireHelper.getInstance().autowireAndProxy(factory));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

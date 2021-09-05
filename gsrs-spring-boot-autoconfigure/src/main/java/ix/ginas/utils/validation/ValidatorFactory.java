@@ -27,7 +27,7 @@ public class ValidatorFactory {
            try {
 
                ValidatorPlugin p  = conf.newValidatorPlugin(mapper, AutowireHelper.getInstance().getClassLoader());
-               AutowireHelper.getInstance().autowire(p);
+               p = AutowireHelper.getInstance().autowireAndProxy(p);
                plugins.put(p, conf);
            } catch (Exception e) {
                e.printStackTrace();
