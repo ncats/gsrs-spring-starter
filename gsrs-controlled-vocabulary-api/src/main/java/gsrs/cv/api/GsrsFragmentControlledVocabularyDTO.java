@@ -9,7 +9,6 @@ import java.util.List;
 
 @Data
 @SuperBuilder
-@NoArgsConstructor
 @AllArgsConstructor
 public class GsrsFragmentControlledVocabularyDTO extends AbstractGsrsControlledVocabularyDTO{
     /**
@@ -19,6 +18,9 @@ public class GsrsFragmentControlledVocabularyDTO extends AbstractGsrsControlledV
 
     private List<FragmentTermDTO> terms;
 
+    public GsrsFragmentControlledVocabularyDTO(){
+        setVocabularyTermType(TERM_TYPE);
+    }
     //here there be dragons
     //do not touch this unless you know what you are doing!
     //

@@ -34,4 +34,5 @@ public class AbstractGsrsControlledVocabularyDTO {
     private List<String> fields;
     private String vocabularyTermType;
 
+
 }

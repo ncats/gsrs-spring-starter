@@ -14,7 +14,6 @@ import java.util.List;
 
 @Data
 @SuperBuilder
-@NoArgsConstructor
 @AllArgsConstructor
 public class GsrsControlledVocabularyDTO extends AbstractGsrsControlledVocabularyDTO{
     /**
@@ -23,6 +22,10 @@ public class GsrsControlledVocabularyDTO extends AbstractGsrsControlledVocabular
     public static final String TERM_TYPE="ix.ginas.models.v1.ControlledVocabulary";
 
     private List<GsrsVocabularyTermDTO> terms;
+
+    public GsrsControlledVocabularyDTO(){
+        setVocabularyTermType(TERM_TYPE);
+    }
     //here there be dragons
     //do not touch this unless you know what you are doing!
     //

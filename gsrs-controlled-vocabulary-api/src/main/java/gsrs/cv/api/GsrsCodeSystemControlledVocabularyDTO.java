@@ -8,7 +8,6 @@ import lombok.experimental.SuperBuilder;
 import java.util.List;
 @Data
 @SuperBuilder
-@NoArgsConstructor
 @AllArgsConstructor
 public class GsrsCodeSystemControlledVocabularyDTO extends AbstractGsrsControlledVocabularyDTO{
     /**
@@ -17,6 +16,10 @@ public class GsrsCodeSystemControlledVocabularyDTO extends AbstractGsrsControlle
     public static final String TERM_TYPE="ix.ginas.models.v1.CodeSystemControlledVocabulary";
 
     private List<CodeSystemTermDTO> terms;
+
+    public GsrsCodeSystemControlledVocabularyDTO(){
+        setVocabularyTermType(TERM_TYPE);
+    }
 
     //here there be dragons
     //do not touch this unless you know what you are doing!
