@@ -55,8 +55,12 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
             //so the work around is to serialize it ourselves and then add it to the unwrapped properties map here
             //so it looks like we serialized the object as expected with additional url properties...
             EntityFactory.EntityMapper entityMapper = EntityFactory.EntityMapper.getByView(view);
-            this.ourLinks.putAll(entityMapper.convertValue(entityMapper.toJsonNode(obj), new TypeReference<Map<String, Object>>() {
-            }));
+            Map<String, Object> m = entityMapper.convertValue(entityMapper.toJsonNode(obj), new TypeReference<Map<String, Object>>() {
+            });
+            //sometimes the map is null !?
+            if(m!=null) {
+                this.ourLinks.putAll(m);
+            }
         }
     }
 
