@@ -10,6 +10,7 @@ import ix.ginas.models.v1.CodeSystemControlledVocabulary;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.FragmentControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -43,6 +44,7 @@ public class CvApiAdapter implements ControlledVocabularyApi {
 
 
     @Override
+    @Transactional(readOnly = true)
     public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
         Optional<ControlledVocabulary> opt= service.getEntityBySomeIdentifier(domain);
         return (Optional<T>) opt.map(this::toDto);
@@ -54,21 +56,25 @@ public class CvApiAdapter implements ControlledVocabularyApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) throws IOException {
         return (Optional<T>) service.getEntityBySomeIdentifier(anyKindOfId).map(this::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<AbstractGsrsControlledVocabularyDTO> findById(Long id) throws IOException {
         return service.get(id).map(this::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsById(Long id) throws IOException {
         return service.get(id).isPresent();
     }
 
     @Override
+    @Transactional
     public <T extends AbstractGsrsControlledVocabularyDTO> T create(T dto) throws IOException {
         GsrsEntityService.CreationResult<ControlledVocabulary> result= service.createEntity(mapper.valueToTree(dto));
         if(!result.isCreated()){
@@ -78,6 +84,7 @@ public class CvApiAdapter implements ControlledVocabularyApi {
     }
 
     @Override
+    @Transactional
     public <T extends AbstractGsrsControlledVocabularyDTO> T update(T dto) throws IOException {
         GsrsEntityService.UpdateResult<ControlledVocabulary> result= null;
         try {
