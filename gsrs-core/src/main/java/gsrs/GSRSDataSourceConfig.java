@@ -63,6 +63,7 @@ public abstract class GSRSDataSourceConfig {
         log.debug("Show SQL:" + showSQL.orElse(null));
         log.debug("DDL:" + ddlSetting.orElse(null));
         log.debug("use-new-id-generator-mappings:" + newIDGen.orElse(null));
+        
         log.debug("dirtiness Strat:" + dirtiness.orElse(null));
 
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
@@ -70,6 +71,8 @@ public abstract class GSRSDataSourceConfig {
         dialect.ifPresent(d->map.put("hibernate.dialect", d));
         //need to test
         newIDGen.ifPresent(d->map.put("hibernate.use-new-id-generator-mappings", d));
+        newIDGen.ifPresent(d->map.put("hibernate.id.new_generator_mappings", d));
+
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
         //This doesn't seem ideal ... but it may be the only way
