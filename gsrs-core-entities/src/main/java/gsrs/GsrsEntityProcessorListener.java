@@ -62,7 +62,7 @@ public class GsrsEntityProcessorListener {
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getKey();
             if(working.contains(k)) {
-                log.warn("PostUpdate called, but already updating record for:" + k);
+                log.warn("PreUpdate called, but already updating record for:" + k);
                 return;
             }
         }
