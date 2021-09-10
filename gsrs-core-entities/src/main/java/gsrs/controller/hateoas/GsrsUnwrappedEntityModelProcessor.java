@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -84,7 +85,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
             }
             Object resource = value.get();
             if(resource !=null) {
-                //GSRS 2.x RestUrlLink object has 2 fields : rul and type (for GET, DELETE etc)
+                //GSRS 2.x RestUrlLink object has 2 fields : url and type (for GET, DELETE etc)
                 GsrsApiAction gsrsApiAction = action.getAnnotation(GsrsApiAction.class);
                 String type = gsrsApiAction ==null? "GET": gsrsApiAction.type().name();
 

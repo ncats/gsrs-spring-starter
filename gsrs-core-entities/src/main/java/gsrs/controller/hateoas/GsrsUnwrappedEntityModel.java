@@ -63,7 +63,18 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
             }
         }
     }
+    /**
+     * Adds the link as a {@link GsrsCustomLink} which will handle its own json serialization.
+     * @param customLink the Link object containing the url and the rel value which will be used as the name.
+     * @return this
+     */
+    public GsrsUnwrappedEntityModel<T> add(GsrsCustomLink customLink) {
+        Map<String, Object> properties = customLink.getCustomSerializedProperties();
+        properties.put("url", customLink.getHref());
 
+        ourLinks.put(customLink.getRel().value(), properties);
+        return this;
+    }
     /**
      * Adds the link as a {@link RestUrlLink} with a default type as GET.
      * @param link the Link object containing the url and the rel value which will be used as the name.
@@ -71,6 +82,9 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      */
     @Override
     public GsrsUnwrappedEntityModel<T> add(Link link) {
+        if(link instanceof GsrsCustomLink){
+            return add((GsrsCustomLink) link);
+        }
          ourLinks.put(link.getRel().value(), new RestUrlLink(link.getHref()));
          return this;
     }
@@ -80,6 +94,15 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
      * @return this
      */
     public GsrsUnwrappedEntityModel<T> addRaw(Link link) {
+        ourLinks.put(link.getRel().value(), link.getHref());
+        return this;
+    }
+    /**
+     * Adds the link as a as a plain String instead of as a {@link RestUrlLink}.
+     * @param link the Link object containing the url and the rel value which will be used as the name.
+     * @return this
+     */
+    public GsrsUnwrappedEntityModel<T> addRaw(GsrsCustomLink link) {
         ourLinks.put(link.getRel().value(), link.getHref());
         return this;
     }

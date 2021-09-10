@@ -1,6 +1,7 @@
 package gsrs.controller.hateoas;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ import lombok.Data;
  * to get the rest but not our custom Mappers.
  */
 @Data
-class FieldLink extends Link {
+class FieldLink extends Link implements GsrsCustomLink{
     @JsonIgnore
     //this is jsonIgnore because we delegate the getters with the same json annotations so ignoring means we don't list everything twice
     private Link link;
@@ -83,6 +84,12 @@ class FieldLink extends Link {
 
         apiBuilder.append(apiPath);
         this.link = link.withHref(apiBuilder.toString());
+    }
+
+    @Override
+    public Map<String, Object> getCustomSerializedProperties() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        return map;
     }
 
     @Override

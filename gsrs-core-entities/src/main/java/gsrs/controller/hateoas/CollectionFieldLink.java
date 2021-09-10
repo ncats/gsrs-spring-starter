@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.hateoas.*;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +19,7 @@ import java.util.Map;
  * to get the rest but not our custom Mappers.
  */
 @Data
-class CollectionFieldLink extends Link {
+class CollectionFieldLink extends Link implements GsrsCustomLink{
 
     private int count;
     @JsonIgnore
@@ -47,6 +48,13 @@ class CollectionFieldLink extends Link {
 
         apiBuilder.append(apiPath);
         this.link = link.withHref(apiBuilder.toString());
+    }
+
+    @Override
+    public Map<String, Object> getCustomSerializedProperties() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("count", count);
+        return map;
     }
 
     @Override

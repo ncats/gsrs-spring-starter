@@ -7,11 +7,12 @@ import lombok.Data;
 import org.springframework.hateoas.*;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 @Data
 @AllArgsConstructor
-public class CollectionLink extends Link {
+public class CollectionLink extends Link implements GsrsCustomLink{
     private int count;
     @JsonIgnore
     //this is jsonIgnore because we delegate the getters with the same json annotations so ignoring means we don't list everything twice
@@ -21,6 +22,13 @@ public class CollectionLink extends Link {
     CollectionLink(int count, String field, Link link){
         this.count = count;
         this.link = link;
+    }
+
+    @Override
+    public Map<String, Object> getCustomSerializedProperties() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("count", count);
+        return map;
     }
 
     @Override
