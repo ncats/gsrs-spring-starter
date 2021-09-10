@@ -52,7 +52,7 @@ public class GsrsEntityProcessorListener {
     // levels should help prevent this, but this isn't always obvious.
     // At the time of this comment it's not necessary in any known code
     // to have this on. But it may turn out to be necessary.
-    private static boolean PREVENT_RECURSION=false;
+    private static boolean PREVENT_RECURSION=true;
     
     
     @Transactional
@@ -62,7 +62,7 @@ public class GsrsEntityProcessorListener {
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getKey();
             if(working.contains(k)) {
-                log.warn("PostUpdate called, but already updating record for:" + k);
+                log.warn("PreUpdate called, but already updating record for:" + k);
                 return;
             }
         }
