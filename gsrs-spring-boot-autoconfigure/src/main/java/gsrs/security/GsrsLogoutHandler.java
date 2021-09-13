@@ -37,6 +37,7 @@ public class GsrsLogoutHandler implements LogoutHandler {
             if(up !=null) {
                 for (Session s : new ArrayList<>(sessionRepository.getActiveSessionsFor(up))) {
                     s.expired = true;
+                    s.setIsDirty("expired");
                     sessionRepository.saveAndFlush(s);
                 }
                 userTokenCache.evictUser(up);

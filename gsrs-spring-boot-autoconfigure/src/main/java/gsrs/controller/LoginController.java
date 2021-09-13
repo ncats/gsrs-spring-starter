@@ -66,6 +66,8 @@ public class LoginController {
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
         sessionCookie.setHttpOnly(true);
+        sessionCookie.setPath("/"); //Maybe?
+        
         response.addCookie( sessionCookie );
         gsrsCache.setRaw(sessionId.toString(), sessionId);
         //we actually want to include the computed token here
