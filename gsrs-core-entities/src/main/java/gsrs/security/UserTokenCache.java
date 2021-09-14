@@ -5,7 +5,7 @@ import ix.core.models.UserProfile;
 public interface UserTokenCache {
 
 
-    String SESSION = "ix.session";
+//    String SESSION = "ix.session";
 
     void updateUserCache(UserProfile up);
 

@@ -1,7 +1,10 @@
 package gsrs.security;
 
 import gsrs.controller.GsrsRestResponseErrorHandler;
+
+import org.hibernate.query.criteria.internal.BasicPathUsageException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,10 +20,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true,
@@ -39,6 +45,12 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Autowired
     LegacyGsrsAuthenticationSuccessHandler legacyGsrsAuthenticationSuccessHandler;
+    
+
+    //TODO this is the default session cookie name Spring uses or should we just use ix.session
+    @Value("${gsrs.sessionKey}")
+    private String sessionCookieName;
+    
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
     @Bean
@@ -63,15 +75,18 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .addFilterBefore(legacyAuthenticationFilter(), LogoutFilter.class)
                 .authorizeRequests()
                 .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
                 .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
                 .antMatchers(HttpMethod.POST, "/api/*").authenticated()
+//                .antMatchers(HttpMethod.GET, "/logout").authenticated()
+                
 //        .antMatchers("/login*").permitAll()
 
 //                .anyRequest().authenticated()
                 .and()
-                .addFilterBefore(legacyAuthenticationFilter(), BasicAuthenticationFilter.class)
+               
 //                .and()
 //                .authenticationProvider(legacyGsrsAuthenticationProvider)
 //                .and().httpBasic()
@@ -82,12 +97,16 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler())
                 .and().exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
         .and()
-//                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                .and()
+        
+//        .sessionManagement().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
+                .and()
             .logout()
                 .logoutUrl("/logout")
+                .deleteCookies(sessionCookieName)
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
+                
                 .permitAll()
                 .and()
             .formLogin()
