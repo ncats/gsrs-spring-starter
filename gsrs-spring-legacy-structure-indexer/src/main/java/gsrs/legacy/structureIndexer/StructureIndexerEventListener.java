@@ -20,6 +20,7 @@ import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -27,9 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 public class StructureIndexerEventListener {
 
     private final StructureIndexerService indexer;
-//    private final EntityManager em;
 
-//    private EntityManager em;
+
+    private EntityManager em;
+    
+    private boolean useExplicitEM =false;
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
@@ -37,7 +40,12 @@ public class StructureIndexerEventListener {
             @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
             ) {
         this.indexer = indexer;
-//        this.em = em;
+        this.em = em;
+        
+    }
+    
+    public void useExplicitEM(boolean b) {
+        useExplicitEM=b;
     }
 
     @EventListener
@@ -67,7 +75,7 @@ public class StructureIndexerEventListener {
 
     private void indexStructures(EntityUtils.Key key) {
         try {
-            Optional<EntityUtils.EntityWrapper<?>> opt= key.fetch();            
+            Optional<EntityUtils.EntityWrapper<?>> opt= (useExplicitEM)?key.fetch(em):key.fetch();            
 
             if(opt.isPresent()) {
                 EntityUtils.EntityWrapper<?> ew = opt.get();
@@ -103,7 +111,8 @@ public class StructureIndexerEventListener {
 
     @EventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
+        Key k = event.getSource();
+        EntityUtils.EntityWrapper ew = (useExplicitEM)?k.fetch(em).get():k.fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);
