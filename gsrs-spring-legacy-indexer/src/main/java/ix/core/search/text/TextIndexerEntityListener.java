@@ -1,11 +1,13 @@
 package ix.core.search.text;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -31,9 +33,9 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
-//    @Autowired
-    @PersistenceContext(unitName =  "defaultEntityManager")
-    private EntityManager em;
+//    
+//    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+//    private EntityManager em;
 
     private void autowireIfNeeded(){
         if(textIndexerFactory==null) {
@@ -47,8 +49,9 @@ public class TextIndexerEntityListener {
         try {
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
+                
                 //refetch from db
-                Optional<EntityUtils.EntityWrapper<?>> opt = event.getSource().fetch(em);
+                Optional<EntityUtils.EntityWrapper<?>> opt = event.getSource().fetch();
                 if(opt.isPresent()) {
                     EntityUtils.EntityWrapper ew = opt.get();
 
@@ -59,13 +62,14 @@ public class TextIndexerEntityListener {
                 }
             }
         } catch (Throwable e) {
+            
             throw new Exception(e);
         }
     }
     @EventListener
     public void reindexEntity(ReindexEntityEvent event) throws IOException {
         autowireIfNeeded();
-        Optional<EntityUtils.EntityWrapper<?>> opt = event.getEntityKey().fetch(em);
+        Optional<EntityUtils.EntityWrapper<?>> opt = event.getEntityKey().fetch();
         if(opt.isPresent()){
             textIndexerFactory.getDefaultInstance().add(opt.get());
         }
@@ -87,7 +91,7 @@ public class TextIndexerEntityListener {
         autowireIfNeeded();
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
-            EntityUtils.EntityWrapper ew = event.getSource().fetch(em).get();
+            EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
             indexer.remove(ew);
             indexer.add(ew);
         }

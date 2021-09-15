@@ -57,7 +57,7 @@ public abstract class GSRSDataSourceConfig {
         Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql");
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
         Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
-        //spring.jpa.properties.hibernate.entity_dirtiness_strategy=gsrs.GsrsEntityDirtinessStrategy
+        Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
 
         log.debug("dialect:" + dialect.orElse(null));
         log.debug("Show SQL:" + showSQL.orElse(null));
@@ -72,12 +72,17 @@ public abstract class GSRSDataSourceConfig {
         //need to test
         newIDGen.ifPresent(d->map.put("hibernate.use-new-id-generator-mappings", d));
         newIDGen.ifPresent(d->map.put("hibernate.id.new_generator_mappings", d));
+        formatSQL.ifPresent(d->map.put("hibernate.format_sql", d));
 
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
         //This doesn't seem ideal ... but it may be the only way
         map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
         map.put("hibernate.implicit_naming_strategy", EbeanLikeImplicitNamingStategy.class.getName());
+        
+                
+                
+                
 
         return map;
     }
