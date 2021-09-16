@@ -9,9 +9,11 @@ import gsrs.events.listeners.ReindexEventListener;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
+import gsrs.springUtils.StartupInitializer;
 import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import gsrs.validator.ValidatorConfigConverter;
+import ix.core.initializers.GsrsInitializerPropertiesConfiguration;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerEntityListener;
@@ -111,7 +113,11 @@ public class GsrsApiSelector implements ImportSelector {
 
         componentsToInclude.add(LoopbackWebRequestHelper.class);
         componentsToInclude.add(HttpLoopBackConfig.class);
-
+        
+        
+        componentsToInclude.add(GsrsInitializerPropertiesConfiguration.class);
+        componentsToInclude.add(StartupInitializer.class);
+        
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> log.debug("including:" + c))
                 .toArray(i-> new String[i]);

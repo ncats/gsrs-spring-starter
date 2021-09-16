@@ -1,27 +1,14 @@
 package gsrs.scheduledTasks;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.util.CachedSupplier;
-import gov.nih.ncats.common.util.TimeUtil;
-import gov.nih.ncats.common.util.Unchecked;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
-import gsrs.model.GsrsApiAction;
-import ix.core.EntityMapperOptions;
-import ix.core.FieldResourceReference;
-import ix.core.ResourceMethodReference;
-import ix.core.ResourceReference;
-import lombok.extern.slf4j.Slf4j;
-import org.quartz.*;
-
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Transient;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -34,13 +21,85 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.quartz.JobBuilder.newJob;
-import static org.quartz.TriggerBuilder.newTrigger;
+import javax.persistence.Id;
+import javax.persistence.Transient;
+
+import org.quartz.CronExpression;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.Job;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.impl.StdSchedulerFactory;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.model.GsrsApiAction;
+import ix.core.EntityMapperOptions;
+import ix.core.FieldResourceReference;
+import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SchedulerPlugin{
 
+    
+    //TODO: All of this is hacky to force missing parts of the scheduled tasks to work
+    // but should be done as actual components.
+    
+    
+    // #############################    
+    // ###### START HACK ###########
+    // #############################
+    private static Scheduler scheduler;
+    static {
+        try {
+            init();
+        } catch (SchedulerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
+    public static void init() throws SchedulerException {
+        StdSchedulerFactory factory = new StdSchedulerFactory();
+        scheduler = factory.getScheduler();
+        scheduler.start();
+    }
+    
+    public static void close() {
+        if (scheduler != null) {
+            try {
+                scheduler.shutdown();
+            }catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    public static void submit (ScheduledTask task) {
+        try {
+            task.getJob().consume((j,t)->{
+                scheduler.scheduleJob(j, t);
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    // #############################    
+    // ###### END HACK ###########
+    // #############################
+
+    // This may not be needed anymore?
     private Map<String,ScheduledTask> tasks = new ConcurrentHashMap<>();
 
 
@@ -188,21 +247,21 @@ public class SchedulerPlugin{
     	}
     	
     	//TODO katzelda April 2021 : move Date getNextRun() to controller as extra attribute
-//    	@JsonIgnore
-//    	public Trigger getSubmittedTrigger() throws SchedulerException{
-//    	    Trigger t=this.getJob().v();
-//    	    return Play.application().plugin(SchedulerPlugin.class)
-//                    .scheduler.getTrigger(t.getKey());
-//    	}
+    	@JsonIgnore
+    	public Trigger getSubmittedTrigger() throws SchedulerException{
+    	    Trigger t=this.getJob().v();
+    	    return scheduler.getTrigger(t.getKey());
+    	}
+//    	
     	
-//    	public Date getNextRun(){
-//    	    try {
-//    	        return getSubmittedTrigger().getNextFireTime();
-//            } catch (SchedulerException e) {
-//                e.printStackTrace();
-//                return null;
-//            }
-//    	}
+    	public Date getNextRun(){
+    	    try {
+                return getSubmittedTrigger().getNextFireTime();
+            } catch (SchedulerException e) {
+                e.printStackTrace();
+                return null;
+            }
+    	}
     	
     	public String getCronSchedule(){
     	    if(cronExp==null)return null;
@@ -224,11 +283,12 @@ public class SchedulerPlugin{
     	public synchronized void runNow(){
     	    numberOfRuns++;
     	    //TODO figure out way to compute nextRun
-//    	    JobStats stats = new JobStats(numberOfRuns, lastStarted, lastFinished, getNextRun(),
-//    	                                lastSuccessfulStart, lastSuccesfulFinish);
+    	    JobStats stats = new JobStats(numberOfRuns, lastStarted, lastFinished, getNextRun(),
+    	                                lastSuccessfulStart, lastSuccesfulFinish);
 
-            JobStats stats = new JobStats(numberOfRuns, lastStarted, lastFinished, null,
-                    lastSuccessfulStart, lastSuccesfulFinish);
+    	    
+//            JobStats stats = new JobStats(numberOfRuns, lastStarted, lastFinished, null,
+//                    lastSuccessfulStart, lastSuccesfulFinish);
     	    isRunning.set(true);
             lastStarted= TimeUtil.getCurrentDate();
             this.listener.start();
@@ -465,6 +525,10 @@ public class SchedulerPlugin{
 
         public ScheduledTask enable(){
             this.enabled=true;
+            return this;
+        }
+        public ScheduledTask enable(boolean enabled){
+            this.enabled=enabled;
             return this;
         }
 //

@@ -11,6 +11,7 @@ public class GsrsSchedulerSelector implements ImportSelector {
                 GsrsSchedulerConfiguration.class.getName(),
                 ScheduledTaskController.class.getName(),
                 GsrsSchedulerTaskPropertiesConfiguration.class.getName(),
+                ScheduledTaskStartupRunner.class.getName(),
         };
     }
 }

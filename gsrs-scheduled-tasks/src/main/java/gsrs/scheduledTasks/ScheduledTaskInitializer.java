@@ -8,7 +8,12 @@ import java.util.function.Consumer;
 @Data
 public abstract class ScheduledTaskInitializer {
     @JsonProperty("autorun")
-    private boolean enabled;
+    private boolean enabled = false;
+    
+    @JsonProperty("autorun")
+    public void setEnabled(boolean b) {
+        this.enabled=b;
+    }
 
     private String cron=CronExpressionBuilder.builder()
             .everyDay()
@@ -27,6 +32,8 @@ public abstract class ScheduledTaskInitializer {
     public SchedulerPlugin.ScheduledTask createTask(){
         return SchedulerPlugin.ScheduledTask.of(getRunner())
                 .atCronTab(cron)
-                .description(getDescription());
+                .description(getDescription())
+                .enable(this.isEnabled())
+                ;
     }
 }

@@ -47,8 +47,8 @@ public class LoadCvOnStartup implements ApplicationRunner {
         if(repository.count() >0){
             return;
         }
-        System.out.println("RUNNING");
-        System.out.println("reading property file at path '"+jsonPath + "'");
+//        System.out.println("RUNNING");
+//        System.out.println("reading property file at path '"+jsonPath + "'");
         JsonNode json;
         try(InputStream in = new ClassPathResource(jsonPath).getInputStream()){
             json = objectMapper.readValue(in, JsonNode.class);
