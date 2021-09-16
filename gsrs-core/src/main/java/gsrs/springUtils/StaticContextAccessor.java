@@ -122,11 +122,4 @@ public class StaticContextAccessor {
     public static <T> Optional<T> getOptionalBean(Class<T> clazz) {
         return Optional.ofNullable(getBean(clazz));
     }
-
-    public static EntityManager getEntityManager(String qualifier) {
-        if (instance != null && instance.applicationContext != null) {
-            return BeanFactoryAnnotationUtils.qualifiedBeanOfType(instance.applicationContext.getAutowireCapableBeanFactory(), EntityManager.class, qualifier);
-        }
-        return null;
-    }
 }
