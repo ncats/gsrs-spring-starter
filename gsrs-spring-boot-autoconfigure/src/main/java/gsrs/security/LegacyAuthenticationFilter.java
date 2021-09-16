@@ -65,13 +65,23 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                             .findFirst().orElse(null);
             if(sessionCookie !=null){
                 String id = sessionCookie.getValue();
-                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
-                if(cachedSessionId !=null) {
+                UUID cachedSessionIdt = null;
+                try {
+                    cachedSessionIdt = UUID.fromString(id);
+                }catch(Exception e) {
+                    
+                }
+//                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
+                if(cachedSessionIdt !=null) {
+                    UUID cachedSessionId = cachedSessionIdt;
+                    
                     TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
                     auth = transactionTemplate.execute(status ->{
                         Session session = sessionRepository.findById(cachedSessionId).orElse(null);
                         if(session !=null && !session.expired){
+                            //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
+                            System.out.println("Found:" + cachedSessionId);
                             return new SessionIdAuthentication(session.profile, id);
                         }
                         return null;

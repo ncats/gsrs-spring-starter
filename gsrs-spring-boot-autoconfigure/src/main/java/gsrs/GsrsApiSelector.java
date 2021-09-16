@@ -21,13 +21,25 @@ import ix.core.util.pojopointer.URIPojoPointerParser;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class GsrsApiSelector implements ImportSelector {
+    
+    private void registerDataSource(Class dataSourceConfig) {
+        EnableJpaRepositories ann = (EnableJpaRepositories) dataSourceConfig.getAnnotation(EnableJpaRepositories.class);
+        String ref=ann.entityManagerFactoryRef();
+        String[] packages= ann.basePackages();
+        
+        DataSourceConfigRegistry.register(ref, packages);
+        
+    }
+    
     @Override
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         AnnotationAttributes attributes = AnnotationAttributes.fromMap(annotationMetadata.getAnnotationAttributes(EnableGsrsApi.class.getName(), false));
@@ -35,9 +47,14 @@ public class GsrsApiSelector implements ImportSelector {
 
         List<Class> componentsToInclude = new ArrayList<>();
 
-        componentsToInclude.add(attributes.getClass("defaultDatabaseSourceConfig"));
+        Class defdata = attributes.getClass("defaultDatabaseSourceConfig");
+        registerDataSource(defdata);
+        
+        componentsToInclude.add(defdata);
 
         for(Class c : attributes.getClassArray("additionalDatabaseSourceConfigs")){
+            registerDataSource(c);
+            
             componentsToInclude.add(c);
         }
 

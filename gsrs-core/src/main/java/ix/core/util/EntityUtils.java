@@ -2854,6 +2854,16 @@ public class EntityUtils {
 			return Optional.of(EntityWrapper.of(o));
 		}
 		
+		
+        @Transactional(readOnly = true)
+        public Optional<EntityWrapper<?>> fetch() {
+            return this.fetch(getEntityManager());
+        }
+        
+        public EntityManager getEntityManager() {
+            return StaticContextAccessor.getEntityManagerFor(this);
+        }
+		
 		/**
          * Uses the supplied {@link GsrsRepository} to find the entity
          * referenced by this key. Note that this seems to work more reliably

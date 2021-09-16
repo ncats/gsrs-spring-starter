@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.BeanFactoryAnnotationUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import gsrs.DataSourceConfigRegistry;
+import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class StaticContextAccessor {
+    
 
     private static StaticContextAccessor instance;
 
@@ -99,10 +102,25 @@ public class StaticContextAccessor {
         }
         return null;
     }
+    
+    public static <T> T getBeanQualified(Class<T> clazz, String qualifier) {
+        if (instance != null && instance.applicationContext != null) {
+            return BeanFactoryAnnotationUtils.qualifiedBeanOfType(instance.applicationContext.getAutowireCapableBeanFactory(), clazz, qualifier);
+        }
+        return null;
+    }
+    
+    public static EntityManager getEntityManager(String qualifier) {
+        return getBeanQualified(EntityManager.class,qualifier);
+    }
+    
+    public static EntityManager getEntityManagerFor(Key k) {
+        String qq=DataSourceConfigRegistry.getQualifierFor(k.getEntityInfo().getEntityClass());
+        return StaticContextAccessor.getEntityManager(qq);
+    }
 
     public static <T> Optional<T> getOptionalBean(Class<T> clazz) {
         return Optional.ofNullable(getBean(clazz));
-        
     }
 
     public static EntityManager getEntityManager(String qualifier) {

@@ -16,6 +16,7 @@ import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,11 +36,10 @@ import java.util.function.Predicate;
 @Slf4j
 public class EntityPersistAdapter {
 
-    @PersistenceContext
-    protected EntityManager entityManager;
 
-    @Autowired
-    private EditRepository editRepository;
+
+
+    public static final String GSRS_HISTORY_DISABLED = "gsrs.history.disabled";
 
     // You need this Spring bean
     @Autowired
@@ -52,6 +52,10 @@ public class EntityPersistAdapter {
     private Map<Key, String> workingOnJSON = new ConcurrentHashMap<>();
 
     public boolean isReindexing = false;
+    
+    @Autowired
+    Environment env;
+    
 
     @Autowired
     private OutsideTransactionUtil outsideTransactionUtil;
@@ -147,6 +151,7 @@ public class EntityPersistAdapter {
      * @throws NullPointerException if any parameter is null.
      */
     public <T> EntityWrapper change(Key key, ChangeOperation<T> changeOp) {
+
         Objects.requireNonNull(key);
         Objects.requireNonNull(changeOp);
 
@@ -163,7 +168,8 @@ public class EntityPersistAdapter {
         boolean worked = false;
         try {
             //we have to split this into 2 lines so Java 8 correct infers T
-            Optional<T> opt = findByKey(entityManager, key);
+            
+            Optional<T> opt = findByKey(key.getEntityManager(), key);
             //sometimes we ask for a key that doesn't exist yet.
             if(!opt.isPresent()){
                 return null;
@@ -262,6 +268,8 @@ public class EntityPersistAdapter {
 
     public <E extends Exception> void postUpdateBeanDirect(Object bean, Object oldvalues, boolean storeEdit,  Unchecked.ThrowingRunnable<E> runnable) throws E{
 
+        boolean shouldStore =  !env.getProperty(GSRS_HISTORY_DISABLED , Boolean.class,  false);
+        
         EntityWrapper<?> ew = EntityWrapper.of(bean);
         EditLock ml = lockMap.get(ew.getKey());
 
@@ -272,7 +280,7 @@ public class EntityPersistAdapter {
             return;
         }
         try {
-            if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey())) {
+            if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey() && shouldStore)) {
 
                 // If we didn't already start an edit for this
                 // then start one and save it. Otherwise just ignore

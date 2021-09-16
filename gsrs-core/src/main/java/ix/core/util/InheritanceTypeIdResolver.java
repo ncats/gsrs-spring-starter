@@ -130,7 +130,8 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
             packages = Collections.emptyList();
         }
         Reflections reflections = new Reflections(packages.toArray(new Object[packages.size()])); // root package to scan for subclasses
-        Set<Class<?>> subtypes = (Set<Class<?>>)reflections.getSubTypesOf(clazz);
+        Set ss=reflections.getSubTypesOf(clazz);        
+        Set<Class> subtypes = (Set<Class>)ss;
 
         int classModifiers = clazz.getModifiers();
 

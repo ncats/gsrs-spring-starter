@@ -14,10 +14,10 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import gsrs.json.JsonEntityUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -30,6 +30,7 @@ import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.controller.IdHelper;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
+import gsrs.json.JsonEntityUtil;
 import gsrs.repository.EditRepository;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
@@ -58,6 +59,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityService<T, I> {
 
+    @Autowired
+    Environment env;
+
+    
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
@@ -104,7 +109,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     public AbstractGsrsEntityService(String context, Pattern idPattern,
                                      String exchangeName,
-                                     String entityCreateKey, String entityUpdateKey) {
+                                     String entityCreateKey, 
+                                     String entityUpdateKey) {
         this.context = Objects.requireNonNull(context, "context can not be null");
         this.idPattern = Objects.requireNonNull(idPattern, "ID pattern can not be null");
         this.exchangeName = exchangeName;
@@ -351,22 +357,42 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     protected T transactionalPersist(T newEntity){
         T saved = create(newEntity);
-        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(saved);
-        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
-
-
-        String newVersionStr = ew.getVersion().orElse(null);
-        if(newVersionStr ==null) {
-            edit.version = null;
-        }else{
-            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
-        }
-        edit.comments = ew.getChangeReason().orElse(null);
-        edit.kind = ew.getKind();
-        edit.newValue = ew.toFullJson();
-
-        editRepository.save(edit);
-        entityManager.flush();
+//        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(saved);
+//
+//        
+//        EntityManager em = ew.getKey().getEntityManager();
+//        
+//        //TODO:Fix this to be a standalone thing
+//        boolean shouldStore =  !env.getProperty(EntityPersistAdapter.GSRS_HISTORY_DISABLED , Boolean.class,  false);
+//        
+//        
+//        try {
+//            //TODO: this edit feels like a mistake since there's another edit
+//            // creation area?
+//            if(shouldStore &&  ew.storeHistory() && ew.hasKey()) {
+//                Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
+//                String newVersionStr = ew.getVersion().orElse(null);
+//                if(newVersionStr ==null) {
+//                    edit.version = null;
+//                }else{
+//                    edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
+//                }
+//                edit.comments = ew.getChangeReason().orElse(null);
+//                edit.kind = ew.getKind();
+//                edit.newValue = ew.toFullJson();
+//                editRepository.save(edit);
+//                
+//            }   
+//            //Feels wrong, not sure what to make of it?
+//            entityManager.flush();
+//            
+//            //TODO: work out which EMs to use here
+////            em.flush();
+//            
+//        }catch(Exception e) {
+//            e.printStackTrace();
+//            throw e;
+//        }
         return saved;
     }
 
@@ -407,13 +433,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             return builder.build();
         });
     }
+    
     @Override
-
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        
         return transactionTemplate.execute( status-> {
             try {
                 T updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
+                EntityManager entityManager = EntityWrapper.of(updatedEntity).getKey().getEntityManager();
 
                 //updatedEntity should have the same id
                 I id = getIdFrom(updatedEntity);
@@ -617,24 +645,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     protected T transactionalUpdate(T entity, String oldJson){
 
         T after =  update(entity);
-        //Edit for update handled by EntityPersistAdapter
-//        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(after);
-//        Edit edit = new Edit(ew.getEntityClass(), ew.getKey().getIdString());
-//
-//        edit.oldValue = oldJson;
-//        String newVersionStr = ew.getVersion().orElse(null);
-//        if(newVersionStr ==null) {
-//            edit.version = null;
-//        }else{
-//            edit.version = Long.toString(Long.parseLong(newVersionStr) -1);
-//        }
-//        edit.comments = ew.getChangeReason().orElse(null);
-//        edit.kind = ew.getKind();
-//        edit.newValue = ew.toFullJson();
-//
-//        editRepository.save(edit);
-//        System.out.println("edit = " + edit.id);
-//        entityManager.flush();
         return after;
     }
 

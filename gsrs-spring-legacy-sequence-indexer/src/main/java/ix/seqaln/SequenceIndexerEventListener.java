@@ -19,6 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import gsrs.DataSourceConfigRegistry;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
@@ -26,6 +27,7 @@ import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.SequenceEntity;
 import ix.core.util.EntityUtils;
 import ix.seqaln.service.SequenceIndexerService;
@@ -38,8 +40,8 @@ public class SequenceIndexerEventListener {
     private final SequenceIndexerService indexer;
 //    private EntityManager em;
     
-    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-    private EntityManager em;
+//    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+//    private EntityManager em;
 
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
@@ -72,14 +74,20 @@ public class SequenceIndexerEventListener {
     }
 
     private void indexSequencesFor(EntityUtils.Key source) {
-        Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch(em);
-        if(opt.isPresent()) {
-            EntityUtils.EntityWrapper<?> ew = opt.get();
-            if (!ew.isEntity() || !ew.hasKey()) {
-                return;
+        try {
+            
+            Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch();
+            if(opt.isPresent()) {
+                EntityUtils.EntityWrapper<?> ew = opt.get();
+                if (!ew.isEntity() || !ew.hasKey()) {
+                    return;
+                }
+                EntityUtils.Key k = ew.getKey();
+                addToIndex(ew, k);
             }
-            EntityUtils.Key k = ew.getKey();
-            addToIndex(ew, k);
+        }catch(Exception e) {
+           log.warn("Trouble sequence indexing:" + source, e);
+            
         }
     }
 
@@ -120,7 +128,8 @@ public class SequenceIndexerEventListener {
 
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        EntityUtils.EntityWrapper ew = event.getSource().fetch(em).get();
+        
+        EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);

@@ -1,39 +1,42 @@
 package gsrs.services;
 
-import gsrs.DefaultDataSourceConfig;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import gsrs.events.CreateEditEvent;
 import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import java.util.Optional;
+import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A Service for creating new {@link Edit}
  * objects.
  */
 @Service
+@Slf4j
 public class EditEventService {
 
-//    @Autowired
-
-    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-    private EntityManager entityManager;
 
     @Autowired
     private EditRepository editRepository;
 
     @Transactional
     public void createNewEditFromEvent(CreateEditEvent event){
-        Object entity = entityManager.find(event.getKind(), event.getId());
+
+        Key kk = Key.of(event.getKind(), event.getId());
+        Object entity=null;
+        try {
+            entity = kk.getEntityManager().find(event.getKind(), event.getId());
+        }catch(Throwable e) {
+            log.warn("Trouble making edit for:" + kk.toString(),e);
+            return;
+        }
+        
         if(entity !=null){
             EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(entity);
             String refid = ew.getKey().getIdString();

@@ -60,14 +60,21 @@ public class LoginController {
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
         Optional<Session> session = sessions.stream().findFirst();
 
-        //session could be empty if we restarted or erased sessions on the server and a browser kept old sesion info
+        //session could be empty if we restarted or erased sessions on the server and a browser kept old session info
         // Add a session cookie
 
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
         sessionCookie.setHttpOnly(true);
+        sessionCookie.setPath("/"); //Maybe?
+        
+        
         response.addCookie( sessionCookie );
-        gsrsCache.setRaw(sessionId.toString(), sessionId);
+        
+        
+//        System.out.println("set cookie:" + sessionId);
+        
+//        gsrsCache.setRaw(sessionId.toString(), sessionId);
         //we actually want to include the computed token here
         //which we jsonignore otherwise
 

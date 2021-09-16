@@ -50,22 +50,25 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
         if(sessions.isEmpty()){
             //create new session
             Session s = new Session(up);
-            up.active= true;
+            //????????!!!!
+            //up.active= true;
             sessionRepository.saveAndFlush(s);
             id = s.id.toString();
             session = s;
         }else{
+            //???
             for(Session s : sessions){
                 id = s.id.toString();
                 session = s;
+		break;
             }
         }
+        System.out.println("Setting session cookie:" + id);
+
         // Add a session cookie
         Cookie sessionCookie = new Cookie( sessionCookieName, id );
         response.addCookie( sessionCookie );
-        gsrsCache.setRaw(id, session.id);
-        //clearAuthenticationAttributes(request);
-
+//        gsrsCache.setRaw(id, session.id);
         // call the original impl
         super.onAuthenticationSuccess( request, response, authentication );
     }
