@@ -96,7 +96,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
-    public Optional<PagedResult<? extends T>> page(long top, long skip) throws JsonProcessingException {
+    public  <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/?top=" + top +"&skip=" + skip,String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
@@ -106,7 +106,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
         JsonNode array = node.get("content");
         if(array.isArray()){
-            List<? extends T> content = parseFromJsonList(array);
+            List<S> content = parseFromJsonList(array);
             return Optional.of(result.toPagedResult(content));
         }
         return Optional.of(result.toPagedResult(Collections.emptyList()));
@@ -137,8 +137,8 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
 
     protected abstract <S extends T> S parseFromJson(JsonNode node);
-    protected List<? extends T> parseFromJsonList(JsonNode node){
-        List<? extends T> list = new ArrayList<>(node.size());
+    protected  <S extends T> List<S> parseFromJsonList(JsonNode node){
+        List<S> list = new ArrayList<>(node.size());
         for(JsonNode n : node){
             list.add(parseFromJson(n));
         }
