@@ -6,8 +6,10 @@ import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.persistence.EntityManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.BeanFactoryAnnotationUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -101,5 +103,12 @@ public class StaticContextAccessor {
     public static <T> Optional<T> getOptionalBean(Class<T> clazz) {
         return Optional.ofNullable(getBean(clazz));
         
+    }
+
+    public static EntityManager getEntityManager(String qualifier) {
+        if (instance != null && instance.applicationContext != null) {
+            return BeanFactoryAnnotationUtils.qualifiedBeanOfType(instance.applicationContext.getAutowireCapableBeanFactory(), EntityManager.class, qualifier);
+        }
+        return null;
     }
 }

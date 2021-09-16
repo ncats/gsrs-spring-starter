@@ -6,10 +6,13 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.controllers.EntityFactory;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkBuilder;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
 import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +25,12 @@ public final class GsrsControllerUtil {
     }
 
     public static String getRootUrlPath(){
-        String url= StaticContextAccessor.getBean(EntityLinks.class).linkFor(RelativePathDummyObject.class).toUri().getRawPath();
-        url.replace(RelativePathDummyObject.ROUTE_PATH,"");
-        return url;
+        String url = WebMvcLinkBuilder.linkTo(RelativePathDummyObject.class).toUri().getRawPath();
+//        LinkBuilder linkBuilder = StaticContextAccessor.getBean(EntityLinks.class).linkFor(RelativePathDummyObject.class);
+//        URI uri = linkBuilder.toUri();
+//        String url= uri.getRawPath();
+        String replaced = url.replace(RelativePathDummyObject.ROUTE_PATH,"");
+        return replaced;
     }
 
     public static String getEndWildCardMatchingPartOfUrl(HttpServletRequest request) {

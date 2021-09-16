@@ -42,6 +42,9 @@ class FieldLink extends Link implements GsrsCustomLink{
         String downStream = currentPath.replace(rootPath, "");
         String apiPath;
 
+        if(!downStream.startsWith("/")){
+            downStream="/"+downStream;
+        }
         if(id !=null) {
             apiPath = "/api/v1" + downStream
                     .replace("/(" + id + ")", "(" + id + ")");

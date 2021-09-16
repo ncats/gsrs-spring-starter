@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
  * and is only used internally by GSRS to help it figure out
  * what the URL paths are when computing new links.
  */
-@RestController
+@RestController(RelativePathDummyObject.ROUTE_PATH)
 @ExposesResourceFor(RelativePathDummyObject.class)
 public class RelativePathController {
 
