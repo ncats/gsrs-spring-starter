@@ -13,7 +13,7 @@ public class ScheduledTaskStartupRunner implements ApplicationRunner{
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // TODO Auto-generated method stub
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!Calling startup initializer");
+//        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!Calling startup initializer");
         config.init();
     }
 
