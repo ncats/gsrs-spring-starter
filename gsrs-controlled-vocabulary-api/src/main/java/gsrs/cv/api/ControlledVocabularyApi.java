@@ -10,7 +10,7 @@ public interface ControlledVocabularyApi {
 
     <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) throws IOException;
 
-    Optional<AbstractGsrsControlledVocabularyDTO> findById(Long id) throws IOException;
+    <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findById(Long id) throws IOException;
 
     boolean existsById(Long id) throws IOException;
 

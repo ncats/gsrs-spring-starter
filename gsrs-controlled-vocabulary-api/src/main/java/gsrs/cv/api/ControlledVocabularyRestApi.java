@@ -23,10 +23,6 @@ public class ControlledVocabularyRestApi extends GsrsEntityRestTemplate<Abstract
         return dto.getId();
     }
 
-    @Override
-    public Optional<AbstractGsrsControlledVocabularyDTO> findByResolvedId(String anyKindOfId) throws IOException {
-        return super.findByResolvedId(anyKindOfId);
-    }
 
     @Override
     public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
@@ -35,15 +31,5 @@ public class ControlledVocabularyRestApi extends GsrsEntityRestTemplate<Abstract
             return Optional.of((T) opt.get());
         }
         return Optional.empty();
-    }
-
-    @Override
-    public AbstractGsrsControlledVocabularyDTO create(AbstractGsrsControlledVocabularyDTO dto) throws IOException {
-        return super.create(dto);
-    }
-
-    @Override
-    public AbstractGsrsControlledVocabularyDTO update(AbstractGsrsControlledVocabularyDTO dto) throws IOException {
-        return super.update(dto);
     }
 }

@@ -65,7 +65,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         throw new IOException("error getting count: " + response.getStatusCode().getReasonPhrase());
     }
 
-    public Optional<T> findByResolvedId(String anyKindOfId) throws IOException{
+    public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+anyKindOfId + ")",String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
@@ -74,7 +74,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return Optional.ofNullable(parseFromJson(node));
 
     }
-    public Optional<T> findById(I id) throws IOException {
+    public <S extends T> Optional<S> findById(I id) throws IOException {
         return findByResolvedId(id.toString());
     }
     public boolean existsById(I id) throws IOException {
@@ -96,7 +96,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
-    public Optional<PagedResult<T>> page(long top, long skip) throws JsonProcessingException {
+    public Optional<PagedResult<? extends T>> page(long top, long skip) throws JsonProcessingException {
         ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/?top=" + top +"&skip=" + skip,String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
@@ -106,13 +106,13 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
         JsonNode array = node.get("content");
         if(array.isArray()){
-            List<T> content = parseFromJsonList(array);
+            List<? extends T> content = parseFromJsonList(array);
             return Optional.of(result.toPagedResult(content));
         }
         return Optional.of(result.toPagedResult(Collections.emptyList()));
     }
 
-     public T create(T dto) throws IOException {
+     public <S extends T> S create(S dto) throws IOException {
          ResponseEntity<String> response =  restTemplate.postForEntity(prefix,dto,String.class);
          if(!response.getStatusCode().is2xxSuccessful()) {
              throw new IOException("error creating new entity: " + response.getStatusCode().getReasonPhrase());
@@ -121,7 +121,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
          return parseFromJson(node);
      }
 
-    public T update(T dto) throws IOException{
+    public <S extends T> S update(S dto) throws IOException{
         I id = getIdFrom(dto);
         //rest template PUT is void need to use lower level exchange to get response obj...
         HttpHeaders headers = new HttpHeaders();
@@ -136,9 +136,9 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return parseFromJson(node);
     }
 
-    protected abstract T parseFromJson(JsonNode node);
-    protected List<T> parseFromJsonList(JsonNode node){
-        List<T> list = new ArrayList<>(node.size());
+    protected abstract <S extends T> S parseFromJson(JsonNode node);
+    protected List<? extends T> parseFromJsonList(JsonNode node){
+        List<? extends T> list = new ArrayList<>(node.size());
         for(JsonNode n : node){
             list.add(parseFromJson(n));
         }
@@ -164,7 +164,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         private long skip;
         private long count;
 
-        private List<T> content;
+        private List<? super T> content;
 
     }
 

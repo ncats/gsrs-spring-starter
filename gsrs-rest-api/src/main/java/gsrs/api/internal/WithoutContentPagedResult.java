@@ -30,7 +30,7 @@ public class WithoutContentPagedResult {
     private long skip;
     private long count;
 
-    public <T> GsrsEntityRestTemplate.PagedResult<T> toPagedResult(List<T> content){
+    public <T> GsrsEntityRestTemplate.PagedResult<T> toPagedResult(List<? super T> content){
         return GsrsEntityRestTemplate.PagedResult.<T>builder()
                 .content(content)
                 .id(id)
