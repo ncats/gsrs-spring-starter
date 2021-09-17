@@ -126,7 +126,7 @@ public class Edit extends BaseModel {
 //    }
 
     @JsonIgnore
-    @GsrsApiAction(value= "oldValue", serializeUrlOnly = true)
+    @GsrsApiAction(value= "oldValue", serializeUrlOnly = true, isRaw = true)
     public FieldResourceReference<JsonNode> getOldValueReference() {
         if(oldValue ==null){
             return null;
@@ -134,7 +134,7 @@ public class Edit extends BaseModel {
         return FieldResourceReference.forRawFieldAsJson("oldValue", oldValue);
     }
     @JsonIgnore
-    @GsrsApiAction(value="newValue", serializeUrlOnly = true)
+    @GsrsApiAction(value="newValue", serializeUrlOnly = true,  isRaw = true)
     public ResourceReference<JsonNode> getNewValueReference() {
         //we will always have new value
 

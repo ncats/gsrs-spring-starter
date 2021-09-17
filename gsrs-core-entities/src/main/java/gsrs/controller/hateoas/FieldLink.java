@@ -38,10 +38,13 @@ class FieldLink extends Link implements GsrsCustomLink{
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?
         String rootPath = GsrsControllerUtil.getRootUrlPath();
         String currentPath = uri.getRawPath();
-        
-        //the root should be a subString of the currentPath...
-        String downStream = ("$" + currentPath).replace("$" + rootPath, "");
-        
+        String downStream;
+        if(rootPath.trim().isEmpty()){
+            downStream = currentPath;
+        }else {
+            //the root should be a subString of the currentPath...
+            downStream = ("$" + currentPath).replaceFirst("$" + rootPath, "");
+        }
         
         String apiPath;
 

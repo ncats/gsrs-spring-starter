@@ -30,6 +30,8 @@ public @interface GsrsApiAction {
      */
     Type type() default Type.GET;
 
+    boolean isRaw() default false;
+
     enum Type{
         GET,
         PUT,

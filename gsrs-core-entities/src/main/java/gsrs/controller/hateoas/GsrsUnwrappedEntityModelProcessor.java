@@ -108,6 +108,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
                             }
                         }else{
+
                             if(params.isEmpty()){
                                 innerBuilder = linkBuilder.get()
                                         .slash("(" + id + ")") // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
@@ -120,7 +121,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
                         }
 
 
-                            Link fieldLink =  GsrsLinkUtil.fieldLink(id, action.getJsonFieldName(),
+                            Link fieldLink =  GsrsLinkUtil.fieldLink(id, gsrsApiAction.isRaw()?"$"+field: field,
                                                             innerBuilder.withRel(action.getJsonFieldName()));
                         if(gsrsApiAction.serializeUrlOnly()){
                             model.addRaw(fieldLink);
