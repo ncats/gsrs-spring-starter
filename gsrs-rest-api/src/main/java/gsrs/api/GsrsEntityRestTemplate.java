@@ -57,7 +57,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
 
     public long count() throws IOException {
-        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/@count",String.class);
+        ResponseEntity<String> response = doGet("/@count",String.class);
 
         if(response.getStatusCode().is2xxSuccessful()) {
             return Long.parseLong(response.getBody());
@@ -66,7 +66,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
-        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+anyKindOfId + ")",String.class);
+        ResponseEntity<String> response = doGet("("+anyKindOfId + ")",String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
         }
@@ -78,7 +78,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return findByResolvedId(id.toString());
     }
     public boolean existsById(I id) throws IOException {
-        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"("+id + ")?view=key",String.class);
+        ResponseEntity<String> response = doGet("("+id + ")", "key",String.class);
         if(response.getStatusCodeValue() == 404) {
             return false;
         }
@@ -97,7 +97,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
 
     public Optional<PagedResult<? extends T>> page(long top, long skip) throws JsonProcessingException {
-        ResponseEntity<String> response = restTemplate.getForEntity(prefix+"/?top=" + top +"&skip=" + skip,String.class);
+        ResponseEntity<String> response = doGet("/?top=" + top +"&skip=" + skip,String.class);
         if(response.getStatusCodeValue() == 404) {
             return Optional.empty();
         }
@@ -120,6 +120,44 @@ public abstract class GsrsEntityRestTemplate<T, I> {
          JsonNode node = mapper.readTree(response.getBody());
          return parseFromJson(node);
      }
+
+     protected <R> ResponseEntity<R> doGet(String pathAfterPrefix, Class<R> responseClass){
+        return doGet(pathAfterPrefix, null, responseClass);
+
+     }
+
+    /**
+     * perform a HTTP GET request and get back the response with the given datatype.
+     * @param pathAfterPrefix the path of the GSRS REST API after the prefix.  For example,
+     *                        if the prefix is <pre>api/v1/substances</pre> and you want to perform a count query,
+     *                        then this parameter should be <pre>/@count</pre> note the leading slash.
+     *                        If you want to do an ID lookup the this parameter should be
+     *                        <pre>(12345)</pre> note no leading slash since we want the requested url to be
+     *                        <pre>pi/v1/substances(12345)</pre>.
+     * @param view optional view(s) to use; if no view is required this should be set to {@code null}.
+     * @param responseClass the class type of the response; often String.
+     * @param <R> the class object for responseClass
+     * @return a ResponseEntity with the Result of the REST API call.
+     */
+    protected <R> ResponseEntity<R> doGet(String pathAfterPrefix, String view, Class<R> responseClass){
+        String url = pathAfterPrefix==null? prefix: prefix+pathAfterPrefix;
+
+        if(view !=null && !view.trim().isEmpty()){
+            boolean set=false;
+            if(pathAfterPrefix !=null){
+                if(pathAfterPrefix.contains("?")){
+                    url += "&view="+view;
+                    set=true;
+                }
+            }
+            if(!set){
+                url +="?view=" +view;
+            }
+        }
+
+        return restTemplate.getForEntity(url, responseClass);
+
+    }
 
     public <S extends T> S update(S dto) throws IOException{
         I id = getIdFrom(dto);
