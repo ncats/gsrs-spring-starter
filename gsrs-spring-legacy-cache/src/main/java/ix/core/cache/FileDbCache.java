@@ -92,6 +92,20 @@ public class FileDbCache implements GinasFileBasedCacheAdapter {
 
         EnvironmentConfig envconf = new EnvironmentConfig ();
         envconf.setAllowCreate(true);
+        
+        try {
+            Files.list(dir.toPath())
+            .filter(p->p.toString().endsWith("lck"))
+            .forEach(pp->{
+                pp.toFile().delete();
+            });
+            ;
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+        
+        
+        
         Environment env = new Environment (dir, envconf);
         if(cleardb){
 	        try{

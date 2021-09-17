@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.scheduledTasks.SchedulerPlugin.ScheduledTask;
 import gsrs.springUtils.AutowireHelper;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -52,7 +53,12 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
                 throw new IllegalStateException(e);
             }
             task = AutowireHelper.getInstance().autowireAndProxy(task);
-            l.add(task.createTask());
+            ScheduledTask st = task.createTask();
+            
+            l.add(st);
+            //TODO: need to fix this to happen in a more modular way, not with static methods
+            // this is a hack to have things work for now.
+            SchedulerPlugin.submit(st);
 
 
         }
@@ -63,5 +69,9 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     public List<SchedulerPlugin.ScheduledTask> getTasks(){
         return new ArrayList<>(tasks.get());
+    }
+    
+    public void init() {
+        tasks.get();
     }
 }

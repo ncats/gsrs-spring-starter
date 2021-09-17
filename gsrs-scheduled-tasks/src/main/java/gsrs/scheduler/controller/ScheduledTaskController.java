@@ -27,8 +27,8 @@ import java.util.Optional;
 @GsrsRestApiController(context = "scheduledjobs")
 public class ScheduledTaskController {
 
-    @Autowired
-    private Scheduler scheduler;
+//    @Autowired
+//    private Scheduler scheduler;
 
     @Autowired
     private GsrsSchedulerTaskPropertiesConfiguration gsrsSchedulerConfiguration;

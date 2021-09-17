@@ -17,7 +17,7 @@ import java.util.*;
 @Data
 public class GsrsExportConfiguration {
 
-    private File path = new File("exports");
+    private File path = new File("./exports");
     private File tmpDir=null;
 
     private Map<String, List<Class>> factories;
