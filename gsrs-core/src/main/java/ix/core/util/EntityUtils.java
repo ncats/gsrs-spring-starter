@@ -2855,11 +2855,13 @@ public class EntityUtils {
 		}
 		
 		
+		@JsonIgnore
         @Transactional(readOnly = true)
         public Optional<EntityWrapper<?>> fetch() {
             return this.fetch(getEntityManager());
         }
         
+		@JsonIgnore
         public EntityManager getEntityManager() {
             return StaticContextAccessor.getEntityManagerFor(this);
         }
