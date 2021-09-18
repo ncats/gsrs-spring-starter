@@ -18,6 +18,7 @@ import ix.core.validator.ValidatorCategory;
 //import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
 //import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -35,6 +36,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -49,8 +53,10 @@ import java.util.*;
  *
  * @see GsrsRestApiController
  */
+@Slf4j
 public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityController, T, I> implements GsrsEntityController<T, I> {
 
+    private static Pattern VERSIONED_ROUTE = Pattern.compile("^v/(\\d+)$");
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
@@ -216,6 +222,60 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return null;
     }
 
+    private Optional<Object> handleFields(EntityUtils.EntityWrapper<T> entity, String field){
+        List<BiFunction<EntityUtils.EntityWrapper<T>, String, Optional<Object>>> functions = Arrays.asList(
+                this::handleEdit,
+                this::handleVersion
+        );
+        for(BiFunction<EntityUtils.EntityWrapper<T>, String, Optional<Object>> function : functions){
+            Optional<Object> opt = function.apply(entity, field);
+            if(opt !=null) {
+                return opt;
+
+            }
+        }
+
+        return handleSpecialFields(entity, field);
+    }
+
+    private Optional<Object> handleVersion(EntityUtils.EntityWrapper<T> ew, String field){
+        Matcher m = VERSIONED_ROUTE.matcher(field);
+        if(m.find()){
+            Optional<EditRepository> editRepository = editRepository();
+            if(editRepository.isPresent()){
+                Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(ew.getValue());
+                if(nativeIdFor.isPresent()) {
+                    List<Edit> editList = editRepository.get().findByRefidAndVersion(nativeIdFor.get().toString(), m.group(1));
+                    if(editList!=null && !editList.isEmpty()){
+                        try {
+                            return Optional.of(ew.getEntityInfo().fromJson(editList.get(0).newValue));
+                        } catch (IOException e) {
+                            log.error("error fetching edit from json", e);
+                        }
+                    }
+                }
+            }
+            return Optional.empty();
+        }
+        return null;
+    }
+    private Optional<Object> handleEdit(EntityUtils.EntityWrapper<T> ew, String field){
+        if(field.startsWith("@edits")){
+            Optional<EditRepository> editRepository = editRepository();
+            if(editRepository.isPresent()){
+                Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(ew.getValue());
+                if(nativeIdFor.isPresent()){
+                    List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
+                    if(editList !=null) {
+                        return Optional.of(editList);
+                    }
+                }
+
+            }
+            return Optional.empty();
+        }
+        return null;
+    }
     private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt,
                                                                   @RequestParam("urldecode") Boolean urlDecode,
                                                                   @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
@@ -228,6 +288,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             field =URLDecoder.decode(field, "UTF-8");
         }
         EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
+       /*
         if(field !=null && field.startsWith("@edits")){
             Optional<EditRepository> editRepository = editRepository();
             if(editRepository.isPresent()){
@@ -242,8 +303,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             }
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
+*/
+
         if(field !=null){
-            Optional<Object> fieldOpt = handleSpecialFields(ew, field);
+            Optional<Object> fieldOpt =  handleFields(ew,field);
             if(fieldOpt !=null){
                 if(fieldOpt.isPresent()){
                     Object o = fieldOpt.get();
