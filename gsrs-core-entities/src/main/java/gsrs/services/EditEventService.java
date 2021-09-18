@@ -1,5 +1,6 @@
 package gsrs.services;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,15 +51,28 @@ public class EditEventService {
             if(!("1".equals(newEdit.version))){
                 try {
                     int prevVersion = Integer.parseInt(newEdit.version) - 1;
-                    Optional<Edit> prevEdit = editRepository.findByRefidAndVersion(refid, Integer.toString(prevVersion));
+                    //made this a list incase there are multiple edits with the same version?
+                    List<Edit> prevEdit = editRepository.findByRefidAndVersion(refid, Integer.toString(prevVersion));
+                    if(!prevEdit.isEmpty()){
+                        newEdit.oldValue = prevEdit.get(0).newValue;
+                    }
 
-                    prevEdit.ifPresent( e-> newEdit.oldValue = e.newValue);
                 }catch(NumberFormatException e){
                     //ignore ?
                 }
             }
-
-            editRepository.saveAndFlush(newEdit);
+            //check to see if there's an edit with this version already
+            List<Edit> oldEdits = editRepository.findByRefidAndVersion(refid, newEdit.version);
+            if(oldEdits.isEmpty()) {
+                editRepository.saveAndFlush(newEdit);
+            }else{
+                //update ?
+                Edit oldEdit = oldEdits.get(0);
+                oldEdit.comments = newEdit.comments;
+                oldEdit.newValue = newEdit.newValue;
+                oldEdit.oldValue = newEdit.oldValue;
+                editRepository.saveAndFlush(oldEdit);
+            }
         }
 
 

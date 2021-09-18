@@ -13,5 +13,5 @@ public interface EditRepository extends GsrsRepository<Edit, UUID> {
 
     List<Edit> findByRefidOrderByCreatedDesc(String refId);
 
-    Optional<Edit> findByRefidAndVersion(String refId, String version);
+    List<Edit> findByRefidAndVersion(String refId, String version);
 }
