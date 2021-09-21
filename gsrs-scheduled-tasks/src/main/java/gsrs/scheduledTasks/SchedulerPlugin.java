@@ -91,7 +91,7 @@ public class SchedulerPlugin{
                 scheduler.scheduleJob(j, t);
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Trouble scheduling Job", e);
         }
     }
 
