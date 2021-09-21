@@ -15,6 +15,8 @@ import java.util.stream.Stream;
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
 
     UserProfile findByUser_Username(String username);
+    
+    UserProfile findByUser_UsernameIgnoreCase(String username);
 
     UserProfile findByKey(String key);
 

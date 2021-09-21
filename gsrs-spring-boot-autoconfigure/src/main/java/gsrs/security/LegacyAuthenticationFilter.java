@@ -152,7 +152,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 if(authenticationConfiguration.isLogheaders()) {
                     log.debug("Trust USER IS:" + username);
                 }
-                UserProfile up = repository.findByUser_Username(username);
+                UserProfile up =  Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(username, email);
                     up = new UserProfile(p);
@@ -179,7 +181,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String username = request.getHeader("auth-username");
             String pass = request.getHeader("auth-password");
             if (username != null && pass != null) {
-                UserProfile up = repository.findByUser_Username(username);
+                UserProfile up = 
+                        Optional.ofNullable(repository.findByUser_Username(username))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
                     Principal p = new Principal(username, null);
                     up = new UserProfile(p);

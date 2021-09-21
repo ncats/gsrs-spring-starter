@@ -36,6 +36,8 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private PrincipalRepository principalRepository;
 
+    
+
     @BeforeEach
     public void addUserToRepo(){
         principalRepository.save(new Principal("myUser", null));
@@ -51,8 +53,8 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
         entityManager.persistAndFlush(sut);
 
         assertEquals("myFoo", sut.getFoo());
-        assertThat(sut.getCreatedBy().username).isEqualTo("myUser");
-        assertThat(sut.getLastModifiedBy().username).isEqualTo("myUser");
+        assertThat(sut.getCreatedBy().username).isEqualToIgnoringCase("myUser");
+        assertThat(sut.getLastModifiedBy().username).isEqualToIgnoringCase("myUser");
     }
 
 

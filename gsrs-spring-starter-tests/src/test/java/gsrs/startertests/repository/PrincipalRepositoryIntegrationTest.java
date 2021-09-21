@@ -52,7 +52,7 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
 
         Principal actual= repository.findDistinctByUsernameIgnoreCase(username);
         assertThat(actual).isNotNull();
-        assertThat(actual.username).isEqualTo(username);
+        assertThat(actual.username).isEqualToIgnoringCase(username);
 
         assertThat(actual.id).isEqualTo(expected.id);
         assertThat(expected.id).isNotNull();

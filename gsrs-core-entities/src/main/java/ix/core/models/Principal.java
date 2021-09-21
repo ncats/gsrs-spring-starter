@@ -36,17 +36,23 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
     public boolean deprecated;
 
 
+    public Principal standardize() {
+        this.username=this.username.toUpperCase();
+        return this;
+    }
 
     @PrePersist
     private void markCreated(){
         Date date =TimeUtil.getCurrentDate();
         created = date;
         modified= date;
+        this.standardize();
     }
     @PreUpdate
     private void markUpdated(){
         Date date =TimeUtil.getCurrentDate();
         modified= date;
+        this.standardize();
     }
 
     @Override
@@ -93,7 +99,7 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
     
     @JsonIgnore
     public String toString(){
-    	return username;
+    	return this.standardize().username;
     }
     //TODO katzelda Octobe 2020 : don't think we need this userprofile factory call? its used in a few places in GSRS 2.x but in all cases we could use a repository instead?
     /*

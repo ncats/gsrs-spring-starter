@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
@@ -42,7 +43,9 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
         }
 
         AbstractGsrsAuthenticationToken authenticationToken =    (AbstractGsrsAuthenticationToken) authentication;
-        UserProfile up = userProfileRepository.findByUser_Username(authenticationToken.getUserProfile().getIdentifier());
+        UserProfile up =  Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(authenticationToken.getUserProfile().getIdentifier()))
+                .map(oo->oo.standardize())
+                .orElse(null);
 
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
         String id =null;
