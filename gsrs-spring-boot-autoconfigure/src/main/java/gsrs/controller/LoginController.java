@@ -1,6 +1,7 @@
 package gsrs.controller;
 
 import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
@@ -13,9 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.servlet.http.Cookie;
@@ -84,5 +83,39 @@ public class LoginController {
             List<Group> groups = groupRepository.findGroupsByMembers(userProfile.user);
             m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
         }), HttpStatus.OK);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Transactional
+    @PostMapping({"api/v1/profile/password"})
+    public ResponseEntity<Object> changePassword(Principal principal,
+                                                 @RequestBody UserController.PasswordChangeRequest passwordChangeRequest,
+                                                 @RequestParam Map<String, String> queryParameters) {
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            //TODO implement better rules or configable rules for passwords?
+            if(passwordChangeRequest.getNewPassword() ==null || passwordChangeRequest.getNewPassword().trim().isEmpty()){
+                return gsrsControllerConfiguration.handleBadRequest(400,"password can not be blank or all whitespace", queryParameters);
+            }
+            //check old password
+            if(!up.acceptPassword(passwordChangeRequest.getOldPassword())){
+                return gsrsControllerConfiguration.unauthorized("incorrect password", queryParameters);
+            }
+            up.setPassword(passwordChangeRequest.getNewPassword());
+            repository.saveAndFlush(up);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    private GsrsUnwrappedEntityModel enhanceUserProfile(UserProfile up, Map<String, String> queryParameters){
+        return GsrsControllerUtil.enhanceWithView(up, queryParameters, m->{
+            UserProfile profile= ((UserProfile)m.getObj());
+            List<Group> groups = groupRepository.findGroupsByMembers(profile.user);
+
+            m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
+
+        });
     }
 }
