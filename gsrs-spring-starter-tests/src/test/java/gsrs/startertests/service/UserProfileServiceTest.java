@@ -72,6 +72,11 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 //
     }
 
+    
+    public void assertEqualsIgnoreCase(String expected, String test) {
+        assertEquals(expected.toUpperCase(), test.toUpperCase());
+    }
+    
     @Test
 
     public void notloggedInCreateUserShouldErrorOut(){
@@ -105,7 +110,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .username("myUser")
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -124,7 +129,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .isActive(true)
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -145,7 +150,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .roles(roles.stream().map(Role::name).collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
         assertEquals(roles, up.getRoles());
@@ -164,7 +169,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .groups(Arrays.asList("group1", "group2").stream().collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -190,7 +195,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .password("mypass")
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -206,7 +211,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .password("mypass")
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -234,7 +239,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .password("mypass")
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -266,7 +271,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .groups(Arrays.asList("group1", "group2").stream().collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -304,7 +309,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .groups(Arrays.asList("group1", "group2").stream().collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
@@ -342,7 +347,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 .groups(Arrays.asList("group1", "group2").stream().collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
-        assertEquals("myUser", up.user.username);
+        assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 

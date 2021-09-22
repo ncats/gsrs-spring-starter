@@ -201,6 +201,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> getFieldById(@PathVariable("id") String id,
                                                @RequestParam(value="urldecode", required = false) Boolean urlDecode,
                                                @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
+        System.out.println(request.getContextPath());
+        
         return returnOnySpecifiedFieldPartFor(getEntityService().getEntityBySomeIdentifier(id), urlDecode, queryParameters, request);
     }
 

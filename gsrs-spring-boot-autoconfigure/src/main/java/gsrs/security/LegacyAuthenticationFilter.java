@@ -1,30 +1,5 @@
 package gsrs.security;
 
-import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.cache.GsrsCache;
-import gsrs.repository.PrincipalRepository;
-import gsrs.repository.SessionRepository;
-import gsrs.repository.UserProfileRepository;
-import ix.core.models.Principal;
-import ix.core.models.Role;
-import ix.core.models.Session;
-import ix.core.models.UserProfile;
-import ix.utils.UUIDUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import javax.servlet.*;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +7,34 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.cache.GsrsCache;
+import gsrs.repository.SessionRepository;
+import gsrs.repository.UserProfileRepository;
+import ix.core.models.Principal;
+import ix.core.models.Role;
+import ix.core.models.Session;
+import ix.core.models.UserProfile;
+import lombok.extern.slf4j.Slf4j;
+
 //@Component
+@Slf4j
 public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
@@ -54,9 +56,23 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
+    
+    private void logHeaders(HttpServletRequest req){
+        log.debug("HEADERS ON REQUEST ===================");
+        StringBuilder allheaders=new StringBuilder();
+        StreamUtil.forEnumeration(req.getHeaderNames()).forEach(head->{
+            allheaders.append(head + "\t" + req.getHeader(head) + "\n");
+        });
+        log.debug(allheaders.toString());
+    }
+    
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+        if(authenticationConfiguration.isLogheaders()) {
+            logHeaders(request);
+        }
+        
         Authentication auth = null;
         Cookie[] allCookies = request.getCookies();
         if (allCookies != null) {
@@ -104,12 +120,17 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 		authFac.registerAuthenticator(new UserKeyAuthenticator());
          */
 //        HttpServletRequest request = (HttpServletRequest) servletRequest;
-
+        if(authenticationConfiguration.isLogheaders()) {
+            log.debug("After cookie authentication, auth is:" + auth);
+        }
         
         // TODO: TP changed below, but needs feedback
         // why != null? that doesn't sound right ...
         // changing to ==null
         if(auth ==null && authenticationConfiguration.isTrustheader()){
+            if(authenticationConfiguration.isLogheaders()) {
+                log.debug("Trust Headers is on");
+            }
 
             String username = Optional.ofNullable(authenticationConfiguration.getUsernameheader())
                                       .map(e->request.getHeader(e))
@@ -128,7 +149,12 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             
                     
             if(username !=null){
-                UserProfile up = repository.findByUser_Username(username);
+                if(authenticationConfiguration.isLogheaders()) {
+                    log.debug("Trust USER IS:" + username);
+                }
+                UserProfile up =  Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(username, email);
                     up = new UserProfile(p);
@@ -155,9 +181,12 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String username = request.getHeader("auth-username");
             String pass = request.getHeader("auth-password");
             if (username != null && pass != null) {
-                UserProfile up = repository.findByUser_Username(username);
+                UserProfile up = 
+                        Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
-                    Principal p = new Principal(username, null);
+                    Principal p = new Principal(username, null).standardize();
                     up = new UserProfile(p);
                     if (authenticationConfiguration.isAutoregisteractive()) {
                         up.active = true;

@@ -159,7 +159,9 @@ public class UserProfileService {
         private final Set<String> groups;
         private final Set<Role> roles;
              */
-            UserProfile oldUser = userProfileRepository.findByUser_Username(newUserRequest.getUsername());
+            UserProfile oldUser = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(newUserRequest.getUsername()))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
             if (oldUser == null) {
                 throw new IllegalArgumentException("The username \"" + newUserRequest.getUsername() + "\" not found");
 
@@ -195,13 +197,14 @@ public class UserProfileService {
         Principal principal = new Principal();
 
         synchronized(this) {
-            UserProfile oldUser = userProfileRepository.findByUser_Username(newUserRequest.getUsername());
+            UserProfile oldUser = userProfileRepository.findByUser_UsernameIgnoreCase(newUserRequest.getUsername());
             if(oldUser !=null){
                 throw new IllegalArgumentException("The username \"" + newUserRequest.getUsername() + "\" already exists");
             }
             principal.username = newUserRequest.getUsername();
             principal.email = newUserRequest.getEmail();
             principal.admin = Boolean.TRUE.equals(newUserRequest.isAdmin());
+            principal.standardize();
 
             UserProfile up = new UserProfile();
             up.user = principal;

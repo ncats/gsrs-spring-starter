@@ -72,7 +72,7 @@ public class UserProfile extends IxModel{
 
 	//Needed for JSON
 	public String getIdentifier() {
-		return user.username;
+		return user.standardize().username;
 	}
 
 	public List<Role> getRoles() {
@@ -116,7 +116,7 @@ public class UserProfile extends IxModel{
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
-		return getComputedToken(this.user.username, this.key);
+		return getComputedToken(this.user.standardize().username, this.key);
 	}
 	public static String getComputedToken(String username, String key) {
 		String date = "" + Util.getCanonicalCacheTimeStamp();
@@ -130,7 +130,7 @@ public class UserProfile extends IxModel{
 
 	private String getPreviousComputedToken() {
 		String date = "" + (Util.getCanonicalCacheTimeStamp() - 1);
-		return Util.sha1(date + this.user.username + this.key);
+		return Util.sha1(date + this.user.standardize().username + this.key);
 	}
 
 	public boolean acceptKey(String key) {
@@ -183,6 +183,11 @@ public class UserProfile extends IxModel{
 
 		}
 		return false;
+	}
+	
+	public UserProfile standardize() {
+	    this.user.standardize();
+	    return this;
 	}
 
 }

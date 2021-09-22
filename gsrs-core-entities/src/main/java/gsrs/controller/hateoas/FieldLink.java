@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import gsrs.controller.GsrsControllerUtil;
+import gsrs.springUtils.StaticContextAccessor;
+
 import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkRelation;
@@ -15,7 +17,6 @@ import org.springframework.hateoas.UriTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import gsrs.springUtils.StaticContextAccessor;
 import lombok.Data;
 
 /**
@@ -43,7 +44,7 @@ class FieldLink extends Link implements GsrsCustomLink{
             downStream = currentPath;
         }else {
             //the root should be a subString of the currentPath...
-            downStream = ("$" + currentPath).replaceFirst("$" + rootPath, "");
+            downStream = ("$" + currentPath).replace("$" + rootPath, "");
         }
         
         String apiPath;

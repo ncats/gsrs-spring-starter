@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class LoginAndLogoutEventListener {
@@ -38,7 +39,10 @@ public class LoginAndLogoutEventListener {
             Session s = new Session();
             //this is so we don't have a stale entity
 
-            s.profile = userProfileRepository.findByUser_Username(up.user.username);
+            s.profile = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(up.user.username))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+                    
             sessionRepository.saveAndFlush(s);
         }else{
             long time = System.currentTimeMillis();

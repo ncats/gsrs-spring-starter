@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -102,7 +103,11 @@ public class LegacyUserTokenCache implements UserTokenCache {
 			return null;
 		}
 		return (UserProfile)tokenCacheUserProfile.computeIfAbsent((String) e.getObjectValue(),
-				username ->userProfileRepository.findByUser_Username(username)
+				username -> {
+				    return Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(username))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+				}
 				);
 	}
 	

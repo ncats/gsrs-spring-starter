@@ -50,7 +50,9 @@ public class LoginController {
 
         UserProfile up =null;
         if(principal !=null){
-            up = repository.findByUser_Username(principal.getName());
+            up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()))
+                         .map(u->u.standardize())
+                         .orElse(null);
         }
         if(up ==null){
             return gsrsControllerConfiguration.handleNotFound(parameters);

@@ -14,6 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,9 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
         }
         if(authentication instanceof LegacySsoAuthentication){
             LegacySsoAuthentication auth = (LegacySsoAuthentication) authentication;
-            UserProfile up = repository.findByUser_Username(auth.getUsername());
+            UserProfile up =  Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(auth.getUsername()))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
             if(up ==null && authenticationConfiguration.isAutoregister()){
                     Principal p = new Principal(auth.getUsername(), auth.getEmail());
                     up = new UserProfile(p);
@@ -63,7 +66,10 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             }
         }else if(authentication instanceof LegacyUserPassAuthentication){
             LegacyUserPassAuthentication auth = (LegacyUserPassAuthentication) authentication;
-            UserProfile up = repository.findByUser_Username(auth.getUsername());
+            UserProfile up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(auth.getUsername()))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+                    
             if(up ==null && authenticationConfiguration.isAutoregister()) {
                 Principal p = new Principal(auth.getUsername(), null);
                 up = new UserProfile(p);
@@ -94,7 +100,9 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             UserProfile up = userTokenCache.getUserProfileFromToken(token);
             if(up !=null){
 
-                UserProfile refetched = repository.findByUser_Username(up.user.username);
+                UserProfile refetched = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(up.user.username))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
                 if(refetched.acceptToken(token)){
                     return new UserProfilePasswordAuthentication(refetched);
                 }

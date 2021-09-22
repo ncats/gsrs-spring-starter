@@ -118,8 +118,8 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
         entityManager.persistAndFlush(sut);
         assertEquals(id, sut.getId());
         assertEquals("different", sut.getFoo());
-        assertThat(sut.getCreatedBy().username).isEqualTo("myUser");
-        assertThat(sut.getLastModifiedBy().username).isEqualTo("otherUser");
+        assertThat(sut.getCreatedBy().username).isEqualToIgnoringCase("myUser");
+        assertThat(sut.getLastModifiedBy().username).isEqualToIgnoringCase("otherUser");
 
     }
 

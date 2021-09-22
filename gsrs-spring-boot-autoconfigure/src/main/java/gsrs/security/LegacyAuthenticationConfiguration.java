@@ -35,5 +35,10 @@ ix.authentication.autoregisteractive=true
     private String useremailheader;
     private String userrolesheader;
 
+    //Used to be 
+    //"ix.ginas.debug.showheaders" 
+    //   but is now:
+    //"ix.authentication.logheaders"
+    private boolean logheaders=false;
 
 }

@@ -105,7 +105,7 @@ public class UserController {
         }
         if (!opt.isPresent()) {
             //if we're here look for a username?
-            opt = Optional.ofNullable(userProfileRepository.findByUser_Username(idOrName));
+            opt = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(idOrName)).map(up->up.standardize());
         }
         return opt;
     }
