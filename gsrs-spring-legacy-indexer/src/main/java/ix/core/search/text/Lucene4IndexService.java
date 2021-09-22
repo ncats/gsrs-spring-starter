@@ -92,6 +92,7 @@ public class Lucene4IndexService implements IndexerService {
             indexWriter.addDocument(doc);
             return doc;
         } catch (IOException e) {
+            e.printStackTrace();
             throw new UncheckedIOException(e);
         }
     }

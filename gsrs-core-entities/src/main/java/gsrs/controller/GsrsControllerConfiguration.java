@@ -113,6 +113,11 @@ public class GsrsControllerConfiguration {
 
 
     }
+    public ResponseEntity<Object> unauthorized( String message, Map<String, String> queryParameters) {
+        int status = overrideErrorCodeIfNeeded(HttpStatus.UNAUTHORIZED.value(), queryParameters);
+        return new ResponseEntity<>( createStatusJson(message, status), HttpStatus.valueOf(status));
+
+    }
     public ResponseEntity<Object> handleBadRequest(int defaultStatus, String message, Map<String, String> queryParameters) {
         int status = overrideErrorCodeIfNeeded(defaultStatus, queryParameters);
         return new ResponseEntity<>( createStatusJson(message, status), HttpStatus.valueOf(status));

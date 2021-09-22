@@ -960,7 +960,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 					return;
 				}
 				execute();
-			}finally {
+			}catch(Throwable t) {
+			    t.printStackTrace();
+            }finally {
+
 				latch.unlock();
 			}
 		}
@@ -2441,29 +2444,39 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return doc;
 	}
 
+	public void update(EntityWrapper ew) throws Exception{
+	    remove(ew);
+	    add(ew, true);
+
+    }
+    public void add(EntityWrapper ew) throws IOException {
+        //Don't index if any of the following:
+        // 1. The entity doesn't have an Indexable annotation OR
+        // 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
+        // 3. Reindexing is happening and the entity has already been indexed
+        boolean shouldNotAdd=     !ew.shouldIndex() ||
+                (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
+                (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()));
+        
+        add(ew,!shouldNotAdd);
+        
+    }
 	/**
 	 * recursively index any object annotated with Entity
 	 */
-	public void add(EntityWrapper ew) throws IOException {
+	private void add(EntityWrapper ew, boolean force) throws IOException {
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
 		Objects.requireNonNull(ew);
 
-		//Don't index if any of the following:
-		// 1. The entity doesn't have an Indexable annotation OR
-		// 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
-		// 3. Reindexing is happening and the entity has already been indexed
-		if(     !ew.shouldIndex() ||
-		        (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
-		        (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()))  
-		        ){
+		if(     !force){
 		    return;
 		}
 
 
         try{
-
+            ew.toInternalJson();
 			HashMap<String,List<TextField>> fullText = new HashMap<>();
             Document doc = new Document();
             if(textIndexerConfig.isShouldLog()){

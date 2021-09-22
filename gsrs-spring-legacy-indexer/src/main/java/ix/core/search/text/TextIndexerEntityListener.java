@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import javax.persistence.EntityManager;
@@ -28,6 +29,7 @@ import java.util.Optional;
  * Hibernate Entity listener that will update our legacy {@link TextIndexer}.
  */
 @Component
+@Transactional(readOnly = true)
 public class TextIndexerEntityListener {
 
     @Autowired
@@ -91,9 +93,12 @@ public class TextIndexerEntityListener {
         autowireIfNeeded();
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
-            EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
-            indexer.remove(ew);
-            indexer.add(ew);
+            try {
+                EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
+                indexer.update(ew);
+            }catch(Throwable t){
+                t.printStackTrace();
+            }
         }
     }
     @TransactionalEventListener
