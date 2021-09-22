@@ -43,8 +43,11 @@ public class ValidationResponseBuilder<T> implements ValidatorCallback {
                     gpm.appliedChange = true;
                     //downgrade applied change from error to warning
                     //TODO or should we make the lambda do it ?
+                    //TODO: this is being commented out now. It's unclear why this code never seemed to be called
+                    // in 2.X but is called in 3.0. For now it should be okay to disable it.
+                    
                     if (gpm.isError()) {
-                        gpm.messageType = GinasProcessingMessage.MESSAGE_TYPE.WARNING;
+//                        gpm.messageType = GinasProcessingMessage.MESSAGE_TYPE.WARNING;
                     }
                 } catch (Exception e) {
                     throw e;
