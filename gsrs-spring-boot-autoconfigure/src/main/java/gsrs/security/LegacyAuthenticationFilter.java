@@ -182,11 +182,11 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String pass = request.getHeader("auth-password");
             if (username != null && pass != null) {
                 UserProfile up = 
-                        Optional.ofNullable(repository.findByUser_Username(username))
+                        Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
-                    Principal p = new Principal(username, null);
+                    Principal p = new Principal(username, null).standardize();
                     up = new UserProfile(p);
                     if (authenticationConfiguration.isAutoregisteractive()) {
                         up.active = true;

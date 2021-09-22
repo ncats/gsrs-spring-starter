@@ -66,7 +66,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             }
         }else if(authentication instanceof LegacyUserPassAuthentication){
             LegacyUserPassAuthentication auth = (LegacyUserPassAuthentication) authentication;
-            UserProfile up = Optional.ofNullable(repository.findByUser_Username(auth.getUsername()))
+            UserProfile up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(auth.getUsername()))
                     .map(oo->oo.standardize())
                     .orElse(null);
                     
@@ -100,7 +100,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             UserProfile up = userTokenCache.getUserProfileFromToken(token);
             if(up !=null){
 
-                UserProfile refetched = Optional.ofNullable(repository.findByUser_Username(up.user.username))
+                UserProfile refetched = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(up.user.username))
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(refetched.acceptToken(token)){

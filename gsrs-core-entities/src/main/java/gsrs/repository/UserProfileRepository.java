@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 @Repository
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
 
+    @Deprecated
     UserProfile findByUser_Username(String username);
     
     UserProfile findByUser_UsernameIgnoreCase(String username);
