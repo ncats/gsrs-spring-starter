@@ -247,6 +247,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             etag.setContent(results.stream().map(r-> {
                 return GsrsControllerUtil.enhanceWithView(r, viewMap);
             }).collect(Collectors.toList()));
+
         }else {
             etag.setContent(results);
         }
@@ -254,6 +255,15 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         
         
         etag.setSponosredResults(result.getSponsoredMatches());
+        //sponsored Results also needs to be "enhanced" GSRS-2042
+        if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
+            Object o = etag.getSponsoredResults();
+            if (o != null && o instanceof List) {
+                etag.setSponosredResults(((List) etag.getSponsoredResults()).stream()
+                        .map(e -> GsrsControllerUtil.enhanceWithView(e, viewMap))
+                        .collect(Collectors.toList()));
+            }
+        }
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
