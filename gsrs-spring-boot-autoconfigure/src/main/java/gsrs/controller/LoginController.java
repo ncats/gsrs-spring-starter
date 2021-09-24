@@ -42,7 +42,9 @@ public class LoginController {
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
-    @PreAuthorize("isAuthenticated()")
+    //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
+    //so we can customize it.
+//    @PreAuthorize("isAuthenticated()")
     @GetMapping("api/v1/whoami")
     @Transactional(readOnly = true)
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,

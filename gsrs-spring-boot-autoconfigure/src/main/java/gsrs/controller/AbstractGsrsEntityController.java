@@ -132,15 +132,17 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
-        System.out.println("injected Principal is " + principal);
-        
+//        System.out.println("injected Principal is " + principal);
+//
+        if(principal==null){
+            //not logged in!
+            return gsrsControllerConfiguration.unauthorized("no user logged in", queryParameters);
+        }
         GsrsEntityService<T, I> entityService = getEntityService();
-        System.out.println("found entityService " + entityService);
         AbstractGsrsEntityService.CreationResult<T> result =null;
         try {        
             result = entityService.createEntity(newEntityJson);
-    
-            System.out.println("Got result:" + result);
+
             if(result.isCreated()){
                 return new ResponseEntity<>(result.getCreatedEntity(), HttpStatus.CREATED);
             }
@@ -182,7 +184,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
-
+        if(principal==null){
+            //not logged in!
+            return gsrsControllerConfiguration.unauthorized("no user logged in", queryParameters);
+        }
        AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);

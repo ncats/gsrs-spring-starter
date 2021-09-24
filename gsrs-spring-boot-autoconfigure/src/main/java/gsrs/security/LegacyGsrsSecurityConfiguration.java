@@ -1,8 +1,9 @@
 package gsrs.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.GsrsRestResponseErrorHandler;
 
-import org.hibernate.query.criteria.internal.BasicPathUsageException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -17,8 +18,10 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
@@ -27,6 +30,11 @@ import org.springframework.security.web.context.request.async.WebAsyncManagerInt
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true,
@@ -45,11 +53,16 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Autowired
     LegacyGsrsAuthenticationSuccessHandler legacyGsrsAuthenticationSuccessHandler;
+
+    @Autowired
+    GsrsControllerConfiguration gsrsControllerConfiguration;
     
 
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
+
+    private ObjectMapper mapper = new ObjectMapper();
     
     //    @Autowired
 //    LegacyAuthenticationFilter legacyAuthenticationFilter;
@@ -74,6 +87,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
         http
                 .addFilterBefore(legacyAuthenticationFilter(), LogoutFilter.class)
                 .authorizeRequests()
@@ -112,6 +126,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
             .formLogin()
                 .successHandler(legacyGsrsAuthenticationSuccessHandler)
                 .loginProcessingUrl("/api/v1/whoami")
+                .failureHandler(failureHandler())
                 .and()
 //                .formLogin()
 //                .disable()
@@ -119,6 +134,19 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
                 ;
 
         ;
+    }
+
+    private AuthenticationFailureHandler failureHandler() {
+
+        return (httpServletRequest, httpServletResponse, e) -> {
+            //use the same GSRS response JSON format and allow of overriding status/error codes
+            int statusCode = gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.NOT_FOUND, httpServletRequest).value();
+            Object response = GsrsControllerConfiguration.createStatusJson("No user logged in", statusCode);
+
+            httpServletResponse.getWriter().append(mapper.writer().writeValueAsString(response));
+            httpServletResponse.setStatus(statusCode);
+            httpServletResponse.setContentType("application/json");
+        };
     }
     @Bean
     public AccessDeniedHandler accessDeniedHandler(){

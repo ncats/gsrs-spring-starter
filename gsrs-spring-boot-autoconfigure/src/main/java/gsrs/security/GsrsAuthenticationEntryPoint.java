@@ -1,5 +1,6 @@
 package gsrs.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsControllerConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
@@ -18,9 +19,15 @@ import java.io.IOException;
 public class GsrsAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
+
+    private ObjectMapper mapper = new ObjectMapper();
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        response.setStatus(gsrsControllerConfiguration.getStatusFor(HttpServletResponse.SC_UNAUTHORIZED, request.getParameterMap()));
+        int status = gsrsControllerConfiguration.getStatusFor(HttpServletResponse.SC_UNAUTHORIZED, request.getParameterMap());
+        Object json = GsrsControllerConfiguration.createStatusJson("unauthorized", status);
+        response.setStatus(status);
+        response.getWriter().append(mapper.writer().writeValueAsString(json));
+        response.setContentType("application/json");
     }
 
 }

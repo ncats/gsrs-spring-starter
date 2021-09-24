@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -49,6 +50,10 @@ public class GsrsControllerConfiguration {
         return askedForStatus >=400 && askedForStatus< 600;
     }
 
+    private int overrideErrorCodeIfNeeded(int defaultStatus, HttpServletRequest request){
+        String value =request.getParameter(errorCodeParameter);
+        return overrideErrorCodeIfNeeded(defaultStatus, Collections.singletonMap(errorCodeParameter, value));
+    }
     private int overrideErrorCodeIfNeeded(int defaultStatus, WebRequest request){
         String value =request.getParameter(errorCodeParameter);
         return overrideErrorCodeIfNeeded(defaultStatus, Collections.singletonMap(errorCodeParameter, value));
@@ -164,6 +169,15 @@ public class GsrsControllerConfiguration {
         return overrideErrorCodeIfNeededServlet(originalStatusCode, parameterMap);
     }
 
+    public HttpStatus getHttpStatusFor(HttpStatus origStatus, HttpServletRequest request) {
+        int code = origStatus.value();
+        int newCode = overrideErrorCodeIfNeeded(code, request);
+        if(code == newCode){
+            return origStatus;
+        }
+        return HttpStatus.valueOf(newCode);
+    }
+
     @Data
     @Builder
     public static class ErrorInfo{
@@ -176,6 +190,8 @@ public class GsrsControllerConfiguration {
         Map m=new HashMap();
         if(t instanceof InvocationTargetException){
             m.put("message", ((InvocationTargetException)t).getTargetException().getMessage());
+        }if(t instanceof AccessDeniedException){
+            m.put("message", "Access is denied");
         }else{
             m.put("message", t.getMessage());
         }
