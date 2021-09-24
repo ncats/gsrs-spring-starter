@@ -139,7 +139,7 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
 
     }
     @JsonIgnore
-    @GsrsApiAction(value = "cancelUrl", type = GsrsApiAction.Type.PUT)
+    @GsrsApiAction(value = "cancelUrl")
     public ResourceReference<String> cancelUrl () {
         if(!isComplete()) {
             return FieldResourceReference.forField("@cancel", () -> "");
@@ -147,40 +147,6 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
         return null;
 
     }
-    //TODO katzelda March 2021: turn off these url links for now until the controller is ready
-    /*
-    public RestUrlLink getSelf(){
-        return RestUrlLink.from(routes.DownloadController.getDownloadRecordAsJson(this.id));
-    }
-    
-    
-    public RestUrlLink getDownloadUrl(){
-        if(this.isComplete()){
-            return RestUrlLink.from(routes.DownloadController.downloadExport(this.id));
-        }else{
-            return null;
-        }
-    }
-    
-    public RestUrlLink getCancelUrl(){
-        if(!this.isComplete()){
-            Call call = ix.ginas.controllers.routes.GinasApp.cancelExport(this.id);
-            return RestUrlLink.from( call);
-        }else{
-
-            return null;
-        }
-    }
-    
-    public RestUrlLink getRemoveUrl(){
-        if(this.isComplete()){
-            Call call = routes.DownloadController.deleteDownload(this.id);
-            return RestUrlLink.from(call);
-        }else{
-            return null;
-        }
-    }
-    */
 
     public String getCollectionId() {
         return collectionId;

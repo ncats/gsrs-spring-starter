@@ -117,7 +117,7 @@ public class ExportController {
      * @return
      */
     @PreAuthorize("isAuthenticated()")
-    @PutGsrsRestApiMapping(value = {"/{id}/@cancel", "({id})/@cancel"})
+    @GetGsrsRestApiMapping(value = {"/{id}/@cancel", "({id})/@cancel"})
     public ResponseEntity<Object> cancel(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
