@@ -69,6 +69,15 @@ public class ExportProcess<T> {
         if(exporterFunction ==null){
             throw new NullPointerException("exporter function can not be null");
         }
+        
+        long writeOutEvery = 10;
+        long writeOutEveryTime = 5_000;
+        
+        
+        SimpleTimer timer = new SimpleTimer().setDuration(writeOutEveryTime).mark();        
+        
+        
+        
         OutputStream out=null;
         try{
             out = createOutputFileStream(); // throws IOException
@@ -90,11 +99,18 @@ public class ExportProcess<T> {
                         Unchecked.uncheck( () ->{
                             try {
                             exporter.export(s);
+                            
                         }catch(Throwable t) {
                             t.printStackTrace();
                             throw t;
                         }});
                         metaData.addRecord();
+                        if(timer.isReady() && (metaData.getNumRecords() % writeOutEvery ==0)) {
+                            timer.mark();
+                            IOUtil.closeQuietly(() ->  exportFile.saveMetaData(metaData));
+                        }
+//                        metaData.
+                        
                     })
                     .anyMatch(m->{
                         //katzelda March 2021: if we cancel the executor it should
@@ -159,8 +175,37 @@ public class ExportProcess<T> {
         DONE,
         ERRORED_OUT,
         /**
-         * Gathering data required to beging export process.
+         * Gathering data required to begin export process.
          */
         PREPARING;
+    }
+    
+
+    public static class SimpleTimer{
+        private long lastTime;
+        private long duration;
+        public SimpleTimer setDuration(long delta) {
+            this.duration=delta;
+            return this;
+        }
+        public SimpleTimer mark() {
+            return this.mark(TimeUtil.getCurrentTimeMillis());
+        }
+        public SimpleTimer mark(long stamp) {
+            this.lastTime=stamp;
+            return this;
+        }
+        
+        public boolean isReady(long ts) {
+            if(ts-this.lastTime>this.duration) {
+                return true;
+            }
+            return false;
+        }
+        
+        public boolean isReady() {
+            return isReady(TimeUtil.getCurrentTimeMillis());
+        }
+        
     }
 }

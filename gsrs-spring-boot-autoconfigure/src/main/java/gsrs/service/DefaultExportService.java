@@ -137,13 +137,23 @@ public class DefaultExportService implements ExportService{
     }
     @Override
     public Optional<ExportMetaData> getStatusFor(String username, String downloadID) {
-        ExportMetaData emeta=inProgress.computeIfAbsent(downloadID, (k)->{
-            return getExplicitExportMetaData(username)
+        // This logic is a bit strange. Basically it fetches from the cache if present,
+        // otherwise it fetches from the filesystem. The trick is that it only puts
+        // the filesystem version into the cache if it's complete, otherwise it doesn't.
+        // There may be a simple way to do this in a more readable way
+        ExportMetaData[] o = new ExportMetaData[1];
+        
+        ExportMetaData emeta=Optional.ofNullable(inProgress.computeIfAbsent(downloadID, (k)->{
+            ExportMetaData md = getExplicitExportMetaData(username)
                     .stream()
                     .filter(em->em.id.equals(downloadID))
                     .findFirst()
                     .orElse(null);
-        });
+            if(md!=null && md.isComplete())return md;
+            o[0]=md;
+            return null;
+        })).orElse(o[0]);
+        
         return Optional.ofNullable(emeta);
     }
 
