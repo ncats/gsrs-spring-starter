@@ -43,8 +43,9 @@ public class LoginController {
     private String sessionCookieName;
 
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
-    //so we can customize it.
-//    @PreAuthorize("isAuthenticated()")
+    //so we can customize it. but that didn't work as the Session info assumes authentication
+    //has already run and registered your session
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("api/v1/whoami")
     @Transactional(readOnly = true)
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
