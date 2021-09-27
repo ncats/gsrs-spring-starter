@@ -129,7 +129,8 @@ public class ExportController {
 
         }
         opt.get().cancel();
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(opt.get(), parameters), HttpStatus.ACCEPTED);
+        //match GSRS 2.x response of OK
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithViewFull(opt.get()), HttpStatus.OK);
     }
 
     /**
