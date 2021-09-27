@@ -149,8 +149,8 @@ public class ExportController {
         }
         exportService.remove(opt.get());
 
-
-        return new ResponseEntity<>("removed", HttpStatus.ACCEPTED);
+        //match GSRS 2.x NO CONTEXT  and include json message
+        return GsrsControllerConfiguration.createResponseEntity("download deleted", HttpStatus.NO_CONTENT.value());
     }
 
     /**
