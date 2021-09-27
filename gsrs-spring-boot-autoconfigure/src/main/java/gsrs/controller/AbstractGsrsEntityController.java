@@ -200,7 +200,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         //match 200 status of old GSRS
         return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
     }
-
+    @Transactional(readOnly = true)
     @Override
     @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**" })
     public ResponseEntity<Object> getFieldById(@PathVariable("id") String id,
