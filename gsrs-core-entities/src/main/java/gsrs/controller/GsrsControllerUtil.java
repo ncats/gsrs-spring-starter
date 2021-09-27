@@ -14,12 +14,14 @@ import org.springframework.web.servlet.resource.ResourceUrlProvider;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public final class GsrsControllerUtil {
 
+    private static final Map<String, String> FULL_VIEW= Collections.singletonMap("view", "full");
     private GsrsControllerUtil(){
         //can not instantiate
     }
@@ -43,6 +45,9 @@ public final class GsrsControllerUtil {
     }
     public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters) {
         return enhanceWithView(obj, queryParameters, null);
+    }
+    public static GsrsUnwrappedEntityModel enhanceWithViewFull(Object obj) {
+        return enhanceWithView(obj, FULL_VIEW, null);
     }
 
     public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){

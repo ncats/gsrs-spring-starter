@@ -206,4 +206,24 @@ public class GsrsControllerConfiguration {
         m.put("status", status);
         return m;
     }
+    public static ResponseEntity<Object> createResponseEntity(String message, int status){
+        return new ResponseEntity<>(createStatusJson(message, status), HttpStatus.valueOf(status));
+    }
+
+    /**
+     * Convenience method to create a whole Spring {@link ResponseEntity}
+     * object with the given message and {@link HttpStatus}
+     * using GSRS JSON response object.
+     * @param message the message to use.
+     * @param status the status to set; can not be null.
+     * @return a new ResponseEntity.
+     * @throws NullPointerException if status is null.
+     */
+    public static ResponseEntity<Object> createResponseEntity(String message, HttpStatus status){
+        Map m=new HashMap();
+        m.put("message", message);
+
+        m.put("status", status.value());
+        return new ResponseEntity<>(m, status);
+    }
 }
