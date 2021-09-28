@@ -109,7 +109,8 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(RegisteredFunctionProperties.class);
         componentsToInclude.add(ExportController.class);
         componentsToInclude.add(SearchResultController.class);
-
+        componentsToInclude.add(LogController.class);
+        componentsToInclude.add(GsrsAdminLogConfiguration.class);
 
         componentsToInclude.add(LoopbackWebRequestHelper.class);
         componentsToInclude.add(HttpLoopBackConfig.class);

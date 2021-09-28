@@ -3,6 +3,7 @@ package gsrs;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -10,7 +11,7 @@ import java.util.Map;
 @ConfigurationProperties("ix.core")
 public class SpecialFieldsProperties {
 
-    private List<Map<String, Object>> exactsearchfields;
+    private List<Map<String, Object>> exactsearchfields = new ArrayList<>();
 
     public List<Map<String, Object>> getExactsearchfields() {
         return exactsearchfields;

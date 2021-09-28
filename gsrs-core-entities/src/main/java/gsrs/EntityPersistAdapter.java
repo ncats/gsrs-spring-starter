@@ -70,7 +70,6 @@ public class EntityPersistAdapter {
      */
     private EditLock.EditInfo createAndPushEditForWrappedEntity(EntityWrapper ew, EditLock lock) {
         Objects.requireNonNull(ew);
-        String oldJSON = ew.toFullJson();
         EditLock.EditInfo editInfo =  EditLock.EditInfo.from(ew);
 
         lock.addEdit(editInfo);

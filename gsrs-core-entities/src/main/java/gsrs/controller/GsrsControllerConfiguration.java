@@ -105,6 +105,10 @@ public class GsrsControllerConfiguration {
         return new ResponseEntity<>( createStatusJson(statusMessage, status), HttpStatus.valueOf(status));
 
     }
+    public ResponseEntity<Object>  handleForbidden(Map<String, String> queryParameters, String statusMessage) {
+        int status = overrideErrorCodeIfNeeded(HttpStatus.FORBIDDEN.value(), queryParameters);
+        return new ResponseEntity<>( createStatusJson(statusMessage, status), HttpStatus.valueOf(status));
+    }
     public ResponseEntity<Object> handleNotFound(Map<String, String> queryParameters){
         return handleNotFound(queryParameters, "not found");
     }
@@ -177,6 +181,8 @@ public class GsrsControllerConfiguration {
         }
         return HttpStatus.valueOf(newCode);
     }
+
+
 
     @Data
     @Builder
