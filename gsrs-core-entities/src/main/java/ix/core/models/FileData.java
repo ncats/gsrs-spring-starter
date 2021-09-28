@@ -1,6 +1,7 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.DiscriminatorOptions;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Table(name="ix_core_filedata")
 @Inheritance(strategy= InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("FIG")
+@DiscriminatorOptions(force = true)
 public class FileData extends BaseModel {
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
