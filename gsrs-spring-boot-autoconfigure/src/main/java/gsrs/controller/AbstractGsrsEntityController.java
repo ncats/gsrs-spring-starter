@@ -64,8 +64,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @Autowired
     private EntityLinks entityLinks;
 
-    @Autowired
-    private ObjectMapper objectMapper;
 
 
 
@@ -271,9 +269,17 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             if(editRepository.isPresent()){
                 Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(ew.getValue());
                 if(nativeIdFor.isPresent()){
+                    //TODO we should probably put this in a service?
                     List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
                     if(editList !=null) {
-                        return Optional.of(editList);
+                        if(editList.isEmpty()){
+                            //not sure this is possible but just in case
+                            return Optional.of(editList);
+                        }
+                        // we actually don't want to show the current version as an edit
+                        // to keep the API similar to GSRS 2.x
+                        //GSRS-2033
+                        return Optional.of(editList.subList(1, editList.size()));
                     }
                 }
 
