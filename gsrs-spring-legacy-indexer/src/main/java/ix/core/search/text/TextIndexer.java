@@ -3039,7 +3039,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		fieldTaker.accept(new TextField(iv.path(), TextIndexer.START_WORD + iv.value().toString() + TextIndexer.STOP_WORD, NO));
 
 		if(iv.suggest()){
-			addSuggestedField(iv.name(),iv.value().toString(),1);
+			addSuggestedField(iv.name(),iv.value().toString(),iv.suggestWeight());
 		}
 
 	}

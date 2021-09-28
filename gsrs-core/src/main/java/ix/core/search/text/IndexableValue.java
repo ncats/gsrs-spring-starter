@@ -96,8 +96,11 @@ public interface IndexableValue {
 		return getPathSepPattern().split(path);
 	}
 
+	//TP: by default we should use a weight that decreases with value length
+	//This allows for shorter results to show first, which is usaully what we want
 	default int suggestWeight() {
-		return 1;
+	    String t=(this.value())+"";
+	    return Math.max(0, 1000-t.length());
 	}
 
 	
