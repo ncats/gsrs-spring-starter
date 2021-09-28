@@ -73,6 +73,9 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
         firewall.setAllowUrlEncodedPercent(true);
         //our pojo pointer functions sometimes have semicolons
         firewall.setAllowSemicolon(true);
+        //allow encoded slashes for file paths and some smiles strings
+        firewall.setAllowUrlEncodedSlash(true);
+//        firewall.setAllowUrlEncodedDoubleSlash(true);
         return firewall;
     }
     @Override

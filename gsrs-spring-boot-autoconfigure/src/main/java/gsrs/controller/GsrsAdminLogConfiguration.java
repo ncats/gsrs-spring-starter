@@ -20,11 +20,51 @@ import java.util.function.Predicate;
 public class GsrsAdminLogConfiguration {
     @Value("${admin.panel.download.folderBlackList:}")
     private Set<String> folderBlackList = new HashSet<>();
-
+    @Value("${admin.panel.download.path:.}")
     private File rootPath = new File(".");
 
     private String logPath = "logs";
+    @Value("#{new Boolean('${admin.panel.download.restrictPaths:true}')}")
+    private boolean restrictPathsBelowRoot=true;
 
+
+    private CachedSupplier<Set<Path>> restrictedPaths = CachedSupplier.of(()->{
+        Set<Path> paths = new LinkedHashSet<>();
+       if(restrictPathsBelowRoot){
+            paths.add((rootPath ==null? new File("."): rootPath).toPath().toAbsolutePath().normalize());
+
+       }
+       for(String p : folderBlackList){
+           if(p !=null){
+               paths.add(new File(p).toPath().toAbsolutePath().normalize());
+
+           }
+       }
+       return paths;
+    });
+    public enum CanDownloadAnswer{
+        NOT_FOUND,
+        RESTRICTED,
+        ALLOWED;
+    }
+
+    public CanDownloadAnswer isAllowedToBeDownloaded(Path pathToDownload){
+        Path normalizedPath = pathToDownload.normalize();
+
+
+        Path absolutePath = normalizedPath.toAbsolutePath().normalize();
+        for(Path p: restrictedPaths.get()){
+            if (!absolutePath.startsWith(p)) {
+                return CanDownloadAnswer.RESTRICTED;
+            }
+        }
+        boolean exists = Files.exists(absolutePath);
+        if(!exists){
+            return CanDownloadAnswer.NOT_FOUND;
+        }
+        return CanDownloadAnswer.ALLOWED;
+
+    }
     public List<LogFileInfo> getAllFiles() throws IOException{
         return getLogFilesFor(rootPath.toPath());
     }

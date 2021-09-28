@@ -53,15 +53,16 @@ public class LogController {
 
         Path root = gsrsAdminLogConfiguration.getRootPath().toPath().toAbsolutePath().normalize();
         Path file = subPath==null?root.resolve(path): root.resolve(subPath).resolve(path);
+        GsrsAdminLogConfiguration.CanDownloadAnswer answer = gsrsAdminLogConfiguration.isAllowedToBeDownloaded(file);
+        if(answer == GsrsAdminLogConfiguration.CanDownloadAnswer.NOT_FOUND){
+            return gsrsControllerConfiguration.handleNotFound(queryParameters, "could not find download " + path);
 
-        //must be a subdirectory of ginas
-        Path normalizedPath = file.normalize();
-        boolean exists = Files.exists(normalizedPath);
-        if (!exists) {
-            return gsrsControllerConfiguration.handleNotFound(queryParameters, "could not find download " + normalizedPath);
         }
-        Path absolutePath = normalizedPath.toAbsolutePath();
-        if (absolutePath.startsWith(root)) {
+        if(answer == GsrsAdminLogConfiguration.CanDownloadAnswer.RESTRICTED){
+            return gsrsControllerConfiguration.handleForbidden(queryParameters, "not allowed to access file : " + path);
+
+        }
+        Path absolutePath = file.normalize().toAbsolutePath();
             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(absolutePath));
             File asFile = absolutePath.toFile();
             return ResponseEntity.ok()
@@ -72,9 +73,8 @@ public class LogController {
 
                     .body(resource);
 
-        }
-        return gsrsControllerConfiguration.handleForbidden(queryParameters, "not allowed to access file : " + normalizedPath);
-    }
+
+         }
 
 
 }
