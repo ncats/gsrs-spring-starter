@@ -24,6 +24,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import java.time.temporal.TemporalAccessor;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -70,7 +71,11 @@ public class AuditConfig {
         private EntityManager em;
         //use an LRU Cache of name look ups. without this on updates to Substances
         //we get a stackoverflow looking up the name over and over for some reason...
-        private Map<String, Optional<Principal>> principalCache = Caches.createLRUCache();
+        //need to synchronize it in case multiple threads are adding users at the same time
+        //otherwise we get concurrent modification exceptions.
+        //since we only do computeIfAbsent call and clear the synchronized blocks
+        //shouldn't cause too much of a performance hit
+        private Map<String, Optional<Principal>> principalCache = Collections.synchronizedMap(Caches.createLRUCache(100));
 
         public void clearCache(){
             principalCache.clear();
