@@ -25,7 +25,7 @@ public class ReindexEventListener {
     //on all of our fields in each method we synchronize on the method level
     //so we don't need to use AtomicBoolean or ConcurrentHashMaps because we get no performance improvement from them.
     private Map<UUID, SingleThreadCounter> reindexCounts = new HashMap<>();
-    private boolean inMaintenanceMode = false;
+
 
     private Map<UUID, Long> reindexTimes = new HashMap<>();
     @Autowired
@@ -33,10 +33,10 @@ public class ReindexEventListener {
 
     @EventListener
     public synchronized void onNewReindex(BeginReindexEvent event){
+        boolean inMaintenanceMode = !reindexCounts.isEmpty();
         reindexCounts.put(event.getId(), new SingleThreadCounter(event.getNumberOfExpectedRecord()));
         reindexTimes.put(event.getId(), System.currentTimeMillis());
         if(!inMaintenanceMode){
-            inMaintenanceMode=true;
             //was not in maintenanceMode mode before and now it is
             applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
         }
@@ -54,7 +54,7 @@ public class ReindexEventListener {
                 if (reindexCounts.isEmpty()) {
                     //done!
                     System.out.println("reindex for " + event.getId() + " took " + Duration.ofMillis(System.currentTimeMillis() - reindexTimes.remove(event.getId())));
-                    inMaintenanceMode = false;
+
                     applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
                 }
             }

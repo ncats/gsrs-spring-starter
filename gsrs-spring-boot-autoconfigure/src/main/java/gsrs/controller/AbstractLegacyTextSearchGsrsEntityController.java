@@ -1,10 +1,14 @@
 package gsrs.controller;
 
+import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.IxContext;
+import gsrs.indexer.job.ReindexJob;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.legacy.ReindexService;
 import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
+import gsrs.util.TaskListener;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -36,14 +41,13 @@ import java.util.regex.Pattern;
  */
 public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends AbstractLegacyTextSearchGsrsEntityController, T, I> extends AbstractGsrsEntityController<C, T,I> {
 
-//    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
-//        super(context, idHelper);
-//    }
-//    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
-//        super(context, idPattern);
-//    }
+
+
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private GsrsCache gsrsCache;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -52,9 +56,24 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      * @return
      */
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
-    public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
-        getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex,
+                                           @RequestParam(value= "async", defaultValue = "false") boolean async,
+                                           @RequestParam Map<String, String> queryParameters) throws IOException {
+        ReindexService<T> reindexService = getlegacyGsrsSearchService().getReindexService();
+        UUID reindexId = UUID.randomUUID();
+        ReindexJob listener = new ReindexJob();
+
+        if(async){
+            gsrsCache.setTemp(reindexId.toString(), listener);
+            reindexService.executeAsync(reindexId, listener,wipeIndex);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(listener, queryParameters), HttpStatus.OK);
+
+        }
+            reindexService.execute(reindexId, listener, wipeIndex);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+
+
     }
     @GetGsrsRestApiMapping(value = "/search/@facets", apiVersions = 1)
     public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
@@ -65,8 +84,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         SearchOptions so = new SearchOptions.Builder()
                 .kind(getEntityService().getEntityClass())
                 .top(Integer.MAX_VALUE) // match Play GSRS
-                .fdim(10)
-                .fskip(0)
+                .fdim(top.orElse(10))
+                .fskip(skip.orElse(0))
                 .ffilter("")
                 .withParameters(request.getParameterMap())
                 .build();

@@ -1,5 +1,7 @@
 package gsrs.scheduler;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
@@ -10,10 +12,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Configuration
 @ConfigurationProperties("gsrs.scheduled-tasks")
@@ -35,6 +34,13 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     public static class ScheduledTaskConfig{
         private String scheduledTaskClass;
         private Map<String, Object> parameters;
+        @JsonIgnore
+        private Map<String, Object> otherParameters = new HashMap<>();
+
+        @JsonAnySetter
+        public void legacyParameters(String name, Object value) {
+            otherParameters.put(name, value);
+        }
 
     }
 
@@ -43,7 +49,14 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         for(ScheduledTaskConfig config : list){
 
-            Map<String, Object> params = config.parameters ==null? Collections.emptyMap() : config.parameters;
+            Map<String, Object> params;
+            if(config.parameters !=null){
+                params = config.parameters;
+            }else if(config.otherParameters!=null && !config.otherParameters.isEmpty()){
+                params = config.otherParameters;
+            }else{
+                params = Collections.emptyMap();
+            }
 
             ScheduledTaskInitializer task = null;
             try {

@@ -2887,6 +2887,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 		shutdown();
 	}
 
+    public void beginPartialReindex() {
+        if(!isReindexing.get()) {
+            flushDaemon.lockFlush();
+            closeAndClear(lookups);
+            //we have to clear our suggest fields since they are about to be completely replaced
+            //lookups.clear();
+//            sorters.clear();
+            isReindexing.set(true);
+            alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
+            flushDaemon.unLockFlush();
+//            indexerService.removeAll();
+        }
+    }
 	@Override
 	public void newProcess() {
         if(!isReindexing.get()) {

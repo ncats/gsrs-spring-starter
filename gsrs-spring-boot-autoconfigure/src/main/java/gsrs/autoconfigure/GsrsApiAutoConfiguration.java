@@ -1,5 +1,6 @@
 package gsrs.autoconfigure;
 
+import gsrs.indexer.GsrsLegacyIndexerConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -34,6 +35,8 @@ import gsrs.validator.ConfigBasedGsrsValidatorFactory;
         IxContext.class,
         LoopbackWebRequestHelper.class,
         HttpLoopBackConfig.class,
+        //TODO this is in legacy indexer!!
+        GsrsLegacyIndexerConfiguration.class
 })
 public class GsrsApiAutoConfiguration {
 

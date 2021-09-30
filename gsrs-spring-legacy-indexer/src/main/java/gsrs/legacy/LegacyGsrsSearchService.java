@@ -27,10 +27,17 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     private final GsrsRepository gsrsRepository;
     private final Class<T> entityClass;
 
-    protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
+    private ReindexService<T> reindexService;
+
+    protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository, ReindexService<T> reindexService){
         gsrsRepository= repository;
         this.entityClass = entityClass;
+        this.reindexService = reindexService;
 
+    }
+
+    public ReindexService<T> getReindexService(){
+        return reindexService;
     }
 
     @Override

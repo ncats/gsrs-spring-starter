@@ -1,6 +1,8 @@
 package ix.core.search.text;
 
 import gsrs.DefaultDataSourceConfig;
+import gsrs.events.BeginReindexEvent;
+import gsrs.events.EndReindexEvent;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
@@ -23,7 +25,11 @@ import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Hibernate Entity listener that will update our legacy {@link TextIndexer}.
@@ -35,6 +41,7 @@ public class TextIndexerEntityListener {
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
+    private Set<UUID> reindexEventUUIDs = Collections.newSetFromMap(new ConcurrentHashMap<>());
 //    
 //    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
 //    private EntityManager em;
@@ -77,13 +84,32 @@ public class TextIndexerEntityListener {
         }
     }
     @EventListener
-    public void reindexing(MaintenanceModeEvent event) {
-        autowireIfNeeded();
-        if(event.getSource().isInMaintenanceMode()){
-            textIndexerFactory.getDefaultInstance().newProcess();
-        }else{
+    public void doneReindexing(EndReindexEvent event) {
+        if(reindexEventUUIDs.remove(event.getId())) {
             textIndexerFactory.getDefaultInstance().doneProcess();
         }
+    }
+    @EventListener
+    public void reindexing(BeginReindexEvent event) {
+        autowireIfNeeded();
+        reindexEventUUIDs.add(event.getId());
+        switch(event.getWipeIndexStrategy()){
+            case CLEAR_ALL:
+                textIndexerFactory.getDefaultInstance().newProcess();
+                break;
+            case REMOVE_ONLY_SPECIFIED_TYPES:
+                for(String t: event.getTypesToClearFromIndex()) {
+                    try {
+                        textIndexerFactory.getDefaultInstance().beginPartialReindex();
+                        textIndexerFactory.getDefaultInstance().removeAllType(EntityUtils.getEntityInfoFor(t));
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                break;
+        }
+
+
     }
 
 

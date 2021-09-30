@@ -1,6 +1,7 @@
 package gsrs.scheduledTasks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import gsrs.util.TaskListener;
 import lombok.Data;
 
 import java.util.function.Consumer;
@@ -21,11 +22,11 @@ public abstract class ScheduledTaskInitializer {
             .build();
 
 
-    public Consumer<SchedulerPlugin.TaskListener> getRunner(){
+    public Consumer<TaskListener> getRunner(){
         return this::run;
     }
 
-    public abstract void run(SchedulerPlugin.TaskListener l);
+    public abstract void run(TaskListener l);
 
     public abstract String getDescription();
 

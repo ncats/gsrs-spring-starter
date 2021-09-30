@@ -34,4 +34,6 @@ public interface GsrsSearchService<T> {
      * @return
      */
     long getLastModified();
+
+    ReindexService<T> getReindexService();
 }
