@@ -46,18 +46,18 @@ public class DefaultExportService implements ExportService{
         this.config = config;
         rootDir = config.getPath();
     }
+    
+    // TODO: this probably isn't ideal. It's used for cases where we want an alternative
+    // root directory. However, the best way to do this is probably to have the config
+    // itself be an alternative version. Doing this isn't trivial in the current paradigm,
+    // but can likely be done.
+    public DefaultExportService(GsrsExportConfiguration config, File explicitRoot){
+        this.config = config;
+        rootDir = explicitRoot;
+    }
     @Override
     public Optional<ExportDir.ExportFile<ExportMetaData>> getFile(String username, String filename) throws IOException {
             return new ExportDir<>(new File(rootDir, username), ExportMetaData.class).getFile(filename);
-//        System.out.println("trying to download " + downloadFile);
-//            return downloadFile.orElseThrow(()->new FileNotFoundException("could not find file for user "+ username + ":" +  filename))
-//                    .getInputStreamOutputStream();
-//        File[] files = getFiles(getExportDirFor(username), fname);
-//        File downloadFile = files[0];
-//        if(downloadFile.exists()){
-//            return new BufferedInputStream(new FileInputStream(downloadFile));
-//        }
-//        throw new FileNotFoundException("could not find file for user "+ username + ":" +  fname);
         }
 
     private static File getExportMetaDirFor(File parentDir){
