@@ -564,7 +564,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	    // has to have these evaluated too. Need unit tests.
 
                 	    entityManager.flush();
-                	    entityManager.clear();
+//                	    entityManager.clear();
 
                 	    T newValue = (T)nWrap.getValue();
                 	    entityManager.persist(newValue);
