@@ -568,13 +568,16 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                 	    T newValue = (T)nWrap.getValue();
                 	    entityManager.persist(newValue);
-
+                	    entityManager.flush();
+                	    entityManager.clear();
+                	    
+//                	    T saved=newValue;
                 	    T saved = transactionalUpdate(newValue, oldJson);
 
-                	    builder.updatedEntity(newValue);
+                	    builder.updatedEntity(saved);
                 	    builder.status(UpdateResult.STATUS.UPDATED);
 
-                	    return Optional.of(newValue); //Delete & Create
+                	    return Optional.of(saved); //Delete & Create
                 	}
 
 

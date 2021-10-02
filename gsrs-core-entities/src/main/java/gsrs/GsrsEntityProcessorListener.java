@@ -99,11 +99,29 @@ public class GsrsEntityProcessorListener {
     @PrePersist
     @Transactional
     public void prePersist(Object o){
+        
+        Key k=null;
+        if(PREVENT_RECURSION) {
+            k=EntityWrapper.of(o).getOptionalKey().orElse(null);
+            if(k!=null && working.contains(k)) {
+                log.warn("PrePersist called, but already working on record for:" + k);
+                return;
+            }
+        }
+        
         try {
+            if(PREVENT_RECURSION && k!=null) {
+                working.add(k);
+            }
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).prePersist(o);
+
         } catch (EntityProcessor.FailProcessingException e) {
             log.error("error calling entityProcessor", e);
+        } finally {
+            if(PREVENT_RECURSION && k!=null) {
+                working.remove(k);
+            }
         }
     }
 
