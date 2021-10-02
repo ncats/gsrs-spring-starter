@@ -109,6 +109,7 @@ public interface GsrsEntityService<T, I> {
             UPDATED,
             ERROR;
         }
+        private Throwable throwable;
         private STATUS status;
         private ValidationResponse<T> validationResponse;
         private T updatedEntity;

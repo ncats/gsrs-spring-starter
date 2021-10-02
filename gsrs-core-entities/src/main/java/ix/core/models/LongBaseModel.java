@@ -2,10 +2,7 @@ package ix.core.models;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 
 /**
  * Base class of objects in our model which
@@ -15,6 +12,7 @@ import javax.persistence.MappedSuperclass;
 public abstract class LongBaseModel extends BaseModel {
 
     @Id
+	@Column(unique = true)
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 
 //    @GeneratedValue //Ebean added GeneratedValue by default we have to be explicit in hibernate

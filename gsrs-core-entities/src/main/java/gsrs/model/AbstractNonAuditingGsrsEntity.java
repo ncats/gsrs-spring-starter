@@ -25,27 +25,29 @@ import javax.persistence.Transient;
 @EntityListeners(value= {GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
 public abstract class AbstractNonAuditingGsrsEntity {
 
-    @JsonIgnore
-    @Transient
-    private JsonNode previousState;
-    @JsonIgnore
-    @Transient
-    private String previousVersion;
+    //dkatzel don't use these anymore should be performance improvement to not do it?
 
-    @PostLoad
-    public void updatePreviousState(){
-        EntityUtils.EntityWrapper<AbstractNonAuditingGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
-
-        this.previousState = ew.toFullJsonNode();
-        this.previousVersion = ew.getVersion().orElse(null);
-    }
-
-    public JsonNode getPreviousState(){
-        return previousState;
-    }
-
-    public String getPreviousVersion(){
-        return previousVersion;
-    }
+//    @JsonIgnore
+//    @Transient
+//    private JsonNode previousState;
+//    @JsonIgnore
+//    @Transient
+//    private String previousVersion;
+//
+//    @PostLoad
+//    public void updatePreviousState(){
+//        EntityUtils.EntityWrapper<AbstractNonAuditingGsrsEntity> ew = EntityUtils.EntityWrapper.of(this);
+//
+//        this.previousState = ew.toFullJsonNode();
+//        this.previousVersion = ew.getVersion().orElse(null);
+//    }
+//
+//    public JsonNode getPreviousState(){
+//        return previousState;
+//    }
+//
+//    public String getPreviousVersion(){
+//        return previousVersion;
+//    }
 
 }

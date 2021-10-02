@@ -774,7 +774,7 @@ public class EntityUtils {
 		CachedSupplier<Map<String,BiFunction<PojoPointer, EntityWrapper<?>, Optional<EntityWrapper<?>>>>>
 			finders = CachedSupplier.of(()->{
 				Map<String, BiFunction<PojoPointer, EntityWrapper<?>, Optional<EntityWrapper<?>>>>
-					registry= new HashMap<>();
+					registry= new ConcurrentHashMap<>();
 				
 				registry.put(IdentityPath.class.getName(), (cpath,current)->{
 					return Optional.of(current);
@@ -999,7 +999,7 @@ public class EntityUtils {
 	        
 	        do {
 	        	BiFunction<PojoPointer, EntityWrapper<?>, Optional<EntityWrapper<?>>> finder=
-	        	finders.get().computeIfAbsent(cpath.getClass().getName(), n->{
+	        	finders.getSync().computeIfAbsent(cpath.getClass().getName(), n->{
 	        		//sometimes we load the finders too early?
 					//this way we re-check any registered functions
 					try {
