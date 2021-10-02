@@ -17,4 +17,8 @@ public interface GsrsManualDirtyMaker {
      */
     void performIfNotDirty(String field, Runnable action);
 
+    
+    default boolean isDirty() {
+        return !this.getDirtyFields().isEmpty();
+    }
 }

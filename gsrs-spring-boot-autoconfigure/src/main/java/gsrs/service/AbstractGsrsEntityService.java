@@ -504,6 +504,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                             if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
                                 Object o =  ewchanged.getValue();
                                 if(o instanceof ForceUpdatableModel) {    
+                                    //Maybe don't do twice? IDK.
                                     ((ForceUpdatableModel)o).forceUpdate();
                                 }
 
@@ -571,6 +572,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	    entityManager.persist(newValue);
                 	    entityManager.flush();
                 	    entityManager.clear();
+                	    
                 	    
 //                	    T saved=newValue;
                 	    T saved = transactionalUpdate(newValue, oldJson);

@@ -168,70 +168,6 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
     }
 
 
-    /**
-     * Called before saving. Updates with the current time and user
-     * for bookkeeping purposes. Note that this method currently uses
-     * reflection to find the current logged in user, as the method used
-     * is not found in the core module.
-     * <p>
-     * This method is not ideal for 2 reasons. First, the reflection
-     * piece is ugly and hardcoded, making it difficult to maintain.
-     * Second, when doing a batch load, there is no method for fetching
-     * the user who submitted the record. These should be addressed in
-     * the future, ideally by having a submission "context" which can be
-     * referenced either here, or before reaching this point.
-     * <p>
-     * Update: The UserFetcher class now falls back to the user set
-     * explicitly on the localThread. This will be set by the
-     * job code prior to getting to this point, so things should be
-     * ok.
-     */
-    //TODO katzelda October 2020: Spring and JPA have special annotations to set audit info and we will use that
-//    @PreUpdate
-//    public void modified () {
-//    	updateAuditInfo(false, UserFetcher.isForceAuditUpdate());
-//    }
-//
-//    @PrePersist
-//    public void created () {
-//    	updateAuditInfo(true, UserFetcher.isForceAuditUpdate());
-//    }
-//
-
-//    public void updateAuditInfo(boolean creation, boolean force){
-//
-//    	//The logic here is essentially:
-//    	//1. If lastEdited date is null, it will get the current date.
-//    	//2. If created date is null, it will get the current date.
-//    	//3. If lastEditedBy is null, it will get the current user.
-//    	//4. If createdBy is null, it will also get the current user.
-//    	//
-//
-//    	Date currentDate = TimeUtil.getCurrentDate();
-//    	if(this.lastEditedBy == null || this.createdBy==null || force){
-//
-//			Principal p1=UserFetcher.getActingUser();
-//	        if(p1!=null){
-//	        	if(lastEditedBy== null || force){
-//	        		this.lastEditedBy=p1;
-//	        		this.lastEdited = currentDate;
-//	        	}
-//	    		if(creation && (this.createdBy==null || force)){
-//	    			this.createdBy=p1;
-//	    			this.created= currentDate;
-//	        	}
-//	        }
-//		}
-//        if(this.lastEdited == null){
-//        	this.lastEdited=currentDate;
-//        }
-//        if(this.created == null){
-//        	this.created=currentDate;
-//        }
-//        if(this.uuid == null){
-//        	this.uuid=UUID.randomUUID();
-//        }
-//    }
     @JsonIgnore
     public String getDefinitionalHash() {
         StringBuilder sb = new StringBuilder();
@@ -252,25 +188,6 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
         return Util.sha1(sb.toString());
     }
 
-    //TODO katzelda October 2020 : removing method to get self url here need way to move to controller
-//    @JsonProperty("_self")
-//    @Indexable(indexed=false)
-//    public String getself () {
-//        if (uuid != null) {
-//            try {
-//                String ref = Global.getRef(this);
-//                if (ref != null)
-//                    return ref+"?view=full";
-//            }
-//            catch (Exception ex) {
-//
-//                //Logger.error("Not a valid persistence Entity", ex);
-//
-//            }
-//        }
-//        return null;
-//    }
-
 
 
     @Override
@@ -279,10 +196,6 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
 		currentVersion++;
 		setIsDirty("currentVersion");
-		/*
-		super.update();
-
-    	 */
     }
 
     public boolean tryUpdate() {
