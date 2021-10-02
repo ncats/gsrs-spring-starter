@@ -14,6 +14,7 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import org.jcvi.jillion.internal.core.util.Sneak;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -544,7 +545,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 			t.printStackTrace();
 
                 			builder.status(UpdateResult.STATUS.ERROR);
-
+                            builder.throwable(t);
                 			return Optional.empty();
                 		}
                 	}else {
@@ -591,7 +592,12 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                         }
                     }
                 }
-                return builder.build();
+
+                UpdateResult<T> updateResult= builder.build();
+                if(updateResult.getThrowable() !=null){
+                    Sneak.sneakyThrow( updateResult.getThrowable());
+                }
+                return updateResult;
             }catch(IOException e){
                 status.setRollbackOnly();
                 throw new UncheckedIOException(e);
