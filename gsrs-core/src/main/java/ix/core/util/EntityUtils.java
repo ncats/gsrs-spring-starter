@@ -238,6 +238,8 @@ public class EntityUtils {
 			return this.ei.fromJsonNode(this.toFullJsonNode());
 		}
 		
+		
+		
 		public T getWrappedClone() throws JsonProcessingException{
 			return this.ei.fromJsonNode(this.toFullJsonNode());
 		}
@@ -602,6 +604,11 @@ public class EntityUtils {
 		public EntityInfo<T> getEntityInfo() {
 			return this.ei;
 		}
+		
+		public <U> EntityInfo<U> getRootEntityInfo() {
+		    return (EntityInfo<U>) this.ei.getInherittedRootEntityInfo();
+		}
+		
 
 		public Optional<?> getId() {
 			return this.ei.getIdPossiblyFromEbeanMethod((Object) this.getValue());
@@ -2806,6 +2813,10 @@ public class EntityUtils {
 			this.kind = k;
 			this._id = id;
 		}
+		
+		public Key toRootKey() {
+		    return new Key(kind.getInherittedRootEntityInfo(),_id);
+		}
 
 		public String getKind() {
 			return this.kind.getName();
@@ -2835,7 +2846,9 @@ public class EntityUtils {
 		 */
 		@SuppressWarnings("unchecked")
 		private Object nativeFetch(EntityManager entityManager){
-		    return entityManager.find(kind.getEntityClass(), this.getIdNative());
+		    Class _k=kind.getEntityClass();
+		    Object o=this.getIdNative();
+		    return entityManager.find(_k,o);
 
 		}
 		

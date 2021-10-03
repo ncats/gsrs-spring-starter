@@ -163,7 +163,6 @@ public class EditLock {
     public void markPostUpdateCalled() {
         if (postUpdateWasCalled == false && this.onPostUpdate != null) {
             onPostUpdate.run();
-
         }
         postUpdateWasCalled = true;
 

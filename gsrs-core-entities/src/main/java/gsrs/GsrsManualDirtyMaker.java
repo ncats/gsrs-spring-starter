@@ -2,6 +2,8 @@ package gsrs;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface GsrsManualDirtyMaker {
 
     void setIsDirty(String dirtyField);
@@ -17,7 +19,8 @@ public interface GsrsManualDirtyMaker {
      */
     void performIfNotDirty(String field, Runnable action);
 
-    
+
+    @JsonIgnore
     default boolean isDirty() {
         return !this.getDirtyFields().isEmpty();
     }

@@ -50,5 +50,4 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
             return Boolean.TRUE;
         });
     }
-    
 }

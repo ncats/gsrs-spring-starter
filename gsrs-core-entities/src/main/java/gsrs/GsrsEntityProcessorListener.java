@@ -139,14 +139,15 @@ public class GsrsEntityProcessorListener {
 
         }
         //create an edit?
-        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
-        if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
-            applicationEventPublisher.publishEvent(CreateEditEvent.builder()
-                    .kind(o.getClass())
-                    .id(ew.getEntityInfo().getNativeIdFor(o).get())
-                    .build());
-
-        }
+        //I don't think we need this
+//        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
+//        if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
+//            applicationEventPublisher.publishEvent(CreateEditEvent.builder()
+//                    .kind(o.getClass())
+//                    .id(ew.getEntityInfo().getNativeIdFor(o).get())
+//                    .build());
+//
+//        }
     }
 
     @PreRemove

@@ -32,7 +32,7 @@ public class EditEventService {
         Key kk = Key.of(event.getKind(), event.getId());
         Object entity=null;
         try {
-            entity = kk.getEntityManager().find(event.getKind(), event.getId());
+            entity = kk.toRootKey().fetch().get().getValue();
         }catch(Throwable e) {
             log.warn("Trouble making edit for:" + kk.toString(),e);
             return;
@@ -47,18 +47,23 @@ public class EditEventService {
             if(event.getComments() !=null){
                 newEdit.comments = event.getComments();
             }
-            //set old value
-            if(!("1".equals(newEdit.version))){
-                try {
-                    int prevVersion = Integer.parseInt(newEdit.version) - 1;
-                    //made this a list incase there are multiple edits with the same version?
-                    List<Edit> prevEdit = editRepository.findByRefidAndVersion(refid, Integer.toString(prevVersion));
-                    if(!prevEdit.isEmpty()){
-                        newEdit.oldValue = prevEdit.get(0).newValue;
+            
+            if(event.getOldJson()!=null) {
+                newEdit.oldValue = event.getOldJson();
+            }else {
+                //set old value
+                if(!("1".equals(newEdit.version))){
+                    try {
+                        int prevVersion = Integer.parseInt(newEdit.version) - 1;
+                        //made this a list incase there are multiple edits with the same version?
+                        List<Edit> prevEdit = editRepository.findByRefidAndVersion(refid, Integer.toString(prevVersion));
+                        if(!prevEdit.isEmpty()){
+                            newEdit.oldValue = prevEdit.get(0).newValue;
+                        }
+    
+                    }catch(NumberFormatException e){
+                        //ignore ?
                     }
-
-                }catch(NumberFormatException e){
-                    //ignore ?
                 }
             }
             //check to see if there's an edit with this version already
