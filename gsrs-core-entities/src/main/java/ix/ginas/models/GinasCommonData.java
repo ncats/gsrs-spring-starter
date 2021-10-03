@@ -23,7 +23,7 @@ public class GinasCommonData extends NoIdGinasCommonData{
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false)
+    @Column(length =40, updatable = false, unique = true)
     public UUID uuid;
     @Indexable()
     public UUID getUuid() {

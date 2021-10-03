@@ -29,8 +29,9 @@ public interface EntityProcessor<K>{
 	default void postUpdate(K obj) throws FailProcessingException{};
 	default void postLoad(K obj) throws FailProcessingException{};
 
+	default void initialize() throws FailProcessingException{};
 	/**
-	 * Get the Class of Entityt Type K.
+	 * Get the Class of Entity Type K.
 	 * @return Class of K.
 	 *
 	 * @since 3.0

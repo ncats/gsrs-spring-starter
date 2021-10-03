@@ -22,6 +22,7 @@ public class IxModel extends BaseModel {
     @Id
      //Ebean added GeneratedValue by default we have to be explicit in hibernate
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+    @Column(unique = true)
     public Long id;
     @Version
     public Long version;
