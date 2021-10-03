@@ -27,6 +27,7 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
         return dirtyFields.keySet();
     }
     @Override
+    @JsonIgnore
     public boolean isDirty(String field){
         return dirtyFields.containsKey(field);
     }
