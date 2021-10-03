@@ -4,6 +4,7 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,15 @@ import java.util.*;
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_userprof_seq", allocationSize = 1)
 @EntityListeners(UserProfileEntityProcessor.class)
 public class UserProfile extends IxModel{
+    
+    private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
+        UserProfile up = new UserProfile(new Principal("GUEST"));
+        up.addRole(Role.Query);
+
+        return up;
+    });
+    
+    
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
 	public Principal user;
@@ -66,6 +76,7 @@ public class UserProfile extends IxModel{
 
 	public UserProfile(Principal user) {
 		this.user = user;
+		//Wait ... what?
 		regenerateKey();
 		setIsDirty("user");
 	}
@@ -170,10 +181,7 @@ public class UserProfile extends IxModel{
 
 
 	public static UserProfile GUEST() {
-		UserProfile up = new UserProfile(new Principal("GUEST"));
-		up.addRole(Role.Query);
-
-		return up;
+	   return GUEST_PROF.get();
 	}
 
 	public boolean isRoleQueryOnly(){
