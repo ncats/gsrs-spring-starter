@@ -51,6 +51,18 @@ public class CombinedEntityProcessor<K> implements EntityProcessor<K> {
 
     @Override
     @Transactional
+    public void initialize() throws FailProcessingException {
+        for(EntityProcessor<? super K> processor : list){
+            try{
+                processor.initialize();
+            }catch(Throwable e){
+                log.warn(e.getMessage(),e);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
     public void prePersist(K obj) throws FailProcessingException {
         for(EntityProcessor<? super K> processor : list){
             try{

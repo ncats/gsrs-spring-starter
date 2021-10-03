@@ -1,5 +1,10 @@
 package gsrs.autoconfigure;
 
+import gsrs.EntityProcessorFactory;
+import gsrs.security.AdminService;
+import gsrs.security.GsrsSecurityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -16,6 +21,9 @@ import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.service.DefaultExportService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.ConfigBasedGsrsValidatorFactory;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
+import org.springframework.transaction.annotation.Transactional;
 
 @Configuration
 //can't do component scan in autoconfiguration so manually import our components
@@ -37,6 +45,18 @@ import gsrs.validator.ConfigBasedGsrsValidatorFactory;
 })
 public class GsrsApiAutoConfiguration {
 
+    @Autowired
+    private EntityProcessorFactory entityProcessorFactory;
 
+    @Autowired
+    private AdminService adminService;
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Order(Integer.MAX_VALUE)
+    @Transactional
+    public void initializeEntityProcessors(ApplicationReadyEvent event){
+        adminService.runAsAdmin(entityProcessorFactory::initialize);
+
+    }
 
 }

@@ -29,15 +29,11 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
             Class entityClass = ep.getEntityClass();
             if (entityClass != null) {
 
-                processorMapByClass.computeIfAbsent(entityClass, k -> new ArrayList<>()).add(ep);
+                processorMapByClass.computeIfAbsent(entityClass, k -> new ArrayList<>()).add(AutowireHelper.getInstance().autowireAndProxy(ep));
             }
         });
     }));
-    @PostConstruct
-    public void init(){
-        initializer.getSync();
 
-    }
 
     /**
      * Reset the Cache of known EntityProcessors.  This method should
@@ -49,7 +45,24 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
     }
     protected abstract void registerEntityProcessor(Consumer<EntityProcessor> registar);
 
+    @Override
+    public void initialize() {
+        initializer.getSync();
+        //in case the same entity processor is used for multiple classes
+        Set<EntityProcessor> processors = Collections.newSetFromMap(new IdentityHashMap<>());
+        for(Map.Entry<Class, List<EntityProcessor>> e : processorMapByClass.entrySet()){
 
+            for(EntityProcessor p : e.getValue()){
+                if(processors.add(p)){
+                    try {
+                        p.initialize();
+                    } catch (EntityProcessor.FailProcessingException failProcessingException) {
+                        failProcessingException.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     public EntityProcessor getCombinedEntityProcessorFor(Object o){
@@ -66,14 +79,13 @@ public abstract class AbstractEntityProcessorFactory implements EntityProcessorF
                 }
             }
             Set<EntityProcessor> processors = list.keySet();
-            //TODO add legacy re-indexer?
-            //TODO add backup processor?
+
             if(processors.isEmpty()){
                 return new NoOpEntityProcessor(k);
             }
-
-            return AutowireHelper.getInstance().autowireAndProxy(new CombinedEntityProcessor(k,
-                    processors.stream().map( p-> AutowireHelper.getInstance().autowireAndProxy(p)).collect(Collectors.toSet())));
+            return AutowireHelper.getInstance().autowireAndProxy(new CombinedEntityProcessor(k, processors));
+//            return AutowireHelper.getInstance().autowireAndProxy(new CombinedEntityProcessor(k,
+//                    processors.stream().map( p-> AutowireHelper.getInstance().autowireAndProxy(p)).collect(Collectors.toSet())));
         });
     }
 
