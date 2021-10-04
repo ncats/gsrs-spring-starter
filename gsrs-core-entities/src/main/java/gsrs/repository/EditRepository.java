@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface EditRepository extends GsrsRepository<Edit, UUID> {
 
     List<Edit> findByRefidOrderByCreatedDesc(String refId);
+    
+    Optional<Edit> findFirstByRefidOrderByCreatedDesc(String refId);
 
     List<Edit> findByRefidAndVersion(String refId, String version);
 }

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
+import gsrs.GsrsEntityProcessorListener;
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.controller.IdHelper;
 import gsrs.events.AbstractEntityCreatedEvent;
@@ -40,6 +41,7 @@ import ix.core.models.Edit;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
 import ix.core.util.LogUtil;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
@@ -410,6 +412,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Override
     public UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        
+        
         return transactionTemplate.execute( status-> {
             UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
             EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, changeOperation::apply);
@@ -435,6 +439,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         });
     }
     
+    
     @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
@@ -442,13 +447,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return transactionTemplate.execute( status-> {
             try {
                 T updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
-                EntityManager entityManager = EntityWrapper.of(updatedEntity).getKey().getEntityManager();
+                Key oKey = EntityWrapper.of(updatedEntity).getKey();                
+                EntityManager entityManager = oKey.getEntityManager();
+                
 
-                //updatedEntity should have the same id
-                I id = getIdFrom(updatedEntity);
+                boolean[] forceMoreSave = new boolean[] {false};
+                
 
                 UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
-                EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.performChangeOn(updatedEntity, oldEntity -> {
+                EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
                 	EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
                 	String oldJson = og.toFullJson();
                 	Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE, ValidatorCategory.CATEGORY_ALL());
@@ -495,12 +502,13 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
                 		//This is the last line of defense for making sure that the patch worked
                 		//Should throw an exception here if there's a major problem
+                		//This is inefficient, but forces confirmation that the object is fully realized
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
 
                 		while (!changeStack.isEmpty()) {
                             Object v = changeStack.pop();
-                            EntityUtils.EntityWrapper ewchanged = EntityUtils.EntityWrapper.of(v);
+                            EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
                             if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
                                 Object o =  ewchanged.getValue();
                                 if(o instanceof ForceUpdatableModel) {    
@@ -566,28 +574,36 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	    // has to have these evaluated too. Need unit tests.
 
                 	    entityManager.flush();
-//                	    entityManager.clear();
+                	    // if we clear here, it will cause issues for
+                	    // some detached entities later, but not clearing causes other issues
+                	    
+                	    entityManager.clear();
 
                 	    T newValue = (T)nWrap.getValue();
+//                        epl.preUpdate(newValue);
                 	    entityManager.persist(newValue);
                 	    entityManager.flush();
-                	    entityManager.clear();
+//                	    entityManager.clear();
                 	    
                 	    
 //                	    T saved=newValue;
                 	    T saved = transactionalUpdate(newValue, oldJson);
-
                 	    builder.updatedEntity(saved);
                 	    builder.status(UpdateResult.STATUS.UPDATED);
-
+                	    
+                	    forceMoreSave[0]=true;
                 	    return Optional.of(saved); //Delete & Create
                 	}
-
-
                 });
                 if(savedVersion ==null){
                     status.setRollbackOnly();
                 }else {
+                    //IDK?
+//                    if(forceMoreSave[0]) {
+//                        EntityUtils.EntityWrapper<T> savedVersion2 = entityPersistAdapter.performChangeOn(savedVersion, sec -> {
+//                            
+//                        });
+//                    }
                     //only publish events if we save!
                     AbstractEntityUpdatedEvent<T> event = newUpdateEvent(savedVersion.getValue());
                     if(event !=null) {

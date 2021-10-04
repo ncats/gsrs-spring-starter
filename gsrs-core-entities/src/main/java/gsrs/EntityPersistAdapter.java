@@ -1,37 +1,27 @@
 package gsrs;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import gov.nih.ncats.common.util.Unchecked;
-
-import gsrs.events.CreateEditEvent;
-import gsrs.model.AbstractGsrsEntity;
-import gsrs.repository.EditRepository;
-import ix.core.models.Edit;
-
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.EntityUtils.Key;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import javax.persistence.*;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
+
+import javax.persistence.EntityManager;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.events.CreateEditEvent;
+import ix.core.models.Edit;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class EntityPersistAdapter {
@@ -48,8 +38,6 @@ public class EntityPersistAdapter {
     // Do we need both?
     private Map<Key, EditLock> lockMap = new ConcurrentHashMap<>();
 
-
-    private Map<Key, String> workingOnJSON = new ConcurrentHashMap<>();
 
     public boolean isReindexing = false;
     
@@ -90,9 +78,9 @@ public class EntityPersistAdapter {
                                                    // unfortunately ... may
                                                    // return different thing
     }
-
+    
     /**
-     * This is the same as performChange, except that it takes in the object to
+     * This is the same as {@link #change(Key, ChangeOperation)}, except that it takes in the object to
      * be changed rather than the key to retrieve that object.
      * 
      * Note that the actual object will still be fetched using the key from the
@@ -102,16 +90,12 @@ public class EntityPersistAdapter {
      * @param changeOp
      * @return
      */
-    @Deprecated
-    public <T> EntityWrapper performChangeOn(T t, ChangeOperation<T> changeOp) {
+    public <T> EntityWrapper<T> performChangeOn(T t, ChangeOperation<T> changeOp) {
         EntityWrapper<T> wrapped = EntityWrapper.of(t);
-        return performChange(wrapped.getKey(), changeOp);
+       
+        return change(wrapped.getKey(), changeOp);
     }
 
-    @Deprecated
-    public <T> EntityWrapper performChange(Key key, ChangeOperation<T> changeOp) {
-        return change(key, changeOp);
-    }
 
     private <T> Optional<T> findByKey(EntityManager em, EntityUtils.Key key) {
 
@@ -143,29 +127,38 @@ public class EntityPersistAdapter {
      * Perform the following {@link ChangeOperation} to the given Entity referenced by its key.
      * If the Key references an entity that does not exist, then no changes are performed;
      * otherwise the changeop is invoked and the entity is changed as an edit.
+     * 
+     * This method is used to accomplish 3 important things:
+     *   1. It establishes a lock on edits for a record, stopping 2 changes from happening simultaneously. Optimistic locks
+     *      prevent the worst case scenarios of double editing even if this method isn't used.
+     *   2. It stores the JSON of the record BEFORE any edits are done, which is useful for history information
+     *      stored in the {@link Edit} entities.
+     *   3. It fetches the most recent form of the record and peforms the mutating operation on it.
+     * 
      * @param key  The Key to the entity to change; can not be null but may point to an entity that doesn't exist yet.
      * @param changeOp the {@link ChangeOperation} to perform; can not be null.
      * @param <T> the type of the entity.
      * @return the EntityWrapper of the updated entity or {@code null} if no change was performed.
      * @throws NullPointerException if any parameter is null.
      */
-    public <T> EntityWrapper change(Key key, ChangeOperation<T> changeOp) {
+    public <T> EntityWrapper<T> change(Key keyAsIs, ChangeOperation<T> changeOp) {
 
-        Objects.requireNonNull(key);
+        Objects.requireNonNull(keyAsIs);
         Objects.requireNonNull(changeOp);
+        
+        //Experimental
+        Key key = keyAsIs.toRootKey();
+        
 
-        EditLock lock = lockMap.computeIfAbsent(key, new Function<Key, EditLock>() {
-            @Override
-            public EditLock apply(Key key) {
-                return new EditLock(key, lockMap); // This should work, but
-                                                   // feels wrong
-            }
-        });
+        // This should work, but feels wrong
+        EditLock lock = lockMap.computeIfAbsent(key, (k) -> new EditLock(k, lockMap));
+        
 
         lock.acquire(); // acquire the lock (blocks)
 
         boolean worked = false;
         try {
+            //Find current object from Key
             //we have to split this into 2 lines so Java 8 correct infers T
             
             Optional<T> opt = findByKey(key.getEntityManager(), key);
@@ -184,7 +177,8 @@ public class EntityPersistAdapter {
 
 
 
-             createAndPushEditForWrappedEntity(ew, lock); // Doesn't block,
+
+            createAndPushEditForWrappedEntity(ew, lock); // Doesn't block,
                                                              // or even check
                                                              // for
                                                              // existence of an
@@ -224,7 +218,6 @@ public class EntityPersistAdapter {
 //            if (lock.getTransaction() == null) {
                 lock.release(); // release the lock
 //            }
-            workingOnJSON.remove(key);
         }
     }
 
@@ -232,14 +225,8 @@ public class EntityPersistAdapter {
 
     public <E extends Exception> boolean preUpdateBeanDirect(Object bean, Unchecked.ThrowingRunnable<E> runnable) throws E{
         EntityWrapper<?> ew = EntityWrapper.of(bean);
-        Key key = ew.getKey();
-        EditLock ml = lockMap.computeIfAbsent(key, new Function<Key, EditLock>() {
-            @Override
-            public EditLock apply(Key key) {
-                return new EditLock(key, lockMap); // This should work, but
-                // feels wrong
-            }
-        });
+        Key key = ew.getKey().toRootKey();
+        EditLock ml = lockMap.computeIfAbsent(key, (k) -> new EditLock(k, lockMap));
         if (ml != null && ml.hasPreUpdateBeenCalled()) {
             return true; // true?
         }
@@ -270,7 +257,7 @@ public class EntityPersistAdapter {
         boolean shouldStore =  !env.getProperty(GSRS_HISTORY_DISABLED , Boolean.class,  false);
         
         EntityWrapper<?> ew = EntityWrapper.of(bean);
-        EditLock ml = lockMap.get(ew.getKey());
+        EditLock ml = lockMap.get(ew.getKey().toRootKey());
 
         if (ml != null && ml.hasPostUpdateBeenCalled()) {
             return;
@@ -282,16 +269,35 @@ public class EntityPersistAdapter {
             if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey() && shouldStore)) {
 
                 // If we didn't already start an edit for this
-                // then start one and save it. Otherwise just ignore
+                // then start one. Otherwise just ignore
                 // the edit piece.
+                // This section is for all of those entities that should have edits but which
+                // are not updated via the EntityPersistAdapter#change(key,op) method. When edits
+                // happen via the REST API, or via an intentional equivalent for root-level entities
+                // they should always happen through the change operation. 
                 if (ml == null || !ml.hasEdit()) {
 
                     EditLock.EditInfo editInfo = EditLock.EditInfo.from(ew);
-
+                    editInfo.setOldJson(null);
+                    if(editInfo.getVersion()!=null) {
+                        try {
+                            int iv=Integer.parseInt(editInfo.getVersion());
+                            if(iv>=1) {
+                                String inferredOldVersionNumber =((iv-1)+""); 
+                                editInfo.setVersion(inferredOldVersionNumber);
+                                log.debug("New version string [version="
+                                        + editInfo.getVersion()
+                                        + "] on auto-edited record [key="
+                                        + ew.getKey()
+                                        + "] was captured only after an edit was complete. This means the update was handled outside of a registered change. Changes to versioned entities should typically be registered before hand. Old version inferred to be [version = "
+                                        + inferredOldVersionNumber + "]");
+                            }
+                        }catch(Exception e) {
+                            log.warn("Version string [version=" + editInfo.getVersion() + "] on auto-edited record [key=" + ew.getKey() + "] is not an integer. It won't be properly represented as a version key.");
+                        }
+                    }
                     editInfo.setComments(ew.getChangeReason().orElse(null));
-
-
-//                    entityManager.merge(edit);
+                    //                    entityManager.merge(edit);
                     ml.addEdit(editInfo);
 
                 }else{
@@ -324,9 +330,17 @@ public class EntityPersistAdapter {
                 ml.markPostUpdateCalled();
                 ml.getEdit().ifPresent(e->{
                     CreateEditEvent event = new CreateEditEvent();
+                    
                     event.setComments(e.getComments());
                     event.setId(e.getEntityId());
                     event.setKind(e.getEntityClass());
+                    event.setVersion(e.getVersion());
+                    
+                    // In 2.X 99.9% of the time we cared about an edit, we would have it 
+                    // serialized from JSON via the "change" or "preformChangeOn" operations.
+                    // For some reason, here, we still keep that code but then throw away that
+                    // calculation.
+                    event.setOldJson(e.getOldJson());
 
                     applicationEventPublisher.publishEvent(event);
                 });

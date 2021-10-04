@@ -13,5 +13,8 @@ public class CreateEditEvent {
     private Class<?> kind;
     private Object id;
     private String comments;
+    
+    private String oldJson;
+    private String version;
 
 }
