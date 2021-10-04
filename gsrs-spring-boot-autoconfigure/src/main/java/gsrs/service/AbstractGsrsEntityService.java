@@ -34,7 +34,6 @@ import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.json.JsonEntityUtil;
 import gsrs.repository.EditRepository;
-import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
@@ -444,7 +443,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        GsrsEntityProcessorListener epl = StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
         
         return transactionTemplate.execute( status-> {
             try {
