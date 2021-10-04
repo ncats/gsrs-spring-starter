@@ -269,11 +269,33 @@ public class EntityPersistAdapter {
             if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey() && shouldStore)) {
 
                 // If we didn't already start an edit for this
-                // then start one and save it. Otherwise just ignore
+                // then start one. Otherwise just ignore
                 // the edit piece.
+                // This section is for all of those entities that should have edits but which
+                // are not updated via the EntityPersistAdapter#change(key,op) method. When edits
+                // happen via the REST API, or via an intentional equivalent for root-level entities
+                // they should always happen through the change operation. 
                 if (ml == null || !ml.hasEdit()) {
 
                     EditLock.EditInfo editInfo = EditLock.EditInfo.from(ew);
+                    editInfo.setOldJson(null);
+                    if(editInfo.getVersion()!=null) {
+                        try {
+                            int iv=Integer.parseInt(editInfo.getVersion());
+                            if(iv>=1) {
+                                String inferredOldVersionNumber =((iv-1)+""); 
+                                editInfo.setVersion(inferredOldVersionNumber);
+                                log.debug("New version string [version="
+                                        + editInfo.getVersion()
+                                        + "] on auto-edited record [key="
+                                        + ew.getKey()
+                                        + "] was captured only after an edit was complete. This means the update was handled outside of a registered change. Changes to versioned entities should typically be registered before hand. Old version inferred to be [version = "
+                                        + inferredOldVersionNumber + "]");
+                            }
+                        }catch(Exception e) {
+                            log.warn("Version string [version=" + editInfo.getVersion() + "] on auto-edited record [key=" + ew.getKey() + "] is not an integer. It won't be properly represented as a version key.");
+                        }
+                    }
                     editInfo.setComments(ew.getChangeReason().orElse(null));
                     //                    entityManager.merge(edit);
                     ml.addEdit(editInfo);
@@ -312,9 +334,8 @@ public class EntityPersistAdapter {
                     event.setComments(e.getComments());
                     event.setId(e.getEntityId());
                     event.setKind(e.getEntityClass());
+                    event.setVersion(e.getVersion());
                     
-                    // Should be using this, but isn't:
-                    // e.getOldJson()
                     // In 2.X 99.9% of the time we cared about an edit, we would have it 
                     // serialized from JSON via the "change" or "preformChangeOn" operations.
                     // For some reason, here, we still keep that code but then throw away that

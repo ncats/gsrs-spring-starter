@@ -276,10 +276,15 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                             //not sure this is possible but just in case
                             return Optional.of(editList);
                         }
-                        // we actually don't want to show the current version as an edit
-                        // to keep the API similar to GSRS 2.x
-                        //GSRS-2033
-                        return Optional.of(editList.subList(1, editList.size()));
+//                        // we actually don't want to show the current version as an edit
+//                        // to keep the API similar to GSRS 2.x
+//                        //GSRS-2033
+//                        return Optional.of(editList.subList(1, editList.size()));
+                        
+                        //TP 10-03-2021: We do want to show all edits, we just don't want to capture an edit until an
+                        //edit happens.
+                        
+                        return Optional.of(editList);
                     }
                 }
 
@@ -300,23 +305,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             field =URLDecoder.decode(field, "UTF-8");
         }
         EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
-       /*
-        if(field !=null && field.startsWith("@edits")){
-            Optional<EditRepository> editRepository = editRepository();
-            if(editRepository.isPresent()){
-                Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(opt.get());
-                if(nativeIdFor.isPresent()){
-                    List<Edit> editList = editRepository.get().findByRefidOrderByCreatedDesc(nativeIdFor.get().toString());
-                    if(editList !=null) {
-                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView((List)editList, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
-                    }
-                }
-
-            }
-            return gsrsControllerConfiguration.handleNotFound(queryParameters);
-        }
-*/
-
+   
         if(field !=null){
             Optional<Object> fieldOpt =  handleFields(ew,field);
             if(fieldOpt !=null){

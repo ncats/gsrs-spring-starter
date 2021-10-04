@@ -41,6 +41,7 @@ public class EditLock {
         private Object entityId;
         private String comments;
         private String oldJson;
+        private String version;
 
         public static EditInfo from(EntityUtils.EntityWrapper<?> ew){
             String oldJSON = ew.toFullJson();
@@ -48,7 +49,7 @@ public class EditLock {
             editInfo.setOldJson(oldJSON);
             editInfo.setEntityClass(ew.getEntityClass());
             editInfo.setEntityId(ew.getEntityInfo().getNativeIdFor(ew.getValue()).get());
-
+            editInfo.setVersion(ew.getVersion().orElse(null));
             return editInfo;
         }
     }
