@@ -62,8 +62,12 @@ public class StructureIndexerEventListener {
 
     @EventListener
     public void reindexEntity(ReindexEntityEvent event){
-
-        indexStructures(event.getEntityKey());
+        try {
+            addToIndex(event.getOptionalEntityWrapper().get(), event.getEntityKey());
+        }catch(Exception e) {
+           log.warn("Trouble structure indexing:" + event.getEntityKey(), e);
+            
+        }
     }
 
 
@@ -87,8 +91,7 @@ public class StructureIndexerEventListener {
 
             }
         }catch(Exception e) {
-
-            log.warn("Error indexing structure", e);
+            log.warn("Trouble structure indexing:" + key, e);
         }
     }
 

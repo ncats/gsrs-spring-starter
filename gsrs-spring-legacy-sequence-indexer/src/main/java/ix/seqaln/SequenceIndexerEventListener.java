@@ -64,8 +64,13 @@ public class SequenceIndexerEventListener {
     }
 
     @EventListener
-    public void reindexingEntity(ReindexEntityEvent event) throws IOException {
-        indexSequencesFor(event.getEntityKey());
+    public void reindexingEntity(ReindexEntityEvent event) throws IOException {       
+        try {
+            addToIndex(event.getOptionalEntityWrapper().get(), event.getEntityKey());
+        }catch(Exception e) {
+           log.warn("Trouble sequence indexing:" + event.getEntityKey(), e);
+            
+        }
     }
 
     @TransactionalEventListener

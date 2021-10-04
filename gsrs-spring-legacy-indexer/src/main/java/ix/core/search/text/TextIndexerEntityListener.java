@@ -71,7 +71,8 @@ public class TextIndexerEntityListener {
     @EventListener
     public void reindexEntity(ReindexEntityEvent event) throws IOException {
         autowireIfNeeded();
-        Optional<EntityUtils.EntityWrapper<?>> opt = event.getEntityKey().fetch();
+        Optional<EntityUtils.EntityWrapper<?>> opt = event.getOptionalFetchedEntityToReindex();
+        
         if(opt.isPresent()){
             textIndexerFactory.getDefaultInstance().add(opt.get());
         }
