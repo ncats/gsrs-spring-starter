@@ -123,7 +123,9 @@ public class AuditConfig {
                     });
             if(value.isPresent()){
                 Principal p = value.get();
-                return Optional.of(em.contains(p)? p : em.merge(p));
+                //I don't think we need to have principal attached?
+                return value;
+//                return Optional.of(em.contains(p)? p : em.merge(p));
             }
             return value;
         }
