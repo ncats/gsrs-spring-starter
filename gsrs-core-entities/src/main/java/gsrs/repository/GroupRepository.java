@@ -11,7 +11,10 @@ import java.util.List;
 @Repository
 public interface GroupRepository extends GsrsRepository<Group, Long> {
 
-    Group findByName(String name);
+    default Group findByName(String name) {
+        return this.findByNameIgnoreCase(name);
+    }
+    Group findByNameIgnoreCase(String name);
 
     List<Group> findGroupsByMembers(Principal member);
     @Query("select g.name from Group g")
