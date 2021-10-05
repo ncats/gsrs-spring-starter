@@ -1,6 +1,7 @@
 package gsrs.security;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -107,19 +108,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             }
 
         }
-//    }
-//
-//    @Override
-//    public void doFilter(ServletRequest servletRequest, ServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //the order of the old GSRS is to check this:
-        /*
-        AuthenticatorFactory authFac = AuthenticatorFactory.getInstance(app);
-		authFac.registerAuthenticator(new TrustHeaderAuthenticator());
-		authFac.registerAuthenticator(new UserPasswordAuthenticator());
-		authFac.registerAuthenticator(new UserTokenAuthenticator());
-		authFac.registerAuthenticator(new UserKeyAuthenticator());
-         */
-//        HttpServletRequest request = (HttpServletRequest) servletRequest;
+
         if(authenticationConfiguration.isLogheaders()) {
             log.debug("After cookie authentication, auth is:" + auth);
         }
@@ -215,6 +204,26 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 if(up!=null) {
                     auth = new LegacyUserTokenAuthentication(up, token);
                 }
+            }
+        }
+        //if we get here we don't have a valid login
+        if(auth==null && !authenticationConfiguration.isAllownonauthenticated()) {
+            response.setStatus(401);
+            String message = "You are not authorized to see this resource. Please contact an administrator to be granted access.";
+
+            try {
+                response.setContentType("text/html");
+//            ctx.getResponse().getWriter().println("{\"status\" : \"401\", \"message\" : \""+message+"\"}");
+                response.getWriter().println("<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head></head>\n" +
+                        "<body>\n" +
+                        message +
+                        "</body>\n" +
+                        "</html>");
+                return;
+            } catch (IOException e) {
+                throw new NonAuthenticatedUserAllowedException("not authorized to see this resource");
             }
         }
         if(auth !=null) {

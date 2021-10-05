@@ -109,6 +109,10 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             }
 
         }
+        //if we get here we don't have a valid login
+        if(!authenticationConfiguration.isAllownonauthenticated()){
+            throw new NonAuthenticatedUserAllowedException("non-authenticated users not allowed");
+        }
         return null;
     }
 
