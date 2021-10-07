@@ -74,7 +74,7 @@ public class Edit extends BaseModel {
 
 
     @CreatedBy
-    @ManyToOne(cascade= CascadeType.PERSIST)
+    @ManyToOne()
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @JsonSerialize(using = PrincipalSerializer.class)
     public Principal editor;
