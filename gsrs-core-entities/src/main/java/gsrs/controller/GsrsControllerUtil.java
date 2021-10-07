@@ -1,6 +1,8 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.StaticContextAccessor;
@@ -13,10 +15,7 @@ import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public final class GsrsControllerUtil {
@@ -24,6 +23,31 @@ public final class GsrsControllerUtil {
     private static final Map<String, String> FULL_VIEW= Collections.singletonMap("view", "full");
     private GsrsControllerUtil(){
         //can not instantiate
+    }
+
+    /**
+     * Get the HATEOS proxied class for a mock invocation
+     * of the controller for the given entity class.
+     *
+     * @apiNote This is the same as {@link WebMvcLinkBuilder#methodOn(Class, Object...)}
+     * using the Controller class returned by {@link GsrsEntityToControllerMapper#getControllerFor(Class)}
+     * using the passed in entity Class.
+     * @param entityClass the entity to look for the controlelr for.
+     * @param <T> the type of the expected Controller so we can invoke mock methods
+     *           on it.
+     * @return a proxied instance to invoke mock methods on it to compute URLs
+     * or {@code null} if no controller is found.
+     */
+    public static <T> T methodOnControllerFor(Class<?> entityClass){
+        GsrsEntityToControllerMapper mapper = StaticContextAccessor.getBean(GsrsEntityToControllerMapper.class);
+        if(mapper ==null){
+            return null;
+        }
+        Optional<Class> controller = mapper.getControllerFor(entityClass);
+        if(controller.isPresent()){
+            return WebMvcLinkBuilder.methodOn((Class<T>)controller.get());
+        }
+        return null;
     }
 
     public static String getRootUrlPath(){

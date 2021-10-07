@@ -34,4 +34,10 @@ public interface GsrsSearchService<T> {
      * @return
      */
     long getLastModified();
+
+    /**
+     * The Entity Class for this SearchService.
+     * @return the Class of type T.
+     */
+    Class<T> getEntityClass();
 }

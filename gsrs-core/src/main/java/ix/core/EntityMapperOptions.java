@@ -30,4 +30,5 @@ public @interface EntityMapperOptions {
      * @return
      */
     String getSelfRel() default "_self";
+
 }

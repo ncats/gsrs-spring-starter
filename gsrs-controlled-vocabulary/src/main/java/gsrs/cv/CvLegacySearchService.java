@@ -14,4 +14,8 @@ public class CvLegacySearchService extends LegacyGsrsSearchService<ControlledVoc
         super(ControlledVocabulary.class, repository);
     }
 
+    @Override
+    public Class<ControlledVocabulary> getEntityClass() {
+        return ControlledVocabulary.class;
+    }
 }
