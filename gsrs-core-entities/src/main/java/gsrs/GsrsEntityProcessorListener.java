@@ -34,12 +34,6 @@ public class GsrsEntityProcessorListener {
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
-    @Autowired
-    private EditRepository editRepository;
-
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
    
@@ -138,16 +132,6 @@ public class GsrsEntityProcessorListener {
             log.error("error calling entityProcessor", e);
 
         }
-        //create an edit?
-        //I don't think we need this
-//        EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(o);
-//        if(ew.isEntity() && ew.storeHistory() && ew.hasKey()){
-//            applicationEventPublisher.publishEvent(CreateEditEvent.builder()
-//                    .kind(o.getClass())
-//                    .id(ew.getEntityInfo().getNativeIdFor(o).get())
-//                    .build());
-//
-//        }
     }
 
     @PreRemove

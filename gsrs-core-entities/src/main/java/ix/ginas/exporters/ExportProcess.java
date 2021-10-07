@@ -35,7 +35,7 @@ public class ExportProcess<T> {
     
     
     private Exporter<T> exporter;
-    private final Supplier<Stream<T>> substanceSupplier;
+    private final Supplier<Stream<T>> entitySupplier;
 
     public ExportMetaData getMetaData() {
         try {
@@ -50,14 +50,14 @@ public class ExportProcess<T> {
      * Create a new ExportProcess.
      * @param exportFile the ExportFile to update.
      *
-     * @param substanceSupplier a {@link Supplier} for the {@link Stream} of objects of type T to process for export.
+     * @param entitySupplier a {@link Supplier} for the {@link Stream} of objects of type T to process for export.
      *
      * @throws NullPointerException if either parameter is null.
      */
-    public  ExportProcess(ExportDir.ExportFile<ExportMetaData> exportFile, Supplier<Stream<T>> substanceSupplier){
+    public  ExportProcess(ExportDir.ExportFile<ExportMetaData> exportFile, Supplier<Stream<T>> entitySupplier){
         this.exportFile= Objects.requireNonNull(exportFile);
 
-        this.substanceSupplier = Objects.requireNonNull(substanceSupplier);
+        this.entitySupplier = Objects.requireNonNull(entitySupplier);
     }
 
 
@@ -92,7 +92,7 @@ public class ExportProcess<T> {
             //final OutputStream fout = out;
             
             executor.execute( ()->{
-                try(Stream<T> sstream = substanceSupplier.get()){
+                try(Stream<T> sstream = entitySupplier.get()){
                     currentState = State.RUNNING;
 //                    System.out.println("Starting export");
                     sstream.peek(s -> {
