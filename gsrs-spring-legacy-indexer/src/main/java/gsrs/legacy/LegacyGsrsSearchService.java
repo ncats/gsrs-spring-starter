@@ -34,11 +34,6 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     }
 
     @Override
-    public Class<T> getEntityClass() {
-        return entityClass;
-    }
-
-    @Override
     public long getLastModified() {
         return textIndexerFactory.getDefaultInstance().lastModified();
     }
