@@ -3,6 +3,7 @@ package ix.core.search.text;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -564,15 +565,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 		public List<FV> getSelectedFV(){
 		    return this.selectedFVfetch.get();
 		}
-        //TODO katzelda october 2020: for now ignore the _self url
-//		@JsonProperty("_self")
-//		public String getSelfUri(){
-//		    if(sr!=null){
-//		        return sr.getFacetURI(name);
-//		    }else{
-//		        return null;
-//		    }
-//		}
+
+		@JsonProperty("_self")
+		public String getSelfUri() throws Exception {
+		    if(sr!=null){
+		        return sr.getFacetURI(name);
+		    }else{
+		        return null;
+		    }
+		}
 
 		@Override
         @JsonIgnore

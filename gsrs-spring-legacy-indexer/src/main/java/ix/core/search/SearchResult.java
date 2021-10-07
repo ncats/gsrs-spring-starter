@@ -1,16 +1,29 @@
 package ix.core.search;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
 
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.model.GsrsApiAction;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.models.Facet;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
+import ix.utils.Util;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkBuilder;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 
 import java.lang.ref.SoftReference;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -62,17 +75,30 @@ public class SearchResult {
 //	    return null;
 //	}
 //
-//	@JsonIgnore
-//	public Tuple<String, QueryStringManipulator> getSearchURLHelper(){
-//	    Call c=asCall();
-//	    if(c!=null){
-//	        String navurl = Global.getHost() + asCall().url();
-//	        String nav = navurl.split("\\?",2)[0];
-//	        QueryStringManipulator man = QueryStringManipulator.extractQueryString(navurl);
-//	        return Tuple.of(nav,man.clobber(this.options.asQueryParams()));
-//	    }
-//	    return null;
-//	}
+	@JsonIgnore
+	private Tuple<String, Util.QueryStringManipulator> getSearchURLHelper() throws Exception {
+	    if(this.options.getKind() !=null){
+			GsrsLegacySearchController controller = GsrsControllerUtil.methodOnControllerFor(options.getKind());
+			if(controller ==null){
+				return null;
+			}
+
+			Link link = GsrsLinkUtil.adapt(WebMvcLinkBuilder.linkTo(controller.searchV1(Optional.ofNullable(this.query),
+
+										Optional.of(Integer.valueOf(options.getTop())),
+												Optional.of(Integer.valueOf(options.getSkip())),
+					Optional.of(Integer.valueOf(options.getFdim())),
+														/*request*/ null, Collections.emptyMap())).withSelfRel());
+
+
+			String navurl = link.getHref();
+
+	        String nav = navurl.split("\\?",2)[0];
+	        Util.QueryStringManipulator man = Util.QueryStringManipulator.extractQueryString(navurl);
+	        return Tuple.of(nav,man.clobber(this.options.asQueryParams()));
+	    }
+	    return null;
+	}
 
 	
 	public boolean hasError(){
@@ -434,28 +460,29 @@ public class SearchResult {
 			processAddition(c);
 		}
 	}
-	//TODO katzelda October 2020 : ignore url stuff for now...
-//	@JsonIgnore
-//	public String getFacetURI(String facetName){
-//	    try{
-//
-//	        Tuple<String, QueryStringManipulator> s = getSearchURLHelper();
-//	        if(s!=null){
-//	            s=Tuple.of(s.k() + "/@facets",s.v());
-//	            s.v().toggleInclusion("field", facetName);
-//	            String newQueryString = s.v().toQueryString();
-//	            if(newQueryString.length()<=0){
-//	                return s.k();
-//	            }
-//	            return s.k() + "?" + newQueryString;
-//	        }
-//	        return null;
-//        }catch(Exception e){
-//            e.printStackTrace();
-//            throw e;
-//
-//        }
-//	}
+
+
+	@JsonIgnore
+	public String getFacetURI(String facetName) throws Exception{
+	    try{
+
+	        Tuple<String, Util.QueryStringManipulator> s = getSearchURLHelper();
+	        if(s!=null){
+	            s=Tuple.of(s.k() + "/@facets",s.v());
+	            s.v().toggleInclusion("field", facetName);
+	            String newQueryString = s.v().toQueryString();
+	            if(newQueryString.length()<=0){
+	                return s.k();
+	            }
+	            return s.k() + "?" + newQueryString;
+	        }
+	        return null;
+        }catch(Exception e){
+            e.printStackTrace();
+            throw e;
+
+        }
+	}
 	
 	
 //	/**

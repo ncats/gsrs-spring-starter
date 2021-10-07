@@ -13,5 +13,4 @@ public class CvLegacySearchService extends LegacyGsrsSearchService<ControlledVoc
     public CvLegacySearchService(ControlledVocabularyRepository repository) {
         super(ControlledVocabulary.class, repository);
     }
-
 }
