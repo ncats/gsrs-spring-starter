@@ -65,16 +65,7 @@ public class SearchResult {
 		this.query = query;
 		
 	}
-	//TODO katzelda October 2020 : ignore Play Call stuff for now need to move this to a controller later?
-//	public Call asCall(){
-//	    if(this.options.getKind()!=null){
-//            InstantiatedNamedResource inr=RouteFactory._registry.get().getResourceFor(options.getKind());
-//            String res=inr.getName();
-//            return ix.core.controllers.v1.routes.RouteFactory.search(res, this.query,options.getTop(),options.getSkip(), options.getFdim());
-//        }
-//	    return null;
-//	}
-//
+
 	@JsonIgnore
 	private Tuple<String, Util.QueryStringManipulator> getSearchURLHelper() throws Exception {
 	    if(this.options.getKind() !=null){
