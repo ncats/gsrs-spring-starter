@@ -1,5 +1,6 @@
 package gsrs;
 
+import com.google.common.cache.CacheBuilder;
 import gov.nih.ncats.common.util.Caches;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.repository.PrincipalRepository;
@@ -27,6 +28,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * This is a config class that tells Spring how to do JPA auditing (like get the current user etc
@@ -75,7 +77,9 @@ public class AuditConfig {
         //otherwise we get concurrent modification exceptions.
         //since we only do computeIfAbsent call and clear the synchronized blocks
         //shouldn't cause too much of a performance hit
-        private Map<String, Optional<Principal>> principalCache = Collections.synchronizedMap(Caches.createLRUCache(100));
+        private ConcurrentMap<String, Optional<Principal>> principalCache = CacheBuilder.newBuilder()
+                                                                                        .maximumSize(100L)
+                                                                                        .<String, Optional<Principal>>build().asMap();
 
         public void clearCache(){
             principalCache.clear();
