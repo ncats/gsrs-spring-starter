@@ -31,6 +31,16 @@ public class SpELValidator<T> extends AbstractValidatorPlugin<T> {
 
     private ValidationMessage.MESSAGE_TYPE messageType = ValidationMessage.MESSAGE_TYPE.WARNING;
 
+    @Override
+    public void initialize() throws IllegalStateException {
+        if(expression ==null){
+            throw new IllegalStateException("expression can not be null");
+        }
+        if(message ==null){
+            throw new IllegalStateException("message can not be null");
+        }
+    }
+
     public String getExpression() {
         return expression;
     }

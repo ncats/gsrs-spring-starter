@@ -19,6 +19,14 @@ public interface ValidatorPlugin<T> extends Validator<T> {
             return false;
         }
     }
+
+    /**
+     * perform any initialization or validation checks to make sure
+     * the Validator is created correctly and all required fields are set.
+     *
+     * @throws IllegalStateException if there are any problems.
+     */
+    default void initialize() throws IllegalStateException{}
     
 
 
