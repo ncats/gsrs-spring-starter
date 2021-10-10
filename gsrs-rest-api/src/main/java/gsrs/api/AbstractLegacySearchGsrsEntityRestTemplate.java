@@ -49,14 +49,13 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
             builder.append("&").append(entry.getKey()).append("=").append(entry.getValue());
         }
         ResponseEntity<String> response = doGet(builder.toString(), String.class);
-        //stupid hack remove content parse it and add it back
 
         JsonNode node = getObjectMapper().readTree(response.getBody());
-        JsonNode array = ((ObjectNode)node).remove("content");
 
 
         if(response.getStatusCode().is2xxSuccessful()) {
-
+            //stupid hack remove content, parse it by passing to concrete template class, then and add it back
+            JsonNode array = ((ObjectNode)node).remove("content");
             SearchResult<T> result =  getObjectMapper().convertValue(node, getSearchResultClass());
             if(array.isArray()) {
                 List<T> content = parseFromJsonList(array);
@@ -123,6 +122,11 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SearchRequest{
 
+        private static boolean DEFAULT_INCLUDE_FACETS=true;
+        private static boolean DEFAULT_INCLUDE_PROMOTE_SPECIAL_MATCHES=true;
+        private static boolean DEFAULT_INCLUDE_BREAKDOWN=true;
+        private static boolean DEFAULT_SIMPLE_SEARCH_ONLY=false;
+
         private String q;
 
         private Integer top;
@@ -134,6 +138,19 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         private String order;
 
         private String field;
+
+        /*
+        ofBoolean("includeFacets", a->setIncludeFacets(a), ()->includeFacets, true),
+                ofBoolean("includeBreakdown", a->setIncludeBreakdown(a), ()->includeBreakdown, true),
+                ofBoolean("promoteSpecialMatches", a->setPromoteSpecialMatches(a), ()->promoteSpecialMatches, true),
+                ofBoolean("simpleSearchOnly", a->setSimpleSearchOnly(a),
+         */
+
+        private boolean includeFacets=DEFAULT_INCLUDE_FACETS;
+        private boolean promoteSpecialMatches= DEFAULT_INCLUDE_PROMOTE_SPECIAL_MATCHES;
+        private boolean includeBreakDown = DEFAULT_INCLUDE_BREAKDOWN;
+
+        private boolean simpleSearchOnly = DEFAULT_SIMPLE_SEARCH_ONLY;
 
         public SanitizedSearchRequest sanitize(){
             return new SanitizedSearchRequest(this);
@@ -148,6 +165,8 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         private static final int DEFAULT_FDIM =10;
 
         private static final String DEFAULT_FIELD= "";
+
+
         private String q;
 
         private int top;
@@ -158,6 +177,12 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         private String field;
         private String order;
 
+        private boolean includeFacets;
+        private boolean promoteSpecialMatches;
+        private boolean includeBreakDown;
+
+        private boolean simpleSearchOnly;
+
         private SanitizedSearchRequest(SearchRequest request){
             this.top = SanitizerUtil.sanitizeInteger(request.top, DEFAULT_TOP);
             this.skip = SanitizerUtil.sanitizeInteger(request.skip, 0);
@@ -166,6 +191,11 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
             this.q = request.q ==null? null: request.q;//don't trim it breaks mol format!
             this.order = request.order;
             this.field = request.field ==null? DEFAULT_FIELD: request.field;
+
+            this.includeBreakDown = request.includeBreakDown;
+            this.promoteSpecialMatches = request.promoteSpecialMatches;
+            this.includeFacets = request.includeFacets;
+            this.simpleSearchOnly = request.simpleSearchOnly;
         }
 
         public static String getDefaultField() {
@@ -191,6 +221,18 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
             }
             if(!field.trim().isEmpty()){
                 map.put("field", field.trim());
+            }
+            if(includeFacets !=SearchRequest.DEFAULT_INCLUDE_FACETS){
+                map.put("includeFacets", Boolean.toString(includeFacets));
+            }
+            if(includeBreakDown !=SearchRequest.DEFAULT_INCLUDE_BREAKDOWN){
+                map.put("includeBreakDown", Boolean.toString(includeBreakDown));
+            }
+            if(promoteSpecialMatches !=SearchRequest.DEFAULT_INCLUDE_PROMOTE_SPECIAL_MATCHES){
+                map.put("promoteSpecialMatches", Boolean.toString(promoteSpecialMatches));
+            }
+            if(simpleSearchOnly !=SearchRequest.DEFAULT_SIMPLE_SEARCH_ONLY){
+                map.put("simpleSearchOnly", Boolean.toString(simpleSearchOnly));
             }
             return map;
         }
