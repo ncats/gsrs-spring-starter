@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
+import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -2900,6 +2901,12 @@ public class TextIndexer implements Closeable, ProcessListener {
             alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
             flushDaemon.unLockFlush();
             indexerService.removeAll();
+            //delete suggest dirs?
+            try {
+                IOUtil.deleteRecursively(suggestDir);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 	}
 
