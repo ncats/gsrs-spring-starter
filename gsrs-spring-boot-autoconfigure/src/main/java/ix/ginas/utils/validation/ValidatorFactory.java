@@ -28,7 +28,7 @@ public class ValidatorFactory {
 
                ValidatorPlugin p  = conf.newValidatorPlugin(mapper, AutowireHelper.getInstance().getClassLoader());
                p = AutowireHelper.getInstance().autowireAndProxy(p);
-               //TODO initialize throws IllealStateException should we catch it and report it somewhere?
+               //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                p.initialize();
                plugins.put(p, conf);
            } catch (Exception e) {
