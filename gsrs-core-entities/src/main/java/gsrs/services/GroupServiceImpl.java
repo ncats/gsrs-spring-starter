@@ -53,7 +53,7 @@ public class GroupServiceImpl implements GroupService{
     public Group registerIfAbsent(String name) {
         boolean created[] = new boolean[]{false};
         Group  group= cache.computeIfAbsent(name, n->{
-            Group g = repository.findByName(n);
+            Group g = repository.findByNameIgnoreCase(n);
             if(g ==null){
                 g = new Group(n);
                 created[0] = true;

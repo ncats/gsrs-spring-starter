@@ -125,6 +125,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_STOP_WORD = "$";
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
+	static final String ENTITY_PREFIX = "entity";
 	
 	private List<IndexListener> listeners = new ArrayList<>();
 
@@ -991,7 +992,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (TextIndexer.this.hasBeenModifiedSince(sortFile.lastModified())) {
 				saveSorters(sortFile, sorters);
 			}
-           ;
+           
 			if ( indexerService.flushChangesIfNeeded()) {
 				log.debug("Committing index changes...");
 				try {
@@ -1343,7 +1344,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         private QueryParser oldQParser;
 
         private static final Pattern ROOT_CONTEXT_ADDER = Pattern
-                .compile("(\\b(?!" + ROOT + ")[^ :]*_[^ :]*[:])");
+                .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
