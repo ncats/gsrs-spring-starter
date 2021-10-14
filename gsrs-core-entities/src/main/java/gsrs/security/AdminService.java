@@ -1,26 +1,20 @@
 package gsrs.security;
 
 
-import gov.nih.ncats.common.functions.ThrowableConsumer;
-import gov.nih.ncats.common.util.Unchecked;
-import gsrs.repository.PrincipalRepository;
-import gsrs.repository.UserProfileRepository;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.models.Role;
-import ix.core.models.UserProfile;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.repository.UserProfileRepository;
+import ix.core.models.Role;
 
 @Service
 public class AdminService {
@@ -39,6 +33,7 @@ public class AdminService {
     public Authentication getAdminAuth(){
         return SecurityContextHolder.getContext().getAuthentication();
     }
+    
 
     /**
      * Run the given Runnable with the given Authentication.
