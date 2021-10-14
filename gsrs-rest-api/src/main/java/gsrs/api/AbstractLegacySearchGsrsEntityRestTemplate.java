@@ -26,6 +26,9 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         return SearchResult.class;
     }
 
+    public SearchResult<T> search(SearchRequest.SearchRequestBuilder searchRequestBuilder) throws IOException {
+        return search(searchRequestBuilder.build().sanitize());
+    }
     public SearchResult<T> search(SearchRequest searchRequest) throws IOException {
         return search(searchRequest.sanitize());
     }
@@ -148,11 +151,13 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
                 ofBoolean("promoteSpecialMatches", a->setPromoteSpecialMatches(a), ()->promoteSpecialMatches, true),
                 ofBoolean("simpleSearchOnly", a->setSimpleSearchOnly(a),
          */
-
+        @Builder.Default
         private boolean includeFacets=DEFAULT_INCLUDE_FACETS;
+        @Builder.Default
         private boolean promoteSpecialMatches= DEFAULT_INCLUDE_PROMOTE_SPECIAL_MATCHES;
+        @Builder.Default
         private boolean includeBreakDown = DEFAULT_INCLUDE_BREAKDOWN;
-
+        @Builder.Default
         private boolean simpleSearchOnly = DEFAULT_SIMPLE_SEARCH_ONLY;
 
         public SanitizedSearchRequest sanitize(){
