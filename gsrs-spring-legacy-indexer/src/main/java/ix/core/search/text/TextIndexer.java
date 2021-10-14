@@ -2941,6 +2941,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					isShutDown = true;
 					scheduler.shutdown();
 					scheduler.awaitTermination(1, TimeUnit.MINUTES);
+					flushDaemon.lockFlush();
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
@@ -3099,24 +3100,23 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Number dval = (Number) nvalue;
 
 			boolean addedFacet = false;
-			if(nvalue instanceof Long  || nvalue instanceof Integer){
-				Long lval =  dval.longValue();
-				fields.accept(new LongField(full, lval, shouldStoreLong));
-				asText = indexableValue.facet();
-				if (!asText && !name.equals(full)) {
-				fields.accept(new LongField(name, lval, store));
-			}
-				if(indexableValue.facet()){
-					FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
-					if (ffl != null) {
-				facetsConfig.setMultiValued(fname, true);
-				facetsConfig.setRequireDimCount(fname, true);
-						fields.accept(ffl);
-				asText = false;
-						addedFacet=true;
-			}
-
-			}
+			if(nvalue instanceof Long  || nvalue instanceof Integer || (indexableValue.ranges()!=null && indexableValue.ranges().length>0)){
+			    Long lval =  dval.longValue();
+			    fields.accept(new LongField(full, lval, shouldStoreLong));
+			    asText = indexableValue.facet();
+			    if (!asText && !name.equals(full)) {
+			        fields.accept(new LongField(name, lval, store));
+			    }
+			    if(indexableValue.facet()){
+			        FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
+			        if (ffl != null) {
+			            facetsConfig.setMultiValued(fname, true);
+			            facetsConfig.setRequireDimCount(fname, true);
+			            fields.accept(ffl);
+			            asText = false;
+			            addedFacet=true;
+			        }
+			    }
 			}
 
 
@@ -3132,12 +3132,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				sorterAdded = true;
 			}
 			if(indexableValue.facet() && !addedFacet){
-				FacetField ff = getRangeFacet(fname, indexableValue.dranges(), dval.doubleValue(), indexableValue.format());
-			if (ff != null) {
-				facetsConfig.setMultiValued(fname, true);
-				facetsConfig.setRequireDimCount(fname, true);
-				fields.accept(ff);
-			}
+			    FacetField ff = getRangeFacet(fname, indexableValue.dranges(), dval.doubleValue(), indexableValue.format());
+			    if (ff != null) {
+			        facetsConfig.setMultiValued(fname, true);
+			        facetsConfig.setRequireDimCount(fname, true);
+			        fields.accept(ff);
+			    }
 			}
 			asText = false;
 
