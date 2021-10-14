@@ -98,7 +98,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         if(session !=null && !session.expired){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
-                            System.out.println("Found:" + cachedSessionId);
                             return new SessionIdAuthentication(session.profile, id);
                         }
                         return null;
