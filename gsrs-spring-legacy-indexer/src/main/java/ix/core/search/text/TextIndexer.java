@@ -962,7 +962,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				execute();
 			}catch(Throwable t) {
-			    t.printStackTrace();
+//			    t.printStackTrace();
             }finally {
 
 				latch.unlock();

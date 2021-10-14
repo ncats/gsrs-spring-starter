@@ -30,6 +30,14 @@ public class GsrsSecurityUtils {
         }
         return Optional.of(auth.getName());
     }
+
+    public static boolean isAdmin(){
+        return hasAnyRoles(Role.Admin);
+    }
+
+    public static boolean isAdmin(Authentication auth){
+        return hasAnyRoles(auth,Role.Admin.name());
+    }
     public static boolean hasAnyRoles(Collection<Role> roles){
         return hasAnyRoles((String[]) roles.stream().map(r -> r.name()).toArray(size-> new String[size]));
     }
@@ -38,6 +46,10 @@ public class GsrsSecurityUtils {
     }
     public static boolean hasAnyRoles(String...roles){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return hasAnyRoles(auth, roles);
+    }
+
+    private static boolean hasAnyRoles(Authentication auth, String... roles) {
         if(auth ==null){
             return false;
         }

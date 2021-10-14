@@ -110,28 +110,32 @@ public class AuditConfig {
             //
             log.debug("looking up principal for " + name + " from class "+ auth.getClass());
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
+            try {
+                Optional<Principal> value = principalCache.computeIfAbsent(name,
+                        n -> {
+                            //if name doesn't exist it will return null which won't get entered into the map and could
+                            //cause a stackoverflow of constantly re-looking up a non-existant value
+                            //so we save them as Optionals
+                            //TODO should we use configuration to add new user if missing?
+                            try {
+                                Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
+                                return Optional.ofNullable(p);
+                            } catch (Throwable t) {
+                                return Optional.empty();
+                            }
 
-            Optional<Principal> value = principalCache.computeIfAbsent(name,
-                    n -> {
-                        //if name doesn't exist it will return null which won't get entered into the map and could
-                        //cause a stackoverflow of constantly re-looking up a non-existant value
-                        //so we save them as Optionals
-                        //TODO should we use configuration to add new user if missing?
-                        try {
-                            Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
-                            return Optional.ofNullable(p);
-                        } catch (Throwable t) {
-                            return Optional.empty();
-                        }
-
-                    });
-            if(value.isPresent()){
-                Principal p = value.get();
-                //I don't think we need to have principal attached?
-                return value;
+                        });
+                if (value.isPresent()) {
+                    Principal p = value.get();
+                    //I don't think we need to have principal attached?
+                    return value;
 //                return Optional.of(em.contains(p)? p : em.merge(p));
+                }
+                return value;
+            }catch(Throwable t){
+                t.printStackTrace();
+                return Optional.empty();
             }
-            return value;
         }
     }	
 }

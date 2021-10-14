@@ -49,6 +49,9 @@ import gsrs.model.GsrsApiAction;
 import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Slf4j
 public class SchedulerPlugin{
 
@@ -386,7 +389,20 @@ public class SchedulerPlugin{
         private ScheduledTask execute(){
             if(!isRunning() && !isLocked.get()){
                 isLocked.set(true);
-                ForkJoinPool.commonPool().submit(()->runNow());
+                //run as current user
+                //when we submit the job to the forkJoin pool we probably
+                //lose the current thread local authenication obj
+                Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+                ForkJoinPool.commonPool().submit(()->{
+
+                    Authentication oldAuth = SecurityContextHolder.getContext().getAuthentication();
+                    try {
+                        SecurityContextHolder.getContext().setAuthentication(currentAuth);
+                        runNow();
+                    } finally {
+                        SecurityContextHolder.getContext().setAuthentication(oldAuth);
+                    }
+                });
             }
             return this;
         }

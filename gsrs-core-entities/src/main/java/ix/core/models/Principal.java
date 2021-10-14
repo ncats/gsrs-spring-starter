@@ -71,7 +71,10 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
 
     @Email
     public String email;
-    
+    /**
+     * @deprecated admin field is deprecated since 3.0 use Roles instead.
+     */
+    @Deprecated
     @Column(name = "is_admin")
     public boolean admin = false;
 
