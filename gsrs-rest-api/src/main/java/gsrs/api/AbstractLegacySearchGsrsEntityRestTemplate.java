@@ -26,6 +26,9 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         return SearchResult.class;
     }
 
+    public SearchResult<T> search(SearchRequest searchRequest) throws IOException {
+        return search(searchRequest.sanitize());
+    }
     public SearchResult<T> search(SanitizedSearchRequest searchRequest) throws IOException {
         boolean hasParams=false;
         StringBuilder builder = new StringBuilder("/search");

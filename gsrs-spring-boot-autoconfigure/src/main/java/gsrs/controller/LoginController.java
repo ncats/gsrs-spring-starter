@@ -47,7 +47,8 @@ public class LoginController {
     //has already run and registered your session
     @PreAuthorize("isAuthenticated()")
     @GetMapping("api/v1/whoami")
-    @Transactional(readOnly = true)
+//    @Transactional(readOnly = true)
+    @Transactional
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
                                         HttpServletResponse response){
 
