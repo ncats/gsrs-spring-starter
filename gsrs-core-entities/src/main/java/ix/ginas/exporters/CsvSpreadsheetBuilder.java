@@ -1,6 +1,7 @@
 package ix.ginas.exporters;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Objects;
@@ -49,7 +50,7 @@ public class CsvSpreadsheetBuilder {
      * @throws NullPointerException if out is null.
      */
     public CsvSpreadsheetBuilder(OutputStream out) {
-        writer = new BufferedWriter(new OutputStreamWriter(out));
+        writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     }
 
     /**
