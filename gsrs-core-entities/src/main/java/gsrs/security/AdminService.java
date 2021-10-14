@@ -66,7 +66,11 @@ public class AdminService {
 
     public <E extends Throwable> void runAsAdmin(Unchecked.ThrowingRunnable<E> runnable) throws E {
         Authentication oldAuth = SecurityContextHolder.getContext().getAuthentication();
-        if(GsrsSecurityUtils.isAdmin(oldAuth)){
+        _runAsAdmin(runnable, oldAuth, true);
+    }
+
+    private <E extends Throwable> void _runAsAdmin(Unchecked.ThrowingRunnable<E> runnable, Authentication oldAuth, boolean check) throws E {
+        if(check && GsrsSecurityUtils.isAdmin(oldAuth)){
             //already an admin just run it
             runnable.run();
             return;
@@ -80,6 +84,15 @@ public class AdminService {
         } finally {
             SecurityContextHolder.getContext().setAuthentication(oldAuth);
         }
+    }
+
+    private <E extends Throwable> void runAsAdmin(Unchecked.ThrowingRunnable<E> runnable, Authentication currentAuth) throws E {
+        if(GsrsSecurityUtils.isAdmin(currentAuth)){
+            //already an admin just run it
+            runAs(currentAuth,runnable);
+            return;
+        }
+        runAsAdmin(runnable);
     }
 
 

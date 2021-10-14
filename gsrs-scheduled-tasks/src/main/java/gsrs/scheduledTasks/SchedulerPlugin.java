@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 
+import gsrs.security.AdminService;
+import gsrs.springUtils.StaticContextAccessor;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
@@ -391,18 +393,9 @@ public class SchedulerPlugin{
                 isLocked.set(true);
                 //run as current user
                 //when we submit the job to the forkJoin pool we probably
-                //lose the current thread local authenication obj
-                Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-                ForkJoinPool.commonPool().submit(()->{
+                //lose the current thread local authentication obj
 
-                    Authentication oldAuth = SecurityContextHolder.getContext().getAuthentication();
-                    try {
-                        SecurityContextHolder.getContext().setAuthentication(currentAuth);
-                        runNow();
-                    } finally {
-                        SecurityContextHolder.getContext().setAuthentication(oldAuth);
-                    }
-                });
+                ForkJoinPool.commonPool().submit(()->StaticContextAccessor.getBean(AdminService.class).runAsAdmin(this::runNow));
             }
             return this;
         }
