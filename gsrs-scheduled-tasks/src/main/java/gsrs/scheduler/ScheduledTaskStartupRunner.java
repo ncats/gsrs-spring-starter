@@ -3,18 +3,18 @@ package gsrs.scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.ContextRefreshedEvent;
 
-public class ScheduledTaskStartupRunner implements ApplicationRunner{
+@Profile("!test")
+public class ScheduledTaskStartupRunner implements ApplicationListener<ContextRefreshedEvent> {
 
     @Autowired
     GsrsSchedulerTaskPropertiesConfiguration config;
-    
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-        // TODO Auto-generated method stub
-//        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!Calling startup initializer");
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         config.init();
     }
-
 }
