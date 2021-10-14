@@ -115,7 +115,7 @@ public class SchedulerPlugin{
 		@Override
 		public void execute(JobExecutionContext arg0) throws JobExecutionException {
 			Runnable r = (Runnable)arg0.getJobDetail().getJobDataMap().get("run");
-			r.run();
+			StaticContextAccessor.getBean(AdminService.class).runAsAdmin(()->r.run());
 		}
     }
     
