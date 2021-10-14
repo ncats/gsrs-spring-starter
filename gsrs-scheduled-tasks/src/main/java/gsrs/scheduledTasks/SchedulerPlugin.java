@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 
+import gsrs.security.AdminService;
+import gsrs.springUtils.StaticContextAccessor;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
@@ -49,6 +51,9 @@ import gsrs.model.GsrsApiAction;
 import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Slf4j
 public class SchedulerPlugin{
 
@@ -110,7 +115,7 @@ public class SchedulerPlugin{
 		@Override
 		public void execute(JobExecutionContext arg0) throws JobExecutionException {
 			Runnable r = (Runnable)arg0.getJobDetail().getJobDataMap().get("run");
-			r.run();
+			StaticContextAccessor.getBean(AdminService.class).runAsAdmin(()->r.run());
 		}
     }
     
@@ -386,7 +391,11 @@ public class SchedulerPlugin{
         private ScheduledTask execute(){
             if(!isRunning() && !isLocked.get()){
                 isLocked.set(true);
-                ForkJoinPool.commonPool().submit(()->runNow());
+                //run as current user
+                //when we submit the job to the forkJoin pool we probably
+                //lose the current thread local authentication obj
+
+                ForkJoinPool.commonPool().submit(()->StaticContextAccessor.getBean(AdminService.class).runAsAdmin(this::runNow));
             }
             return this;
         }

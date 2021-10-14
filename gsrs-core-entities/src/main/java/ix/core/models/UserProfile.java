@@ -18,7 +18,8 @@ import java.util.*;
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_userprof_seq", allocationSize = 1)
 @EntityListeners(UserProfileEntityProcessor.class)
 public class UserProfile extends IxModel{
-    
+    private static ObjectMapper om = new ObjectMapper();
+
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
         up.addRole(Role.Query);
@@ -90,7 +91,7 @@ public class UserProfile extends IxModel{
 		List<Role> rolekinds = new ArrayList<Role>();
 		if (this.rolesJSON != null) {
 			try {
-				ObjectMapper om = new ObjectMapper();
+
 				List l = om.readValue(rolesJSON, List.class);
 				//roleJSON might be "null"
 				if(l !=null) {
