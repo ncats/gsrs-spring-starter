@@ -161,6 +161,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try {
 			indexerService.removeAll();
             notifyListenerRemoveAll();
+            lookups.clear();
+            IOUtil.deleteRecursivelyQuitely(suggestDir);
+            suggestDir.mkdirs();
 		} catch (Exception e) {
 			// e.printStackTrace();
 		}
@@ -2894,19 +2897,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void newProcess() {
         if(!isReindexing.get()) {
             flushDaemon.lockFlush();
-            closeAndClear(lookups);
-            //we have to clear our suggest fields since they are about to be completely replaced
-            //lookups.clear();
-            sorters.clear();
-            isReindexing.set(true);
-            alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
-            flushDaemon.unLockFlush();
-            indexerService.removeAll();
-            //delete suggest dirs?
             try {
-                IOUtil.deleteRecursively(suggestDir);
-            } catch (IOException e) {
-                e.printStackTrace();
+                closeAndClear(lookups);
+                //we have to clear our suggest fields since they are about to be completely replaced
+                //lookups.clear();
+                sorters.clear();
+                isReindexing.set(true);
+                alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
+
+                indexerService.removeAll();
+                //delete suggest dirs?
+                try {
+                    IOUtil.deleteRecursively(suggestDir);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //remake the suggest directory again
+                suggestDir.mkdirs();
+            }finally {
+                flushDaemon.unLockFlush();
             }
         }
 	}
