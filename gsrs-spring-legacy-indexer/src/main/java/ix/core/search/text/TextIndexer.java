@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
+import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -160,11 +161,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try {
 			indexerService.removeAll();
             notifyListenerRemoveAll();
+            lookups.clear();
+            IOUtil.deleteRecursivelyQuitely(suggestDir);
+            suggestDir.mkdirs();
+            IOUtil.closeQuietly(taxonWriter);
+            IOUtil.closeQuietly(taxonDir);
+            IOUtil.deleteRecursivelyQuitely(facetFileDir);
+            //also delete facet and sorter files if they exist
+            deleteFileIfExists(getFacetsConfigFile());
+            deleteFileIfExists(getSorterConfigFile());
 		} catch (Exception e) {
 			// e.printStackTrace();
 		}
 	}
 
+	private void deleteFileIfExists(File f){
+        if(f.exists()){
+            f.delete();
+        }
+    }
 	
 	/**
 	 * well known fields
@@ -2654,6 +2669,13 @@ public class TextIndexer implements Closeable, ProcessListener {
     	        TermQuery q = new TermQuery(new Term(FIELD_KIND, ee.getName()));
     	        indexerService.deleteDocuments(q);
     	        listenersDeleteDocuments(q);
+
+    	        //Delete pseudo documents associated with meta-data for field suggest
+    	        if(textIndexerConfig.isFieldsuggest()){
+    	            TermQuery qq= new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + ee.getName()));
+    	            indexerService.deleteDocuments(qq);
+    	            listenersDeleteDocuments(qq);
+    	        }
     	  });
 	    
         
@@ -2893,14 +2915,26 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void newProcess() {
         if(!isReindexing.get()) {
             flushDaemon.lockFlush();
-            closeAndClear(lookups);
-            //we have to clear our suggest fields since they are about to be completely replaced
-            //lookups.clear();
-            sorters.clear();
-            isReindexing.set(true);
-            alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
-            flushDaemon.unLockFlush();
-            indexerService.removeAll();
+            try {
+                closeAndClear(lookups);
+                //we have to clear our suggest fields since they are about to be completely replaced
+                //lookups.clear();
+                sorters.clear();
+                isReindexing.set(true);
+                alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
+
+                indexerService.removeAll();
+                //delete suggest dirs?
+                try {
+                    IOUtil.deleteRecursively(suggestDir);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //remake the suggest directory again
+                suggestDir.mkdirs();
+            }finally {
+                flushDaemon.unLockFlush();
+            }
         }
 	}
 
@@ -2941,6 +2975,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					isShutDown = true;
 					scheduler.shutdown();
 					scheduler.awaitTermination(1, TimeUnit.MINUTES);
+					flushDaemon.lockFlush();
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
@@ -3099,24 +3134,23 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Number dval = (Number) nvalue;
 
 			boolean addedFacet = false;
-			if(nvalue instanceof Long  || nvalue instanceof Integer){
-				Long lval =  dval.longValue();
-				fields.accept(new LongField(full, lval, shouldStoreLong));
-				asText = indexableValue.facet();
-				if (!asText && !name.equals(full)) {
-				fields.accept(new LongField(name, lval, store));
-			}
-				if(indexableValue.facet()){
-					FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
-					if (ffl != null) {
-				facetsConfig.setMultiValued(fname, true);
-				facetsConfig.setRequireDimCount(fname, true);
-						fields.accept(ffl);
-				asText = false;
-						addedFacet=true;
-			}
-
-			}
+			if(nvalue instanceof Long  || nvalue instanceof Integer || (indexableValue.ranges()!=null && indexableValue.ranges().length>0)){
+			    Long lval =  dval.longValue();
+			    fields.accept(new LongField(full, lval, shouldStoreLong));
+			    asText = indexableValue.facet();
+			    if (!asText && !name.equals(full)) {
+			        fields.accept(new LongField(name, lval, store));
+			    }
+			    if(indexableValue.facet()){
+			        FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
+			        if (ffl != null) {
+			            facetsConfig.setMultiValued(fname, true);
+			            facetsConfig.setRequireDimCount(fname, true);
+			            fields.accept(ffl);
+			            asText = false;
+			            addedFacet=true;
+			        }
+			    }
 			}
 
 
@@ -3132,12 +3166,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				sorterAdded = true;
 			}
 			if(indexableValue.facet() && !addedFacet){
-				FacetField ff = getRangeFacet(fname, indexableValue.dranges(), dval.doubleValue(), indexableValue.format());
-			if (ff != null) {
-				facetsConfig.setMultiValued(fname, true);
-				facetsConfig.setRequireDimCount(fname, true);
-				fields.accept(ff);
-			}
+			    FacetField ff = getRangeFacet(fname, indexableValue.dranges(), dval.doubleValue(), indexableValue.format());
+			    if (ff != null) {
+			        facetsConfig.setMultiValued(fname, true);
+			        facetsConfig.setRequireDimCount(fname, true);
+			        fields.accept(ff);
+			    }
 			}
 			asText = false;
 

@@ -1,20 +1,33 @@
 package ix.core.search;
 
+import static ix.core.search.ArgumentAdapter.doNothing;
+import static ix.core.search.ArgumentAdapter.ofBoolean;
+import static ix.core.search.ArgumentAdapter.ofInteger;
+import static ix.core.search.ArgumentAdapter.ofList;
+import static ix.core.search.ArgumentAdapter.ofSingleString;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
 import ix.core.controllers.RequestOptions;
-import ix.core.search.SearchOptions.Builder;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static ix.core.search.ArgumentAdapter.*;
 
 @Slf4j
 public class SearchOptions implements RequestOptions {
@@ -77,6 +90,8 @@ public class SearchOptions implements RequestOptions {
 	private boolean sideway = true;
 	
 	private boolean wait = false;
+	
+	//TODO: I don't think this is used anymore
 	private String filter;
 
 
@@ -111,9 +126,6 @@ public class SearchOptions implements RequestOptions {
 		this.setTop(Math.max(1, top));
 		this.skip = Math.max(0, skip);
 		this.setFdim(Math.max(1, fdim));
-        this.includeFacets = includeFacets;
-        this.includeBreakdown=includeBreakdown;
-        this.promoteSpecialMatches = promoteSpecialMatches;
 	}
 
 	public SearchOptions(Map<String, String[]> params) {
@@ -379,6 +391,7 @@ public class SearchOptions implements RequestOptions {
 		return this.skip;
 	}
 
+	//TODO I don't think this is ever used anymore
 	@Override
 	public String getFilter() {
 		return this.filter;
@@ -505,6 +518,14 @@ public class SearchOptions implements RequestOptions {
 			this.longRangeFacets = longRangeFacets;
 			return this;
 		}
+		
+		public Builder addDateRangeFacet(String facetName) {
+		    if(this.longRangeFacets==null) {
+		        this.longRangeFacets=new ArrayList<>();
+		    }
+            this.longRangeFacets.add(asDateFacet(facetName));
+            return this;
+        }
 
 		public Builder order(List<String> order) {
 			this.order = order;
@@ -576,6 +597,13 @@ public class SearchOptions implements RequestOptions {
 		this.setOrder(builder.order);
 		this.expand = builder.expand;
 		this.termFilters = builder.termFilters;
+		
+		this.includeBreakdown=builder.includeBreakdown;
+		this.includeFacets=builder.includeFacets;
+		this.promoteSpecialMatches=builder.promoteSpecialMatches;
+		
+		
+		
 		if(builder.params!=null){
 		    this.parse(builder.params);
 		}
@@ -610,6 +638,13 @@ public class SearchOptions implements RequestOptions {
 	}
 	public void addLongRangeFacets(List<FacetLongRange> longRangeFacets) {
         this.longRangeFacets.addAll(longRangeFacets);
+    }
+	
+	public void addDateRangeFacet(String facetName) {
+        if(this.longRangeFacets==null) {
+            this.longRangeFacets=new ArrayList<>();
+        }
+        this.longRangeFacets.add(asDateFacet(facetName));
     }
 
 	public void setLongRangeFacets(List<FacetLongRange> longRangeFacets) {
@@ -725,4 +760,89 @@ public class SearchOptions implements RequestOptions {
 	public boolean getPromoteSpecialMatches()  {
 	    return this.promoteSpecialMatches;
 	}
+	 
+	private static FacetLongRange asDateFacet(String fname) {
+	    return asDateFacet(fname, getDefaultDateOrderMap());
+	}
+	private static FacetLongRange asDateFacet(String fname,Map<String, Function<LocalDateTime, LocalDateTime>> orderedMap) {
+	    FacetLongRange facet= new SearchOptions.FacetLongRange(fname);
+        LocalDateTime now = TimeUtil.getCurrentLocalDateTime();
+
+        // 1 second in future
+        long end = TimeUtil.toMillis(now) + 1000L;
+        LocalDateTime last = now;
+        for (Map.Entry<String, Function<LocalDateTime, LocalDateTime>> entry : orderedMap.entrySet()) {
+            String name = entry.getKey();
+            LocalDateTime startDate = entry.getValue().apply(now);
+            long start = TimeUtil.toMillis(startDate);
+            // This is terrible, and I hate it, but this is a
+            // quick fix for the calendar problem.
+            if (start > end) {
+                startDate = entry.getValue().apply(last);
+                start = TimeUtil.toMillis(startDate);
+            }
+            long[] range = new long[] { start, end };
+            facet.add(name, range);
+
+            end = start;
+            last = startDate;
+        }
+        return facet;
+	}
+
+	
+	//TODO: this should be refactored to be in a utility class with a builder and default values
+	// which can be set in a config.
+    private static Map<String, Function<LocalDateTime, LocalDateTime>> getDefaultDateOrderMap(){
+
+        // Note, this is not really the right terminology.
+        // durations of time are better than actual cal. references,
+        // as they don't behave quite as well, and may cause more confusion
+        // due to their non-overlapping nature. This makes it easier
+        // to have a bug, and harder for a user to understand.
+
+        Map<String, Function<LocalDateTime, LocalDateTime>> map = new LinkedHashMap<>();
+        map.put("Today", now -> LocalDateTime.of(now.toLocalDate(), LocalTime.MIDNIGHT));
+
+        // (Last 7 days)
+        map.put("This week", now -> {
+            return now.minusDays(7);
+            // TemporalField dayOfWeek = weekFields.dayOfWeek();
+            // return LocalDateTime.of(now.toLocalDate(), LocalTime.MIDNIGHT)
+            // .with(dayOfWeek, 1);
+        });
+
+        // (Last 30 days)
+        map.put("This month", now -> {
+            return now.minusDays(30);
+            // LocalDateTime ldt=LocalDateTime.of(now.toLocalDate(),
+            // LocalTime.MIDNIGHT)
+            // .withDayOfMonth(1);
+            // return ldt;
+        });
+
+        // (Last 6 months)
+        map.put("Past 6 months", now -> {
+            return now.minusMonths(6);
+            // LocalDateTime.of(now.toLocalDate(), LocalTime.MIDNIGHT)
+            // .minusMonths(6)
+        });
+
+        // (Last 1 year)
+        map.put("Past 1 year", now -> {
+            return now.minusYears(1);
+            // return LocalDateTime.of(now.toLocalDate(), LocalTime.MIDNIGHT)
+            // .minusYears(1);
+        });
+
+        map.put("Past 2 years", now -> {
+            return now.minusYears(2);
+            // return LocalDateTime.of(now.toLocalDate(), LocalTime.MIDNIGHT)
+            // .minusYears(2);
+        });
+
+        // Older than 2 Years
+        map.put("Older than 2 years", now -> now.minusYears(6000));
+        return map;
+    }
 }

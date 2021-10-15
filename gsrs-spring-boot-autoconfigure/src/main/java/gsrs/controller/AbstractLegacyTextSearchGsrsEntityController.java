@@ -71,6 +71,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .ffilter("")
                 .withParameters(request.getParameterMap())
                 .build();
+        so = this.instrumentSearchOptions(so);
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
@@ -91,6 +92,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .withParameters(Util.reduceParams(request.getParameterMap(),
                         "fdim", "fskip", "ffilter"))
                 .build();
+        
+        so = this.instrumentSearchOptions(so);
 
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
@@ -141,18 +144,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
 
-/*
-SearchRequest req = builder
-                .top(top)
-                .skip(skip)
-                .fdim(fdim)
-                .kind(kind)
-                .withRequest(request()) // I don't like this,
-                                        // I like being explicit,
-                                        // but it's ok for now
-                .query(q)
-                .build();
- */
+        this.instrumentSearchRequest(searchRequest);
+        
         SearchResult result = null;
         try {
             result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions() );
