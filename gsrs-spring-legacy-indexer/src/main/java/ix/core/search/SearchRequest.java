@@ -94,6 +94,11 @@ public class SearchRequest {
 			return this;
 		}
 
+		public Builder addDateRangeFacet(String facetName) {
+		    opBuilder.addDateRangeFacet(facetName);
+		    return this;
+		}
+
 		public Builder order(List<String> order) {
 			opBuilder.order(order);
 			return this;
