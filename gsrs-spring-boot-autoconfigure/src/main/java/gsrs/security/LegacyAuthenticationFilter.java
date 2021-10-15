@@ -211,15 +211,15 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String message = "You are not authorized to see this resource. Please contact an administrator to be granted access.";
 
             try {
-                response.setContentType("text/html");
-//            ctx.getResponse().getWriter().println("{\"status\" : \"401\", \"message\" : \""+message+"\"}");
-                response.getWriter().println("<!DOCTYPE html>\n" +
-                        "<html>\n" +
-                        "<head></head>\n" +
-                        "<body>\n" +
-                        message +
-                        "</body>\n" +
-                        "</html>");
+                response.setContentType("application/json");
+                response.getWriter().println("{\"status\" : \"401\", \"message\" : \""+message+"\"}");
+//                response.getWriter().println("<!DOCTYPE html>\n" +
+//                        "<html>\n" +
+//                        "<head></head>\n" +
+//                        "<body>\n" +
+//                        message +
+//                        "</body>\n" +
+//                        "</html>");
                 return;
             } catch (IOException e) {
                 throw new NonAuthenticatedUserAllowedException("not authorized to see this resource");
