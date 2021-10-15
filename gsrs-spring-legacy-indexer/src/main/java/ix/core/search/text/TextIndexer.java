@@ -164,11 +164,22 @@ public class TextIndexer implements Closeable, ProcessListener {
             lookups.clear();
             IOUtil.deleteRecursivelyQuitely(suggestDir);
             suggestDir.mkdirs();
+            IOUtil.closeQuietly(taxonWriter);
+            IOUtil.closeQuietly(taxonDir);
+            IOUtil.deleteRecursivelyQuitely(facetFileDir);
+            //also delete facet and sorter files if they exist
+            deleteFileIfExists(getFacetsConfigFile());
+            deleteFileIfExists(getSorterConfigFile());
 		} catch (Exception e) {
 			// e.printStackTrace();
 		}
 	}
 
+	private void deleteFileIfExists(File f){
+        if(f.exists()){
+            f.delete();
+        }
+    }
 	
 	/**
 	 * well known fields
