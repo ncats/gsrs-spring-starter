@@ -30,5 +30,15 @@ public interface GsrsLegacySearchController {
                                            @RequestParam("fdim") Optional<Integer> fdim,
                                            HttpServletRequest request,
                                            @RequestParam Map<String, String> queryParameters);
+    
+    default SearchOptions instrumentSearchOptions(SearchOptions so) {
+        return so;
+    }
+    
+    default SearchRequest instrumentSearchRequest(SearchRequest sr) {
+        SearchOptions so =instrumentSearchOptions(sr.getOptions());
+        sr.setOptions(so);
+        return sr;
+    }
 
 }
