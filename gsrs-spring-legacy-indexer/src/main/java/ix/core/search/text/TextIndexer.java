@@ -2654,6 +2654,13 @@ public class TextIndexer implements Closeable, ProcessListener {
     	        TermQuery q = new TermQuery(new Term(FIELD_KIND, ee.getName()));
     	        indexerService.deleteDocuments(q);
     	        listenersDeleteDocuments(q);
+
+    	        //Delete pseudo documents associated with meta-data for field suggest
+    	        if(textIndexerConfig.isFieldsuggest()){
+    	            TermQuery qq= new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + ee.getName()));
+    	            indexerService.deleteDocuments(qq);
+    	            listenersDeleteDocuments(qq);
+    	        }
     	  });
 	    
         
