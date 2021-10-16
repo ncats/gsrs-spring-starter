@@ -193,31 +193,11 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
     @Override
     public void forceUpdate() {
-
-
 		currentVersion++;
 		setIsDirty("currentVersion");
+		//Is okay? IDK
+		this.setIsAllDirty();
     }
-
-    public boolean tryUpdate() {
-        //TODO katzelda October 2020: make this a no-op for now should be done elsewhere
-    	/*
-		String ohash=getDefinitionalHash();
-		super.update();
-		String nhash=getDefinitionalHash();
-		if(ohash.equals(nhash)){
-			return false;
-		}
-		return true;
-
-    	 */
-        return false;
-    }
-
-
-
-
-
 
     @JsonIgnore
     /**

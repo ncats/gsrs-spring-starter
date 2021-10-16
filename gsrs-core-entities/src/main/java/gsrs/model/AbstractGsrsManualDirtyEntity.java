@@ -18,6 +18,10 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
     @JsonIgnore
     @Transient
     private transient Map<String, Boolean> dirtyFields = new ConcurrentHashMap<>();
+    
+    @JsonIgnore
+    @Transient
+    private transient boolean allDirty=false;
 
     @MatchingIgnore
     @Override
@@ -41,14 +45,15 @@ public abstract class AbstractGsrsManualDirtyEntity extends AbstractGsrsEntity i
     @Override
     public void clearDirtyFields() {
         dirtyFields.clear();
+        allDirty=false;
     }
 
     @Override
-    public void performIfNotDirty(String field, Runnable action) {
-        Objects.requireNonNull(action);
-        dirtyFields.computeIfAbsent(Objects.requireNonNull(field), k-> {
-            action.run();
-            return Boolean.TRUE;
-        });
+    public boolean isAllDirty() {
+        return allDirty;
+    }
+    @Override
+    public void setIsAllDirty() {
+        this.allDirty=true;
     }
 }
