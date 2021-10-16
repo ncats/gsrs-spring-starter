@@ -785,8 +785,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 					new NIOFSDirectory(dir, NoLockFactory.getNoLockFactory()), indexerService.getIndexAnalyzer());
 
 
+			
+			
 			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester,()-> TextIndexer.getFieldValue(suggester, "searcherMgr"));
-
+			
+//			lookupt
+			
 			// If there's an error getting the index count, it probably wasn't
 			// saved properly. Treat it as new if an error is thrown.
 			if (!isNew) {
@@ -856,13 +860,18 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 		public void add(String text) throws IOException {
-			addSuggest(text,1);
+			addSuggest(text,1, null);
 		}
 
-		public void addSuggest(String text, int weight) throws IOException {
+		public void addSuggest(String text, int weight, Key k) throws IOException {
 			Addition add = additions.computeIfAbsent(text, t -> new Addition(t, 0));
 			add.addToWeight(weight);
 			incr();
+		}
+		
+		public void removeSuggest(Key k) throws IOException {
+		    //TODO
+		    
 		}
 
 		private void incr() {
@@ -889,6 +898,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				BytesRef ref = new BytesRef(add.text);
 				add.addToWeight(emd.getWeightFor(ref));
 				//lookup.
+//				((AnalyzingInfixSuggester)emd.getDelegate()).update(ref, null, lastRefresh, ref);
 				((AnalyzingInfixSuggester)emd.getDelegate()).update(ref, null, add.weight.get(), ref);
 				additionIterator.remove();
 			}
@@ -2479,6 +2489,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         try{
             ew.toInternalJson();
+            
 			HashMap<String,List<TextField>> fullText = new HashMap<>();
             Document doc = new Document();
             if(textIndexerConfig.isShouldLog()){
@@ -2528,7 +2539,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
-				this.instrumentIndexableValue(fieldCollector, iv);
+				this.instrumentIndexableValue(fieldCollector, iv, ew.getKey());
 			});
 			if(textIndexerConfig.isFieldsuggest()  && deepKindFunction.apply(ew) && ew.hasKey()){
 				Key key =ew.getKey();
@@ -3042,21 +3053,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	//make the fields for the dynamic facets
 
-	public void createDynamicField(Consumer<IndexableField> fieldTaker, IndexableValue iv) {
+	public void createDynamicField(Consumer<IndexableField> fieldTaker, IndexableValue iv, Key k) {
 		facetsConfig.setMultiValued(iv.name(), true);
 		facetsConfig.setRequireDimCount(iv.name(), true);
 		fieldTaker.accept(new FacetField(iv.name(), iv.value().toString()));
 		fieldTaker.accept(new TextField(iv.path(), TextIndexer.START_WORD + iv.value().toString() + TextIndexer.STOP_WORD, NO));
 
 		if(iv.suggest()){
-			addSuggestedField(iv.name(),iv.value().toString(),iv.suggestWeight());
+			addSuggestedField(iv.name(),iv.value().toString(),iv.suggestWeight(), k);
 		}
 
 	}
 
 	//make the fields for the primitive fields
 
-	public void instrumentIndexableValue(Consumer<IndexableField> fields, IndexableValue indexableValue) {
+	public void instrumentIndexableValue(Consumer<IndexableField> fields, IndexableValue indexableValue, Key k) {
 
 
 		// Used to be configurable, now just always NO
@@ -3069,7 +3080,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		if(indexableValue.isDynamicFacet()){
-			createDynamicField(fields,indexableValue);
+			createDynamicField(fields,indexableValue, k);
 			if(indexableValue.sortable()){
 				sorters.put(SORT_PREFIX + indexableValue.name(), SortField.Type.STRING);
 				
@@ -3194,7 +3205,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				// also index the corresponding text field with the
 				// dimension name
 				fields.accept(new TextField(dim, text, NO));
-				addSuggestedField(dim, text, indexableValue.suggestWeight());
+				addSuggestedField(dim, text, indexableValue.suggestWeight(), k);
 			}
 
 			String exactMatchStr = toExactMatchString(text);
@@ -3274,7 +3285,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * @param name
 	 * @param value
 	 */
-	void addSuggestedField(String name, String value, int weight) {
+	void addSuggestedField(String name, String value, int weight, Key k) {
 		name = SUGGESTION_WHITESPACE_PATTERN.matcher(name).replaceAll("_");
 		try {
 			SuggestLookup lookup = lookups.computeIfAbsent(name, n -> {
@@ -3287,7 +3298,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			});
 			if (lookup != null) {
-				lookup.addSuggest(value, weight);
+				lookup.addSuggest(value, weight,k);
 			}
 
 		} catch (Exception ex) {
