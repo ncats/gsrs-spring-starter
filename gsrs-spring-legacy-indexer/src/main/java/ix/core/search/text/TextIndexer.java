@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
+import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -160,11 +161,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try {
 			indexerService.removeAll();
             notifyListenerRemoveAll();
+            lookups.clear();
+            IOUtil.deleteRecursivelyQuitely(suggestDir);
+            suggestDir.mkdirs();
+            IOUtil.closeQuietly(taxonWriter);
+            IOUtil.closeQuietly(taxonDir);
+            IOUtil.deleteRecursivelyQuitely(facetFileDir);
+            //also delete facet and sorter files if they exist
+            deleteFileIfExists(getFacetsConfigFile());
+            deleteFileIfExists(getSorterConfigFile());
 		} catch (Exception e) {
 			// e.printStackTrace();
 		}
 	}
 
+	private void deleteFileIfExists(File f){
+        if(f.exists()){
+            f.delete();
+        }
+    }
 	
 	/**
 	 * well known fields
@@ -2900,14 +2915,26 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void newProcess() {
         if(!isReindexing.get()) {
             flushDaemon.lockFlush();
-            closeAndClear(lookups);
-            //we have to clear our suggest fields since they are about to be completely replaced
-            //lookups.clear();
-            sorters.clear();
-            isReindexing.set(true);
-            alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
-            flushDaemon.unLockFlush();
-            indexerService.removeAll();
+            try {
+                closeAndClear(lookups);
+                //we have to clear our suggest fields since they are about to be completely replaced
+                //lookups.clear();
+                sorters.clear();
+                isReindexing.set(true);
+                alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
+
+                indexerService.removeAll();
+                //delete suggest dirs?
+                try {
+                    IOUtil.deleteRecursively(suggestDir);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //remake the suggest directory again
+                suggestDir.mkdirs();
+            }finally {
+                flushDaemon.unLockFlush();
+            }
         }
 	}
 
