@@ -1,29 +1,31 @@
 package ix.utils;
 
 import java.lang.*;
+import java.lang.ref.SoftReference;
 
 public class LiteralReference<T>{
 	
-	private T o;
-	
+	private SoftReference<T> sr;
+	private int hashcode;
 
-	public LiteralReference(T o){
-		this.o=o;
+	public LiteralReference(T t){
+		this.sr=new SoftReference<T>(t);
+		this.hashcode=System.identityHashCode(o);
 	}
 	
 	public T get(){
-		return o;
+		return sr.get();
 	}
 	@Override
 	public int hashCode(){
-		return System.identityHashCode(o);
+		return this.hashcode;
 	}
 	@Override
 	public boolean equals(Object oref){
 		if(oref==null)return false;
 		if(oref instanceof LiteralReference){
 			LiteralReference<?> or=(LiteralReference<?>)oref;
-			return (this.o == or.o);
+			return (this.get() == or.get());
 		}
 		return false;
 	}
@@ -32,6 +34,6 @@ public class LiteralReference<T>{
 	}
 	
 	public String toString(){
-		return "Ref to:" + o.toString();
+		return "Ref to:" + sr.get().toString();
 	}
 }
