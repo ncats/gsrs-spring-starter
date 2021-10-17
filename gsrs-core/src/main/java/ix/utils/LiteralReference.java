@@ -1,18 +1,22 @@
 package ix.utils;
 
+import java.lang.*;
 
-public class LiteralReference<K>{
-	private K o;
-	public LiteralReference(K o){
+public class LiteralReference<T>{
+	
+	private T o;
+	
+
+	public LiteralReference(T o){
 		this.o=o;
 	}
 	
-	public K get(){
+	public T get(){
 		return o;
 	}
 	@Override
 	public int hashCode(){
-		return this.o.hashCode();
+		return System.identityHashCode(o);
 	}
 	@Override
 	public boolean equals(Object oref){
@@ -23,8 +27,8 @@ public class LiteralReference<K>{
 		}
 		return false;
 	}
-	public static <K> LiteralReference<K> of(K k) {
-		return new LiteralReference<K>(k);
+	public static <T> LiteralReference<T> of(T t) {
+		return new LiteralReference<T>(t);
 	}
 	
 	public String toString(){
