@@ -672,7 +672,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @implSpec delegates to {@link #update(Object)} inside a {@link Transactional}.
      */
     protected T transactionalUpdate(T entity, String oldJson){
-
+        if(entity instanceof ForceUpdatableModel) {
+            ForceUpdatableModel mod = (ForceUpdatableModel)entity;
+            mod.forceUpdate();
+        }
         T after =  update(entity);
         return after;
     }
