@@ -25,7 +25,9 @@ public class LiteralReference<T>{
 		if(oref==null)return false;
 		if(oref instanceof LiteralReference){
 			LiteralReference<?> or=(LiteralReference<?>)oref;
-			return (this.get() == or.get());
+			T thisT = this.get();
+			if(thisT==null) return false;
+			return (thisT == or.get());
 		}
 		return false;
 	}
@@ -34,6 +36,6 @@ public class LiteralReference<T>{
 	}
 	
 	public String toString(){
-		return "Ref to:" + sr.get().toString();
+		return "Ref to:[" + sr.get().toString() + "]";
 	}
 }

@@ -41,7 +41,7 @@ public class GsrsEntityDirtinessStrategy implements CustomEntityDirtinessStrateg
     @Override
     public boolean isDirty(Object o, EntityPersister entityPersister, Session session) {
         if(canCast(o)){
-            if(!((GsrsManualDirtyMaker)o).getDirtyFields().isEmpty()){
+            if(((GsrsManualDirtyMaker)o).isDirty()){
                 return true;
             }
         }
