@@ -21,6 +21,11 @@ public class LiteralReferenceTest{
 			}
 			return ((MockThing)o).i==i;
 		}
+		
+		@Override
+        public int hashCode(){
+            return i;
+        }
 		public static MockThing of(int i){
 			return new MockThing(i);
 		}
@@ -30,9 +35,9 @@ public class LiteralReferenceTest{
 	@Test
 	public void sameLiteralReferenceIsEqualToItself(){
 		LiteralReference<MockThing> lr = LiteralReference.of(MockThing.of(2));
-		
 		assertEquals(lr,lr);
 	}
+	
 	@Test
 	public void sameLiteralDifferentLiteralReferencesAreEqualToEachOther(){
 		MockThing tst= MockThing.of(20);
@@ -41,6 +46,7 @@ public class LiteralReferenceTest{
 		assertEquals(lr1.hashCode(),lr2.hashCode());
 		assertEquals(lr1,lr2);
 	}
+	
 	@Test
 	public void differentInstancesOfEquivalentObjectsStillDifferent(){
 		
@@ -49,6 +55,7 @@ public class LiteralReferenceTest{
 		
 		assertNotEquals(lr1,lr2);
 	}
+	
 	@Test
 	public void differentInstancesOfEquivalentObjectsStillSameWhenFetched(){
 		
@@ -57,4 +64,18 @@ public class LiteralReferenceTest{
 		
 		assertEquals(lr1.get(),lr2.get());
 	}
+	
+	@Test
+    public void hashCodeForLiteralReferenceShouldNotChange(){
+        MockThing mt = MockThing.of(5);
+        LiteralReference<MockThing> lr1 = LiteralReference.of(mt);
+        int hc1=lr1.hashCode();
+        mt.i=7;
+        LiteralReference<MockThing> lr2 = LiteralReference.of(mt);
+        int hc2=lr2.hashCode();
+        
+        assertEquals(hc1,hc2);
+        assertEquals(lr1,lr2);
+        
+    }
 }

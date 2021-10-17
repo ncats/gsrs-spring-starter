@@ -17,10 +17,12 @@ public interface MixinInterface {
         MixinUtil.getStore(this).put(name, v);
     }
     
+    @SuppressWarnings("unchecked")
     default <T> T _getFieldOrDefault(String name, T def) {
         return (T) MixinUtil.getStore(this).getOrDefault(name, def);
     }
-    
+
+    @SuppressWarnings("unchecked")
     default <T> T _computeFieldIfAbsent(String name, Function<String,T> vmaker) {
         return (T) MixinUtil.getStore(this).computeIfAbsent(name,vmaker);
     }
