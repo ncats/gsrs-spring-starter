@@ -1,6 +1,6 @@
 package ix.utils;
 
-import java.lang.*;
+import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 
 public class LiteralReference<T>{
@@ -12,6 +12,11 @@ public class LiteralReference<T>{
 		this.sr=new SoftReference<T>(t);
 		this.hashcode=System.identityHashCode(t);
 	}
+	
+	public LiteralReference(T t, ReferenceQueue rq){
+        this.sr=new SoftReference<T>(t,rq);
+        this.hashcode=System.identityHashCode(t);
+    }
 	
 	public T get(){
 		return sr.get();
