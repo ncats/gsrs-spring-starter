@@ -10,7 +10,7 @@ public class LiteralReference<T>{
 
 	public LiteralReference(T t){
 		this.sr=new SoftReference<T>(t);
-		this.hashcode=System.identityHashCode(o);
+		this.hashcode=System.identityHashCode(t);
 	}
 	
 	public T get(){
