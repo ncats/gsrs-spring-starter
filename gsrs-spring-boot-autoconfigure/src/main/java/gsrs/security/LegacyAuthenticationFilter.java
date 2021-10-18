@@ -206,7 +206,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 if (up != null) {
                     if (up.acceptKey(key)) {
                         //valid key!
-                        auth = new LegacyUserTokenAuthentication(up, key);
+                        auth = new LegacyUserKeyAuthentication(up, key);
 
                     } else {
                         throw new BadCredentialsException("invalid credentials for username: " + username);
