@@ -205,6 +205,37 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
+        if(auth ==null) {
+            String username = request.getHeader("auth-username");
+            String key = request.getHeader("auth-key");
+            if (username != null && key != null) {
+                UserProfile up =
+                        Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
+                                .map(oo -> oo.standardize())
+                                .orElse(null);
+                if (up == null && authenticationConfiguration.isAutoregister()) {
+                    Principal p = new Principal(username, null).standardize();
+                    up = new UserProfile(p);
+                    if (authenticationConfiguration.isAutoregisteractive()) {
+                        up.active = true;
+                    }
+                    up.systemAuth = false;
+                    //should cascade new Principal
+                    repository.saveAndFlush(up);
+
+                }
+                if (up != null) {
+                    if (up.acceptKey(key)) {
+                        //valid key!
+                        auth = new LegacyUserTokenAuthentication(up, key);
+
+                    } else {
+                        throw new BadCredentialsException("invalid credentials for username" + username);
+                    }
+
+                }
+            }
+        }
         //if we get here we don't have a valid login
         if(auth==null && !authenticationConfiguration.isAllownonauthenticated()) {
             response.setStatus(403);

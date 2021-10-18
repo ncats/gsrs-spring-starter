@@ -90,7 +90,36 @@ public class LoginController {
             m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
         }), HttpStatus.OK);
     }
+    //this is a GET in 2.x keep it for backwards compatibility
+    @PreAuthorize("isAuthenticated()")
+    @Transactional
+    @GetMapping({"api/v1/profile/@keygen"})
+    public Object regenerateMyKey(Principal principal,
+                                  @RequestParam Map<String, String> queryParameters){
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            up.regenerateKey();
+            repository.saveAndFlush(up);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
 
+    @PreAuthorize("isAuthenticated()")
+    @Transactional
+    @PostMapping({"api/v1/profile/@keygen"})
+    public Object regenerateMyKeyPost(Principal principal,
+                                  @RequestParam Map<String, String> queryParameters){
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            up.regenerateKey();
+            repository.saveAndFlush(up);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
     @PreAuthorize("isAuthenticated()")
     @Transactional
     @PostMapping({"api/v1/profile/password"})
