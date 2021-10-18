@@ -118,6 +118,12 @@ public class StaticContextAccessor {
         String qq=DataSourceConfigRegistry.getQualifierFor(k.getEntityInfo().getEntityClass());
         return StaticContextAccessor.getEntityManager(qq);
     }
+    
+    public static EntityManager getEntityManagerFor(Class cls) {
+        String qq=DataSourceConfigRegistry.getQualifierFor(cls);
+        return StaticContextAccessor.getEntityManager(qq);
+    }
+    
 
     public static <T> Optional<T> getOptionalBean(Class<T> clazz) {
         return Optional.ofNullable(getBean(clazz));
