@@ -144,16 +144,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
-                    Principal p = new Principal(username, email);
-                    up = new UserProfile(p);
-                    if(authenticationConfiguration.isAutoregisteractive()){
-                        up.active = true;
-                    }
-                    up.setRoles(roles);
-                    
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+
+                    up = autoregisterNewUser(username, email, roles);
+
                 }
                 if(up !=null){
                     auth = new UserProfilePasswordAuthentication(up);
@@ -174,14 +167,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
-                    Principal p = new Principal(username, null).standardize();
-                    up = new UserProfile(p);
-                    if (authenticationConfiguration.isAutoregisteractive()) {
-                        up.active = true;
-                    }
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+                    up = autoregisterNewUser(username);
 
                 }
                 if(up!=null){
@@ -190,7 +176,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         auth = new UserProfilePasswordAuthentication(up);
 
                     }else{
-                        throw new BadCredentialsException("invalid credentials for username" + username);
+                        throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
 
                 }
@@ -202,6 +188,30 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 UserProfile up = userTokenCache.getUserProfileFromToken(token);
                 if(up!=null) {
                     auth = new LegacyUserTokenAuthentication(up, token);
+                }
+            }
+        }
+        if(auth ==null) {
+            String username = request.getHeader("auth-username");
+            String key = request.getHeader("auth-key");
+            if (username != null && key != null) {
+                UserProfile up =
+                        Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
+                                .map(oo -> oo.standardize())
+                                .orElse(null);
+                if (up == null && authenticationConfiguration.isAutoregister()) {
+                    up = autoregisterNewUser(username);
+
+                }
+                if (up != null) {
+                    if (up.acceptKey(key)) {
+                        //valid key!
+                        auth = new LegacyUserKeyAuthentication(up, key);
+
+                    } else {
+                        throw new BadCredentialsException("invalid credentials for username: " + username);
+                    }
+
                 }
             }
         }
@@ -234,5 +244,22 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
 
+    }
+    private UserProfile autoregisterNewUser(String username ) {
+        return autoregisterNewUser(username, null, null);
+    }
+    private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
+        Principal p = new Principal(username, email).standardize();
+        UserProfile up = new UserProfile(p);
+        if (authenticationConfiguration.isAutoregisteractive()) {
+            up.active = true;
+        }
+        up.systemAuth = false;
+        if(roles !=null){
+            up.setRoles(roles);
+        }
+        //should cascade new Principal
+        repository.saveAndFlush(up);
+        return up;
     }
 }
