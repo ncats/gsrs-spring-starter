@@ -93,7 +93,19 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                 }
 
             }
-            //TODO handle token and other types of authentication
+
+        }else if(authentication instanceof LegacyUserKeyAuthentication) {
+            LegacyUserKeyAuthentication auth = (LegacyUserKeyAuthentication) authentication;
+            String key = (String) auth.getCredentials();
+            if(key !=null){
+
+                UserProfile refetched = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(auth.getName()))
+                        .map(oo->oo.standardize())
+                        .orElse(null);
+                if(refetched !=null && refetched.acceptKey(key)){
+                    return new UserProfilePasswordAuthentication(refetched);
+                }
+            }
         }else if(userTokenCache !=null && authentication instanceof LegacyUserTokenAuthentication){
             LegacyUserTokenAuthentication auth = (LegacyUserTokenAuthentication) authentication;
             String token = (String) auth.getCredentials();
@@ -103,7 +115,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                 UserProfile refetched = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(up.user.username))
                         .map(oo->oo.standardize())
                         .orElse(null);
-                if(refetched.acceptToken(token)){
+                if(refetched !=null && refetched.acceptToken(token)){
                     return new UserProfilePasswordAuthentication(refetched);
                 }
             }
