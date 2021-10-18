@@ -115,7 +115,8 @@ public class SchedulerPlugin{
 		@Override
 		public void execute(JobExecutionContext arg0) throws JobExecutionException {
 			Runnable r = (Runnable)arg0.getJobDetail().getJobDataMap().get("run");
-			StaticContextAccessor.getBean(AdminService.class).runAsAdmin(()->r.run());
+//			StaticContextAccessor.getBean(AdminService.class).runAsAdmin(()->r.run());
+            r.run();
 		}
     }
     
@@ -161,7 +162,8 @@ public class SchedulerPlugin{
 //    @Entity
     @EntityMapperOptions(getSelfRel = "url")
     public static class ScheduledTask implements Toer<ScheduledTask>{
-        
+        @Transient
+        private CachedSupplier<Authentication> admin = CachedSupplier.of(()-> StaticContextAccessor.getBean(AdminService.class).getAnyAdmin());
         @Transient
         @JsonUnwrapped
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -275,16 +277,17 @@ public class SchedulerPlugin{
     	
     	
     	@JsonIgnore
-    	public Runnable getRunnable(){
-    		return ()->{
-    		    if(enabled){
-        		    if(check.get()){
-        		        runNow();
-        		    }
-    		    }
-    		};
-    	}
-    	
+    	public Runnable getRunnable() {
+            return () -> {
+                if (enabled) {
+                    if (check.get()) {
+                        StaticContextAccessor.getBean(AdminService.class).runAs(admin.get(), () -> runNow());
+
+                    }
+                }
+            };
+        }
+
     	public synchronized void runNow(){
     	    numberOfRuns++;
     	    //TODO figure out way to compute nextRun

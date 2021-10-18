@@ -30,11 +30,16 @@ public class AdminService {
      * @return an Authentication; should never be null.
      */
     @hasAdminRole
-    public Authentication getAdminAuth(){
+    public Authentication getCurrentAdminAuth(){
         return SecurityContextHolder.getContext().getAuthentication();
     }
     
 
+    public Authentication getAnyAdmin(){
+        return new UsernamePasswordAuthenticationToken(principalRepository.findAnAdminUsername().orElse("admin"), null,
+                Arrays.stream(Role.values()).map(r -> new SimpleGrantedAuthority("ROLE_" + r.name())).collect(Collectors.toList()));
+
+    }
     /**
      * Run the given Runnable with the given Authentication.
      * @param authentication the Authentication to use, if set to {@code null},
