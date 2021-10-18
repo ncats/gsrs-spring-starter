@@ -102,7 +102,7 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                 UserProfile refetched = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(auth.getName()))
                         .map(oo->oo.standardize())
                         .orElse(null);
-                if(refetched !=null && refetched.acceptToken(key)){
+                if(refetched !=null && refetched.acceptKey(key)){
                     return new UserProfilePasswordAuthentication(refetched);
                 }
             }
