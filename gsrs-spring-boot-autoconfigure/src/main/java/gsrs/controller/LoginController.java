@@ -96,7 +96,7 @@ public class LoginController {
     @GetMapping({"api/v1/profile/@keygen"})
     public Object regenerateMyKey(Principal principal,
                                   @RequestParam Map<String, String> queryParameters){
-        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
             up.regenerateKey();
@@ -111,7 +111,7 @@ public class LoginController {
     @PostMapping({"api/v1/profile/@keygen"})
     public Object regenerateMyKeyPost(Principal principal,
                                   @RequestParam Map<String, String> queryParameters){
-        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
             up.regenerateKey();
@@ -126,7 +126,7 @@ public class LoginController {
     public ResponseEntity<Object> changePassword(Principal principal,
                                                  @RequestBody UserController.PasswordChangeRequest passwordChangeRequest,
                                                  @RequestParam Map<String, String> queryParameters) {
-        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_Username(principal.getName()));
+        Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
             //TODO implement better rules or configable rules for passwords?

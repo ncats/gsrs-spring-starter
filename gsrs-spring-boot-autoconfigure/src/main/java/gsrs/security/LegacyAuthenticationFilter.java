@@ -190,7 +190,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         auth = new UserProfilePasswordAuthentication(up);
 
                     }else{
-                        throw new BadCredentialsException("invalid credentials for username" + username);
+                        throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
 
                 }
@@ -230,7 +230,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         auth = new LegacyUserTokenAuthentication(up, key);
 
                     } else {
-                        throw new BadCredentialsException("invalid credentials for username" + username);
+                        throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
 
                 }
