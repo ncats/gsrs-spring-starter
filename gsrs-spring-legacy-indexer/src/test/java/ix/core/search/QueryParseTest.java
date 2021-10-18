@@ -3,10 +3,13 @@ package ix.core.search;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.regex.Pattern;
+
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.junit.jupiter.api.Test;
 
 import ix.core.search.text.TextIndexer;
@@ -14,6 +17,18 @@ import ix.core.search.text.TextIndexer.IxQueryParser;
 
 public class QueryParseTest {
 
+    private static final Pattern QUOTES_AROUND_WORD = Pattern
+            .compile("\"([^\" ]*)\"");
+
+    @Test
+    public void quotesAroundWordShouldBeRemoved() throws Exception{
+        
+        assertEquals("*test*", QUOTES_AROUND_WORD.matcher("\"*test*\"").replaceAll("$1"));
+        assertEquals("\"*another test*\" *test*", QUOTES_AROUND_WORD.matcher("\"*another test*\" \"*test*\"").replaceAll("$1"));
+        assertEquals("*test3* *test*", QUOTES_AROUND_WORD.matcher("\"*test3*\" \"*test*\"").replaceAll("$1"));
+        assertEquals("simple", QUOTES_AROUND_WORD.matcher("\"simple\"").replaceAll("$1"));
+        assertEquals("\"multi word\"", QUOTES_AROUND_WORD.matcher("\"multi word\"").replaceAll("$1"));
+    }
     
     @Test
     public void confirmSimpleWildcardQueryIsNotComplex() throws Exception{
@@ -21,6 +36,15 @@ public class QueryParseTest {
         Query q = iqp.parse("Brentuxima*");
         assertTrue("Simple prefix query should be prefix query", q instanceof PrefixQuery);
         assertEquals("text:brentuxima*", q.toString());
+    }
+    
+
+    @Test
+    public void confirmSimpleWildcardContainsQueryIsNotComplex() throws Exception{
+        IxQueryParser iqp = new TextIndexer.IxQueryParser("text");
+        Query q = iqp.parse("*rentuxima*");
+        assertTrue("Simple contains query should be wildcard query", q instanceof WildcardQuery);
+        assertEquals("text:*rentuxima*", q.toString());
     }
     
     @Test
@@ -51,4 +75,26 @@ public class QueryParseTest {
         assertTrue("Complex phrase query should contain *", q.toString().contains("Brentuximab Vedoti*"));
         assertEquals("Complex phrase query ComplexPhraseQuery Object", "org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser$ComplexPhraseQuery",q.getClass().getName());
     }
+    
+
+    @Test
+    public void confirmWildcardContainsQueryParsedAsComplexPhraseQuery() throws Exception{
+        IxQueryParser iqp = new TextIndexer.IxQueryParser("text");
+        Query q = iqp.parse("text:\"*rentuximab Vedoti*\"");
+        
+        assertTrue("Complex phrase query should NOT be phrase query", !(q instanceof PhraseQuery));
+        assertTrue("Complex phrase query should contain *", q.toString().contains("*rentuximab Vedoti*"));
+        assertEquals("Complex phrase query ComplexPhraseQuery Object", "org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser$ComplexPhraseQuery",q.getClass().getName());
+    }
+    
+
+    @Test
+    public void confirmWildcardContainsQueryWithOneWordAndQuotesParsedAsWildcardQuery() throws Exception{
+        IxQueryParser iqp = new TextIndexer.IxQueryParser("text");
+        Query q = iqp.parse("text:\"*rentuxima*\"");
+        
+        assertTrue("Simple contains query wrapped in quotes should be wildcard query", q instanceof WildcardQuery);
+        assertEquals("text:*rentuxima*", q.toString());
+    }
+    
 }
