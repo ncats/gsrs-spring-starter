@@ -144,16 +144,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
-                    Principal p = new Principal(username, email);
-                    up = new UserProfile(p);
-                    if(authenticationConfiguration.isAutoregisteractive()){
-                        up.active = true;
-                    }
-                    up.setRoles(roles);
-                    
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+
+                    up = autoregisterNewUser(username, email, roles);
+
                 }
                 if(up !=null){
                     auth = new UserProfilePasswordAuthentication(up);
@@ -174,14 +167,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
-                    Principal p = new Principal(username, null).standardize();
-                    up = new UserProfile(p);
-                    if (authenticationConfiguration.isAutoregisteractive()) {
-                        up.active = true;
-                    }
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+                    up = autoregisterNewUser(username);
 
                 }
                 if(up!=null){
@@ -214,14 +200,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                                 .map(oo -> oo.standardize())
                                 .orElse(null);
                 if (up == null && authenticationConfiguration.isAutoregister()) {
-                    Principal p = new Principal(username, null).standardize();
-                    up = new UserProfile(p);
-                    if (authenticationConfiguration.isAutoregisteractive()) {
-                        up.active = true;
-                    }
-                    up.systemAuth = false;
-                    //should cascade new Principal
-                    repository.saveAndFlush(up);
+                    up = autoregisterNewUser(username);
 
                 }
                 if (up != null) {
@@ -265,5 +244,22 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
 
+    }
+    private UserProfile autoregisterNewUser(String username ) {
+        return autoregisterNewUser(username, null, null);
+    }
+    private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
+        Principal p = new Principal(username, email).standardize();
+        UserProfile up = new UserProfile(p);
+        if (authenticationConfiguration.isAutoregisteractive()) {
+            up.active = true;
+        }
+        up.systemAuth = false;
+        if(roles !=null){
+            up.setRoles(roles);
+        }
+        //should cascade new Principal
+        repository.saveAndFlush(up);
+        return up;
     }
 }
