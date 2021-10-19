@@ -118,12 +118,18 @@ public class GsrsAdminLogConfiguration {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-
-            if(filter.test(dir)) {
-                addToFileInfoList(dir);
-                return FileVisitResult.CONTINUE;
+            try {
+                if (!Files.isReadable(dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                if (filter.test(dir)) {
+                    addToFileInfoList(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+                return FileVisitResult.SKIP_SUBTREE;
+            }catch(Throwable t){
+                return FileVisitResult.SKIP_SUBTREE;
             }
-            return FileVisitResult.SKIP_SUBTREE;
         }
 
         public void addToFileInfoList(Path p) {
@@ -151,7 +157,9 @@ public class GsrsAdminLogConfiguration {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            addToFileInfoList(file);
+            if (Files.isReadable(file)) {
+                addToFileInfoList(file);
+            }
             return FileVisitResult.CONTINUE;
         }
 
