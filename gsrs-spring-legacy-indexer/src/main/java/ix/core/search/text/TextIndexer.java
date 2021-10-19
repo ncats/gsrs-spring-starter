@@ -1360,11 +1360,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         private static final Pattern ROOT_CONTEXT_ADDER = Pattern
                 .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
+        
+
+        private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
+                .compile("\"([^\" ]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
             oldQParser = new QueryParser(def, createIndexAnalyzer());
             // setDefaultOperator(QueryParser.AND_OPERATOR);
+            this.setAllowLeadingWildcard(true);
+            oldQParser.setAllowLeadingWildcard(true);
         }
 
         public IxQueryParser(String string, Analyzer indexAnalyzer) {
@@ -1414,7 +1420,8 @@ public class TextIndexer implements Closeable, ProcessListener {
             // otherwise specified
             
             qtext = ROOT_CONTEXT_ADDER.matcher(qtext).replaceAll(ROOT + "_$1");
-
+            qtext = QUOTES_AROUND_WORD_REMOVER.matcher(qtext).replaceAll("$1");
+            
             // If there's an error parsing, it probably needs to have
             // quotes. Likely this happens from ":" chars
 
