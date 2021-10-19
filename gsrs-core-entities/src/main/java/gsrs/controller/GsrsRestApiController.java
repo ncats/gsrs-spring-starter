@@ -49,5 +49,13 @@ public @interface GsrsRestApiController {
 
     String customIdHelperClassName() default "";
 
+    /**
+     * Should Gsrs routes
+     * @return
+     */
+    boolean instrumentRoutes() default true;
+
+    String description() default "";
+
 }
 

@@ -1,6 +1,10 @@
 package gsrs.controller.hateoas;
 
+import lombok.Data;
+
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A Mapping of GSRS Entity classes to their
@@ -17,4 +21,7 @@ public interface GsrsEntityToControllerMapper {
      * or empty if none could be found.
      */
     Optional<Class> getControllerFor(Class entity);
+
+    Stream<GsrsControllerInfo> getControllerInfos();
+
 }

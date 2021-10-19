@@ -10,7 +10,7 @@ import java.util.UUID;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @ExposesResourceFor(Edit.class)
-@GsrsRestApiController(context = "edits")
+@GsrsRestApiController(context = "edits", description = "Edit history of changes to entities")
 public class EditController2 extends AbstractGsrsEntityController<EditController2, Edit, UUID>{
 
     @Autowired

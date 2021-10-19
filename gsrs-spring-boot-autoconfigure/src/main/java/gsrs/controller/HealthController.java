@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsControllerInfo;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
 import gsrs.security.hasAdminRole;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +28,8 @@ import java.util.stream.Collectors;
 @ExposesResourceFor(HealthController.UpStatus.class)
 public class HealthController {
 
-
+    @Autowired
+    private GsrsEntityToControllerMapper controllerMapper;
 
     @Autowired
     private List<DataSourceProperties> dataSources;
@@ -49,6 +52,12 @@ public class HealthController {
 
 
     }
+
+    @GetMapping("api/v1")
+    public List<GsrsControllerInfo> getControllerInfo(){
+        return controllerMapper.getControllerInfos().collect(Collectors.toList());
+    }
+
     @GetMapping("api/v1/health")
     public UpStatus isUp(){
         return UpStatus.INSTANCE;
