@@ -932,8 +932,11 @@ public class PojoDiff {
 			boolean ignore=false;
 			public MethodSetter(Method m){
 				this.m=m;
-				JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
-				if(jsn!=null)ignore=true;
+				
+                JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
+                if(jsn!=null && jsn.value())ignore=true;
+                PojoDiffIgnore pdi = m.getAnnotation(PojoDiffIgnore.class);
+                if(pdi!=null && pdi.value())ignore=true;
 			}
 			
 			@Override
@@ -971,7 +974,10 @@ public class PojoDiff {
 			public MethodGetter(Method m){
 				this.m=m;
 				JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
-				if(jsn!=null)ignore=true;
+				if(jsn!=null && jsn.value())ignore=true;
+				PojoDiffIgnore pdi = m.getAnnotation(PojoDiffIgnore.class);
+				if(pdi!=null && pdi.value())ignore=true;
+				
 			}
 			
 			@Override
@@ -995,8 +1001,11 @@ public class PojoDiff {
 			private boolean ignore=false;
 			public FieldGetter(Field m){
 				this.m=m;
-				JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
-				if(jsn!=null)ignore=true;
+
+                JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
+                if(jsn!=null && jsn.value())ignore=true;
+                PojoDiffIgnore pdi = m.getAnnotation(PojoDiffIgnore.class);
+                if(pdi!=null && pdi.value())ignore=true;
 			}
 			
 			@Override
@@ -1018,8 +1027,11 @@ public class PojoDiff {
 			public UnwrappedDelegateFieldGetter(Field m, Getter g){
 				this.m=m;
 				this.g=g;
-				JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
-				if(jsn!=null)ignore=true;
+
+                JsonIgnore jsn=m.getAnnotation(JsonIgnore.class);
+                if(jsn!=null && jsn.value())ignore=true;
+                PojoDiffIgnore pdi = m.getAnnotation(PojoDiffIgnore.class);
+                if(pdi!=null && pdi.value())ignore=true;
 			}
 			
 			@Override
@@ -1145,7 +1157,8 @@ public class PojoDiff {
 				try{
 					c=Integer.parseInt(prop.substring(1));
 				}catch(Exception e){
-					
+
+					//e.printStackTrace();
 				}
 			}else if(prop.startsWith("$")){
 				c=getObjectWithID(col,prop.substring(1).split("_")[0]);
