@@ -1,10 +1,5 @@
 package gsrs.controller;
 
-import gov.nih.ncats.common.util.CachedSupplier;
-import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -12,11 +7,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+import gov.nih.ncats.common.util.CachedSupplier;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @Data
+@Slf4j
 public class GsrsAdminLogConfiguration {
     @Value("${admin.panel.download.folderBlackList:}")
     private Set<String> folderBlackList = new HashSet<>();
@@ -73,6 +82,20 @@ public class GsrsAdminLogConfiguration {
     }
     public List<LogFileInfo> getLogFilesFor(Path directory) throws IOException {
         Predicate<Path> shouldInclude = p->{
+            if(p!=null && p.toFile().isDirectory()) {
+                try {
+                    if(!p.toFile().canRead()) {
+                        return false;
+                    }
+                    
+                    try(Stream<Path> subs = Files.list(p)){
+                        long t=subs.count();
+                        log.trace(p.toUri() + " has "+ t + " children");
+                    }
+                }catch(Exception io) {
+                    return false;
+                }
+            }
             String relativePath = rootPath.toPath().toAbsolutePath().relativize(p.normalize().toAbsolutePath()).toString();
             return !folderBlackList.contains(relativePath);
         };
