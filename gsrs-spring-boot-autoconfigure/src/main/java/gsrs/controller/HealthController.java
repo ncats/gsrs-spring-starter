@@ -14,6 +14,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -51,6 +53,11 @@ public class HealthController {
 
 
 
+    }
+    @GetMapping("api")
+    public ResponseEntity landingPage(){
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML)
+                .body("<html><head><title>GSRS landing page</title></head><body><h1>welcome to GSRS</h1</body></html>");
     }
 
     @GetMapping("api/v1")
