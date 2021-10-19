@@ -39,11 +39,7 @@ public class FilePathParserUtils {
                              .absoluteRootPath(getDefaultRootDir());
     }
     
-    /**
-     * Returns the File used to output the report
-     *
-     * @return
-     */
+
     public static File getFile(String outputPath, String defaultPath, DateTimeFormatter formatter, DateTimeFormatter formatterTime, File rootPath) {
         if(outputPath ==null) {
             outputPath= defaultPath;
