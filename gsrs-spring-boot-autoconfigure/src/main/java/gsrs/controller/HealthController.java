@@ -57,7 +57,7 @@ public class HealthController {
     @GetMapping("api")
     public ResponseEntity landingPage(){
         return ResponseEntity.ok().contentType(MediaType.TEXT_HTML)
-                .body("<html><head><title>GSRS landing page</title></head><body><h1>welcome to GSRS</h1</body></html>");
+                .body("<html><head><title>GSRS landing page</title><head><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js\"></script></head><body><h1>welcome to GSRS</h1</body></html>");
     }
 
     @GetMapping("api/v1")
