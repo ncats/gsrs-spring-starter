@@ -1,5 +1,9 @@
 package ix.core.models;
 /*
+ * 
+ * This code is ported from 2.X which used ebean ORM. The
+ * explanation is as follows:
+ * 
  * This is just to have a forcable model update
  * that signals ebean that it should actually trigger
  * an update, even if it doesn't think anything has changed.
@@ -15,5 +19,10 @@ package ix.core.models;
  */
 public interface ForceUpdatableModel {
 	public void forceUpdate();
-	public boolean tryUpdate();
+	
+	@Deprecated
+	public default boolean tryUpdate() {
+	    //TODO: this is imported from 2.X and may not be needed anymore
+	    return false;
+	}
 }

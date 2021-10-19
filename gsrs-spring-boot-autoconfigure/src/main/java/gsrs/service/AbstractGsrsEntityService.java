@@ -12,32 +12,32 @@ import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
-import gov.nih.ncats.common.sneak.Sneak;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.EntityPersistAdapter;
-import gsrs.GsrsEntityProcessorListener;
 import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.controller.IdHelper;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.json.JsonEntityUtil;
-import gsrs.repository.EditRepository;
+import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
-import ix.core.models.Edit;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -68,15 +68,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
-
-    @Autowired
-    private EditRepository editRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
-    
-    @Autowired
-    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -279,7 +270,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     public abstract I parseIdFromString(String idAsString);
 
     public EntityManager getEntityManager() {
-        return entityManager;
+        EntityManager em = StaticContextAccessor.getEntityManagerFor(this.getEntityClass());
+        return em;
     }
 
     /**
@@ -301,7 +293,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @Override
     public  CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad){
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+        
         ValidatorConfig.METHOD_TYPE methodType = partOfBatchLoad? ValidatorConfig.METHOD_TYPE.BATCH : ValidatorConfig.METHOD_TYPE.CREATE;
         return transactionTemplate.execute( status-> {
             try {
@@ -409,9 +403,23 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         return updatedEntity;
     }
 
+    private static PlatformTransactionManager getTransactionManagerForEntityManager(EntityManager em) {
+        EntityManagerFactory emf = em.getEntityManagerFactory();
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(emf);
+        return transactionManager;
+    }
+    
+    public PlatformTransactionManager getTransactionManager() {
+        Class cls = this.getEntityClass();
+        EntityManager em = StaticContextAccessor.getEntityManagerFor(cls);
+        return getTransactionManagerForEntityManager(em);
+    }
+    
     @Override
     public UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception {
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(getTransactionManager());
         
         
         return transactionTemplate.execute( status-> {
@@ -442,16 +450,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     
     @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
         
         return transactionTemplate.execute( status-> {
             try {
                 T updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
                 Key oKey = EntityWrapper.of(updatedEntity).getKey();                
                 EntityManager entityManager = oKey.getEntityManager();
-                
 
-                boolean[] forceMoreSave = new boolean[] {false};
                 
 
                 UpdateResult.UpdateResultBuilder<T> builder = UpdateResult.<T>builder();
@@ -542,9 +549,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                 		try {
                 			T saved = transactionalUpdate(oldEntity, oldJson);
-                			System.out.println("updated entity = " + saved);
+//                			System.out.println("updated entity = " + saved);
                 			String internalJSON = EntityWrapper.of(saved).toInternalJson();
-                			System.out.println("updated entity full eager fetch = " + internalJSON.hashCode());
+//                			System.out.println("updated entity full eager fetch = " + internalJSON.hashCode());
                 			builder.updatedEntity(saved);
                 			
                 			builder.status(UpdateResult.STATUS.UPDATED);
@@ -591,7 +598,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	    builder.updatedEntity(saved);
                 	    builder.status(UpdateResult.STATUS.UPDATED);
                 	    
-                	    forceMoreSave[0]=true;
                 	    return Optional.of(saved); //Delete & Create
                 	}
                 });
@@ -672,7 +678,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * @implSpec delegates to {@link #update(Object)} inside a {@link Transactional}.
      */
     protected T transactionalUpdate(T entity, String oldJson){
-
+        if(entity instanceof ForceUpdatableModel) {
+            ForceUpdatableModel mod = (ForceUpdatableModel)entity;
+            mod.forceUpdate();
+        }
         T after =  update(entity);
         return after;
     }

@@ -59,12 +59,14 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     private PlatformTransactionManager platformTransactionManager;
     
     private void logHeaders(HttpServletRequest req){
-        log.debug("HEADERS ON REQUEST ===================");
-        StringBuilder allheaders=new StringBuilder();
-        StreamUtil.forEnumeration(req.getHeaderNames()).forEach(head->{
-            allheaders.append(head + "\t" + req.getHeader(head) + "\n");
-        });
-        log.debug(allheaders.toString());
+        if(log.isDebugEnabled()) {
+            log.debug("HEADERS ON REQUEST ===================");
+            StringBuilder allheaders = new StringBuilder();
+            StreamUtil.forEnumeration(req.getHeaderNames()).forEach(head -> {
+                allheaders.append(head + "\t" + req.getHeader(head) + "\n");
+            });
+            log.debug(allheaders.toString());
+        }
     }
     
     @Override
@@ -148,7 +150,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     up = autoregisterNewUser(username, email, roles);
 
                 }
-                if(up !=null){
+                if(up !=null && up.active){
                     auth = new UserProfilePasswordAuthentication(up);
                     
                 }
@@ -170,7 +172,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     up = autoregisterNewUser(username);
 
                 }
-                if(up!=null){
+                if(up!=null && up.active){
                     if(up.acceptPassword(pass)){
                         //valid password!
                         auth = new UserProfilePasswordAuthentication(up);
@@ -186,7 +188,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String token = request.getHeader("auth-token");
             if(token !=null){
                 UserProfile up = userTokenCache.getUserProfileFromToken(token);
-                if(up!=null) {
+                if(up!=null && up.active) {
                     auth = new LegacyUserTokenAuthentication(up, token);
                 }
             }
@@ -203,7 +205,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     up = autoregisterNewUser(username);
 
                 }
-                if (up != null) {
+                if (up != null && up.active) {
                     if (up.acceptKey(key)) {
                         //valid key!
                         auth = new LegacyUserKeyAuthentication(up, key);

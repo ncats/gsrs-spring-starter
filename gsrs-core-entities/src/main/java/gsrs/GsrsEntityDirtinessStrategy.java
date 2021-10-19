@@ -41,7 +41,7 @@ public class GsrsEntityDirtinessStrategy implements CustomEntityDirtinessStrateg
     @Override
     public boolean isDirty(Object o, EntityPersister entityPersister, Session session) {
         if(canCast(o)){
-            if(!((GsrsManualDirtyMaker)o).getDirtyFields().isEmpty()){
+            if(((GsrsManualDirtyMaker)o).isDirty()){
                 return true;
             }
         }
@@ -76,10 +76,12 @@ public class GsrsEntityDirtinessStrategy implements CustomEntityDirtinessStrateg
     public void findDirty(Object o, EntityPersister entityPersister, Session session, DirtyCheckContext dirtyCheckContext) {
         if(canCast(o)) {
             Optional<String> versionField = getVersionedFieldFor(o.getClass());
-
-            Set<String> dirtyFields = ((GsrsManualDirtyMaker) o).getDirtyFields();
-            if(!dirtyFields.isEmpty()){
+            GsrsManualDirtyMaker gdm = ((GsrsManualDirtyMaker) o);
+            boolean isAllDirty = gdm.isAllDirty();
+            Set<String> dirtyFields = gdm.getDirtyFields();
+            if(isAllDirty || !dirtyFields.isEmpty()){
                 dirtyCheckContext.doDirtyChecking(attributeInformation -> {
+                    if(isAllDirty)return true;
                     //we always want to say the @Version field is dirty so it gets updated!
                     if(versionField.isPresent() && versionField.get().equals(attributeInformation.getName())){
                        return true;
