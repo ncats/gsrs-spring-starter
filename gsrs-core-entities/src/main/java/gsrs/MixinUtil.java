@@ -42,19 +42,9 @@ public class MixinUtil {
     private static void clearAllStaleReference() {
         try {
             semaphore.acquireUninterruptibly(MAX_CONCURRENT_READS);
-            int scount = _store.entrySet().size();
-            boolean changed=false;
-            Iterator<Entry<LiteralReference<Object>,Map<String,Object>>> es = _store.entrySet().iterator();
-            while(es.hasNext()) {
-                Entry<LiteralReference<Object>,Map<String,Object>> entry = es.next();
-                LiteralReference<?> lit = entry.getKey();
-                if(lit.isStale()) {
-                    es.remove();
-                    changed=true;
-                }
-            }
-            if(changed) {
-                log.debug("MixIn Store cleared from:" + scount + " to " + _store.size());
+            int oldCount = _store.entrySet().size();
+            if(_store.entrySet().removeIf(e-> e.getKey().isStale())){
+                log.debug("MixIn Store cleared from:" + oldCount + " to " + _store.size());
             }
         }finally {
             semaphore.release(MAX_CONCURRENT_READS);
