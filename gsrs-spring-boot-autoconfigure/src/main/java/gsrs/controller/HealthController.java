@@ -56,7 +56,7 @@ public class HealthController {
     }
     @GetMapping("api")
     public ResponseEntity landingPage(){
-	String script = "var _w=window;_w.$||(_w.$=function(e){var n={off:function(){},remove:function(){for(var n=document.getElementsByTagName(e),o=0;o<n.length;o++)n[o].removeChild()}};return n});";
+	String script = "var _w=window;_w.$||(_w.$=function(e){var n={off:function(){},remove:function(){for(var n=document.getElementsByTagName(e),o=0;o<n.length;o++)n[o].parentNode.removeChild(n[o])}};return n});";
         return ResponseEntity.ok().contentType(MediaType.TEXT_HTML)
                 .body("<html><head><title>GSRS landing page</title><head><script>" + script + "</script></head><body><h1>welcome to GSRS</h1</body></html>");
     }
