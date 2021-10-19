@@ -18,6 +18,11 @@ public class LiteralReference<T>{
         this.hashcode=System.identityHashCode(t);
     }
 	
+	public boolean isStale() {
+	    //there are potentially more efficient ways to do this?
+	    return this.get() == null;
+	}
+	
 	public T get(){
 		return sr.get();
 	}
@@ -39,6 +44,9 @@ public class LiteralReference<T>{
 	public static <T> LiteralReference<T> of(T t) {
 		return new LiteralReference<T>(t);
 	}
+	public static <T> LiteralReference<T> of(T t, ReferenceQueue rq) {
+        return new LiteralReference<T>(t,rq);
+    }
 	
 	public String toString(){
 		return "Ref to:[" + sr.get().toString() + "]";

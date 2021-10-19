@@ -111,4 +111,27 @@ public class MixInInterfaceTest {
         assertEquals(null,mm._getFieldOrDefault("test3", (String)null));
     }
     
+    
+    //if you run with low memory, and gc not working well, you will get an OOM
+    //error or GC error. Run with ~5M heapsize for good test
+    @Test
+    public void afterMakingLotsOfMixinsSomeGetUnloadedViaGC(){
+        try {
+            for(int j=0;j<10;j++) {
+                for(int i=0;i<100_000;i++) {
+                    makeMixin(i);
+                }
+                System.gc();
+            }
+        }catch(Throwable t) {
+            t.printStackTrace();
+            throw t;
+        }
+    }
+    
+    private void makeMixin(int n) {
+        MockMixin mm = new MockMixin(n);
+        mm._setField("foo","bar");
+    }
+    
 }

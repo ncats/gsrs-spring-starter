@@ -1,11 +1,12 @@
 package gsrs;
 
 
-import ix.utils.LiteralReference;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
+import org.junit.Test;
+
+import ix.utils.LiteralReference;
 
 public class LiteralReferenceTest{
 	
@@ -38,6 +39,7 @@ public class LiteralReferenceTest{
 		assertEquals(lr,lr);
 	}
 	
+	
 	@Test
 	public void sameLiteralDifferentLiteralReferencesAreEqualToEachOther(){
 		MockThing tst= MockThing.of(20);
@@ -47,6 +49,7 @@ public class LiteralReferenceTest{
 		assertEquals(lr1,lr2);
 	}
 	
+
 	@Test
 	public void differentInstancesOfEquivalentObjectsStillDifferent(){
 		

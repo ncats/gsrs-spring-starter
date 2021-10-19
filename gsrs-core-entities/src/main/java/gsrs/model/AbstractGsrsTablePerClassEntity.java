@@ -1,15 +1,17 @@
 package gsrs.model;
 
+import javax.persistence.EntityListeners;
+
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import gsrs.BackupEntityProcessorListener;
+import gsrs.GSRSEntityTraits;
 import gsrs.GsrsEntityProcessorListener;
 import gsrs.indexer.IndexerEntityListener;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
 
 /**
  * Base abstract class for Gsrs Entities should extend,
@@ -22,8 +24,7 @@ import javax.persistence.MappedSuperclass;
 @NoArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
-public abstract class AbstractGsrsTablePerClassEntity {
-
+public abstract class AbstractGsrsTablePerClassEntity implements GSRSEntityTraits{
 
 
 }
