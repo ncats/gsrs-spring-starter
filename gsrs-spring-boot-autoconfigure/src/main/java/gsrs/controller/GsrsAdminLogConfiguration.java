@@ -134,6 +134,12 @@ public class GsrsAdminLogConfiguration {
 
         private final Predicate<Path> filter;
 
+        @Override
+        public FileVisitResult visitFileFailed(Path arg0, IOException arg1)
+                throws IOException {
+            return FileVisitResult.SKIP_SUBTREE;
+        }
+
         public LogFileWalker(Path directory, Predicate<Path> filter) {
             this.directory = directory;
             this.filter= filter;
