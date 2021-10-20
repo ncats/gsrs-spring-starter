@@ -97,10 +97,19 @@ public class Util {
     public static void printAllExecutingStackTraces(){
         printAllExecutingStackTraces(System.out);
     }
+    
+    public static boolean includeClass(String className) {
+        if( className.startsWith("ix.") || 
+                className.startsWith("gsrs.") ||
+                className.startsWith("gov.")) {
+            return true;
+        }
+        return false;
+    }
 
     public static void printAllExecutingStackTraces(PrintStream ps){
         Thread.getAllStackTraces().entrySet().stream()
-                .filter(e->Arrays.stream(e.getValue()).filter(s->s.getClassName().contains("ix.")).findAny().isPresent())
+                .filter(e->Arrays.stream(e.getValue()).filter(s->includeClass(s.getClassName())).findAny().isPresent())
                 .forEach(c->{
                     for(StackTraceElement ste: c.getValue()){
                         ps.println(c.getKey() + "\t" + ste.toString());
