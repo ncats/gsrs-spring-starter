@@ -53,7 +53,7 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 GsrsRestApiRequestMapping gsrsMapping = AnnotatedElementUtils.findMergedAnnotation(method, GsrsRestApiRequestMapping.class);
                 ExposesResourceFor annotation = (ExposesResourceFor)AnnotationUtils.findAnnotation(beanType, ExposesResourceFor.class);
                 if (annotation != null) {
-                    entityToControllerMapper.addController(annotation.value(), beanType);
+                    entityToControllerMapper.addController(annotation.value(), beanType,gsrsRestApiAnnotation );
                 }
                 int[] versions = new int[]{1};
                 if (gsrsMapping != null) {
@@ -65,11 +65,16 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 //2. if there's an ID use the regex for that entity type
                 Set<String> apiBasePatterns = new HashSet<>();
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
-                for (int i = 0; i < versions.length; i++) {
-                    Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
-                            .combine(mapping.getPatternsCondition()).getPatterns();
-                    apiBasePatterns.addAll(patterns);
-                    apiBasesByVersions.add(patterns);
+                if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
+                    for (int i = 0; i < versions.length; i++) {
+                        Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
+                                .combine(mapping.getPatternsCondition()).getPatterns();
+                        apiBasePatterns.addAll(patterns);
+                        apiBasesByVersions.add(patterns);
+                    }
+                }else{
+                    apiBasePatterns.addAll(mapping.getPatternsCondition().getPatterns());
+                    apiBasesByVersions.add(mapping.getPatternsCondition().getPatterns());
                 }
 
                 //this will be overridden if we have get or post mappings

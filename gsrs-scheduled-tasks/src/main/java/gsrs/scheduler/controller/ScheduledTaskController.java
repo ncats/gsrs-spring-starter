@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @hasAdminRole
 @ExposesResourceFor(SchedulerPlugin.ScheduledTask.class)
-@GsrsRestApiController(context = "scheduledjobs")
+@GsrsRestApiController(context = "scheduledjobs", description = "Resource for scheduled tasks")
 public class ScheduledTaskController {
 
 //    @Autowired
