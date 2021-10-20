@@ -8,6 +8,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-@PreAuthorize("hasAnyRole('SuperUpdate','Approver','Admin')")
+@PreAuthorize("hasAnyRole('SuperUpdate','Admin')")
 public @interface hasSuperUpdateRole {
 }

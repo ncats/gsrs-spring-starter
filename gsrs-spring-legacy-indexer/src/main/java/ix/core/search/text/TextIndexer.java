@@ -150,30 +150,26 @@ public class TextIndexer implements Closeable, ProcessListener {
         listeners.remove(Objects.requireNonNull(l));
     }
 
+    //Listener notifications. Listeners get notified on
+    //1. adding a document
+    //2. deleting (based on a query, not a document)
+    //3. when wiping the index (delete all)
+    private void notifyListenersAddDocument(Document d){
+        listeners.forEach(l -> l.addDocument(d));
+    }
+    private void notifyListenersDeleteDocuments(Query q){
+        listeners.forEach(l-> l.deleteDocuments(q));
+    }
+    private void notifyListenersRemoveAll(){
+        listeners.forEach(IndexListener::removeAll);
+    }
+
+    
 	public static String FULL_TEXT_FIELD(){
 		return FULL_TEXT_FIELD;
 	}
 
-	private void notifyListenerRemoveAll(){
-	    listeners.forEach(IndexListener::removeAll);
-    }
-	public void deleteAll() {
-		try {
-			indexerService.removeAll();
-            notifyListenerRemoveAll();
-            lookups.clear();
-            IOUtil.deleteRecursivelyQuitely(suggestDir);
-            suggestDir.mkdirs();
-            IOUtil.closeQuietly(taxonWriter);
-            IOUtil.closeQuietly(taxonDir);
-            IOUtil.deleteRecursivelyQuitely(facetFileDir);
-            //also delete facet and sorter files if they exist
-            deleteFileIfExists(getFacetsConfigFile());
-            deleteFileIfExists(getSorterConfigFile());
-		} catch (Exception e) {
-			// e.printStackTrace();
-		}
-	}
+	
 
 	private void deleteFileIfExists(File f){
         if(f.exists()){
@@ -191,7 +187,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * these default parameters should be configurable!
 	 */
 	public static final int CACHE_TIMEOUT = 60 * 60 * 24; // 24 hours
-	private static int FETCH_WORKERS;
 
 	/**
 	 * Make sure to properly update the code when upgrading version
@@ -202,12 +197,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	static final String SORTER_CONFIG_FILE = "sorter_conf.json";
 	public static final String DIM_CLASS = "ix.Class";
 
-	static final ThreadLocal<DateFormat> YEAR_DATE_FORMAT = new ThreadLocal<DateFormat>() {
-		@Override
-		protected DateFormat initialValue() {
-			return new SimpleDateFormat("yyyy");
-		}
-	};
+	static final ThreadLocal<DateFormat> YEAR_DATE_FORMAT = ThreadLocal.withInitial(()->new SimpleDateFormat("yyyy"));
+	
 
 	private static final Pattern SUGGESTION_WHITESPACE_PATTERN = Pattern.compile("[\\s/]");
 
@@ -1075,16 +1066,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private Function<EntityWrapper, Boolean> deepKindFunction;
 
 
-//    public static TextIndexer getInstance(File baseDir, IndexerService indexerService){
-//        return indexers.computeIfAbsent(baseDir, dir -> {
-//            try {
-//                return new TextIndexer(dir, indexerService);
-//            } catch (IOException ex) {
-//                ex.printStackTrace();
-//                return null;
-//            }
-//        });
-//    }
 
     public DirectoryTaxonomyWriter getTaxonWriter() {
         return taxonWriter;
@@ -1116,23 +1097,22 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.deepKindFunction = deepKindFunction;
         this.indexerService = indexerService;
         this.indexerServiceFactory = indexerServiceFactory;
+        
+        initialSetup();
+
+        flushDaemon = new FlushDaemon();
+        // run daemon every 10s
+        scheduler.scheduleWithFixedDelay(flushDaemon, 10, 35, TimeUnit.SECONDS);
+
+    }
+    
+    private void initialSetup() throws IOException {
         searchManager = this.indexerService.createSearchManager();
-
-        facetFileDir = new File(dir, "facet");
+        facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
-        // if (!facetFileDir.exists())
-        // facetFileDir.mkdirs();
         taxonDir = new NIOFSDirectory(facetFileDir, NoLockFactory.getNoLockFactory());
-
-
-//        searchManager = new SearcherManager(indexWriter, true, null);
-
-        // indexReader = DirectoryReader.open(indexWriter, true);
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
-
-
-
-        facetsConfig = loadFacetsConfig(new File(dir, FACETS_CONFIG_FILE));
+        facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
             int size = taxonWriter.getSize();
             if (size > 0) {
@@ -1144,14 +1124,9 @@ public class TextIndexer implements Closeable, ProcessListener {
             facetsConfig.setRequireDimCount(DIM_CLASS, true);
         }
 
-        suggestDir = new File(dir, "suggest");
+        suggestDir = new File(baseDir, "suggest");
         Files.createDirectories(suggestDir.toPath());
-        // if (!suggestDir.exists())
-        // suggestDir.mkdirs();
-
-        // load saved lookups
         lookups = new ConcurrentHashMap<String, SuggestLookup>();
-
         File[] suggestFiles = suggestDir.listFiles();
         if(suggestFiles !=null) {
             for (File f : suggestFiles) {
@@ -1159,7 +1134,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                     try {
                         lookups.put(f.getName(), new SuggestLookup(f));
                     } catch (IOException ex) {
-                        ex.printStackTrace();
                         log.error("Unable to load lookup from " + f, ex);
                     }
                 }
@@ -1168,16 +1142,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         log.info("## " + suggestDir + ": " + lookups.size() + " lookups loaded!");
 
-        sorters = loadSorters(new File(dir, SORTER_CONFIG_FILE));
-        log.info("## " + sorters.size() + " sort fields defined!");
-
-        // setFetchWorkers (FETCH_WORKERS);
-
-        flushDaemon = new FlushDaemon();
-        // run daemon every 10s
-        scheduler.scheduleWithFixedDelay(flushDaemon, 10, 35, TimeUnit.SECONDS);
-
+        sorters = loadSorters(new File(baseDir, SORTER_CONFIG_FILE));
+        log.info("## " + sorters.size() + " sort fields defined!");        
+        
     }
+    
 
 
 	@FunctionalInterface
@@ -2606,13 +2575,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 //		if (DEBUG(2))
 //			log.debug("++ adding document " + doc);
 		indexerService.addDocument(doc);
-        listenersAddDocument(doc);
+        notifyListenersAddDocument(doc);
 		markChange();
 	}
-
-	private void listenersAddDocument(Document d){
-	    listeners.forEach(l -> l.addDocument(d));
-    }
 
 
 	//TODO: Should be an interface, which can throw a DataHasChange event ... or something
@@ -2657,14 +2622,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 				q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
 
 				indexerService.deleteDocuments(q);
-                listenersDeleteDocuments(q);
+                notifyListenersDeleteDocuments(q);
 
 				if(textIndexerConfig.isFieldsuggest()){ //eliminate
 					BooleanQuery qa = new BooleanQuery();
 					qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX+docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
 					qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
                     indexerService.deleteDocuments(qa);
-                    listenersDeleteDocuments(qa);
+                    notifyListenersDeleteDocuments(qa);
 				}
 				markChange();
 	}
@@ -2675,13 +2640,13 @@ public class TextIndexer implements Closeable, ProcessListener {
     	  .forEach(ee->{
     	        TermQuery q = new TermQuery(new Term(FIELD_KIND, ee.getName()));
     	        indexerService.deleteDocuments(q);
-    	        listenersDeleteDocuments(q);
+    	        notifyListenersDeleteDocuments(q);
 
     	        //Delete pseudo documents associated with meta-data for field suggest
     	        if(textIndexerConfig.isFieldsuggest()){
     	            TermQuery qq= new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + ee.getName()));
     	            indexerService.deleteDocuments(qq);
-    	            listenersDeleteDocuments(qq);
+    	            notifyListenersDeleteDocuments(qq);
     	        }
     	  });
 	    
@@ -2689,9 +2654,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		markChange();
 	}
 
-    private void listenersDeleteDocuments(Query q){
-        listeners.forEach(l-> l.deleteDocuments(q));
-    }
 
 	public void removeAllType(Class<?> type) throws Exception{
 		removeAllType(EntityUtils.getEntityInfoFor(type));
@@ -2700,7 +2662,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void remove(Query query) throws Exception {
 	    log.debug("## removing documents: " + query);
 	    indexerService.deleteDocuments(query);
-	    listenersDeleteDocuments(query);
+	    notifyListenersDeleteDocuments(query);
 	}
 
 
@@ -2710,7 +2672,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Query query = parser.parse(text);
 			log.debug("## removing documents: " + query);
             indexerService.deleteDocuments(query);
-            listenersDeleteDocuments(query);
+            notifyListenersDeleteDocuments(query);
 		} catch (ParseException ex) {
 			log.warn("Can't parse query expression: " + text, ex);
 			throw new IllegalArgumentException("Can't parse query: " + text, ex);
@@ -2918,30 +2880,78 @@ public class TextIndexer implements Closeable, ProcessListener {
 		shutdown();
 	}
 
-	@Override
+    @Override
 	public void newProcess() {
+        clearAllIndexes(true);
+	}
+	
+    
+    
+	public void clearAllIndexes(boolean setupForReindexing) {
         if(!isReindexing.get()) {
             flushDaemon.lockFlush();
             try {
-                closeAndClear(lookups);
-                //we have to clear our suggest fields since they are about to be completely replaced
-                //lookups.clear();
-                sorters.clear();
+                //0. Notify and mark that it's happening
                 isReindexing.set(true);
+                notifyListenersRemoveAll();
+                
+                //0.5 Set up space for use in reindexing
                 alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
-
-                indexerService.removeAll();
-                //delete suggest dirs?
-                try {
-                    IOUtil.deleteRecursively(suggestDir);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                
+                //*************
+                //1. START CLEAR SUGGEST
+                //*************
+                closeAndClear(lookups); //delete suggest dirs?
+                IOUtil.deleteRecursivelyQuitely(suggestDir);
                 //remake the suggest directory again
                 suggestDir.mkdirs();
+                //*************
+                //1. END CLEAR SUGGEST
+                //*************
+                
+                //*************
+                //2. START CLEAR SORTERS
+                //*************
+                sorters.clear();
+                deleteFileIfExists(getSorterConfigFile());
+                //*************
+                //2. END CLEAR SORTERS
+                //*************
+                
+                //*************
+                //3. START CLEAR core index service
+                //*************
+                indexerService.removeAll();
+                //*************
+                //3. END CLEAR core index service
+                //*************
+                
+                
+                //*************
+                //4. START CLEAR FACETS [THIS IS NEW]
+                //*************
+                IOUtil.closeQuietly(taxonWriter);
+                IOUtil.closeQuietly(taxonDir);
+                IOUtil.deleteRecursivelyQuitely(facetFileDir);
+                //also delete facet and sorter files if they exist
+                deleteFileIfExists(getFacetsConfigFile());
+                //*************
+                //4. END CLEAR FACETS  [THIS IS NEW]
+                //*************
+                
+                try {
+                    this.initialSetup();
+                } catch (Exception e) {
+                    log.error("Trouble starting up textindexer on reindexing", e);
+                }
+
+               
             }finally {
                 flushDaemon.unLockFlush();
             }
+        }
+        if(!setupForReindexing) {
+            finishReindexing();
         }
 	}
 
@@ -2954,10 +2964,15 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
 
     }
+    
+    private void finishReindexing() {
+        isReindexing.set(false);
+        alreadySeenDuringReindexingMode =null;
+    }
+    
 	@Override
 	public void doneProcess() {
-		isReindexing.set(false);
-        alreadySeenDuringReindexingMode =null;
+	    finishReindexing();
 	}
 
 	@Override
