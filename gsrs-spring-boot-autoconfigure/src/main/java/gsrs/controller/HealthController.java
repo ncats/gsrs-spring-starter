@@ -62,10 +62,6 @@ public class HealthController {
     }
 
     @GetMapping("api/v1")
-
-    }
-
-    @GetMapping("api/v1")
     public List<GsrsControllerInfo> getControllerInfo(){
         return controllerMapper.getControllerInfos().collect(Collectors.toList());
     }
