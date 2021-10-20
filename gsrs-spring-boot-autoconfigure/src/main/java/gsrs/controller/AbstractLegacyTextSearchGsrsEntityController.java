@@ -3,6 +3,7 @@ package gsrs.controller;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.security.hasAdminRole;
 import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.search.GsrsLegacySearchController;
@@ -52,6 +53,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      *                  defaults to {@code false}.
      * @return
      */
+    @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
     public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
         getlegacyGsrsSearchService().reindexAndWait(wipeIndex);

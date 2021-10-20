@@ -2,6 +2,7 @@ package gsrs.legacy;
 
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.repository.GsrsRepository;
+import gsrs.security.hasAdminRole;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
@@ -93,11 +94,14 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
             throw new IOException("error getting term vectors ", e);
         }
     }
+    
+
+    @hasAdminRole
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(wipeIndexFirst) {
-            indexer.deleteAll();
+            indexer.clearAllIndexes(false);            
         }else{
             EntityUtils.getEntityInfoFor(entityClass).getTypeAndSubTypes()
                     .forEach(ei->{
