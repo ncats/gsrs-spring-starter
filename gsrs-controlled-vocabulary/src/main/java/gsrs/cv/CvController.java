@@ -25,7 +25,8 @@ import java.util.stream.Stream;
  * GSRS Rest API controller for the {@link ControlledVocabulary} entity.
  */
 @ExposesResourceFor(ControlledVocabulary.class)
-@GsrsRestApiController(context = ControlledVocabularyEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.NUMBER)
+@GsrsRestApiController(context = ControlledVocabularyEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.NUMBER,
+description = "Resource for handling of CV used in GSRS")
 public class CvController extends EtagLegacySearchEntityController<CvController, ControlledVocabulary, Long> {
     @Autowired
     private CvLegacySearchService cvLegacySearchService;

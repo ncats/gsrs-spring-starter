@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsControllerInfo;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
 import gsrs.security.hasAdminRole;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,7 +30,8 @@ import java.util.stream.Collectors;
 @ExposesResourceFor(HealthController.UpStatus.class)
 public class HealthController {
 
-
+    @Autowired
+    private GsrsEntityToControllerMapper controllerMapper;
 
     @Autowired
     private List<DataSourceProperties> dataSources;
@@ -49,6 +54,18 @@ public class HealthController {
 
 
     }
+    @GetMapping("api")
+    public ResponseEntity landingPage(){
+	//String script = "var _w=window;_w.$||(_w.$=function(e){var n={off:function(){},remove:function(){for(var n=document.getElementsByTagName(e),o=0;o<n.length;o++)n[o].parentNode.removeChild(n[o])}};return n});";
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML)
+                .body("<html><head><title>GSRS landing page</title><head><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js\"></script></head><body><h1>welcome to GSRS</h1</body></html>");
+    }
+
+    @GetMapping("api/v1")
+    public List<GsrsControllerInfo> getControllerInfo(){
+        return controllerMapper.getControllerInfos().collect(Collectors.toList());
+    }
+
     @GetMapping("api/v1/health")
     public UpStatus isUp(){
         return UpStatus.INSTANCE;
