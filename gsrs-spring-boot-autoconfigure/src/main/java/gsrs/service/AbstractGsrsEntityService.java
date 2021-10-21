@@ -331,6 +331,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             } catch (Exception t) {
                 t.printStackTrace();
                 status.setRollbackOnly();
+
                 throw new RuntimeException(t);
             }
         });

@@ -100,6 +100,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         if(session !=null && !session.expired){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
+                            request.getSession().setAttribute("username", session.profile.getIdentifier());
                             return new SessionIdAuthentication(session.profile, id);
                         }
                         return null;
@@ -241,7 +242,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             //add a new Session each time !?
             
             //TODO: perhaps allow a short-circuit here if auth is outsourced
-
+            request.getSession().setAttribute("username", auth.getName());
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
         filterChain.doFilter(request, response);
