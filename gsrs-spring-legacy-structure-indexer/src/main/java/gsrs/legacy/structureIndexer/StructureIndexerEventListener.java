@@ -50,6 +50,8 @@ public class StructureIndexerEventListener {
 
     @EventListener
     public void reindexing(MaintenanceModeEvent event) throws IOException {
+        //TODO: it shouldn't be the maintenance mode itself that triggers this
+        // it should be a "WipeAllIndexes" event or something.
         if(event.getSource().isInMaintenanceMode()){
             //begin
             indexer.removeAll();

@@ -2,6 +2,8 @@ package ix.core.cache;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
 import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
 import ix.core.util.EntityUtils.Key;
@@ -248,9 +250,10 @@ public class IxCache implements GsrsCache {
 	 * policy considerations, you may be able to reject things older than this time of change
 	 * 
 	 */
+	@Override
 	public void markChange() {
 		//System.err.println(Util.getExecutionPath());
-		this.notifyChange(System.currentTimeMillis());
+		this.notifyChange(TimeUtil.getCurrentTimeMillis());
 	}
 	
 	
@@ -263,14 +266,15 @@ public class IxCache implements GsrsCache {
 		lastNotifiedChange.updateAndGet(u-> Math.max(u,time));
 	}
 	
-	public boolean hasBeenNotifiedSince(long thistime){
+	@Override
+	public boolean hasBeenMarkedSince(long thistime){
 		if(lastNotifiedChange.get()>thistime)return true;
 		return false;
 	}
 	
 	public boolean mightBeDirtySince(long t){
 		
-		return this.hasBeenNotifiedSince(t);
+		return this.hasBeenMarkedSince(t);
 	}
 
 	

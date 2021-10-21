@@ -14,10 +14,11 @@ import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
-
+import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
 import ix.core.models.Facet;
@@ -67,6 +68,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -131,6 +133,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
+	
+
+    @Autowired
+    GsrsCache gsrscache;
+    
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -1071,8 +1078,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         return taxonWriter;
     }
 
-	private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
-		// empty instance should only be used for
+    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
+        
+        // empty instance should only be used for
 		// facet subsearching so we only need to have
 		// a single thread...
         this.indexerServiceFactory = indexerServiceFactory;
@@ -1085,7 +1093,8 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.indexerService = indexerService;
         this.deepKindFunction = deepKindFunction;
     }
-    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) throws IOException{
+    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, Function<EntityWrapper, Boolean> deepKindFunction) throws IOException{
+        this.gsrscache=cache;
         this.textIndexerConfig = textIndexerConfig;
         this.indexValueMakerFactory = indexValueMakerFactory;
 	    this.baseDir = dir;
@@ -1330,9 +1339,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         private static final Pattern ROOT_CONTEXT_ADDER = Pattern
                 .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
         
-
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                .compile("\"([^\" ]*)\"");
+                                .compile("\"([^\" ]*)\"");
+
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
@@ -2000,7 +2009,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 							try {
 								Key k = LuceneSearchResultPopulator.keyOf(doc);
 								
-								searchResult.addSponsoredNamedCallable(new LuceneSearchResultPopulator.EntityFetcher(k,gsrsRepository));
+								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
 							} catch (Exception e) {
 								log.error("error adding special match callable", e);
 							}
@@ -2584,8 +2593,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	// like that
 	public void markChange(){
 		lastModified.set(TimeUtil.getCurrentTimeMillis());
-		//TODO katzelda October 2020 :haven't implemented caching yet
-//		IxCache.markChange();
+		
+		if(gsrscache!=null) {
+		    gsrscache.markChange();
+		}
 
 	}
 

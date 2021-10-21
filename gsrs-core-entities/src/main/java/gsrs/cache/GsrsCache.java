@@ -6,6 +6,8 @@ import ix.utils.CallableUtil;
 import java.io.Closeable;
 import java.util.Map;
 
+import gov.nih.ncats.common.util.TimeUtil;
+
 public interface GsrsCache extends Closeable {
     Object get(String key);
 
@@ -51,4 +53,16 @@ public interface GsrsCache extends Closeable {
     Map<String, Object> getMatchingContextByContextID(String contextID, EntityUtils.Key key);
 
     Object getConfiguration();
+    
+    
+    /**
+     * Whenever there's a change to some underlying data store (Lucene, Database, etc)
+     * that this cache will be caching, you can mark it here. Depending on certain
+     * policy considerations, you may be able to reject things older than this time of change
+     * 
+     */
+    public void markChange();
+    
+    
+    public boolean hasBeenMarkedSince(long thistime);
 }
