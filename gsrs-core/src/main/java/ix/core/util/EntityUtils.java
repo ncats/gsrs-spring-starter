@@ -32,7 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.jboss.jandex.Index;
 import org.reflections.Reflections;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import gov.nih.ncats.common.Tuple;
 
@@ -225,6 +229,9 @@ public class EntityUtils {
 		public String toInternalJson() {
 			return EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(getValue());
 		}
+		public JsonNode toInternalJsonNode() {
+            return EntityMapper.INTERNAL_ENTITY_MAPPER().valueToTree(getValue());
+        }
 
 		public String toFullJson() {
 			return EntityMapper.FULL_ENTITY_MAPPER().toJson(getValue());
@@ -2857,7 +2864,6 @@ public class EntityUtils {
 		 * referenced by this key. 
 		 * 
 		 */
-		@Transactional(readOnly = true)
 		public Optional<EntityWrapper<?>> fetch(EntityManager entityManager) {
 
 			Object o=nativeFetch(entityManager);
@@ -2868,11 +2874,47 @@ public class EntityUtils {
 		}
 		
 		
-		@JsonIgnore
-        @Transactional(readOnly = true)
         public Optional<EntityWrapper<?>> fetch() {
             return this.fetch(getEntityManager());
         }
+		
+		@JsonIgnore
+        public Optional<EntityWrapper<?>> fetchReadOnlyFull() {
+		    
+		    PlatformTransactionManager tm = getTransactionManagerForEntityManager(getEntityManager());
+
+	        TransactionTemplate tt = new TransactionTemplate(tm);
+	        tt.setReadOnly(true);
+	        tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+	        return tt.execute(s->{
+	            Optional<EntityWrapper<?>> op =this.fetch();
+//	            EntityWrapper ew = op.orElse(null);
+	            op.ifPresent(ee->{
+	                String tmp = ee.toInternalJson();
+//	                log.trace("tmp:" + tmp.hashCode());
+	                look(ee);
+	                System.out.println("tmp:" + tmp.hashCode());
+	            });
+	            return op;
+	        });
+	        
+	        
+//		    tm.
+//		    EntityManagerFactory emf = em.getEntityManagerFactory();
+		    
+//            return this.fetch(getEntityManager());
+        }
+		
+		private static void look(EntityWrapper ew) {
+		    System.out.println(ew);
+		}
+		
+		 private static PlatformTransactionManager getTransactionManagerForEntityManager(EntityManager em) {
+		        EntityManagerFactory emf = em.getEntityManagerFactory();
+		        JpaTransactionManager transactionManager = new JpaTransactionManager();
+		        transactionManager.setEntityManagerFactory(emf);
+		        return transactionManager;
+		    }
         
 		@JsonIgnore
         public EntityManager getEntityManager() {

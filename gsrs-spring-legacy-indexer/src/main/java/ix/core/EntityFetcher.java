@@ -23,9 +23,9 @@ import ix.core.util.EntityUtils.Key;
  * 
  * @author peryeata
  *
- * @param <K>
+ * @param <T>
  */
-public class EntityFetcher<K> implements NamedCallable<Key,K>{
+public class EntityFetcher<T> implements NamedCallable<Key,T>{
     private static Object getOrFetchTempRecord(Key k) throws Exception {
         GsrsCache ixcache = getIxCache();
         return ixcache.getOrElseTemp(k.toString(), ()->{
@@ -53,8 +53,8 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		NO_CACHE{
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
-				return (K) fetcher.findObject();
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
+				return (T) fetcher.findObject();
 			}
 		},
 		/**
@@ -62,8 +62,8 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		GLOBAL_CACHE{
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception{
-				return (K) getOrFetchTempRecord(fetcher.theKey);
+			<T> T get(EntityFetcher<T> fetcher) throws Exception{
+				return (T) getOrFetchTempRecord(fetcher.theKey);
 			}
 		},
 		/**
@@ -71,12 +71,12 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		GLOBAL_CACHE_WHEN_NOT_CHANGED{
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
 			    GsrsCache ixCache=getIxCache();
 				if(ixCache.hasBeenMarkedSince(fetcher.lastFetched)){
 				    ixCache.setTemp(fetcher.theKey.toString(), fetcher.findObject ());
 				}
-				return (K)ixCache.getTemp(fetcher.theKey.toString());
+				return (T)ixCache.getTemp(fetcher.theKey.toString());
 			}
 		},
 		/**
@@ -85,7 +85,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		SUPER_LOCAL_CACHE_WHEN_NOT_CHANGED{
 			//for now copy super local eager
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
 				return LOCAL_EAGER.get(fetcher);
 			}
 		},
@@ -94,8 +94,8 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		DEFAULT_CACHE{
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
-				return (K) getIxCache().getOrElse(fetcher.theKey.toString(),() -> fetcher.findObject());
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
+				return (T) getIxCache().getOrElse(fetcher.theKey.toString(),() -> fetcher.findObject());
 			}
 		},
 		/**
@@ -103,7 +103,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		ACTIVE_LOAD{
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
 				return fetcher.getOrReload().get();
 			}
 		},
@@ -112,7 +112,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		 */
 		LOCAL_EAGER {
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {
 				if(getIxCache().hasBeenMarkedSince(fetcher.lastFetched)){
 					fetcher.reload();
 				}
@@ -121,7 +121,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		},
 		BACKUP_JSON_EAGER {
 			@Override
-			<K> K get(EntityFetcher<K> fetcher) throws Exception {				
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {				
 				if(fetcher.theKey.getEntityInfo().hasBackup()){
 					try{
 						return getIxCache().getOrElseTemp(fetcher.theKey.toString() +"_JSON", ()->{
@@ -129,7 +129,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 							if(be==null){
 								return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
 							}else{
-								return (K)be.getInstantiated();
+								return (T)be.getInstantiated();
 							}
 						});
 					}catch(Exception e){
@@ -143,7 +143,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		;
 
 
-		 abstract <K> K get(EntityFetcher<K> fetcher) throws Exception;
+		 abstract <T> T get(EntityFetcher<T> fetcher) throws Exception;
 
 	}
 	public final CacheType cacheType; 
@@ -151,18 +151,18 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 	
 	final Key theKey;
 	
-	private Optional<K> stored = Optional.empty(); //
+	private Optional<T> stored = Optional.empty(); //
 	
 	long lastFetched=0l;
 	
-	public EntityFetcher(Key theKey) throws Exception{
+	public EntityFetcher(Key theKey){
 		//this(theKey, CacheType.GLOBAL_CACHE); //This is probably the best option
-		this(theKey, CacheType.LOCAL_EAGER); // This option caches based on
+		this(theKey, CacheType.BACKUP_JSON_EAGER); // This option caches based on
 		                                           // raw JSON. This turns out to
 		                                           // work pretty well, if not perfectly.
 	}
 	
-	public EntityFetcher(Key theKey, CacheType ct) throws Exception{
+	public EntityFetcher(Key theKey, CacheType ct) {
         Objects.requireNonNull(theKey);
         cacheType= ct;
         this.theKey=theKey.toRootKey();
@@ -174,7 +174,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 	// This can probably be cached without user-specific 
 	// concerns
 	@Override
-	public K call() throws Exception {
+	public T call() throws Exception {
 
 		return cacheType.get(this);
 	}
@@ -183,7 +183,7 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		return theKey;
 	}
 	
-	public Optional<K> getOrReload(){
+	public Optional<T> getOrReload(){
 		if(stored.isPresent()){
 			return stored;
 		}else{
@@ -191,8 +191,17 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		}
 	}
 	
+	public Optional<T> getIfPossible(){
+	    try{
+	        return Optional.ofNullable(this.call());
+	    }catch(Exception e) {
+	        return Optional.empty();
+	    }
+	}
+	
+	
 	//Refresh the "localest" of caches
-	public Optional<K> reload() throws NoSuchElementException {
+	public Optional<T> reload() throws NoSuchElementException {
 		try{
 			stored=Optional.of(findObject());
 		}catch(Exception e){
@@ -201,25 +210,27 @@ public class EntityFetcher<K> implements NamedCallable<Key,K>{
 		return stored;
 	}
 	
-	public K findObject () throws NoSuchElementException {
+	public T findObject () throws NoSuchElementException {
 		lastFetched=System.currentTimeMillis();
-		return (K) theKey.fetch().get().getValue();
+		return (T) theKey.fetchReadOnlyFull()
+		        .get()
+		        .getValue();
     }
 
-	public static EntityFetcher<?> of(Key k) throws Exception {
+	public static EntityFetcher<?> of(Key k){
 		return new EntityFetcher<>(k);
 	}
 	
-	public static <T> EntityFetcher<T> of(Key k, Class<T> cls) throws Exception {
+	public static <T> EntityFetcher<T> of(Key k, Class<T> cls) {
 		return new EntityFetcher<>(k);
 	}
 	
 	
-	public static EntityFetcher<?> of(Key k, CacheType cacheType) throws Exception {
+	public static EntityFetcher<?> of(Key k, CacheType cacheType) {
         return new EntityFetcher<>(k, cacheType);
     }
     
-    public static <T> EntityFetcher<T> of(Key k, Class<T> cls,CacheType cacheType) throws Exception {
+    public static <T> EntityFetcher<T> of(Key k, Class<T> cls,CacheType cacheType) {
         return new EntityFetcher<>(k, cacheType);
     }
     

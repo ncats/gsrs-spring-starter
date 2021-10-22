@@ -1730,12 +1730,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 		private Sort sorter;
 		private Filter filter;
 		private int max;
+        private boolean includeFacets = true;
 
-		public BasicLuceneSearchProvider(Sort sorter, Filter filter, int max){
-			this.sorter=sorter;
-			this.filter=filter;
-			this.max=max;
-		}
+//		public BasicLuceneSearchProvider(Sort sorter, Filter filter, int max){
+//			this.sorter=sorter;
+//			this.filter=filter;
+//			this.max=max;
+//		}
+		
+
+        public BasicLuceneSearchProvider(Sort sorter,Filter filter, int max, boolean includeFacets){
+            this.sorter=sorter;
+            this.filter=filter;
+            this.max=max;
+            this.includeFacets=includeFacets;
+        }
 
 		@Override
 		public DefaultLuceneSearchProviderResult search(IndexSearcher searcher, TaxonomyReader taxon, Query query, FacetsCollector facetCollector) throws IOException {
@@ -1749,7 +1758,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}else {
 				hits = (FacetsCollector.search(searcher, query, filter, max, facetCollector));
 			}
-			facets = new FastTaxonomyFacetCounts(taxon, facetsConfig, facetCollector);
+			if(includeFacets) {
+                facets = new FastTaxonomyFacetCounts(taxon, facetsConfig, facetCollector);
+            }
 			return new DefaultLuceneSearchProviderResult(hits,facets);
 		}
 
@@ -1786,11 +1797,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 			 * range/dynamic facets?
 			 *
 			 */
-			if (!options.getLongRangeFacets().isEmpty()){
+			if (options.getIncludeFacets() && !options.getLongRangeFacets().isEmpty()){
 				FacetsCollector.search(searcher, ddq, filter, options.max(), facetCollector);
 			}
 
-			facets = swResult.facets;
+			if(options.getIncludeFacets()) {
+			    facets = swResult.facets;
+			}
 			hits = swResult.hits;
 			return new DefaultLuceneSearchProviderResult(hits,facets);
 		}
@@ -1919,7 +1932,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		//no specified facets (normal search)
 		if (options.getFacets().isEmpty()) {
-			lsp = new BasicLuceneSearchProvider(sorter, filter, options.max());
+			lsp = new BasicLuceneSearchProvider(sorter, filter, options.max(), options.getIncludeFacets());
 		} else {
 			DrillDownQuery ddq = new DrillDownQuery(facetsConfig, query);
 			List<Filter> nonStandardFacets = new ArrayList<Filter>();
@@ -1962,13 +1975,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			// drilldown
 			} else {
-				lsp = new BasicLuceneSearchProvider(sorter, filter, options.max());
+				lsp = new BasicLuceneSearchProvider(sorter, filter, options.max(), options.getIncludeFacets());
 			}
 		} // facets is empty
 
 
 		//Promote special matches
-		if(searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
+		if(searchResult.getOptions().getPromoteSpecialMatches() && searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
 		    //TODO katzelda October 2020 : don't support sponsored fields yet that's a Substance only thing
 		    //Special "promoted" match types
 			Set<String> specialExactMatchFields =  searchResult.getOptions()
@@ -2026,10 +2039,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
 
-		collectBasicFacets(lspResult.getFacets(), searchResult);
+		if(options.getIncludeFacets()) {
+		     collectBasicFacets(lspResult.getFacets(), searchResult);
+		     collectLongRangeFacets(facetCollector, searchResult);
+		}
 
 		
-		collectLongRangeFacets(facetCollector, searchResult);
 
 		if(options.getIncludeBreakdown() && textIndexerConfig.isFieldsuggest() && options.getKind()!=null){
 			EntityInfo<?> entityMeta= EntityUtils.getEntityInfoFor(options.getKind());
@@ -2077,7 +2092,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 						f = new FieldCacheTermsFilter(FIELD_KIND, analyzers.toArray(new String[0]));
 					}
-					LuceneSearchProvider lsp2 = new BasicLuceneSearchProvider(null, f, options.max());
+					LuceneSearchProvider lsp2 = new BasicLuceneSearchProvider(null, f, options.max(),true);
 					LuceneSearchProviderResult res=lsp2.search(searcher, taxon,oq.k(),facetCollector2);
 					res.getFacets().getAllDims(DEFAULT_ANALYZER_MATCH_FIELD_LIMIT).forEach(fr->{
 						if(fr.dim.equals(TextIndexer.ANALYZER_FIELD)){
