@@ -1,12 +1,14 @@
 package gsrs.startertests.userSupport;
 
 import gsrs.EntityPersistAdapter;
+import gsrs.repository.PrincipalRepository;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.jupiter.ResetAllEntityProcessorBeforeEachExtension;
 import ix.core.EntityProcessor;
 import ix.core.models.Principal;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,6 +18,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,7 +30,7 @@ public class InjectPrincipalTest extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private TestEntityManager entityManager;
 
-    Principal myUser, otherUser;
+    private static Principal myUser, otherUser;
 
     @RegisterExtension
     ResetAllEntityProcessorBeforeEachExtension resetAllEntityProcessorBeforeEachExtension = new ResetAllEntityProcessorBeforeEachExtension();
@@ -33,15 +38,30 @@ public class InjectPrincipalTest extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private TestEntityProcessorFactory entityProcessorFactory;
 
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
+
+
+    private static boolean initialized = false;
 
     @BeforeEach
     public void init(){
-        myUser = new Principal("myUser", null);
-        entityManager.persistAndFlush(myUser);
+        if(!initialized) {
+            initialized=true;
+            myUser = new Principal("myUser", null);
 
-        otherUser = new Principal("otherUser", null);
-        entityManager.persistAndFlush(otherUser);
+
+            otherUser = new Principal("otherUser", null);
+            TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            tx.executeWithoutResult(ignored -> {
+
+
+                entityManager.persistAndFlush(otherUser);
+                entityManager.persistAndFlush(myUser);
+            });
+        }
     }
 
     @Test
@@ -52,8 +72,10 @@ public class InjectPrincipalTest extends AbstractGsrsJpaEntityJunit5Test {
 
         EntityWithUser saved = entityManager.persistAndFlush(sut);
         assertEquals("foo", saved.getFoo());
-        assertEquals(myUser, saved.getCreatedBy());
-        assertEquals(myUser, saved.getModifiedBy());
+        //because we get different transactions these might be different objects
+
+        assertEquals(myUser.username, saved.getCreatedBy().username);
+        assertEquals(myUser.username, saved.getModifiedBy().username);
         assertNotNull(saved.getId());
     }
 
@@ -87,8 +109,8 @@ public class InjectPrincipalTest extends AbstractGsrsJpaEntityJunit5Test {
         Long id = saved.getId();
         EntityWithUser updated= entityManager.persistAndFlush(saved);
         assertEquals("newFoo", updated.getFoo());
-        assertEquals(otherUser, updated.getCreatedBy());
-        assertEquals(myUser, updated.getModifiedBy());
+        assertEquals(otherUser.username, updated.getCreatedBy().username);
+        assertEquals(myUser.username, updated.getModifiedBy().username);
         assertEquals(id, updated.getId());
     }
 }

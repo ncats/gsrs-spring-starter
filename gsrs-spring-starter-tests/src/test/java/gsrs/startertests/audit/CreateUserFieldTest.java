@@ -15,6 +15,9 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -36,12 +39,18 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private PrincipalRepository principalRepository;
 
-    
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
     @BeforeEach
     public void addUserToRepo(){
-        principalRepository.save(new Principal("myUser", null));
-        principalRepository.save(new Principal("otherUser", null));
+        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(ignored ->{
+            principalRepository.save(new Principal("myUser", null));
+            principalRepository.save(new Principal("otherUser", null));
+        });
+
     }
 
     @Test
