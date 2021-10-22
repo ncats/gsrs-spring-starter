@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
 
@@ -27,6 +28,8 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
 
     private final GsrsRepository gsrsRepository;
     private final Class<T> entityClass;
+
+    private AtomicBoolean reindexing = new AtomicBoolean(false);
 
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
         gsrsRepository= repository;
@@ -99,36 +102,43 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @hasAdminRole
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){
-        TextIndexer indexer = textIndexerFactory.getDefaultInstance();
-        if(wipeIndexFirst) {
-            indexer.clearAllIndexes(false);            
-        }else{
-            EntityUtils.getEntityInfoFor(entityClass).getTypeAndSubTypes()
-                    .forEach(ei->{
+        //only run if we are not reindexing
+        if(reindexing.compareAndSet(false, true)) {
+
+            try {
+                TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+                if (wipeIndexFirst) {
+                    indexer.clearAllIndexes(false);
+                } else {
+                    EntityUtils.getEntityInfoFor(entityClass).getTypeAndSubTypes()
+                            .forEach(ei -> {
+                                try {
+                                    indexer.removeAllType(ei.getEntityClass());
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            });
+
+                }
+                Pageable pageRequest = PageRequest.of(0, 200);
+                Page<T> onePage = gsrsRepository.findAll(pageRequest);
+
+                while (!onePage.isEmpty()) {
+                    pageRequest = pageRequest.next();
+                    //DO SOMETHING WITH ENTITIES
+                    onePage.forEach(entity -> {
                         try {
-                            indexer.removeAllType(ei.getEntityClass());
-                        } catch (Exception e) {
+                            indexer.add(EntityUtils.EntityWrapper.of(entity));
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
                     });
 
-        }
-        Pageable pageRequest = PageRequest.of(0, 200);
-        Page<T> onePage = gsrsRepository.findAll(pageRequest);
-
-        while (!onePage.isEmpty()) {
-            pageRequest = pageRequest.next();
-
-            //DO SOMETHING WITH ENTITIES
-            onePage.forEach(entity -> {
-                try {
-                    indexer.add(EntityUtils.EntityWrapper.of(entity));
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    onePage = gsrsRepository.findAll(pageRequest);
                 }
-            });
-
-            onePage = gsrsRepository.findAll(pageRequest);
+            }finally {
+                reindexing.set(false);
+            }
         }
     }
 }
