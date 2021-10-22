@@ -66,7 +66,6 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
 		break;
             }
         }
-        System.out.println("Setting session cookie:" + id);
 
         // Add a session cookie
         Cookie sessionCookie = new Cookie( sessionCookieName, id );

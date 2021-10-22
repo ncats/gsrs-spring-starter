@@ -8,6 +8,7 @@ import gsrs.security.GsrsUserProfileDetails;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +20,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -44,12 +48,16 @@ public class AuditConfig {
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
     
     @Bean
     public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository
 //            , @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
             ) {
-        return new SecurityAuditor(principalRepository, entityManager);
+        return new SecurityAuditor(principalRepository, entityManager,platformTransactionManager);
     }
     
     @Bean
@@ -70,6 +78,7 @@ public class AuditConfig {
     public static class SecurityAuditor implements AuditorAware<Principal> {
         private PrincipalRepository principalRepository;
 
+        private PlatformTransactionManager transactionManager;
         private EntityManager em;
         //use an LRU Cache of name look ups. without this on updates to Substances
         //we get a stackoverflow looking up the name over and over for some reason...
@@ -84,9 +93,10 @@ public class AuditConfig {
         public void clearCache(){
             principalCache.clear();
         }
-        public SecurityAuditor(PrincipalRepository principalRepository, EntityManager em) {
+        public SecurityAuditor(PrincipalRepository principalRepository, EntityManager em, PlatformTransactionManager platformTransactionManager) {
             this.principalRepository = principalRepository;
             this.em = em;
+            this.transactionManager=platformTransactionManager;
         }
 
         @Override
@@ -99,7 +109,11 @@ public class AuditConfig {
 
             if(auth instanceof GsrsUserProfileDetails){
                 //refetch from repository because the one from the authentication is "detached"
-                return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
+                //TODO: does that matter?
+                TransactionTemplate tx = new TransactionTemplate(transactionManager);
+                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                tx.setReadOnly(true);
+                return tx.execute(s->principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id));
 
             }
             String name = auth.getName();
@@ -118,7 +132,11 @@ public class AuditConfig {
                             //so we save them as Optionals
                             //TODO should we use configuration to add new user if missing?
                             try {
-                                Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
+                                TransactionTemplate tx = new TransactionTemplate(transactionManager);
+                                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                                tx.setReadOnly(true);
+                                Principal p = tx.execute(s->principalRepository.findDistinctByUsernameIgnoreCase(n));
+//                                Principal p = principalRepository.findDistinctByUsernameIgnoreCase(n);
                                 return Optional.ofNullable(p);
                             } catch (Throwable t) {
                                 return Optional.empty();

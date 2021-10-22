@@ -99,6 +99,7 @@ public interface GsrsEntityService<T, I> {
         private boolean created;
         private ValidationResponse<T> validationResponse;
         private T createdEntity;
+        private Throwable throwable;
     }
 
     @Data

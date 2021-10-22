@@ -133,11 +133,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-	
 
-    @Autowired
-    GsrsCache gsrscache;
-    
+	@Autowired
+	GsrsCache gsrscache;
+
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -1727,18 +1726,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	public class BasicLuceneSearchProvider implements LuceneSearchProvider{
-		private Sort sorter;
-		private Filter filter;
-		private int max;
-        private boolean includeFacets = true;
+	    private Sort sorter;
+	    private Filter filter;
+	    private int max;
+	    private boolean includeFacets = true;
 
 //		public BasicLuceneSearchProvider(Sort sorter, Filter filter, int max){
 //			this.sorter=sorter;
 //			this.filter=filter;
 //			this.max=max;
 //		}
-		
-
         public BasicLuceneSearchProvider(Sort sorter,Filter filter, int max, boolean includeFacets){
             this.sorter=sorter;
             this.filter=filter;
@@ -1753,14 +1750,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 			//FacetsCollector.
 			//with sorter
 			if (sorter != null) {
-				hits = (FacetsCollector.search(searcher, query, filter, max, sorter, facetCollector));
+			    hits = (FacetsCollector.search(searcher, query, filter, max, sorter, facetCollector));
 			//without sorter
 			}else {
-				hits = (FacetsCollector.search(searcher, query, filter, max, facetCollector));
+			    hits = (FacetsCollector.search(searcher, query, filter, max, facetCollector));
 			}
 			if(includeFacets) {
-                facets = new FastTaxonomyFacetCounts(taxon, facetsConfig, facetCollector);
-            }
+			    facets = new FastTaxonomyFacetCounts(taxon, facetsConfig, facetCollector);
+			}
 			return new DefaultLuceneSearchProviderResult(hits,facets);
 		}
 
@@ -2608,7 +2605,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	// like that
 	public void markChange(){
 		lastModified.set(TimeUtil.getCurrentTimeMillis());
-		
 		if(gsrscache!=null) {
 		    gsrscache.markChange();
 		}

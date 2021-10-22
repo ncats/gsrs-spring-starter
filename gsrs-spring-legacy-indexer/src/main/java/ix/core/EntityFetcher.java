@@ -4,8 +4,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.checkerframework.checker.units.qual.K;
+import org.apache.poi.ss.formula.functions.T;
 
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.BackupRepository;
 import gsrs.springUtils.StaticContextAccessor;
@@ -13,6 +14,7 @@ import ix.core.models.BackupEntity;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
+import ix.utils.CallableUtil.TypedCallable;
 
 
 /**
@@ -119,28 +121,39 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 				return fetcher.stored.get();
 			}
 		},
+		/**
+		 * Fetch from:
+		 * 1. Cache Ofor JSON
+		 * 2. 
+		 */
 		BACKUP_JSON_EAGER {
 			@Override
 			<T> T get(EntityFetcher<T> fetcher) throws Exception {				
 				if(fetcher.theKey.getEntityInfo().hasBackup()){
-					try{
-						return getIxCache().getOrElseTemp(fetcher.theKey.toString() +"_JSON", ()->{
-							BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
-							if(be==null){
-								return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
-							}else{
-								return (T)be.getInstantiated();
-							}
-						});
-					}catch(Exception e){
-//						e.printStackTrace();
-						return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
-					}
+				    GsrsCache ixCache=getIxCache();
+				    String jkey = fetcher.theKey.toString() +"_JSON";
+				    TypedCallable<T> caller = ()->{
+                        BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
+                        if(be==null){
+                            return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
+                        }else{
+                            return (T)be.getInstantiated();
+                        }
+                    };
+                    try{
+                        if(ixCache.hasBeenMarkedSince(fetcher.lastFetched)){
+                            T n = caller.call();
+                            fetcher.lastFetched=TimeUtil.getCurrentTimeMillis();
+                            ixCache.setTemp(fetcher.theKey.toString(), n);
+                        }
+                        return ixCache.getOrElseTemp(jkey, caller);
+                    }catch(Exception e){
+                        return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
+                    }
 				}
 				return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
 			}
-		}
-		;
+		};
 
 
 		 abstract <T> T get(EntityFetcher<T> fetcher) throws Exception;
@@ -211,7 +224,7 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 	}
 	
 	public T findObject () throws NoSuchElementException {
-		lastFetched=System.currentTimeMillis();
+	    lastFetched=TimeUtil.getCurrentTimeMillis();
 		return (T) theKey.fetchReadOnlyFull()
 		        .get()
 		        .getValue();

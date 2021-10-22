@@ -56,7 +56,8 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
 
     @Autowired
     GsrsControllerConfiguration gsrsControllerConfiguration;
-    
+    @Autowired
+    private LegacyAuthenticationConfiguration authenticationConfiguration;
 
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
@@ -88,21 +89,39 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     public LegacyAuthenticationFilter legacyAuthenticationFilter(){
         return new LegacyAuthenticationFilter();
     }
+    private HttpSecurity  handleAuthenicationLockdown(HttpSecurity httpSecurity) throws Exception {
+        if(authenticationConfiguration.isAllownonauthenticated()){
+            return httpSecurity.authorizeRequests()
+                    .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
+                    .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
+                    .antMatchers(HttpMethod.POST, "/api/*").authenticated()
+                    .antMatchers(HttpMethod.GET, "/logout").authenticated()
+                    .and();
+        }
+
+        return httpSecurity.authorizeRequests()
+                .antMatchers(HttpMethod.GET, "/api/v1/whoami").permitAll()
+                .anyRequest().authenticated()                
+                .and();
+
+    }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        http
-                .addFilterBefore(legacyAuthenticationFilter(), LogoutFilter.class)
-                .authorizeRequests()
-                .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
-                .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
-                .antMatchers(HttpMethod.POST, "/api/*").authenticated()
+        handleAuthenicationLockdown(http
+                .addFilterBefore(legacyAuthenticationFilter(), LogoutFilter.class))
+//
+//                .authorizeRequests()
+//                .anyRequest().authenticated()
+//                .antMatchers(HttpMethod.DELETE, "/api/*").authenticated()
+//                .antMatchers(HttpMethod.PUT, "/api/*").authenticated()
+//                .antMatchers(HttpMethod.POST, "/api/*").authenticated()
 //                .antMatchers(HttpMethod.GET, "/logout").authenticated()
                 
 //        .antMatchers("/login*").permitAll()
 
 //                .anyRequest().authenticated()
-                .and()
+//                .and()
                
 //                .and()
 //                .authenticationProvider(legacyGsrsAuthenticationProvider)
