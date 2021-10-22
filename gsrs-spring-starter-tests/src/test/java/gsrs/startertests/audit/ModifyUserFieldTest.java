@@ -22,6 +22,10 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -60,6 +64,7 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
          * @throws FailProcessingException
          */
         @Override
+        @Transactional
         public void prePersist(MyEntity obj) throws FailProcessingException {
             init.getSync();
             Principal myUser = principalRepository.findDistinctByUsernameIgnoreCase("myUser");
@@ -85,6 +90,8 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private TestEntityProcessorFactory entityProcessorFactory;
 
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
     @Autowired
     private PrincipalRepository principalRepository;
@@ -95,8 +102,12 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
         entityProcessorFactory.clearAll();
         entityProcessorFactory.addEntityProcessor(new SetCreatedBy());
-        principalRepository.save(new Principal("myUser", null));
-        principalRepository.save(new Principal("otherUser", null));
+        TransactionTemplate template = new TransactionTemplate(platformTransactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status-> {
+                    principalRepository.saveAndFlush(new Principal("myUser", null));
+                    principalRepository.saveAndFlush(new Principal("otherUser", null));
+                });
 
         MyEntity sut = new MyEntity();
         sut.setFoo("myFoo");
