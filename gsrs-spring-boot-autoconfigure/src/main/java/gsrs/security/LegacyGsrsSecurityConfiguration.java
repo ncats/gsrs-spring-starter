@@ -100,8 +100,8 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
         }
 
         return httpSecurity.authorizeRequests()
-                .anyRequest().authenticated()
                 .antMatchers(HttpMethod.GET, "/api/v1/whoami").permitAll()
+                .anyRequest().authenticated()                
                 .and();
 
     }
