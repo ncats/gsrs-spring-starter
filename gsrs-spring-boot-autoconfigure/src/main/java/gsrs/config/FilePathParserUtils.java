@@ -1,6 +1,7 @@
 package gsrs.config;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -49,8 +50,12 @@ public class FilePathParserUtils {
 
         String fpath = outputPath.replace("%DATE%", date)
                                  .replace("%TIME%", time);
-        File ff = new File(rootPath, fpath);
-        return ff;
+        File rf = new File(fpath);
+        if(rf.isAbsolute()) {
+           return rf; 
+        }else {
+           return new File(rootPath, fpath);
+        }
     }
 
     
@@ -58,7 +63,14 @@ public class FilePathParserUtils {
     //class specified. Though this could serve as a backup
     private static File getDefaultRootDir() {
         GsrsAdminLogConfiguration logConf = StaticContextAccessor.getBean(GsrsAdminLogConfiguration.class);
-        return logConf.getRootPath();
+        File f = logConf.getRootPath();
+        if(f!=null && !f.isAbsolute()) {
+            f= f.getAbsoluteFile();
+        }
+        if(f!=null) {
+            return f.toPath().normalize().toFile();
+        }
+        return null;
     }
 
 }
