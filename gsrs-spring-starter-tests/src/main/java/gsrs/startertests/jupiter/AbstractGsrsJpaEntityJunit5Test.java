@@ -77,7 +77,19 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
     @AfterEach
     public void deleteFile() throws IOException {
         StaticContextAccessor.addStaticShutdownRunnable(()->{
-            IOUtil.deleteRecursivelyQuitely(tempDir);
+            //sometimes there's a background thread still working on the files inside our directory
+            int tries=0;
+            do {
+                tries++;
+                IOUtil.deleteRecursivelyQuitely(tempDir);
+                if(tempDir.exists()){
+                    try {
+                        Thread.sleep(1_000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }while(tempDir.exists() && tries < 5);
         });
     }
 
