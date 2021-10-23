@@ -18,17 +18,11 @@ public interface GateKeeper extends Closeable {
     boolean removeAllChildKeys(String key);
 
     <T> T getSinceOrElse(String key, long creationTime, TypedCallable<T> generator) throws Exception;
-
-    <T> T getSinceOrElse(String key, long creationTime, TypedCallable<T> generator, int seconds) throws Exception;
-
-    <T> T getOrElseRaw(String key, TypedCallable<T> generator, int seconds) throws Exception;
-    <T> T getOrElseRaw(String key, long creationTime, TypedCallable<T> generator, int seconds) throws Exception;
+    <T> T getSinceOrElseRaw(String key, long creationTime, TypedCallable<T> generator) throws Exception;
 
     Object get(String key);
 
     Object getRaw(String key);
-
-    <T> T getOrElse(String key, TypedCallable<T> generator, int seconds) throws Exception;
 
     void put(String key, Object value, int expiration);
 

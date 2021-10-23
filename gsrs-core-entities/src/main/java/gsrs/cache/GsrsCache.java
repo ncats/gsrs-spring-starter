@@ -19,14 +19,7 @@ public interface GsrsCache extends Closeable {
     <T> T getOrElse (String key, CallableUtil.TypedCallable<T> generator)
                                        throws Exception;
 
-    // mimic play.Cache
-    <T> T getOrElse (String key, CallableUtil.TypedCallable<T> generator,
-                     int seconds) throws Exception;
-
     void clearCache();
-
-    <T> T getOrElseRaw (String key, CallableUtil.TypedCallable<T> generator,
-                        int seconds) throws Exception;
 
     boolean remove(String key);
 
@@ -37,14 +30,18 @@ public interface GsrsCache extends Closeable {
     void setRaw(String key, Object value);
 
     @SuppressWarnings("unchecked")
-    <T> T getOrElseTemp(String key, CallableUtil.TypedCallable<T> generator) throws Exception;
+    <T> T getOrElseRawIfDirty(String key, CallableUtil.TypedCallable<T> generator) throws Exception;
+    
 
     @SuppressWarnings("unchecked")
-    <T> T updateTemp(String key, T t) throws Exception;
-
-    Object getTemp(String key);
-
-    void setTemp(String key, Object value);
+    <T> T getOrElseIfDirty(String key, CallableUtil.TypedCallable<T> generator) throws Exception;
+//
+//    @SuppressWarnings("unchecked")
+//    <T> T updateTemp(String key, T t) throws Exception;
+//
+//    Object getTemp(String key);
+//
+//    void setTemp(String key, Object value);
 
     void addToMatchingContext(String contextID, EntityUtils.Key key, String prop, Object value);
 
@@ -62,7 +59,6 @@ public interface GsrsCache extends Closeable {
      * 
      */
     public void markChange();
-    
     
     public boolean hasBeenMarkedSince(long thistime);
 }

@@ -28,10 +28,21 @@ import ix.utils.CallableUtil.TypedCallable;
  * @param <T>
  */
 public class EntityFetcher<T> implements NamedCallable<Key,T>{
-    private static Object getOrFetchTempRecord(Key k) throws Exception {
+    private static Object getOrFetchRecordIfNotDirty(Key k) throws Exception {
         GsrsCache ixcache = getIxCache();
-        return ixcache.getOrElseTemp(k.toString(), ()->{
-            Optional<EntityUtils.EntityWrapper<?>> ret = k.fetch();
+        return ixcache.getOrElseRawIfDirty(k.toString(), ()->{
+            Optional<EntityUtils.EntityWrapper<?>> ret = k.fetchReadOnlyFull();
+            if(ret.isPresent()){
+                return ret.get().getValue();
+            }
+            return null;
+        });
+    }
+    
+    private static Object getOrFetchRecordPerUserIfNotDirty(Key k) throws Exception {
+        GsrsCache ixcache = getIxCache();
+        return ixcache.getOrElseIfDirty(k.toString(), ()->{
+            Optional<EntityUtils.EntityWrapper<?>> ret = k.fetchReadOnlyFull();
             if(ret.isPresent()){
                 return ret.get().getValue();
             }
@@ -48,6 +59,23 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
         BackupRepository repo = StaticContextAccessor.getBean(BackupRepository.class);
         return repo;
     }
+    
+    /*
+     * 
+     * So, there's a cache.
+     * 
+     * If that cache is dirty, we shouldn't fetch from it.
+     * 
+     * How do we know if the cache is dirty? We know the time it was last
+     * 
+     * 
+     * 
+     * 
+     * 
+     */
+    
+    
+    
 
 	public enum CacheType{
 		/**
@@ -65,41 +93,19 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 		GLOBAL_CACHE{
 			@Override
 			<T> T get(EntityFetcher<T> fetcher) throws Exception{
-				return (T) getOrFetchTempRecord(fetcher.theKey);
+				return (T) getOrFetchRecordIfNotDirty(fetcher.theKey);
 			}
 		},
-		/**
-		 * look at last indexing, is it older then last time this was put?
-		 */
-		GLOBAL_CACHE_WHEN_NOT_CHANGED{
-			@Override
-			<T> T get(EntityFetcher<T> fetcher) throws Exception {
-			    GsrsCache ixCache=getIxCache();
-				if(ixCache.hasBeenMarkedSince(fetcher.lastFetched)){
-				    ixCache.setTemp(fetcher.theKey.toString(), fetcher.findObject ());
-				}
-				return (T)ixCache.getTemp(fetcher.theKey.toString());
-			}
-		},
-		/**
-		 * look at last indexing, is it older then last time this was called?
-		 */
-		SUPER_LOCAL_CACHE_WHEN_NOT_CHANGED{
-			//for now copy super local eager
-			@Override
-			<T> T get(EntityFetcher<T> fetcher) throws Exception {
-				return LOCAL_EAGER.get(fetcher);
-			}
-		},
-		/**
-		 * OLD way (user-specific) (WARNING: BROKEN?)
-		 */
-		DEFAULT_CACHE{
-			@Override
-			<T> T get(EntityFetcher<T> fetcher) throws Exception {
-				return (T) getIxCache().getOrElse(fetcher.theKey.toString(),() -> fetcher.findObject());
-			}
-		},
+
+        /**
+         * OLD way (user-specific) (WARNING: BROKEN?)
+         */
+        DEFAULT_CACHE{
+            @Override
+            <T> T get(EntityFetcher<T> fetcher) throws Exception {
+                return (T) getOrFetchRecordPerUserIfNotDirty(fetcher.theKey);
+            }
+        },
 		/**
 		 * Store object here, return it directly.
 		 */
@@ -109,49 +115,28 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 				return fetcher.getOrReload().get();
 			}
 		},
-		/**
-		 * Store object here, right away, return it directly (this is almost what happened before).
-		 */
-		LOCAL_EAGER {
-			@Override
-			<T> T get(EntityFetcher<T> fetcher) throws Exception {
-				if(getIxCache().hasBeenMarkedSince(fetcher.lastFetched)){
-					fetcher.reload();
-				}
-				return fetcher.stored.get();
-			}
-		},
-		/**
-		 * Fetch from:
-		 * 1. Cache Ofor JSON
-		 * 2. 
-		 */
 		BACKUP_JSON_EAGER {
 			@Override
 			<T> T get(EntityFetcher<T> fetcher) throws Exception {				
 				if(fetcher.theKey.getEntityInfo().hasBackup()){
 				    GsrsCache ixCache=getIxCache();
 				    String jkey = fetcher.theKey.toString() +"_JSON";
-				    TypedCallable<T> caller = ()->{
+				    @SuppressWarnings("unchecked")
+                    TypedCallable<T> caller = ()->{
                         BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
                         if(be==null){
-                            return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
+                            return GLOBAL_CACHE.get(fetcher);
                         }else{
                             return (T)be.getInstantiated();
                         }
                     };
                     try{
-                        if(ixCache.hasBeenMarkedSince(fetcher.lastFetched)){
-                            T n = caller.call();
-                            fetcher.lastFetched=TimeUtil.getCurrentTimeMillis();
-                            ixCache.setTemp(fetcher.theKey.toString(), n);
-                        }
-                        return ixCache.getOrElseTemp(jkey, caller);
+                        return ixCache.getOrElseRawIfDirty(jkey, caller);
                     }catch(Exception e){
-                        return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
+                        return GLOBAL_CACHE.get(fetcher);
                     }
 				}
-				return GLOBAL_CACHE_WHEN_NOT_CHANGED.get(fetcher);
+				return GLOBAL_CACHE.get(fetcher);
 			}
 		};
 
@@ -179,16 +164,10 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
         Objects.requireNonNull(theKey);
         cacheType= ct;
         this.theKey=theKey.toRootKey();
-        if(cacheType == CacheType.LOCAL_EAGER){
-            reload();
-        }
     }
 	
-	// This can probably be cached without user-specific 
-	// concerns
 	@Override
 	public T call() throws Exception {
-
 		return cacheType.get(this);
 	}
 	
@@ -223,7 +202,8 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 		return stored;
 	}
 	
-	public T findObject () throws NoSuchElementException {
+	@SuppressWarnings("unchecked")
+    public T findObject () throws NoSuchElementException {
 	    lastFetched=TimeUtil.getCurrentTimeMillis();
 		return (T) theKey.fetchReadOnlyFull()
 		        .get()
@@ -243,7 +223,7 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
         return new EntityFetcher<>(k, cacheType);
     }
     
-    public static <T> EntityFetcher<T> of(Key k, Class<T> cls,CacheType cacheType) {
+    public static <T> EntityFetcher<T> of(Key k, CacheType cacheType,Class<T> cls) {
         return new EntityFetcher<>(k, cacheType);
     }
     
