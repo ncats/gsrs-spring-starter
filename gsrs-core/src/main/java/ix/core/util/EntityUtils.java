@@ -2881,9 +2881,7 @@ public class EntityUtils {
 		@JsonIgnore
         public Optional<EntityWrapper<?>> fetchReadOnlyFull() {
 		    
-		    PlatformTransactionManager tm = getTransactionManagerForEntityManager(getEntityManager());
-
-	        TransactionTemplate tt = new TransactionTemplate(tm);
+	        TransactionTemplate tt = getTransactionTemplate();
 	        tt.setReadOnly(true);
 	        tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	        return tt.execute(s->{
@@ -2891,23 +2889,14 @@ public class EntityUtils {
 //	            EntityWrapper ew = op.orElse(null);
 	            op.ifPresent(ee->{
 	                String tmp = ee.toInternalJson();
-//	                log.trace("tmp:" + tmp.hashCode());
-	                look(ee);
 	                System.out.println("tmp:" + tmp.hashCode());
 	            });
 	            return op;
 	        });
 	        
 	        
-//		    tm.
-//		    EntityManagerFactory emf = em.getEntityManagerFactory();
-		    
-//            return this.fetch(getEntityManager());
         }
 		
-		private static void look(EntityWrapper ew) {
-		    System.out.println(ew);
-		}
 		
 		 private static PlatformTransactionManager getTransactionManagerForEntityManager(EntityManager em) {
 		        EntityManagerFactory emf = em.getEntityManagerFactory();
@@ -2921,6 +2910,13 @@ public class EntityUtils {
             return StaticContextAccessor.getEntityManagerFor(this);
         }
 		
+
+        @JsonIgnore
+        public TransactionTemplate getTransactionTemplate() {
+            PlatformTransactionManager pm= getTransactionManagerForEntityManager(this.getEntityManager());
+            TransactionTemplate ttemp = new TransactionTemplate(pm);
+            return ttemp;
+        }
 		/**
          * Uses the supplied {@link GsrsRepository} to find the entity
          * referenced by this key. Note that this seems to work more reliably

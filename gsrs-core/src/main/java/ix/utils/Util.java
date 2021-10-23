@@ -377,7 +377,7 @@ public class Util {
     }
     
     public static String generateRandomString(int len){
-    	String alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwzyz";
+    	final String alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwzyz";
     	String k="";
     	for(int i=0;i<len;i++){
     		int l=(int)(Math.random()*alpha.length());
@@ -896,36 +896,12 @@ public class Util {
     }
     
 
-	
-	
-    
-	
-	/**
-	 * Represent a GinasChemicalStructure as a GinasCommonData element
-	 * for use in other existing pipelines.
-	 * 
-	 * <p>
-	 * Note: This method exists here because ebean has difficulty dealing
-	 * with ix.ginas.models embedded in other ix.ginas.models. Ideally, GinasChemicalStructure
-	 * would just implement a common interface with GinasCommonData, and the need
-	 * for this method is a good reminder that this could be refactored.
-	 * </p>
-	 * 
-	 * @param struc
-	 * @return
+	/*
+  ====================
+   ___   ___ ___  ___ 
+  / __| / __| _ \/ __|
+ | (_ | \__ \ | /\__ \
+  \___| |___/_|_\|___/
+  ===============3.0==
 	 */
-	//TODO katzelda October 2020 : commenting this out for now will deal with when we get to Substances
-    /*
-	public static GinasCommonData asAuditInfo(GinasChemicalStructure struc){
-		GinasCommonData dat= new GinasCommonData();
-		dat.created=struc.created;
-		dat.createdBy=struc.createdBy;
-		dat.lastEdited=struc.lastEdited;
-		dat.lastEditedBy=struc.lastEditedBy;
-		return dat;
-	}
-
-     */
-	
-	
 }

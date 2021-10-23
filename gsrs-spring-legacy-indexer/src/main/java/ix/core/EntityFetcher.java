@@ -3,8 +3,10 @@ package ix.core;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
-import org.apache.poi.ss.formula.functions.T;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
@@ -18,6 +20,7 @@ import ix.utils.CallableUtil.TypedCallable;
 
 
 /**
+ * 
  * Utility "wrapper" for producing an entity from some source.
  * 
  * Currently, it accepts a Key, and will generate a value on 
@@ -60,23 +63,6 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
         return repo;
     }
     
-    /*
-     * 
-     * So, there's a cache.
-     * 
-     * If that cache is dirty, we shouldn't fetch from it.
-     * 
-     * How do we know if the cache is dirty? We know the time it was last
-     * 
-     * 
-     * 
-     * 
-     * 
-     */
-    
-    
-    
-
 	public enum CacheType{
 		/**
 		 * Don't use a cache always refetch from db.
@@ -115,25 +101,41 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 				return fetcher.getOrReload().get();
 			}
 		},
-		BACKUP_JSON_EAGER {
+		BACKUP_JSON_CACHE {
 			@Override
-			<T> T get(EntityFetcher<T> fetcher) throws Exception {				
+			<T> T get(EntityFetcher<T> fetcher) throws Exception {	
+			    
 				if(fetcher.theKey.getEntityInfo().hasBackup()){
 				    GsrsCache ixCache=getIxCache();
 				    String jkey = fetcher.theKey.toString() +"_JSON";
-				    @SuppressWarnings("unchecked")
-                    TypedCallable<T> caller = ()->{
-                        BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
-                        if(be==null){
+				    Supplier<T> ifNot=()->{
+				        try {
                             return GLOBAL_CACHE.get(fetcher);
-                        }else{
-                            return (T)be.getInstantiated();
-                        }
+                        }catch(Exception e) {
+                            return null;
+                        }  
+				    };
+                    TypedCallable<T> caller = ()->{
+                        TransactionTemplate ttemp = fetcher.theKey.getTransactionTemplate();
+                        ttemp.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                        ttemp.setReadOnly(true);
+                        return ttemp.execute(s->{
+                            BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
+                            if(be==null){
+                                return ifNot.get();
+                            }else{
+                                try {
+                                    return (T)be.getInstantiated();
+                                }catch(Exception e){
+                                    return ifNot.get();
+                                }
+                            }
+                        });
                     };
                     try{
                         return ixCache.getOrElseRawIfDirty(jkey, caller);
                     }catch(Exception e){
-                        return GLOBAL_CACHE.get(fetcher);
+                        return ifNot.get();
                     }
 				}
 				return GLOBAL_CACHE.get(fetcher);
@@ -146,7 +148,6 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 	}
 	public final CacheType cacheType; 
 	
-	
 	final Key theKey;
 	
 	private Optional<T> stored = Optional.empty(); //
@@ -154,8 +155,7 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 	long lastFetched=0l;
 	
 	public EntityFetcher(Key theKey){
-		//this(theKey, CacheType.GLOBAL_CACHE); //This is probably the best option
-		this(theKey, CacheType.BACKUP_JSON_EAGER); // This option caches based on
+		this(theKey, CacheType.BACKUP_JSON_CACHE); // This option caches based on
 		                                           // raw JSON. This turns out to
 		                                           // work pretty well, if not perfectly.
 	}
