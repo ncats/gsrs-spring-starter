@@ -1337,7 +1337,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         
       
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                .compile("\"([^\" :.-]*)\"");
+                .compile("\"([^\" .-]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());

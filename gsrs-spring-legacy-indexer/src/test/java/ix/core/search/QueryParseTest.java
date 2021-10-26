@@ -18,9 +18,9 @@ import ix.core.search.text.TextIndexer.IxQueryParser;
 public class QueryParseTest {
 
     private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-            .compile("\"([^\" :.-]*)\"");
+            .compile("\"([^\" .-]*)\"");
     final static String[] BREAK_TOKENS = new String[] {
-            " ", ".", "-", ":"      
+            " ", ".", "-"      
           };
 
     @Test
