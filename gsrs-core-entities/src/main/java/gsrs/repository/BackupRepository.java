@@ -21,30 +21,17 @@ public interface BackupRepository extends GsrsRepository<BackupEntity, Long> {
     //TODO: This should be worked out to respect the kind more if needed
     // but that's not always trivial due to subclasses of kinds
     default Optional<BackupEntity> getByEntityKey(Key k){
-        if(k.getIdNative() instanceof UUID ||
-                k.getIdNative() instanceof String){
+        Object nid=k.getIdNative();
+        if(nid instanceof UUID ||
+                nid instanceof String){
             return findByRefid(k.getIdString()); //TODO: this part is inconsistent
             //because the UUIDs considered unique
             //globally, but other IDs are not 
             //considered globally unique
-        }else if(k.getIdNative() instanceof Long || k.getIdNative() instanceof Integer ){
+        }else if(nid instanceof Long || nid instanceof Integer ){
             return findByRefid(k.getKind() + ":" + k.getIdString()); 
         }
         return Optional.empty();
     }
-    
-    /*
-     public static BackupEntity getByKey(Key k){
-        if(k.getIdNative() instanceof UUID ||
-                k.getIdNative() instanceof String){
-            return getByRefId(k.getIdString()).orElse(null); //TODO: this part is inconsistent
-            //because the UUIDs considered unique
-            //globally, but other IDs are not 
-            //considered globally unique
-        }else if(k.getIdNative() instanceof Long || k.getIdNative() instanceof Integer ){
-            return getByRefId(k.getKind() + ":" + k.getIdString()).orElse(null); 
-        }
-        return null;
-    }
-     */
+   
 }
