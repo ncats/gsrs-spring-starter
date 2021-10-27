@@ -90,7 +90,7 @@ public class StructureIndexerEventListener {
                 addToIndex(ew, k);
 
             }
-        }catch(Exception e) {
+        }catch(Throwable e) {
             log.warn("Trouble structure indexing:" + key, e);
         }
     }
