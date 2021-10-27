@@ -99,8 +99,8 @@ public class StructureIndexerEventListener {
         ew.streamStructureFieldAndValues(d->true).map(p->p.v()).filter(s->s instanceof String).forEach(str-> {
             try {
                 indexer.add(k.getIdString(), str.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Throwable e) {
+                log.warn("Trouble adding structure to index:" + k.toString(), e);
             }
         });
     }
