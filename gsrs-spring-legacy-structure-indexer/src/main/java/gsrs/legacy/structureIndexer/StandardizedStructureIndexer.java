@@ -1,13 +1,5 @@
 package gsrs.legacy.structureIndexer;
 
-import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Bond;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.structureIndexer.StructureIndexer;
-import gov.nih.ncats.structureIndexer.StructureIndexer.*;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -15,12 +7,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
+
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.structureIndexer.StructureIndexer;
+import gov.nih.ncats.structureIndexer.StructureIndexer.ResultEnumeration;
+import ix.core.chem.ChemCleaner;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Used as a delegate to fix certain structure searches. This class just delegates, to a real {@link StructureIndexer}
  * but whenever it would pass it a molecule, it makes sure to standardize it first.
  *
  * @author tyler
  */
+@Slf4j
 public class StandardizedStructureIndexer {
 
     StructureIndexer delegate;
@@ -80,10 +84,17 @@ public class StandardizedStructureIndexer {
     public static Chemical getMolecule(String str) {
         try {
             return Chemical.parse(str);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("CHEMICAL PARSE ERROR!!! for: " + str);
-            return null;
+            
+          // This needs to be a Throwable, because CDK uses AssertionError
+          // and, in rare cases, other kinds of Errors can be thrown, not just
+          // exceptions
+        } catch (Throwable e) { 
+            try {
+                return Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(str));
+            }catch(Throwable ee) {
+                log.error("Error parsing molecule:" + ee.getMessage(),ee);
+                return null;
+            }
         }
     }
 
@@ -266,7 +277,6 @@ public class StandardizedStructureIndexer {
     }
 
     public StructureIndexer getDelegate() {
-
         return this.delegate;
     }
 

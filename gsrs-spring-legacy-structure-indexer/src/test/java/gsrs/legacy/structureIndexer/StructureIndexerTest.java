@@ -666,6 +666,90 @@ public class StructureIndexerTest{
 				"M  END");
 		assertEquals(0,StreamUtil.forEnumeration(structureIndexer.substructure(structure, 10)).count());
 	}
+
+    @Test
+    //TODO: this test would have always worked on CDK,
+    // but not on jchem. So it's misleading as-is.
+    public void ensureSSSForSRUPolymerWorks() throws Exception{
+
+        String structure="COC";
+        structureIndexer.add("1", "\n"
+                + "   JSDraw210262119232D\n"
+                + "\n"
+                + " 12 11  0  0  0  0              0 V2000\n"
+                + "   18.4130   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   19.7640   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   21.1150   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   22.4660   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   23.8170   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   25.1680   -7.8260    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   26.5190   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   27.8700   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   29.2210   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   30.5720   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   31.9230   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   31.9230   -5.4860    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "  1  2  1  0  0  0  0\n"
+                + "  2  3  1  0  0  0  0\n"
+                + "  3  4  1  0  0  0  0\n"
+                + "  4  5  1  0  0  0  0\n"
+                + "  5  6  1  0  0  0  0\n"
+                + "  6  7  1  0  0  0  0\n"
+                + "  7  8  1  0  0  0  0\n"
+                + "  8  9  1  0  0  0  0\n"
+                + "  9 10  1  0  0  0  0\n"
+                + " 10 11  1  0  0  0  0\n"
+                + " 11 12  1  0  0  0  0\n"
+                + "M  STY  1   1 SRU\n"
+                + "M  SAL   1  3   4   5   6\n"
+                + "M  SBL   1  2   3   6\n"
+                + "M  SMT   1 A\n"
+                + "M  SDI   1  4   21.6370   -9.0220   21.6370   -6.3700\n"
+                + "M  SDI   1  4   26.1090   -6.3700   26.1090   -9.0220\n"
+                + "M  END");
+        assertEquals(1,StreamUtil.forEnumeration(structureIndexer.substructure(structure, 10)).count());
+    }
+    
+    @Test
+    public void ensureSSSForSRUPolymerWIthPoorFormattingWorks() throws Exception{
+
+        String structure="COC";
+        structureIndexer.add("1", "\n"
+                + "   JSDraw210262119232D\n"
+                + "\n"
+                + " 12 11  0  0  0  0              0 V2000\n"
+                + "   18.4130   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   19.7640   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   21.1150   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   22.4660   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   23.8170   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   25.1680   -7.8260    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   26.5190   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   27.8700   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   29.2210   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   30.5720   -7.8260    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   31.9230   -7.0460    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   31.9230   -5.4860    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "  1  2  1  0  0  0  0\n"
+                + "  2  3  1  0  0  0  0\n"
+                + "  3  4  1  0  0  0  0\n"
+                + "  4  5  1  0  0  0  0\n"
+                + "  5  6  1  0  0  0  0\n"
+                + "  6  7  1  0  0  0  0\n"
+                + "  7  8  1  0  0  0  0\n"
+                + "  8  9  1  0  0  0  0\n"
+                + "  9 10  1  0  0  0  0\n"
+                + " 10 11  1  0  0  0  0\n"
+                + " 11 12  1  0  0  0  0\n"
+                + "M  STY  1   1 FFF\n"
+                + "M  SAL   1  7   4   5   6\n"
+                + "M  SMT   1 A\n"
+                + "M  SDI   1  9   21.6370   -9.0220   21.6370   -6.3700\n"
+                + "M  SDI   1  4   26.1090   -6.3700   26.1090   -9.0220\n"
+                + "M  END");
+        assertEquals(1,StreamUtil.forEnumeration(structureIndexer.substructure(structure, 10)).count());
+    }
+	
 	//TODO move this to substances
 /*
 	@Test
