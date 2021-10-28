@@ -80,6 +80,8 @@ public class TextIndexerEntityListener {
     @EventListener
     public void reindexing(MaintenanceModeEvent event) {
         autowireIfNeeded();
+        //TODO: it shouldn't be the maintenance mode itself that triggers this
+        // it should be a "WipeAllIndexes" event or something.
         if(event.getSource().isInMaintenanceMode()){
             textIndexerFactory.getDefaultInstance().newProcess();
         }else{

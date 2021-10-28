@@ -1,19 +1,24 @@
 package ix.core.search.text;
 
-import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.indexer.IndexValueMakerFactory;
-import ix.core.util.EntityUtils;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.cache.GsrsCache;
+import gsrs.indexer.IndexValueMakerFactory;
+import ix.core.util.EntityUtils;
 
 @Service
 public class TextIndexerFactory {
@@ -29,6 +34,10 @@ public class TextIndexerFactory {
 
     @Autowired
     private IndexerServiceFactory indexerServiceFactory;
+    
+
+    @Autowired
+    private GsrsCache gsrsCache;
 
     @Autowired
     public IndexValueMakerFactory indexValueMakerFactory;
@@ -72,7 +81,7 @@ public class TextIndexerFactory {
 
         return indexers.computeIfAbsent(baseDir, dir -> {
             try {
-                return new TextIndexer(dir, indexerServiceFactory, indexerServiceFactory.createForDir(dir), textIndexerConfig,indexValueMakerFactory,  this::isDeepKind);
+                return new TextIndexer(dir, indexerServiceFactory, indexerServiceFactory.createForDir(dir), textIndexerConfig,indexValueMakerFactory, gsrsCache,  this::isDeepKind);
             } catch (IOException ex) {
                 ex.printStackTrace();
                 return null;

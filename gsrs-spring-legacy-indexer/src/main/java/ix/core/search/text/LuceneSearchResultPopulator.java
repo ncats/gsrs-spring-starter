@@ -2,6 +2,7 @@ package ix.core.search.text;
 
 
 import gsrs.repository.GsrsRepository;
+import ix.core.EntityFetcher;
 import ix.core.controllers.EntityFactory;
 import ix.core.search.LazyList;
 import ix.core.search.SearchOptions;
@@ -74,7 +75,7 @@ class LuceneSearchResultPopulator {
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
 				try {
 					Key k = keyOf(doc);
-					result.addNamedCallable(new EntityFetcher(k, gsrsRepository));
+					result.addNamedCallable(new EntityFetcher(k));
 				} catch (Exception e) {
 					System.out.println("Record:" + i + " of " + hits.scoreDocs.length);
 					e.printStackTrace();
@@ -103,39 +104,39 @@ class LuceneSearchResultPopulator {
 				throw new NoSuchElementException("Entity:" + kind + " has no ID field");
 			}
 		}
-
-	public static class EntityFetcher<T> implements LazyList.NamedCallable<Key, Object>{
-		private Key key;
-		private GsrsRepository gsrsRepository;
-		private T _cached = null;
-		
-
-		public EntityFetcher(Key key, GsrsRepository gsrsRepository) {
-			this.key = key;
-			this.gsrsRepository = gsrsRepository;
-		}
-
-		//TODO: the features from 2.X regarding caching and
-		// alternative fetches should be ported
-		//
-		// I'm not sure the @Transactional annotation does what
-		// it is intended to do here
-		@Override
-		@Transactional(readOnly = true)
-		public T call() {
-		    if(_cached!=null) return _cached;
-		    Object ret= gsrsRepository.findByKey(key).get();
-			//this forces a full fetch
-		    //but thats not always ideal as sometimes things are thrown away
-		    //TODO: discuss this
-			EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(ret);
-			_cached=(T)ret;
-			return _cached;
-		}
-
-		@Override
-		public Key getName() {
-			return key;
-		}
-	}
+//
+//	public static class EntityFetcher<T> implements LazyList.NamedCallable<Key, Object>{
+//		private Key key;
+//		private GsrsRepository gsrsRepository;
+//		private T _cached = null;
+//		
+//
+//		public EntityFetcher(Key key, GsrsRepository gsrsRepository) {
+//			this.key = key;
+//			this.gsrsRepository = gsrsRepository;
+//		}
+//
+//		//TODO: the features from 2.X regarding caching and
+//		// alternative fetches should be ported
+//		//
+//		// I'm not sure the @Transactional annotation does what
+//		// it is intended to do here
+//		@Override
+//		@Transactional(readOnly = true)
+//		public T call() {
+//		    if(_cached!=null) return _cached;
+//		    Object ret= gsrsRepository.findByKey(key).get();
+//			//this forces a full fetch
+//		    //but thats not always ideal as sometimes things are thrown away
+//		    //TODO: discuss this
+//			EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(ret);
+//			_cached=(T)ret;
+//			return _cached;
+//		}
+//
+//		@Override
+//		public Key getName() {
+//			return key;
+//		}
+//	}
 }

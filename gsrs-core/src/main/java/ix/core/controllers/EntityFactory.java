@@ -349,8 +349,7 @@ public class EntityFactory {
 
             try {
                 return valueToTree(obj);
-            }
-            catch (Exception ex) {
+            }catch (Exception ex) {
                 ex.printStackTrace();
                 log.trace("Can't write Json", ex);
             }
