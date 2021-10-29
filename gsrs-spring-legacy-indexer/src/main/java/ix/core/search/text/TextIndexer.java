@@ -197,6 +197,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	/**
 	 * Make sure to properly update the code when upgrading version
 	 */
+	
+	//Version 4.10.0
 	static final Version LUCENE_VERSION = Version.LATEST;
 	static final String FACETS_CONFIG_FILE = "facet_conf.json";
 	static final String SUGGEST_CONFIG_FILE = "suggest_conf.json";
@@ -1338,9 +1340,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         private static final Pattern ROOT_CONTEXT_ADDER = Pattern
                 .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
         
+      
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                                .compile("\"([^\" ]*)\"");
-
+                .compile("\"([^\" .-]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
