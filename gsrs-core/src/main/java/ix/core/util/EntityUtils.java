@@ -2886,10 +2886,8 @@ public class EntityUtils {
 	        tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	        return tt.execute(s->{
 	            Optional<EntityWrapper<?>> op =this.fetch();
-//	            EntityWrapper ew = op.orElse(null);
 	            op.ifPresent(ee->{
-	                String tmp = ee.toInternalJson();
-	                System.out.println("tmp:" + tmp.hashCode());
+	                ee.toInternalJson();
 	            });
 	            return op;
 	        });

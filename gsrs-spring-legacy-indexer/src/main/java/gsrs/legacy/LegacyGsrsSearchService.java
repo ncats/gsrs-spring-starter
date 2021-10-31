@@ -1,26 +1,34 @@
 package gsrs.legacy;
 
-import gsrs.indexer.IndexValueMakerFactory;
-import gsrs.repository.GsrsRepository;
-import gsrs.security.hasAdminRole;
-import ix.core.search.SearchOptions;
-import ix.core.search.SearchResult;
-import ix.core.search.text.TextIndexer;
-import ix.core.search.text.TextIndexerFactory;
-import ix.core.util.EntityUtils;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.apache.lucene.search.Filter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import gsrs.repository.GsrsRepository;
+import gsrs.security.hasAdminRole;
+import ix.core.EntityFetcher;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchResult;
+import ix.core.search.text.TextIndexer;
+import ix.core.search.text.TextIndexerFactory;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
 
     @Autowired
@@ -127,10 +135,21 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
                     pageRequest = pageRequest.next();
                     //DO SOMETHING WITH ENTITIES
                     onePage.forEach(entity -> {
+                        EntityWrapper ew = EntityUtils.EntityWrapper.of(entity);
                         try {
-                            indexer.add(EntityUtils.EntityWrapper.of(entity));
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            Object v=ew.getValue();
+                            //If it can't fetch for some reason, like an invalid
+                            //transaction, this should fix that by fetching
+                            //fully with the EF
+                            try {
+                                ew.toInternalJsonNode();
+                            }catch(Exception e) {
+                                EntityFetcher ef = EntityFetcher.of(ew.getKey());
+                                v = ef.call();
+                            }
+                            indexer.add(EntityWrapper.of(v));
+                        } catch (Exception e) {
+                            log.warn("Error reindexing:" + ew.getOptionalKey(),e);
                         }
                     });
 
