@@ -83,14 +83,14 @@ public class LegacySequenceIndexerService implements SequenceIndexerService {
     //loaded and last services unloaded. Because of this, the @PreDestroy hook
     //happens after some important mechanisms, like deleting files in the tests.
     //When this happens it can result in distracting IOException stacktraces.
-    //However, if a Runtime shutdownhook is used instead, the shutdown operation
+    //However, if a StaticContextAccessor shutdownhook is used instead, the shutdown operation
     //is called earlier and the IOExceptions can be avoided.
     @PostConstruct
     public void setupShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                actualShutdown();
-            }});
+        SequenceIndexer sindexer=indexer;
+        StaticContextAccessor.addStaticShutdownRunnable(()->{
+            sindexer.shutdown();
+        });
     }
     
     
