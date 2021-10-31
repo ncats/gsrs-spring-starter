@@ -57,7 +57,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -3351,10 +3351,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			boolean addedFacet = false;
 			if(nvalue instanceof Long  || nvalue instanceof Integer || (indexableValue.ranges()!=null && indexableValue.ranges().length>0)){
 			    Long lval =  dval.longValue();
-			    fields.accept(new LongField(full, lval, shouldStoreLong));
+			    fields.accept(new NumericDocValuesField(full, lval));
 			    asText = indexableValue.facet();
 			    if (!asText && !name.equals(full)) {
-			        fields.accept(new LongField(name, lval, store));
+			        fields.accept(new NumericDocValuesField(name, lval));
 			    }
 			    if(indexableValue.facet()){
 			        FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
