@@ -1,5 +1,124 @@
 package ix.core.search.text;
 
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.DrillSideways;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.facet.range.LongRange;
+import org.apache.lucene.facet.range.LongRangeFacetCounts;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.suggest.DocumentDictionary;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Version;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -8,6 +127,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.io.IOUtil;
@@ -24,9 +144,13 @@ import ix.core.models.FV;
 import ix.core.models.Facet;
 import ix.core.models.FacetFilter;
 import ix.core.models.FieldedQueryFacet;
-import ix.core.search.*;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
+import ix.core.search.ExactMatchSuggesterDecorator;
+import ix.core.search.LazyList;
+import ix.core.search.SearchOptions;
 import ix.core.search.SearchOptions.DrillAndPath;
+import ix.core.search.SearchResult;
+import ix.core.search.SuggestResult;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -35,59 +159,6 @@ import ix.core.util.LogUtil;
 import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.document.*;
-import org.apache.lucene.facet.*;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.LongRangeFacetCounts;
-import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.*;
-import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.queries.FilterClause;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery.Builder;
-import org.apache.lucene.search.suggest.DocumentDictionary;
-import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.apache.lucene.document.Field.Store.NO;
-import static org.apache.lucene.document.Field.Store.YES;
 
 /**
  * Singleton class that responsible for all entity indexing
@@ -1665,7 +1736,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 					f = TextIndexer.SORT_PREFIX + f;
 				}
 				if (type != null) {
-					SortField sf = new SortField(f, type, rev);
+				    
+					SortField sf;
+					switch(type) {
+                    case DOUBLE:
+                    case FLOAT:
+                    case INT:
+                    case LONG:
+                        sf = new SortedNumericSortField(f, SortField.Type.LONG, rev);
+                        break;
+                    
+                    default:
+                        sf = new SortField(f, type, rev);
+                        break;
+					
+					}
 					log.debug("Sort field (rev=" + rev + "): " + sf);
 					fields.add(sf);
 				} else {
@@ -2581,6 +2666,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 });
 
             }
+            Set<String> sortFields = new HashSet<String>();
 			Consumer<IndexableField> fieldCollector = f->{
 
 					if(f instanceof TextField || f instanceof StringField){
@@ -2609,7 +2695,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 					        TermVectorField tvf = new TermVectorField(TERM_VEC_PREFIX + key,text);
 					        doc.add(tvf);
 					    }
+					}else if(f.name().startsWith(SORT_PREFIX)){
+					    //As of lucene 5, can't add the same sort field name
+					    //more than once.
+					   if(!sortFields.add(f.name())) {
+					       return;
+					   }
 					}
+
+//                    System.out.println(f.name() + ":" + f.fieldType().docValuesType());
 					doc.add(f);
 			};
 
@@ -3218,9 +3312,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if(indexableValue.isDynamicFacet()){
 			createDynamicField(fields,indexableValue);
 			if(indexableValue.sortable()){
-				sorters.put(SORT_PREFIX + indexableValue.name(), SortField.Type.STRING);
+			    String f=SORT_PREFIX + indexableValue.name();
+				sorters.put(f, SortField.Type.STRING);
 				
-				fields.accept(new StringField(SORT_PREFIX + indexableValue.name(), indexableValue.value().toString(), store));
+				fields.accept(new SortedDocValuesField(f, new BytesRef(indexableValue.value().toString())));
 			}
 			return;
 		}
@@ -3281,8 +3376,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (indexableValue.sortable()) {
 				String f = SORT_PREFIX + full;
 				sorters.put(f, SortField.Type.DOUBLE);
-				                
-				fields.accept(new DoubleField(f, dval.doubleValue(), NO));
+				SortedNumericDocValuesField df= new SortedNumericDocValuesField(f, NumericUtils.doubleToSortableLong(dval.doubleValue()));
+				fields.accept(df);
 				sorterAdded = true;
 			}
 			if(indexableValue.facet() && !addedFacet){
@@ -3356,9 +3451,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 			// Add specific sort column only if it's not added by some other
 			// mechanism
 			if (indexableValue.sortable() && !sorterAdded) {
-				sorters.put(SORT_PREFIX + full, SortField.Type.STRING);
+			    String f=SORT_PREFIX + full;
+				sorters.put(f, SortField.Type.STRING);
+
+                fields.accept(new SortedDocValuesField(f, new BytesRef(indexableValue.value().toString())));
 				
-				fields.accept(new StringField(SORT_PREFIX + full, text, store));
 			}
 			// Added exact match
 			fields.accept(new TextField(name, exactMatchStr , store));
