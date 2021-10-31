@@ -430,14 +430,14 @@ public class SequenceIndexer {
             kmer.mkdirs();
 
         indexAnalyzer = createIndexAnalyzer ();
-        indexDir = new NIOFSDirectory(index, NoLockFactory.getNoLockFactory());
-        kmerDir = new NIOFSDirectory (kmer, NoLockFactory.getNoLockFactory());
+        indexDir = new NIOFSDirectory(index.toPath(), NoLockFactory.INSTANCE);
+        kmerDir = new NIOFSDirectory (kmer.toPath(), NoLockFactory.INSTANCE);
         if (!readOnly) {
             indexWriter = new IndexWriter (indexDir, new IndexWriterConfig 
-                    (LUCENE_VERSION, indexAnalyzer));
+                    ( indexAnalyzer));
             kmerWriter = new IndexWriter
                     (kmerDir, new IndexWriterConfig
-                            (LUCENE_VERSION, indexAnalyzer));
+                            ( indexAnalyzer));
             kmerSearchManager = new SearcherManager (kmerWriter, true, null);
             seqSearchManager = new SearcherManager (indexWriter, true, null);
             _kmerReader = DirectoryReader.open(kmerWriter, true);
@@ -467,7 +467,7 @@ public class SequenceIndexer {
         fields.put(FIELD_ID, new KeywordAnalyzer ());
         fields.put(FIELD_KMER, new KeywordAnalyzer ());
         return  new PerFieldAnalyzerWrapper 
-                (new StandardAnalyzer (LUCENE_VERSION), fields);
+                (new StandardAnalyzer (), fields);
     }
 
 
