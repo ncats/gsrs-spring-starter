@@ -212,7 +212,6 @@ public class EntityPersistAdapter {
 
             return saved;
         } catch (Exception ex) {
-            ex.printStackTrace();
             throw new IllegalStateException(ex);
         } finally {
 //            if (lock.getTransaction() == null) {
