@@ -96,6 +96,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
@@ -1328,12 +1329,19 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .flatMap(t->t.stream())
                 .filter(dp->!dp.getDrill().equals(facet))
                 .filter(dp->{
-                    if(dp.getDrill().startsWith("^")){
-                        nonStandardFacets.add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])));
-                        return false;
-                    }else if(dp.getDrill().startsWith("!")){
+                    String dn=dp.getDrill();
+                    if(dn.startsWith("^")){
+
                         BooleanQuery f = new BooleanQuery.Builder()
-                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.FILTER)
+                                .build();
+                        nonStandardFacets.add(f);
+                        return false;
+                    }else if(dn.startsWith("!")){
+                        
+                        BooleanQuery f = new BooleanQuery.Builder()
+                                .add(new MatchAllDocsQuery(), Occur.FILTER)
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
                                 .build();
                         
                         nonStandardFacets.add(f);
@@ -1715,7 +1723,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             options.removeAndConsumeRangeFilters((f, r) -> {
                 filters
                         .computeIfAbsent(f, k -> new ArrayList<Query>())
-                        .add(NumericRangeQuery.newLongRange(f, r[0], r[1], true, false));
+                        .add(DocValuesRangeQuery.newLongRange(f, r[0], r[1], true, false));
             });
         }
 		return filters;
@@ -2100,19 +2108,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    .stream()
 			    .flatMap(e->e.getValue().stream())
 			    .filter(dp->{
-                    if(dp.getDrill().startsWith("^")){
+			        String dn=dp.getDrill();
+                    if(dn.startsWith("^")){
 
                         BooleanQuery f = new BooleanQuery.Builder()
-                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.FILTER)
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.FILTER)
                                 .build();
                         nonStandardFacets.add(f);
                         return false;
-                    }else if(dp.getDrill().startsWith("!")){
-                        String ss=dp.getDrill();
+                    }else if(dn.startsWith("!")){
                         
                         BooleanQuery f = new BooleanQuery.Builder()
                                 .add(new MatchAllDocsQuery(), Occur.FILTER)
-                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
                                 .build();
                         
                         nonStandardFacets.add(f);
