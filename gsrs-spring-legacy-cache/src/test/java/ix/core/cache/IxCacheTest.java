@@ -1,12 +1,11 @@
 package ix.core.cache;
 
-import gsrs.model.AbstractGsrsEntity;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import javax.persistence.Id;
 import java.io.Serializable;
-import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.UUID;
@@ -16,7 +15,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import javax.persistence.Id;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.AbstractGsrsEntity;
+import ix.core.models.Session;
 
 public class IxCacheTest {
 
@@ -103,8 +112,8 @@ public class IxCacheTest {
 	}
 
 	@Test
-	@Ignore("the implementation of the cache must be call the generator function if another thread is still" +
-			"working")
+//	@Ignore("the implementation of the cache must be call the generator function if another thread is still" +
+//			" working")
 	public void fetchSlowGeneratorWith2ThreadsShouldNotRecalculate() throws Exception {
 		final int staggeredThreads = 2;
 		final String result1="First";
@@ -184,14 +193,13 @@ public class IxCacheTest {
 
 	}
 	
-	public static class NonSerailizable{}
-
+	
 	@Test
 	public void modelObjectsShouldNotBePassedThroughToDisk() throws Exception {
 		MyEntityClass s = new MyEntityClass();
 
 		MyEntityClass actualFound1=IxCache.getOrElse("Test", ()->s);
-		assertTrue("Caches model should be the same as initial model" , s==actualFound1);
+		assertTrue("Cached model should be the same as initial model" , s==actualFound1);
 
 		MyEntityClass s2=(MyEntityClass)IxCache.get("Test");
 
@@ -203,44 +211,114 @@ public class IxCacheTest {
 
 		assertNull(actualFound2);
 	}
+	
+	
+
+    @Test
+    public void cacheTimeoutShouldWork() throws Exception {
+        MyEntityClass s = new MyEntityClass();
+        MyEntityClass sOther = new MyEntityClass();
+        
+        long t1 = TimeUtil.getCurrentTimeMillis();
+        MyEntityClass actualFound1=IxCache.getOrElse("Test", ()->{
+            return s;
+        });
+        assertTrue("Cached model should be the same as initial model" , s==actualFound1);
+        MyEntityClass s2=(MyEntityClass)IxCache.get("Test");
+        assertEquals(s.uuid,s2.uuid);
+
+        
+        MyEntityClass got=IxCache.getOrElse(t1,"Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as initial model if not too old" , s==got);
+        Thread.sleep(10);
+        long t2 = TimeUtil.getCurrentTimeMillis();
+        got=IxCache.getOrElse(t2, "Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as new model if IS too old" , sOther==got);
+    }
+    
+    @Test
+    public void cacheAfterDirtyMarkShouldWork() throws Exception {
+        MyEntityClass s = new MyEntityClass();
+        MyEntityClass sOther = new MyEntityClass();
+        
+        MyEntityClass actualFound1=IxCache.getOrElseIfDirty("Test", ()->{
+            return s;
+        });
+        assertTrue("Cached model should be the same as initial model" , s==actualFound1);
+        MyEntityClass s2=(MyEntityClass)IxCache.get("Test");
+        assertEquals(s.uuid,s2.uuid);
+
+        
+        MyEntityClass got=IxCache.getOrElseIfDirty("Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
+        IxCache.markChange();
+        got=IxCache.getOrElseIfDirty("Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
+        got=IxCache.getOrElseIfDirty("Test", ()->{
+            return s;
+        });
+        assertTrue("Cached model should be updated after dirty" , sOther==got);
+    }
+    
+
+    @Test
+    public void cacheAfterDirtyMarkRawShouldWork() throws Exception {
+        MyEntityClass s = new MyEntityClass();
+        MyEntityClass sOther = new MyEntityClass();
+        
+        MyEntityClass actualFound1=IxCache.getOrElseRawIfDirty("Test", ()->{
+            return s;
+        });
+        assertTrue("Cached model should be the same as initial model" , s==actualFound1);
+        MyEntityClass s2=(MyEntityClass)IxCache.getRaw("Test");
+        assertEquals(s.uuid,s2.uuid);
+
+        
+        MyEntityClass got=IxCache.getOrElseRawIfDirty("Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
+        IxCache.markChange();
+        got=IxCache.getOrElseRawIfDirty("Test", ()->{
+            return sOther;
+        });
+        assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
+        got=IxCache.getOrElseRawIfDirty("Test", ()->{
+            return s;
+        });
+        assertTrue("Cached model should be updated after dirty" , sOther==got);
+    }
+
+    @Test
+    public void cacheRawShouldBeDifferentThanAdaptedcacheShouldWork() throws Exception {
+        MyEntityClass s = new MyEntityClass();
+        MyEntityClass sOther = new MyEntityClass();
+        
+        MyEntityClass actualFound1=IxCache.getOrElseRawIfDirty("Test", ()->{
+            return s;
+        });
+
+        MyEntityClass actualFound2=IxCache.getOrElseIfDirty("Test", ()->{
+            return sOther;
+        });
+        assertNotEquals(actualFound1,actualFound2);
+    }
+    
+	public static class NonSerailizable{}
+
 	public static class MyEntityClass extends AbstractGsrsEntity implements Serializable {
 		@Id
 		private UUID uuid = UUID.randomUUID();
 	}
-	//TODO uncomment when we add Session support back
-	/*
-	@Test
-	public void sessionSaveShouldNotInvalidateCache() throws Exception {
-		String ret1=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET1");
 
-		Session s = new Session();
-		s.save();
-
-		String ret2=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET2");
-
-		assertEquals(ret1,ret2);
-	}
-
-
-
-	@Test
-	public void sessionDeleteShouldNotInvalidateCache() throws Exception {
-
-		String ret1=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET_1");
-		String ret2=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET_2");
-		assertEquals(ret1,ret2);
-		
-		Session s = new Session();
-		String ret3=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET_3");
-		assertEquals(ret1,ret3);
-		s.save();
-		String ret4=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET_4");
-		assertEquals(ret1,ret4);
-		s.delete();
-		String ret5=ix.ncats.controllers.App.getOrElse("TestKey", ()->"RET_5");
-		assertEquals(ret1,ret5);
-	}
-*/
 
 	//only here for testing purposes
 	public static void debugSpin(long milliseconds) {

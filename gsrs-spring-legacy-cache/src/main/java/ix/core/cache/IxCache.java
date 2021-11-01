@@ -2,6 +2,8 @@ package ix.core.cache;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
 import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
 import ix.core.util.EntityUtils.Key;
@@ -52,8 +54,8 @@ public class IxCache implements GsrsCache {
     }
 
 
-
-    public Element getElm (String key) {
+    @Deprecated
+    private Element getElm (String key) {
         return this.gateKeeper.getRawElement(key);
     }
 
@@ -77,22 +79,15 @@ public class IxCache implements GsrsCache {
     @Override
     public <T> T getOrElse(long epoch,
                            String key, TypedCallable<T> generator) throws Exception {
-        return this.gateKeeper.getSinceOrElse(key,epoch, generator);
+        return this.gateKeeper.getSinceOrElse(key, epoch, generator);
     }
     
     @Override
     public <T> T getOrElse(String key, TypedCallable<T> generator)
         throws Exception {
-    	return getOrElse(key,generator,0);
+    	return this.gateKeeper.getOrElse(key,generator);
     }
     
-    // mimic play.Cache 
-    @Override
-    public <T> T getOrElse(String key, TypedCallable<T> generator,
-                           int seconds) throws Exception {
-        return this.gateKeeper.getOrElse(key,  generator,seconds);
-
-    }
     
     @Override
     public void clearCache(){
@@ -100,48 +95,14 @@ public class IxCache implements GsrsCache {
     }
     
     @Override
-    public <T> T getOrElseRaw(String key, TypedCallable<T> generator,
-                              int seconds) throws Exception {
-
-        return this.gateKeeper.getOrElseRaw(key, generator, seconds);
-
-	}
-
-
-    public JsonNode toJson(String key){
-        Element e = this.gateKeeper.getRawElement(key);
-        return new ObjectMapper().valueToTree(e);
-    }
-
-    public Stream<Element> toJsonStream(int top, int skip){
-        return this.gateKeeper.elements(top,skip);
-    }
-
-
-    
-    public void set (String key, Object value) {
-
-        this.gateKeeper.put(key, value);
-
-    }
-
-    public void set (String key, Object value, int expiration) {
-        this.gateKeeper.put(key, value, expiration);
-    }
-
-    @Override
     public boolean remove(String key) {
         return this.gateKeeper.remove(key);
-
     }
     
     @Override
     public boolean removeAllChildKeys(String key){
         return this.gateKeeper.removeAllChildKeys(key);
-
     }
-    
-   
     
     public List<CoreStatistics> getStatistics () {
         //TODO how to handle multiple caches
@@ -151,75 +112,30 @@ public class IxCache implements GsrsCache {
     @Override
     public boolean contains(String key) {
         return this.gateKeeper.contains(key);
-
     }
     
 
 
 	@Override
+    @SuppressWarnings("unchecked")
+	public <T> T getOrElseRawIfDirty(String key, TypedCallable<T> generator) throws Exception{
+        return this.gateKeeper.getSinceOrElseRaw(key, this.lastNotifiedChange.get(), generator);
+	}
+	
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getOrElseIfDirty(String key, TypedCallable<T> generator) throws Exception{
+        return this.gateKeeper.getSinceOrElse(key, this.lastNotifiedChange.get(), generator);
+    }
+	
+	
+    @Override
     public void setRaw(String key, Object value) {
         this.gateKeeper.putRaw(key, value);
+    }
 
-	}
-
-
-	@Override
-    @SuppressWarnings("unchecked")
-	public <T> T getOrElseTemp(String key, TypedCallable<T> generator) throws Exception{
-        return this.gateKeeper.getOrElseRaw(key, this.lastNotifiedChange.get(), generator,0);
-	}
 	
-	@Override
-    @SuppressWarnings("unchecked")
-	public <T> T updateTemp(String key, T t) throws Exception{
-        this.gateKeeper.putRaw(key, t);
-        return t;
-	}
-
-	//TODO only used by GLOBAL_CACHE and we could just directly call getOrElseTemp if we have to to avoid the fetch call
-//	public static Object getOrFetchTempRecord(Key k) throws Exception {
-//		return getOrElseTemp(k.toString(), ()->{
-//            Optional<EntityUtils.EntityWrapper<?>> ret = k.fetch();
-//            if(ret.isPresent()){
-//                return ret.get().getValue();
-//            }
-//            return null;
-//        });
-//	}
-
-	/**
-	 * Used for temporary cache storage which may be needed across
-	 * users or within both attached and detached sessions 
-	 * (background threads)
-	 * 
-	 * Gets a value set from setTemp
-	 *  
-	 * @param key
-	 * @return
-	 */
-	@Override
-    public Object getTemp(String key) {
-		return getRaw(key);
-	}
-	
-	
-	
-	
-	/**
-	 * Used for temporary cache storage which may be needed across
-	 * users or within both attached and detached sessions 
-	 * (background threads)
-	 * 
-	 * Sets the value in such a way that the same key could fetch 
-	 * that value, regardless of who is logged in.
-	 * 
-	 * @param key
-	 * @return
-	 */
-	@Override
-    public void setTemp(String key, Object value) {
-		setRaw(key, value);
-	}
 	
 	@Override
     public void addToMatchingContext(String contextID, Key key, String prop, Object value){
@@ -233,12 +149,12 @@ public class IxCache implements GsrsCache {
 	
 	@Override
     public void setMatchingContext(String contextID, Key key, Map<String, Object> matchingContext){
-	    setTemp("MatchingContext/" + contextID + "/" + key.toString(), matchingContext);
+	    setRaw("MatchingContext/" + contextID + "/" + key.toString(), matchingContext);
 	}
 	
 	@Override
     public  Map<String, Object> getMatchingContextByContextID(String contextID, Key key){
-        return (Map<String, Object>) getTemp("MatchingContext/" + contextID + "/" + key.toString());
+        return (Map<String, Object>) getRaw("MatchingContext/" + contextID + "/" + key.toString());
     }
 
 
@@ -248,9 +164,10 @@ public class IxCache implements GsrsCache {
 	 * policy considerations, you may be able to reject things older than this time of change
 	 * 
 	 */
+	@Override
 	public void markChange() {
 		//System.err.println(Util.getExecutionPath());
-		this.notifyChange(System.currentTimeMillis());
+		this.notifyChange(TimeUtil.getCurrentTimeMillis());
 	}
 	
 	
@@ -263,15 +180,12 @@ public class IxCache implements GsrsCache {
 		lastNotifiedChange.updateAndGet(u-> Math.max(u,time));
 	}
 	
-	public boolean hasBeenNotifiedSince(long thistime){
+	@Override
+	public boolean hasBeenMarkedSince(long thistime){
 		if(lastNotifiedChange.get()>thistime)return true;
 		return false;
 	}
 	
-	public boolean mightBeDirtySince(long t){
-		
-		return this.hasBeenNotifiedSince(t);
-	}
 
 	
 }

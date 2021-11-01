@@ -174,7 +174,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
             String viewType=queryParameters.get("view");
             if("key".equals(viewType)){
-                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(top.orElse(10));
+                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
                 fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
                 return klist;
             }else{

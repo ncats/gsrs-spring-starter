@@ -32,9 +32,11 @@ import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.EntityFetcher;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 
 /**
  * An {@link ExportService} that uses a saved {@link ETag} and pulls out the original query
@@ -127,7 +129,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                                 EntityUtils.EntityInfo ei = EntityUtils.getEntityInfoFor(sub.get("kind").asText());
                                 Object _id = ei.formatIdToNative(sub.get("idString").asText());
                                 EntityUtils.Key k = EntityUtils.Key.of(ei, _id);
-                                Optional<EntityUtils.EntityWrapper<?>> opt = k.fetch(entityManager);
+                                Optional<EntityUtils.EntityWrapper<?>> opt = EntityFetcher.of(k).getIfPossible()
+                                        .map(t->EntityWrapper.of(t));
                                 if (opt.isPresent()) {
                                     T value = (T) opt.get().getValue();
                                     if(value !=null){

@@ -167,8 +167,9 @@ public class TwoCacheGateKeeper implements GateKeeper {
     public <T> T getSinceOrElse(String key, long creationTime, TypedCallable<T> generator) throws Exception{
         return getSinceOrElse(key, creationTime, generator, 0);
     }
-    @Override
-    public <T> T getSinceOrElse(String key, long creationTime, TypedCallable<T> generator, int seconds) throws Exception{
+
+    
+    private <T> T getSinceOrElse(String key, long creationTime, TypedCallable<T> generator, int seconds) throws Exception{
     	String adaptedKey = keyMaster.adaptKey(key);
         return getOrElseRaw(adaptedKey,
                 createKeyWrapper(generator, key, adaptedKey, seconds),
@@ -203,17 +204,15 @@ public class TwoCacheGateKeeper implements GateKeeper {
     
 
 
-	@Override
-	public <T> T getOrElseRaw(String key, long creationTime,
-			TypedCallable<T> generator, int seconds) throws Exception {
+	public <T> T getSinceOrElseRaw(String key, long creationTime,
+			TypedCallable<T> generator) throws Exception {
 	    return getOrElseRaw(key,
-	               createRaw(generator,key, seconds),
+	               createRaw(generator,key, 0),
 	               e->e.getCreationTime() < creationTime);
 	}
     
     
-    @Override
-    public <T> T getOrElseRaw(String key, TypedCallable<T> generator, int seconds) throws Exception{
+    private <T> T getOrElseRaw(String key, TypedCallable<T> generator, int seconds) throws Exception{
        return getOrElseRaw(key,
                createRaw(generator,key, seconds),
                (e)->false);
@@ -287,8 +286,8 @@ public class TwoCacheGateKeeper implements GateKeeper {
 		this.temporaryCache.remove(polElm.getObjectKey().toString());
     }
 
-    @Override
-    public <T> T getOrElse(String key, TypedCallable<T> generator, int seconds) throws Exception{
+    
+    private <T> T getOrElse(String key, TypedCallable<T> generator, int seconds) throws Exception{
         String adaptedKey = keyMaster.adaptKey(key);
 
         return getOrElseRaw(adaptedKey,
@@ -487,6 +486,7 @@ public class TwoCacheGateKeeper implements GateKeeper {
             log.trace("Disposing cache " + c.getName(), e);
         }
     }
+
     
     
 
