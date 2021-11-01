@@ -56,10 +56,12 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.DrillDownQuery;
@@ -76,6 +78,7 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -84,6 +87,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -91,6 +95,8 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -562,8 +568,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 Terms docterms = reader.getTermVector(docId, tvec.field);
                 if (docterms != null) {
                     Document d = reader.document(docId, fieldSet);
-                    String kind=d.get(FIELD_KIND).toString();
-
+                    String kind=d.getField(FIELD_KIND).binaryValue().utf8ToString();
                     EntityInfo einfo= EntityUtils.getEntityInfoFor(kind);
                     String idstring = d.get(einfo.getInternalIdField()).toString();
                     Object nativeID= einfo.formatIdToNative(idstring.toString());
@@ -1639,9 +1644,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
 	   
 	    for (String kind : opts){
-	        qb.add(new TermQuery(new Term(FIELD_KIND, kind)), BooleanClause.Occur.SHOULD);
+	        
+	        Query q = new DocValuesTermsQuery(FIELD_KIND, kind);
+//	        q.
+//	        if(true)return q;
+	        qb.add(q, BooleanClause.Occur.SHOULD);
+//	        if(true)return;
 	    }
-	    return qb.build();
+	    qb.setMinimumNumberShouldMatch(1);
+//	    );
+//	    if(true)return new TermQuery(new Term("text", "*"));
+	    return new ConstantScoreQuery(qb.build());
 	}
 	
 
@@ -1904,10 +1917,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static Query addQueryAndFilter(Query q, Query f) {
 	    if(f==null && q!=null)return q;
 	    if(q==null && f!=null)return f;
-	    return new BooleanQuery.Builder()
+	    Query qq= new BooleanQuery.Builder()
 	            .add(q, Occur.MUST)
 	            .add(f, Occur.FILTER)
 	            .build();
+	    
+	    return qq;
 	}
 	public class DrillSidewaysLuceneSearchProvider implements LuceneSearchProvider{
 		private TopDocs hits=null;
@@ -2086,10 +2101,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    .flatMap(e->e.getValue().stream())
 			    .filter(dp->{
                     if(dp.getDrill().startsWith("^")){
-                        nonStandardFacets.add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])));
+
+                        BooleanQuery f = new BooleanQuery.Builder()
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.FILTER)
+                                .build();
+                        nonStandardFacets.add(f);
                         return false;
                     }else if(dp.getDrill().startsWith("!")){
+                        String ss=dp.getDrill();
+                        
                         BooleanQuery f = new BooleanQuery.Builder()
+                                .add(new MatchAllDocsQuery(), Occur.FILTER)
                                 .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
                                 .build();
                         
@@ -2102,7 +2124,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			        ddq.add(dp.getDrill(), dp.getPaths());
 			    });
 
-
+			
 			if(!nonStandardFacets.isEmpty()){
 				nonStandardFacets.add(filter);
 				filter = combineLikeChainFilter(nonStandardFacets, Occur.FILTER);
@@ -2179,7 +2201,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 
-		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
+		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon, qactual,facetCollector);
 		hits=lspResult.getTopDocs();
 
 		if(options.getIncludeFacets()) {
@@ -2667,6 +2689,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             }
             Set<String> sortFields = new HashSet<String>();
+            Map<String,List<NumericDocValuesField>> numericFieldList =new HashMap<>();
+            
 			Consumer<IndexableField> fieldCollector = f->{
 
 					if(f instanceof TextField || f instanceof StringField){
@@ -2687,6 +2711,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 									.add(tf);
 							}
 						}
+						if(f.name().equals(FIELD_KIND)) {
+						    String val = f.stringValue();
+						    if(val.contains("ubstance")) {
+						        System.out.println("T");
+						    }
+						    doc.add(new SortedDocValuesField(f.name(),new BytesRef(val)));
+						    doc.add(new StoredField(f.name(), new BytesRef(val)));
+						    return;
+//						    SortedDocValuesField
+						}
 					}else if(f instanceof FacetField){
 					    String key = ((FacetField)f).dim;
 					    String text = ((FacetField)f).path[0];
@@ -2701,6 +2735,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 					   if(!sortFields.add(f.name())) {
 					       return;
 					   }
+					}else if(f instanceof NumericDocValuesField) {
+					    numericFieldList.computeIfAbsent(f.name(), k->new ArrayList<>())
+					    .add((NumericDocValuesField)f);
+					    return;
 					}
 
 //                    System.out.println(f.name() + ":" + f.fieldType().docValuesType());
@@ -2712,6 +2750,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
 				this.instrumentIndexableValue(fieldCollector, iv);
 			});
+			
 			if(textIndexerConfig.isFieldsuggest()  && deepKindFunction.apply(ew) && ew.hasKey()){
 				Key key =ew.getKey();
 				if(!key.getIdString().equals("")){  //probably not needed
@@ -2742,6 +2781,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
+			numericFieldList.forEach((n,v)->{
+			  if(v.size()==1) {
+			      doc.add(v.get(0));
+			  }else {
+			      v.forEach(iff->{
+			          double d =iff.numericValue().doubleValue();
+			          doc.add(new DoubleField(n, d, NO));
+//			         doc.add(new ) 
+			      });
+			  }
+			});
 			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
 			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 
@@ -3304,6 +3354,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		// for all cases we use.
 		org.apache.lucene.document.Field.Store store = NO;
 
+		//TODO: may need to change
+		
 		if(indexableValue.isDirectIndexField()){
 			fields.accept((IndexableField) indexableValue.getDirectIndexableField());
 			return;
@@ -3339,7 +3391,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			asText = indexableValue.facet();
 			if (asText) {
 				value = YEAR_DATE_FORMAT.get().format(date);
-
 			}
 
 		}
