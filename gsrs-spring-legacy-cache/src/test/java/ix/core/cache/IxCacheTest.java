@@ -257,6 +257,7 @@ public class IxCacheTest {
             return sOther;
         });
         assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
+        
         IxCache.markChange();
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
