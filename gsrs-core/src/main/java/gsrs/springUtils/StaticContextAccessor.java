@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class StaticContextAccessor {
+    private static List<Runnable> doFinallyStatic= new ArrayList<>();
     
 
     private static StaticContextAccessor instance;
@@ -66,7 +67,8 @@ public class StaticContextAccessor {
         if(instance!=null) {
             instance.addShutdownRunnable(r);
         }else {
-            throw new IllegalStateException("no instance of " + StaticContextAccessor.class.getSimpleName() + " is accessible");
+            doFinallyStatic.add(r);
+//            throw new IllegalStateException("no instance of " + StaticContextAccessor.class.getSimpleName() + " is accessible");
         }
     }
     
@@ -85,6 +87,13 @@ public class StaticContextAccessor {
         this.doFinally.add(r);
     }
     
+    @PostConstruct
+    private void testSetup() {
+        doFinallyStatic.forEach(df->{
+            this.addShutdownRunnable(df);
+        });
+        doFinallyStatic.clear();
+    }
     @PreDestroy
     private void testDestroy() {
         doFinally.forEach(r->{
