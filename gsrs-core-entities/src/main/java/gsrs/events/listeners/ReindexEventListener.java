@@ -1,18 +1,23 @@
 package gsrs.events.listeners;
 
-import gov.nih.ncats.common.util.SingleThreadCounter;
-import gsrs.events.*;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import gov.nih.ncats.common.util.SingleThreadCounter;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.events.BeginReindexEvent;
+import gsrs.events.EndReindexEvent;
+import gsrs.events.IncrementReindexEvent;
+import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexEntityEvent;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Listens for reindex events {@link BeginReindexEvent} and counts
@@ -20,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@link MaintenanceModeEvent} should fire fired (and then publishes those events).
  */
 @Service
+@Slf4j
 public class ReindexEventListener {
     //because our event listeners have to do multiple operations
     //on all of our fields in each method we synchronize on the method level
@@ -33,12 +39,29 @@ public class ReindexEventListener {
 
     @EventListener
     public synchronized void onNewReindex(BeginReindexEvent event){
-        reindexCounts.put(event.getId(), new SingleThreadCounter(event.getNumberOfExpectedRecord()));
-        reindexTimes.put(event.getId(), System.currentTimeMillis());
+        long expected=event.getNumberOfExpectedRecord();
+        reindexCounts.put(event.getId(), new SingleThreadCounter(expected));
+        reindexTimes.put(event.getId(), TimeUtil.getCurrentTimeMillis());
         if(!inMaintenanceMode){
             inMaintenanceMode=true;
             //was not in maintenanceMode mode before and now it is
             applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
+        }
+        
+        if (expected == 0L) {
+            finishReindexEvent(event.getId());
+        }
+        
+    }
+    
+    private void finishReindexEvent(UUID id) {
+        reindexCounts.remove(id);
+        applicationEventPublisher.publishEvent(new EndReindexEvent(id));
+        if (reindexCounts.isEmpty()) {
+            //done!
+            log.info("reindex for " + id + " took " + Duration.ofMillis(TimeUtil.getCurrentTimeMillis() - reindexTimes.remove(id)));
+            inMaintenanceMode = false;
+            applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
         }
     }
 
@@ -47,16 +70,8 @@ public class ReindexEventListener {
         SingleThreadCounter c = reindexCounts.get(event.getId());
         if(c !=null) {
             c.decrement();
-
             if (c.getAsLong() == 0L) {
-                reindexCounts.remove(event.getId());
-                applicationEventPublisher.publishEvent(new EndReindexEvent(event.getId()));
-                if (reindexCounts.isEmpty()) {
-                    //done!
-                    System.out.println("reindex for " + event.getId() + " took " + Duration.ofMillis(System.currentTimeMillis() - reindexTimes.remove(event.getId())));
-                    inMaintenanceMode = false;
-                    applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
-                }
+                finishReindexEvent(event.getId());
             }
         }
     }
