@@ -1368,7 +1368,12 @@ public class TextIndexer implements Closeable, ProcessListener {
                 throws ParseException {
             Query q = super.getRangeQuery(field, part1, part2, startInclusive,
                     endInclusive);
-            // katzelda 4/14/2018
+
+            return fixRangeQuery(q);
+        }
+		
+		private Query fixRangeQuery(Query q){
+		    // katzelda 4/14/2018
             // this is to get range queries to work with our datetimestamps
             // without having to use the lucene DateTools
             if (q instanceof TermRangeQuery) {
@@ -1388,7 +1393,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             }
 
             return q;
-        }
+		}
 
         @Override
         public Query parse(String qtext) throws ParseException {
@@ -1425,13 +1430,9 @@ public class TextIndexer implements Closeable, ProcessListener {
                     }
                 }
             }
-            return q;
-
+            return fixRangeQuery(q);
         }
     }
-
-
-
 
 
 	public SearchResult search(GsrsRepository gsrsRepository, String text, int size) throws IOException {
@@ -1451,6 +1452,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
     				query = parser.parse(qtext);
+                    /*System.out.println("query class: " + query.getClass().getName());*/
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
     				throw new IllegalStateException(ex);
