@@ -14,10 +14,23 @@ public class AbstractGsrsRestApiConfiguration {
 
     private Map<String,String> headers = new LinkedHashMap<>();
 
-    public void configure(RestTemplateBuilder restTemplateBuilder){
+    /**
+     * Create a new {@link RestTemplateBuilder} using the configuration settings.
+     * @return
+     */
+    public RestTemplateBuilder createNewRestTemplateBuilder(){
+        return addDefaultHeaders(new RestTemplateBuilder());
+    }
+    @Deprecated
+    public RestTemplateBuilder configure(RestTemplateBuilder restTemplateBuilder){
+        return addDefaultHeaders(restTemplateBuilder);
+    }
+
+    private RestTemplateBuilder addDefaultHeaders(RestTemplateBuilder restTemplateBuilder) {
         for(Map.Entry<String,String> entry: headers.entrySet()){
-            restTemplateBuilder.defaultHeader(entry.getKey(), entry.getValue());
+            restTemplateBuilder = restTemplateBuilder.defaultHeader(entry.getKey(), entry.getValue());
         }
+        return restTemplateBuilder;
     }
 
 }
