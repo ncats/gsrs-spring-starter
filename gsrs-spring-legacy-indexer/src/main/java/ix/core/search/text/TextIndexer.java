@@ -1366,7 +1366,18 @@ public class TextIndexer implements Closeable, ProcessListener {
         public IxQueryParser(String string, Analyzer indexAnalyzer) {
             super(string, indexAnalyzer);
 
-            oldQParser = new QueryParser(string, indexAnalyzer);
+            oldQParser = new QueryParser(string, indexAnalyzer) {
+                @Override
+                protected Query getRangeQuery(String field, String part1, String part2,
+                        boolean startInclusive, boolean endInclusive)
+                        throws ParseException {
+                    Query q = super.getRangeQuery(field, part1, part2, startInclusive,
+                            endInclusive);
+
+                    return fixRangeQuery(q);
+                }
+                
+            };
             // setDefaultOperator(QueryParser.AND_OPERATOR);
             //TP 08/14/2021 simplifying how this is done
             this.setAllowLeadingWildcard(true);
