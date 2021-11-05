@@ -1,18 +1,28 @@
 package ix.core.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import ix.core.History;
-import ix.core.controllers.EntityFactory.EntityMapper;
-import ix.utils.Util;
-
-import javax.persistence.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Lob;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import ix.core.History;
+import ix.core.controllers.EntityFactory.EntityMapper;
+import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * A Backup record of a {@link FetchableEntity}.
  */
+@Slf4j
 @Entity
 @Table(name="ix_core_backup")
 @History(store=false)
@@ -98,7 +108,8 @@ public class BackupEntity extends IxModel{
 		try {
 			return Optional.of(em.readValue(getBytes(), cls));
 		} catch (Exception e) {
-			e.printStackTrace();
+		    log.warn("Unable to instantiate backup entity:" + this.getKind()+":" +  this.getRefid(),e);
+//			e.printStackTrace();
 			return Optional.empty();
 		}
 	}

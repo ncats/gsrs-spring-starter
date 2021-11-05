@@ -48,7 +48,7 @@ public class EditEventService {
                 Edit newEdit = new Edit(event.getKind(), refid);
                 // TP 10/03/2021 I've changed this to use the supplied
                 // version for the edit. That's often "null" for objects
-                // which weren't 
+                // which weren't editted via a "registred edit"
                 newEdit.version = event.getVersion();
                 newEdit.newValue = ew.toFullJson();
                 if(event.getComments() !=null){
@@ -83,7 +83,7 @@ public class EditEventService {
 
 
                     //This is a slightly safer and less version-dependent way of getting the last edit
-                    Optional<Edit> prevEdit = editRepository.findFirstByRefidOrderByCreatedDesc(refid);
+                    Optional<Edit> prevEdit = editRepository.findFirstByKeyOrderByCreatedDesc(kk);
                     if(prevEdit.isPresent()){
                         newEdit.oldValue = prevEdit.get().newValue;
                     }

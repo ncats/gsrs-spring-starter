@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+import javax.annotation.PreDestroy;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -97,5 +99,10 @@ public class TextIndexerFactory {
     public TextIndexer getDefaultInstance(){
         initializer.getSync();
         return defaultIndexer;
+    }
+    
+    @PreDestroy
+    public void destroy() {
+        getDefaultInstance().close();
     }
 }

@@ -1,16 +1,20 @@
 package ix.seqaln.service;
 
-import ix.seqaln.SequenceIndexer;
-import ix.seqaln.configuration.LegacySequenceAlignmentConfiguration;
+import java.io.File;
+import java.io.IOException;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PreDestroy;
-import java.io.File;
-import java.io.IOException;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.seqaln.SequenceIndexer;
+import ix.seqaln.configuration.LegacySequenceAlignmentConfiguration;
 
 @Service
 public class LegacySequenceIndexerService implements SequenceIndexerService {
@@ -68,8 +72,27 @@ public class LegacySequenceIndexerService implements SequenceIndexerService {
         return indexer.search(query, identity, gap, rt, seqType);
     }
 
-    @PreDestroy
-    public void shutdown(){
-        indexer.shutdown();
+    
+    
+    //Due to the order of shutdowns / startups that happens in the current
+    //setup for the services, this service is typically one of the first services
+    //loaded and last services unloaded. Because of this, the @PreDestroy hook
+    //happens after some important mechanisms, like deleting files in the tests.
+    //When this happens it can result in distracting IOException stacktraces.
+    //However, if a StaticContextAccessor shutdownhook is used instead, the shutdown operation
+    //is called earlier and the IOExceptions can be avoided.
+    @PostConstruct
+    public void setupShutdownHook() {
+        SequenceIndexer sindexer=indexer;
+        StaticContextAccessor.addStaticShutdownRunnable(()->{
+            sindexer.shutdown();
+        });
     }
+    
+    
+//    @PreDestroy
+//    public void shutdown(){
+////        actualShutdown();
+//    }
+    
 }
