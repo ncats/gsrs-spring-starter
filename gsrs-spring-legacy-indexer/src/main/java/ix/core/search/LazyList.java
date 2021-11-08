@@ -1,6 +1,8 @@
 package ix.core.search;
 
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -19,6 +21,7 @@ import java.util.concurrent.Callable;
  * @param <N> The type of the name to be used
  * @param <T> The type of the object returned (the things "stored" in the list)
  */
+@Slf4j
 public class LazyList<N,T> implements List<T>{
 	private ObjectNamer<T,N> objectNamer;
 	
@@ -154,12 +157,11 @@ public class LazyList<N,T> implements List<T>{
 			try {
 				return nc.call();
 			} catch (Exception e) {
-				System.err.println("Named callable with name:" + nc.getName().toString() + " could not be fetched");
-				e.printStackTrace();
+				log.error("Named callable with name:" + nc.getName().toString() + " could not be fetched", e);
+
 			}
 		}catch(Exception e){
-			e.printStackTrace();
-			System.err.println("Couldn't fetch Named Callable from list");
+			log.error("Couldn't fetch Named Callable from list", e);
 		}
 		return null;
 	}
