@@ -252,7 +252,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         return autoregisterNewUser(username, null, null);
     }
     private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
-        Principal p = new Principal(username, email).standardize();
+        Principal p =  Principal.createStandardized(username, email);
         UserProfile up = new UserProfile(p);
         if (authenticationConfiguration.isAutoregisteractive()) {
             up.active = true;

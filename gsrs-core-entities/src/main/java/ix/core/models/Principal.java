@@ -7,7 +7,6 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.AbstractNonAuditingGsrsEntity;
 import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.GsrsDateSerializer;
-import org.hibernate.annotations.DiscriminatorOptions;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -36,10 +35,15 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
 
     public boolean deprecated;
 
-
-    public Principal standardize() {
-        this.username=this.username.toUpperCase();
-        return this;
+    /**
+     * Return the standardized username.
+     * @return a String or {@code null} if username is {@code null}.
+     */
+    public String computeStandardizedName() {
+        if(this.username ==null){
+            return null;
+        }
+        return this.username.toUpperCase();
     }
 
     @PrePersist
@@ -47,13 +51,13 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
         Date date =TimeUtil.getCurrentDate();
         created = date;
         modified= date;
-        this.standardize();
+        this.username = computeStandardizedName();
     }
     @PreUpdate
     private void markUpdated(){
         Date date =TimeUtil.getCurrentDate();
         modified= date;
-        this.standardize();
+        this.username = computeStandardizedName();
     }
 
     @Override
@@ -100,18 +104,38 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
         this.username = username;
         this.email = email;
     }
-    
+
+    /**
+     * Create a new Principal object with a standardized username.
+     *
+     * @param username
+     * @param email
+     * @return
+     */
+    public static Principal createStandardized(String username, String email){
+        Principal p = new Principal(username, email);
+        if(username !=null) {
+            p.username = p.computeStandardizedName();
+        }
+        return p;
+
+    }
+
+    /**
+     * Standardize this principal object and update the fields
+     * and return the updated principal.  Update here does not imply
+     * it is persisted anywhere just that the fields are updated.
+     * @return a Principal, usually {@code this} but might not always be.
+     */
+    public Principal standardizeAndUpdate(){
+        this.username = computeStandardizedName();
+        return this;
+    }
     @JsonIgnore
     public String toString(){
-    	return this.standardize().username;
+    	return this.computeStandardizedName();
     }
-    //TODO katzelda Octobe 2020 : don't think we need this userprofile factory call? its used in a few places in GSRS 2.x but in all cases we could use a repository instead?
-    /*
-    @JsonIgnore
-    public UserProfile getUserProfile(){
-    	return UserProfileFactory.getUserProfileForPrincipal(this);
-    }
-*/
+
     public boolean isAdmin () {
     	return admin; 
     }
