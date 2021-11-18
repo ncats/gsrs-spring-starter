@@ -1,4 +1,5 @@
 # GSRS 3.0 
+[![Build Status](https://app.travis-ci.com/ncats/gsrs-spring-starter.svg?branch=master)](https://app.travis-ci.com/ncats/gsrs-spring-starter)
 
 This is a GSRS API implementation using a Spring Boot 2 starter package.
 
