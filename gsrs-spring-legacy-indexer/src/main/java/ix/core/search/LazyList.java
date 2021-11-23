@@ -155,7 +155,9 @@ public class LazyList<N,T> implements List<T>{
 		try{
 			NamedCallable<N,T> nc=_internalList.get(index);
 			try {
-				return nc.call();
+				T tt= nc.call();
+				
+				return tt;
 			} catch (Exception e) {
 				log.error("Named callable with name:" + nc.getName().toString() + " could not be fetched", e);
 
