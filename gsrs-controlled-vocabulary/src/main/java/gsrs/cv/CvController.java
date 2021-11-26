@@ -59,9 +59,5 @@ public class CvController extends EtagLegacySearchEntityController<CvController,
         return stream;
     }
 
-    public CvController(){
-        System.out.println("IN CV CONTROLLER");
-    }
-
 
 }
