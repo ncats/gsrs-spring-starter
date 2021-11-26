@@ -1,19 +1,21 @@
 package gsrs.services;
 
 
-import gsrs.repository.PrincipalRepository;
-import ix.core.models.Principal;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.persistence.EntityManager;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import gsrs.repository.PrincipalRepository;
+import ix.core.models.Principal;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class PrincipalServiceImpl implements PrincipalService {
 
@@ -45,23 +47,39 @@ public class PrincipalServiceImpl implements PrincipalService {
     public Principal registerIfAbsent(String username){
         Boolean[] created = new Boolean[]{Boolean.FALSE};
         Principal p= cache.computeIfAbsent(username.toUpperCase(), name-> {
-            System.out.println("currently there are " + principalRepository.count() + " principals in db");
+            log.debug("currently there are " + principalRepository.count() + " principals in db");
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
             if (alreadyInDb != null) {
                 return alreadyInDb;
             }
-            System.out.println("creating principal " + username);
+            log.debug("creating principal " + username);
             created[0] = Boolean.TRUE;
             return new Principal(username, null);
-//            return principalRepository.saveAndFlush(principal);
         });
+
         //entity might be detached
         if(TransactionSynchronizationManager.isActualTransactionActive()){
             if(created[0].booleanValue()){
                 return principalRepository.saveAndFlush(p);
             }
-            if(!entityManager.contains(p)){
-                return entityManager.merge(p);
+            try {
+                // We shouldn't need to merge the principals into the entity manager for this transaction
+                // unless there's something that's going to be written. Trying and potentially failing
+                // to merge during a read-only will often result in an unnecessary rollback,
+                // on transaction completion, even if everything else is working.
+                
+                if(!TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
+                    if(!entityManager.contains(p)){
+                        return entityManager.merge(p);
+                    }    
+                }
+            }catch(Exception e) {
+                log.error("Trouble merging principal from cache, is cache for principal stale?", e);
+                
+                //TODO: this detach mechanism isn't proven to do anything
+                // we need at this time.
+                entityManager.detach(p);
+//                
             }
         }
         return p;
