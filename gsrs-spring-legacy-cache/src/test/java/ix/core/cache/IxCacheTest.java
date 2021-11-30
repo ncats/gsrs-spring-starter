@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 
 import javax.persistence.Id;
 
+import gsrs.junit.TimeTraveller;
+import gsrs.junit.vintage.TimeTravellerRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,6 +32,8 @@ import ix.core.models.Session;
 public class IxCacheTest {
 
 	IxCache IxCache;
+	@Rule
+	public TimeTravellerRule timeTraveller = new TimeTravellerRule();
 
 	@Rule
 	public TemporaryFolder tmpDir = new TemporaryFolder();
@@ -259,6 +263,7 @@ public class IxCacheTest {
         assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
         
         IxCache.markChange();
+       timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
