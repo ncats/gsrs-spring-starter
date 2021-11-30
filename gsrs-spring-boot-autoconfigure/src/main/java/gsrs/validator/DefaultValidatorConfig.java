@@ -1,7 +1,6 @@
 package gsrs.validator;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import ix.core.util.InheritanceTypeIdResolver;
@@ -13,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @NoArgsConstructor
@@ -27,19 +27,44 @@ public class DefaultValidatorConfig implements ValidatorConfig {
      * {@link #getValidatorClass()}.
      */
     private Map<String, Object> parameters;
+    /**
+     * Catch all for additional JSON properties found will be assumed to be
+     * parameters to pass to the validator class similar to {@link #parameters}.
+     * if both parameters and unknown parameters are both set then parameters takes
+     * precedence.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, Object> unknownParameters = new ConcurrentHashMap<>();
+
     private Class newObjClass;
 
     private METHOD_TYPE methodType;
 
+    /**
+     * Catch all for additional JSON properties found will be assumed to be
+     * parameters to pass to the validator class similar to {@link #parameters}.
+     * If both parameters and unknown parameters are both set then parameters takes
+     * precedence.
+     * @param propertyKey
+     * @param value
+     */
+    @JsonAnySetter
+    public void addUnknownParameter(String propertyKey, Object value){
+        unknownParameters.put(propertyKey, value);
+    }
 
     @Override
     public ValidatorPlugin newValidatorPlugin(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
 
-        if(parameters ==null){
-            return (ValidatorPlugin) mapper.convertValue(Collections.emptyMap(), validatorClass);
+        if(parameters !=null && !parameters.isEmpty()){
+            return (ValidatorPlugin) mapper.convertValue(parameters, validatorClass);
+        }
+        if(unknownParameters !=null && !unknownParameters.isEmpty()){
+            return (ValidatorPlugin) mapper.convertValue(unknownParameters, validatorClass);
 
         }
-        return (ValidatorPlugin) mapper.convertValue(parameters, validatorClass);
+        return (ValidatorPlugin) mapper.convertValue(Collections.emptyMap(), validatorClass);
+
 
     }
     @Override

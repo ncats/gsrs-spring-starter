@@ -1,5 +1,7 @@
 package gsrs.scheduler;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
 @ConfigurationProperties("gsrs.scheduled-tasks")
@@ -35,6 +38,13 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     public static class ScheduledTaskConfig{
         private String scheduledTaskClass;
         private Map<String, Object> parameters;
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        private Map<String, Object> unknownParameters = new ConcurrentHashMap<>();
+
+        @JsonAnySetter
+        public void unknownSetter(String key, Object value){
+            unknownParameters.put(key, value);
+        }
 
     }
 
@@ -43,7 +53,12 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         for(ScheduledTaskConfig config : list){
 
-            Map<String, Object> params = config.parameters ==null? Collections.emptyMap() : config.parameters;
+            Map<String, Object> params;
+            if(config.parameters !=null) {
+                params = config.unknownParameters.isEmpty()? Collections.emptyMap(): config.unknownParameters;
+            }else{
+                params= config.parameters;
+            }
 
             ScheduledTaskInitializer task = null;
             try {
