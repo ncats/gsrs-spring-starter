@@ -19,8 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * to find all the potential subclasses we need for
  * creating validator config subclasses.
  *
- * So I split the tests into 2 classes one that doesn't need
- * a Spring Boot app, and one that does which run 10x slower.
+ * So I split the tests into 2 classes: one that doesn't need
+ * a Spring Boot app, and one that does which run 100x slower.
+ *
+ * Note: these tests use JSON for the config most GSRS implementations
+ * will use HOCON for their confs so they could have `=` instead of `:` for their
+ * key value pair separators.
  */
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
