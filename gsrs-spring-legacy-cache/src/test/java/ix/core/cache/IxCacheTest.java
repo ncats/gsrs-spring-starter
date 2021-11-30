@@ -256,6 +256,7 @@ public class IxCacheTest {
         });
 		assertSame("Cached model should be the same as initial model if not dirty" , s,got);
 		timeTraveller.freezeTime();
+		timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         IxCache.markChange();
        timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseIfDirty("Test", ()->{
