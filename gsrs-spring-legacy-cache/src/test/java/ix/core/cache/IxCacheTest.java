@@ -1,9 +1,6 @@
 package ix.core.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.Serializable;
 import java.time.temporal.ChronoUnit;
@@ -257,18 +254,18 @@ public class IxCacheTest {
         MyEntityClass got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
-        
+		assertSame("Cached model should be the same as initial model if not dirty" , s,got);
+		timeTraveller.freezeTime();
         IxCache.markChange();
        timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
+        assertSame("Cached model should be the same as new model if IS dirty" , sOther,got);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return s;
         });
-        assertTrue("Cached model should be updated after dirty" , sOther==got);
+		assertSame("Cached model should be updated after dirty" , sOther,got);
     }
     
 
