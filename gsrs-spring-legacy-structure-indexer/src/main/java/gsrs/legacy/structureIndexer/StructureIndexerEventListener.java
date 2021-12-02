@@ -9,6 +9,7 @@ import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -72,7 +73,7 @@ public class StructureIndexerEventListener {
         }
     }
 
-
+    @Async
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
         EntityUtils.Key key = event.getSource();
@@ -106,7 +107,7 @@ public class StructureIndexerEventListener {
             }
         });
     }
-
+    @Async
     @TransactionalEventListener
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
@@ -114,7 +115,8 @@ public class StructureIndexerEventListener {
         removeFromIndex(ew,key);
     }
 
-    @EventListener
+    @Async
+    @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
         Key k = event.getSource();
         EntityUtils.EntityWrapper ew = (useExplicitEM)?k.fetch(em).get():k.fetch().get();

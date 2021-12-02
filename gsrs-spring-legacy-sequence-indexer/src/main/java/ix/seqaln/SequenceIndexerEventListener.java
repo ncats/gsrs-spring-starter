@@ -14,6 +14,7 @@ import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -75,6 +76,7 @@ public class SequenceIndexerEventListener {
         }
     }
 
+    @Async
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
         indexSequencesFor(event.getSource());
@@ -125,6 +127,7 @@ public class SequenceIndexerEventListener {
         });
     }
 
+    @Async
     @TransactionalEventListener
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
@@ -133,6 +136,7 @@ public class SequenceIndexerEventListener {
         }
     }
 
+    @Async
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
         
