@@ -492,7 +492,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	}
                 	if(usePojoPatch) {
                 		PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
-                		System.out.println("changes = " + patch.getChanges());
+                        LogUtil.debug(() -> "changes = " + patch.getChanges());
                 		final List<Object> removed = new ArrayList<Object>();
 
                 		//Apply the changes, grabbing every change along the way
