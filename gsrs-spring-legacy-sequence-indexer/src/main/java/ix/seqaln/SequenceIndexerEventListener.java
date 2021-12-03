@@ -31,6 +31,7 @@ import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.SequenceEntity;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
 import ix.seqaln.service.SequenceIndexerService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,10 +82,17 @@ public class SequenceIndexerEventListener {
     public void onCreate(IndexCreateEntityEvent event) {
         indexSequencesFor(event.getSource());
     }
+    
+
+//    private boolean couldHaveSequence(Key key) {
+//       return key.getEntityInfo().couldHaveSequenceFields();
+//    }
 
     private void indexSequencesFor(EntityUtils.Key source) {
         try {
-            
+            if(!source.getEntityInfo().couldHaveSequenceFields()) {
+                return;
+            }
             Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch();
             if(opt.isPresent()) {
                 EntityUtils.EntityWrapper<?> ew = opt.get();
@@ -132,6 +140,9 @@ public class SequenceIndexerEventListener {
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
         if(ew.isEntity() && ew.hasKey()) {
+            if(!ew.getKey().getEntityInfo().couldHaveSequenceFields()) {
+                return;
+            }
             removeFromIndex(ew, ew.getKey());
         }
     }
@@ -139,7 +150,9 @@ public class SequenceIndexerEventListener {
     @Async
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        
+        if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
+            return;
+        }
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
