@@ -1405,7 +1405,8 @@ public class EntityUtils {
 			forLater = ()->{
 				Set<EntityInfo<? extends T>> releventClasses= new HashSet<EntityInfo<? extends T>>();
 				//TODO katzelda October 2020 : do we need to do this? this should prb be refactored to be injected?
-				Reflections reflections = new Reflections("ix");
+				String rootPackage = cls.getPackage().getName().split("[.]")[0];
+				Reflections reflections = new Reflections(rootPackage);
 				releventClasses = reflections.getSubTypesOf((Class<T>) cls).stream()
 						.map(c -> EntityUtils.getEntityInfoFor(c)).collect(Collectors.toSet());
 				releventClasses.add(this);

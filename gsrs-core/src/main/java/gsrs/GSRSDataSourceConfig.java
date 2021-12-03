@@ -54,7 +54,7 @@ public abstract class GSRSDataSourceConfig {
 
         Optional<String> dialect = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.database-platform", "spring.jpa.database-platform");
         Optional<String> ddlSetting = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.ddl-auto", "spring.jpa.hibernate.ddl-auto", "update");
-        Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql");
+        Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql", "false");
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
         Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
         Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
@@ -66,6 +66,7 @@ public abstract class GSRSDataSourceConfig {
         
         log.debug("dirtiness Strat:" + dirtiness.orElse(null));
 
+        
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
         showSQL.ifPresent(d->map.put("hibernate.show_sql", d));
         dialect.ifPresent(d->map.put("hibernate.dialect", d));

@@ -80,8 +80,24 @@ public class StructureIndexerEventListener {
         indexStructures(key);
     }
 
+    private boolean couldHaveStructures(Key key) {
+        boolean couldHaveStructure = key.getEntityInfo()
+//              .getInherittedRootEntityInfo()
+              .getTypeAndSubTypes()
+              .stream()
+              .map(tt->tt.getStructureFieldInfo())
+              .filter(tt->tt!=null)
+              .anyMatch(tt->!tt.isEmpty())
+              ;
+        return couldHaveStructure;
+    }
+    
     private void indexStructures(EntityUtils.Key key) {
         try {
+           
+            if(!couldHaveStructures(key)) {
+                return;
+            }
             Optional<EntityUtils.EntityWrapper<?>> opt= (useExplicitEM)?key.fetch(em):key.fetch();            
 
             if(opt.isPresent()) {
@@ -107,11 +123,16 @@ public class StructureIndexerEventListener {
             }
         });
     }
+    
     @Async
     @TransactionalEventListener
     public void onRemove(IndexRemoveEntityEvent event){
+   
         EntityUtils.EntityWrapper ew = event.getSource();
         EntityUtils.Key key = ew.getKey();
+        if(!couldHaveStructures(key)) {
+            return;
+        }
         removeFromIndex(ew,key);
     }
 
@@ -119,6 +140,9 @@ public class StructureIndexerEventListener {
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
         Key k = event.getSource();
+        if(!couldHaveStructures(k)) {
+            return;
+        }
         EntityUtils.EntityWrapper ew = (useExplicitEM)?k.fetch(em).get():k.fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
@@ -130,9 +154,7 @@ public class StructureIndexerEventListener {
     private void removeFromIndex(EntityUtils.EntityWrapper ew, EntityUtils.Key key) {
 
         ew.getEntityInfo().getStructureFieldInfo().stream().findAny().ifPresent(s -> {
-
             GsrsSpringUtils.tryTaskAtMost(() -> indexer.remove(key.getIdString()), t -> t.printStackTrace(), 2);
-
         });
     }
 
