@@ -1147,28 +1147,28 @@ public class EntityUtils {
 		private boolean isExplicitDeletable=false;
 
 		private Supplier<Set<EntityInfo<? extends T>>> forLater;
-		
+
 		private CachedSupplier<Boolean> hasPossibleStructure = CachedSupplier.of(()->{
-		        boolean couldHaveStructure = this
-	                  .getTypeAndSubTypes()
-	                  .stream()
-	                  .map(tt->tt.getStructureFieldInfo())
-	                  .filter(tt->tt!=null)
-	                  .anyMatch(tt->!tt.isEmpty())
-	                  ;
-	            return couldHaveStructure;
+		    boolean couldHaveStructure = this
+		            .getTypeAndSubTypes()
+		            .stream()
+		            .map(tt->tt.getStructureFieldInfo())
+		            .filter(tt->tt!=null)
+		            .anyMatch(tt->!tt.isEmpty())
+		            ;
+		    return couldHaveStructure;
 		});
-		
+
 		private CachedSupplier<Boolean> hasPossibleSequence = CachedSupplier.of(()->{
-            boolean couldHaveSequence = this
-                  .getTypeAndSubTypes()
-                  .stream()
-                  .map(tt->tt.getSequenceFieldInfo())
-                  .filter(tt->tt!=null)
-                  .anyMatch(tt->!tt.isEmpty())
-                  ;
-            return couldHaveSequence;
-    });
+		    boolean couldHaveSequence = this
+		            .getTypeAndSubTypes()
+		            .stream()
+		            .map(tt->tt.getSequenceFieldInfo())
+		            .filter(tt->tt!=null)
+		            .anyMatch(tt->!tt.isEmpty())
+		            ;
+		    return couldHaveSequence;
+		});
 		
 		private boolean isRootIndex=false;
 		Map<String,MethodOrFieldMeta> jsonGetters;
