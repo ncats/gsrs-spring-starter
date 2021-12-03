@@ -23,6 +23,7 @@ import ix.core.models.*;
 import ix.core.util.pojopointer.extensions.RegisteredFunction;
 import ix.utils.PathStack;
 import ix.core.search.text.ReflectingIndexerAware;
+import ix.core.util.EntityUtils.Key;
 import ix.core.util.pojopointer.*;
 
 import ix.utils.LinkedReferenceSet;
@@ -1147,6 +1148,28 @@ public class EntityUtils {
 
 		private Supplier<Set<EntityInfo<? extends T>>> forLater;
 		
+		private CachedSupplier<Boolean> hasPossibleStructure = CachedSupplier.of(()->{
+		        boolean couldHaveStructure = this
+	                  .getTypeAndSubTypes()
+	                  .stream()
+	                  .map(tt->tt.getStructureFieldInfo())
+	                  .filter(tt->tt!=null)
+	                  .anyMatch(tt->!tt.isEmpty())
+	                  ;
+	            return couldHaveStructure;
+		});
+		
+		private CachedSupplier<Boolean> hasPossibleSequence = CachedSupplier.of(()->{
+            boolean couldHaveSequence = this
+                  .getTypeAndSubTypes()
+                  .stream()
+                  .map(tt->tt.getSequenceFieldInfo())
+                  .filter(tt->tt!=null)
+                  .anyMatch(tt->!tt.isEmpty())
+                  ;
+            return couldHaveSequence;
+    });
+		
 		private boolean isRootIndex=false;
 		Map<String,MethodOrFieldMeta> jsonGetters;
 
@@ -1220,6 +1243,16 @@ public class EntityUtils {
 		public boolean isCollapsibleInKeyView() {
 			return collapsibleInKeyView;
 		}
+		
+
+		public boolean couldHaveStructureFields() {
+		    return hasPossibleStructure.get();
+		}
+
+		public boolean couldHaveSequenceFields() {
+		    return hasPossibleSequence.get();
+		}
+        
 
 		public EntityInfo(Class<T> cls) {
 

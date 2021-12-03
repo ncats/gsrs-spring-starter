@@ -84,21 +84,13 @@ public class SequenceIndexerEventListener {
     }
     
 
-    private boolean couldHaveSequence(Key key) {
-        boolean couldHaveSequence = key.getEntityInfo()
-//              .getInherittedRootEntityInfo()
-              .getTypeAndSubTypes()
-              .stream()
-              .map(tt->tt.getSequenceFieldInfo())
-              .filter(tt->tt!=null)
-              .anyMatch(tt->!tt.isEmpty())
-              ;
-        return couldHaveSequence;
-    }
+//    private boolean couldHaveSequence(Key key) {
+//       return key.getEntityInfo().couldHaveSequenceFields();
+//    }
 
     private void indexSequencesFor(EntityUtils.Key source) {
         try {
-            if(!couldHaveSequence(source)) {
+            if(!source.getEntityInfo().couldHaveSequenceFields()) {
                 return;
             }
             Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch();
@@ -148,7 +140,7 @@ public class SequenceIndexerEventListener {
     public void onRemove(IndexRemoveEntityEvent event){
         EntityUtils.EntityWrapper ew = event.getSource();
         if(ew.isEntity() && ew.hasKey()) {
-            if(!couldHaveSequence(ew.getKey())) {
+            if(!ew.getKey().getEntityInfo().couldHaveSequenceFields()) {
                 return;
             }
             removeFromIndex(ew, ew.getKey());
@@ -158,7 +150,7 @@ public class SequenceIndexerEventListener {
     @Async
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
-        if(!couldHaveSequence(event.getSource())) {
+        if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();

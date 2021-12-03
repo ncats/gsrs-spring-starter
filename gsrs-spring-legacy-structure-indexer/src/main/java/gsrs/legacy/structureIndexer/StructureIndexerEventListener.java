@@ -80,22 +80,11 @@ public class StructureIndexerEventListener {
         indexStructures(key);
     }
 
-    private boolean couldHaveStructures(Key key) {
-        boolean couldHaveStructure = key.getEntityInfo()
-//              .getInherittedRootEntityInfo()
-              .getTypeAndSubTypes()
-              .stream()
-              .map(tt->tt.getStructureFieldInfo())
-              .filter(tt->tt!=null)
-              .anyMatch(tt->!tt.isEmpty())
-              ;
-        return couldHaveStructure;
-    }
     
     private void indexStructures(EntityUtils.Key key) {
         try {
            
-            if(!couldHaveStructures(key)) {
+            if(!key.getEntityInfo().couldHaveStructureFields()) {
                 return;
             }
             Optional<EntityUtils.EntityWrapper<?>> opt= (useExplicitEM)?key.fetch(em):key.fetch();            
@@ -130,7 +119,7 @@ public class StructureIndexerEventListener {
    
         EntityUtils.EntityWrapper ew = event.getSource();
         EntityUtils.Key key = ew.getKey();
-        if(!couldHaveStructures(key)) {
+        if(key.getEntityInfo().couldHaveStructureFields()) {
             return;
         }
         removeFromIndex(ew,key);
@@ -140,7 +129,7 @@ public class StructureIndexerEventListener {
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
         Key k = event.getSource();
-        if(!couldHaveStructures(k)) {
+        if(!k.getEntityInfo().couldHaveStructureFields()) {
             return;
         }
         EntityUtils.EntityWrapper ew = (useExplicitEM)?k.fetch(em).get():k.fetch().get();
