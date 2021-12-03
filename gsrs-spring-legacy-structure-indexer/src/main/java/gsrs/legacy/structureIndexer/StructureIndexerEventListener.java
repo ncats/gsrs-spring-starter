@@ -119,7 +119,7 @@ public class StructureIndexerEventListener {
    
         EntityUtils.EntityWrapper ew = event.getSource();
         EntityUtils.Key key = ew.getKey();
-        if(key.getEntityInfo().couldHaveStructureFields()) {
+        if(!key.getEntityInfo().couldHaveStructureFields()) {
             return;
         }
         removeFromIndex(ew,key);
