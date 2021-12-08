@@ -54,7 +54,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         for(ScheduledTaskConfig config : list){
 
             Map<String, Object> params;
-            if(config.parameters !=null) {
+            if(config.parameters ==null) {
                 params = config.unknownParameters.isEmpty()? Collections.emptyMap(): config.unknownParameters;
             }else{
                 params= config.parameters;
