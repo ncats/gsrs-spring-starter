@@ -127,7 +127,49 @@ public class SequenceIndexerEventListener {
 
                 }
                 if(!added){
-                    indexer.add(k.getIdString(), str.toString());
+                    //TODO: Ultimately, the indexing events themselves should come with fully
+                    //qualified forms of the objects to be indexed, rather than requiring database
+                    //key-based fetches ad-hoc (which happens before this). In most cases this 
+                    //would prevent the need for any strange case where the type of sequence is 
+                    //unknown (and has the added benefit that the indexing is faster). As it stands, 
+                    //it's unfortunately common for the type of sequence not to be known at index 
+                    //time. This leads to some strange situations.
+                    
+                    //The indexer is designed to know whether the indexed sequence is an NA or
+                    //protein, and if it's not known at index time it won't actualy be returned in
+                    //later searches. 
+                    
+                    //While it's possible to know, for sure, that the sequence is a protein. It's 
+                    //not possible to know it's a NA from the sequence alone, as most DNA sequences
+                    //are also valid AA sequences.
+                    
+                    //For now, we attempt to just index all unknown sequences both ways
+                    try {
+                        indexer.add(k.getIdString(), ProteinSequence.of(
+                                AminoAcid.cleanSequence(str.toString(), "X")));
+                    }catch(Exception e) {
+                        log.warn("problem indexing protein sequence:" + k.getIdString() + " with seq:" + str.toString());
+                    }
+                    try {
+                        NucleotideSequence nts = NucleotideSequence.of(
+                                Nucleotide.cleanSequence(str.toString(), "N"));
+                        String nas=nts.toString();
+                        String missingNs=nas.replace("N", "");
+                        long fcount = nas.length();
+                        long ncount = fcount-missingNs.length();
+                        //if more than half of the residues are unknown, it's probably not actually
+                        //an NA. Otherwise, just assume it is an NA.
+                        if(ncount>fcount*0.5) {                          
+                            indexer.add(k.getIdString(), nts);
+                        }
+                        
+                    }catch(Exception e) {
+                        log.warn("problem indexing nucleic acid sequence:" + k.getIdString() + " with seq:" + str.toString());
+                    }
+                  
+                    
+                    //This fallback is not well defined, so is currently omitted
+                    //indexer.add(k.getIdString(), str.toString());
                 }
             } catch (Exception e) {
                 log.warn("Error indexing sequence", e);
