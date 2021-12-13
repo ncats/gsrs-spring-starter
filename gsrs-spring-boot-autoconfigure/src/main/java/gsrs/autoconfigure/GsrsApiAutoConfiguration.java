@@ -1,6 +1,8 @@
 package gsrs.autoconfigure;
 
 import gsrs.EntityProcessorFactory;
+import gsrs.indexer.DefaultIndexerEventFactory;
+import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.security.AdminService;
 import gsrs.security.GsrsSecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,8 @@ import org.springframework.transaction.annotation.Transactional;
         IxContext.class,
         LoopbackWebRequestHelper.class,
         HttpLoopBackConfig.class,
+        DefaultIndexerEventFactoryFactory.class,
+        DefaultIndexerEventFactory.class,
 })
 public class GsrsApiAutoConfiguration {
 

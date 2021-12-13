@@ -21,6 +21,9 @@ public class IndexerEntityListener {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    @Autowired
+    private IndexerEventFactoryFactory indexerEventFactoryFactory;
+
     private void autowireIfNeeded(){
         if(applicationEventPublisher ==null) {
             AutowireHelper.getInstance().autowire(this);
@@ -31,7 +34,10 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexCreateEntityEvent(ew.getKey()));
+            IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
+            if(indexerFactoryFor !=null) {
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newCreateEventFor(ew));
+            }
         }
     }
 
@@ -40,7 +46,10 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexUpdateEntityEvent(ew.getKey()));
+            IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
+            if(indexerFactoryFor !=null) {
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newUpdateEventFor(ew));
+            }
         }
     }
     @PostRemove
@@ -48,7 +57,10 @@ public class IndexerEntityListener {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
-            applicationEventPublisher.publishEvent(new IndexRemoveEntityEvent(ew));
+            IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
+            if(indexerFactoryFor !=null) {
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newRemoveEventFor(ew));
+            }
         }
     }
 }
