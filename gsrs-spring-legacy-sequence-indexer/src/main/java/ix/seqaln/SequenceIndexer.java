@@ -331,7 +331,7 @@ public class SequenceIndexer {
                 next = queue.take();
             }
             catch (Exception ex) {
-                ex.printStackTrace();
+                log.error(ex.getMessage(), ex);
                 next = POISON_RESULT; // terminate
             }
         }           
@@ -492,7 +492,8 @@ public class SequenceIndexer {
         try{
             c.close();
         }catch(IOException e){
-            e.printStackTrace();
+
+            log.warn("trouble closing sequence resource", e);
         }
     }
 
@@ -520,11 +521,13 @@ public class SequenceIndexer {
         Objects.requireNonNull(id);
         indexWriter.deleteDocuments(new Term (FIELD_ID, id));
         kmerWriter.deleteDocuments(new Term (FIELD_ID, id));
+        removeSeqFromCache(id);
     }
 
     public void removeAll() throws IOException {
         indexWriter.deleteAll();
         kmerWriter.deleteAll();
+        CACHE.get().removeAll();
     }
 
 
@@ -682,7 +685,8 @@ public class SequenceIndexer {
                 try {
                     search (out, query, identity, gap, rt, seqType);
                 }catch (Exception ex) {
-                    ex.printStackTrace();
+
+                    log.warn("trouble searching sequence", ex);
                 }finally{
                     try {
                         out.put(POISON_RESULT);// finish
@@ -885,7 +889,8 @@ public class SequenceIndexer {
         Map<String,Result> _cachedResults = new ConcurrentHashMap<>();
         int qlength=query.length();
 
-        List<Result> alignedResults = seqMap.entrySet().parallelStream()
+        List<Result> alignedResults = seqMap.entrySet()
+                .parallelStream()
                 .filter(e->{
                             if(rt!= CutoffType.GLOBAL){
                                 return true;
@@ -911,7 +916,8 @@ public class SequenceIndexer {
                                           targetSeq = alignmentHelper.toSequence(entry.getValue());
                                       } catch (Exception e) {
                                           //prob a bad seq
-                                          e.printStackTrace();
+
+                                          log.warn("trouble performing alignment for sequence", e);
                                           return r;
                                       }
                                       long start=System.nanoTime();
@@ -1025,7 +1031,8 @@ public class SequenceIndexer {
                                           }
                                       }
                                   } catch (Exception e) {
-                                      e.printStackTrace();
+
+                                      log.warn("trouble calculating alignment score", e);
                                       r.setScore(-1, rt);
 
                                   }
@@ -1155,11 +1162,19 @@ public class SequenceIndexer {
                                 return null;
                             });
         }catch (Exception ex) {
-            ex.printStackTrace();
+
+            log.warn("trouble fetching sequence by id", ex);
         }
         return null;
     }
 
+    private void removeSeqFromCache(String id) {
+        removeFromCache(getClass().getName()+"/"+FIELD_SEQ+"/"+id);
+    }
+    private void removeFromCache(String key) {
+        CACHE.get().remove(key);
+    }
+    
     @SuppressWarnings("unchecked")
     <T> T getOrElse (String key, Callable<T> generator)
             throws Exception {
@@ -1210,7 +1225,8 @@ public class SequenceIndexer {
                                     	    	  try{
                                     	    	  	return searcher.doc(d.doc);
                                     	    	  }catch(Exception e){
-                                    	    		  e.printStackTrace();
+
+                                                      log.warn("trouble searching sequence", e);
                                     	    		return null;
                                     	    	  }
                                     	      })
@@ -1235,7 +1251,7 @@ public class SequenceIndexer {
                                     	    	
                                     	    	return kwrap;
                                     	    	  }catch(Exception e){
-                                    	    		  e.printStackTrace();
+                                    	    	      log.warn("Error making sequence fingerprint",e);
                                     	    		  return null;
                                     	    	  }
                                     	      })
@@ -1247,7 +1263,7 @@ public class SequenceIndexer {
                                 }
                                 return new ArrayList<KmerFingerprintWrapper>();
         }catch (Exception ex) {
-            ex.printStackTrace();
+            log.warn("Error making sequence fingerprint",ex);
         }
         return null;
     }

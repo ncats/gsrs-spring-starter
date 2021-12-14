@@ -136,7 +136,7 @@ public class SequenceIndexerEventListener {
                     //time. This leads to some strange situations.
                     
                     //The indexer is designed to know whether the indexed sequence is an NA or
-                    //protein, and if it's not known at index time it won't actualy be returned in
+                    //protein, and if it's not known at index time it won't actually be returned in
                     //later searches. 
                     
                     //While it's possible to know, for sure, that the sequence is a protein. It's 
@@ -159,7 +159,7 @@ public class SequenceIndexerEventListener {
                         long ncount = fcount-missingNs.length();
                         //if more than half of the residues are unknown, it's probably not actually
                         //an NA. Otherwise, just assume it is an NA.
-                        if(ncount>fcount*0.5) {                          
+                        if(ncount<fcount*0.5) {                          
                             indexer.add(k.getIdString(), nts);
                         }
                         
