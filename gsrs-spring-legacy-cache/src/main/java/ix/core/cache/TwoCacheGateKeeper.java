@@ -1,5 +1,16 @@
 package ix.core.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import ix.utils.CallableUtil.TypedCallable;
@@ -8,12 +19,6 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.statistics.CoreStatistics;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 
 /**
@@ -118,6 +123,9 @@ public class TwoCacheGateKeeper implements GateKeeper {
        private final String key, adaptedKey;
        private final int seconds;
        
+       private final AtomicInteger callingCount = new AtomicInteger(0);
+       
+       
        public CacheGeneratorWrapper(TypedCallable<T> delegate, String key, String adaptedKey, int seconds) {
            this.delegate = delegate;
            this.key = key;
@@ -130,6 +138,7 @@ public class TwoCacheGateKeeper implements GateKeeper {
            keyMaster.addKey(key, adaptedKey);
            Class<?> type=delegate.getType();
            
+           
            final EvictionType originalType=getEvictionPolicy(type);
            
            CachedSupplier<T> memdelegate=CachedSupplier.of(()->{
@@ -137,8 +146,13 @@ public class TwoCacheGateKeeper implements GateKeeper {
                if(ret==null){
                    removeRaw(adaptedKey);
                }else{
-                   if(originalType== EvictionType.UNKNOWN){
-                       refreshElementAtWith(adaptedKey,ret.getClass());
+                   //prevent infinite recursion
+                   if(callingCount.get()==0) {
+                       callingCount.incrementAndGet();
+                       if(originalType == EvictionType.UNKNOWN){
+                           refreshElementAtWith(adaptedKey,ret.getClass());
+                       }
+                       callingCount.decrementAndGet();
                    }
                }
                return ret;
