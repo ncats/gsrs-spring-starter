@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import gsrs.sequence.indexer.SequenceEntityIndexCreateEvent;
+import gsrs.sequence.indexer.SequenceEntityUpdateCreateEvent;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
@@ -70,7 +72,7 @@ public class SequenceIndexerEventListener {
     @EventListener
     public void reindexingEntity(ReindexEntityEvent event) throws IOException {       
         try {
-            addToIndex(event.getOptionalFetchedEntityToReindex().get(), event.getEntityKey());
+            addToIndex(event.getOptionalFetchedEntityToReindex().get(), event.getEntityKey(),null);
         }catch(Exception e) {
            log.warn("Trouble sequence indexing:" + event.getEntityKey(), e);
             
@@ -80,15 +82,14 @@ public class SequenceIndexerEventListener {
     @Async
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
-        indexSequencesFor(event.getSource());
+
+        if(event instanceof SequenceEntityIndexCreateEvent){
+            indexSequencesFor(event.getSource(), ((SequenceEntityIndexCreateEvent)event).getSequenceType());
+        }
+        indexSequencesFor(event.getSource(),null);
     }
-    
 
-//    private boolean couldHaveSequence(Key key) {
-//       return key.getEntityInfo().couldHaveSequenceFields();
-//    }
-
-    private void indexSequencesFor(EntityUtils.Key source) {
+    private void indexSequencesFor(EntityUtils.Key source, SequenceEntity.SequenceType sequenceType) {
         try {
             if(!source.getEntityInfo().couldHaveSequenceFields()) {
                 return;
@@ -100,7 +101,7 @@ public class SequenceIndexerEventListener {
                     return;
                 }
                 EntityUtils.Key k = ew.getKey();
-                addToIndex(ew, k);
+                addToIndex(ew, k, sequenceType);
             }
         }catch(Exception e) {
            log.warn("Trouble sequence indexing:" + source, e);
@@ -108,24 +109,27 @@ public class SequenceIndexerEventListener {
         }
     }
 
-    private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k) {
+    private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k, SequenceEntity.SequenceType sequenceType) {
         ew.streamSequenceFieldAndValues(d->true).map(p->p.v()).filter(s->s instanceof String).forEach(str->{
             try {
                 boolean added=false;
                 Object value = ew.getValue();
-                if(value instanceof SequenceEntity){
-                    SequenceEntity.SequenceType type = ((SequenceEntity)value).computeSequenceType();
-                    if(type==SequenceEntity.SequenceType.NUCLEIC_ACID){
+                SequenceEntity.SequenceType type=sequenceType;
+                if(type ==null && value instanceof SequenceEntity){
+                    type = ((SequenceEntity)value).computeSequenceType();
+
+                }
+                if(type==SequenceEntity.SequenceType.NUCLEIC_ACID){
                         added=true;
                         indexer.add(k.getIdString(), NucleotideSequence.of(
                                 Nucleotide.cleanSequence(str.toString(), "N")));
-                    }else if(type==SequenceEntity.SequenceType.PROTEIN) {
-                        added = true;
-                        indexer.add(k.getIdString(), ProteinSequence.of(
-                                AminoAcid.cleanSequence(str.toString(), "X")));
-                    }
-
+                }else if(type==SequenceEntity.SequenceType.PROTEIN) {
+                    added = true;
+                    indexer.add(k.getIdString(), ProteinSequence.of(
+                            AminoAcid.cleanSequence(str.toString(), "X")));
                 }
+
+
                 if(!added){
                     indexer.add(k.getIdString(), str.toString());
                 }
@@ -150,6 +154,7 @@ public class SequenceIndexerEventListener {
     @Async
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
+        if(event instanceof SequenceEntityUpdateCreateEvent)return;
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
@@ -157,7 +162,20 @@ public class SequenceIndexerEventListener {
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);
-            addToIndex(ew, key);
+            addToIndex(ew, key,null);
+        }
+    }
+    @Async
+    @TransactionalEventListener
+    public void onUpdate(SequenceEntityUpdateCreateEvent event){
+        if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
+            return;
+        }
+        EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
+        if(ew.isEntity() && ew.hasKey()) {
+            EntityUtils.Key key = ew.getKey();
+            removeFromIndex(ew, key);
+            addToIndex(ew, key, event.getSequenceType());
         }
     }
 
