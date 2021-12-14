@@ -83,13 +83,13 @@ public class SequenceIndexerEventListener {
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
 
+        if(event instanceof SequenceEntityIndexCreateEvent)return;
         indexSequencesFor(event.getSource(),null);
     }
 
     @Async
     @TransactionalEventListener
     public void onCreate(SequenceEntityIndexCreateEvent event) {
-
         indexSequencesFor(event.getSource(), event.getSequenceType());
     }
 
@@ -162,6 +162,7 @@ public class SequenceIndexerEventListener {
     @Async
     @TransactionalEventListener
     public void onUpdate(IndexUpdateEntityEvent event){
+        if(event instanceof SequenceEntityUpdateCreateEvent)return;
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
