@@ -83,19 +83,11 @@ public class SequenceIndexerEventListener {
     @TransactionalEventListener
     public void onCreate(IndexCreateEntityEvent event) {
 
-        if(event instanceof SequenceEntityIndexCreateEvent)return;
+        if(event instanceof SequenceEntityIndexCreateEvent){
+            indexSequencesFor(event.getSource(), ((SequenceEntityIndexCreateEvent)event).getSequenceType());
+        }
         indexSequencesFor(event.getSource(),null);
     }
-
-    @Async
-    @TransactionalEventListener
-    public void onCreate(SequenceEntityIndexCreateEvent event) {
-        indexSequencesFor(event.getSource(), event.getSequenceType());
-    }
-
-//    private boolean couldHaveSequence(Key key) {
-//       return key.getEntityInfo().couldHaveSequenceFields();
-//    }
 
     private void indexSequencesFor(EntityUtils.Key source, SequenceEntity.SequenceType sequenceType) {
         try {
