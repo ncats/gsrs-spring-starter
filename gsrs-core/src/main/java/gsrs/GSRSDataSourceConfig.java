@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 @Slf4j
 public abstract class GSRSDataSourceConfig {
-
-    @Autowired
+    //this is marked not required because test environments don't always have this Bean.
+    @Autowired(required = false)
     private Environment env;
     
 
@@ -24,22 +24,27 @@ public abstract class GSRSDataSourceConfig {
         return getProperty(key1,key2, null);
     }
     private Optional<String> getProperty(String key1, String key2, String def){
-        String prop1 = env.getProperty(key1);
-        if(prop1!=null ) {
-            if(prop1.equals("null")) {
-                return Optional.ofNullable(def);    
-            }
-            return Optional.of(prop1);
-        }else {
-            String prop2 = env.getProperty(key2);
-            if(prop2!=null ) {
-                if(prop2.equals("null")) {
-                    return Optional.ofNullable(def);    
+
+
+        if(env !=null) {
+            String prop1 = env.getProperty(key1);
+            if (prop1 != null) {
+                if (prop1.equals("null")) {
+                    return Optional.ofNullable(def);
                 }
-                return Optional.of(prop2);
+                return Optional.of(prop1);
+            } else {
+                String prop2 = env.getProperty(key2);
+                if (prop2 != null) {
+                    if (prop2.equals("null")) {
+                        return Optional.ofNullable(def);
+                    }
+                    return Optional.of(prop2);
+                }
+
             }
-            return Optional.ofNullable(def);
         }
+        return Optional.ofNullable(def);
         
     }
     public Map<String,?> additionalJpaProperties(String DATASOURCE_PROPERTY_PATH_PREFIX){
