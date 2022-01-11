@@ -227,24 +227,25 @@ public class EntityPersistAdapter {
         EntityWrapper<?> ew = EntityWrapper.of(bean);
         Key key = ew.getKey().toRootKey();
         EditLock ml = lockMap.computeIfAbsent(key, (k) -> new EditLock(k, lockMap));
-        if (ml != null && ml.hasPreUpdateBeenCalled()) {
-            return true; // true?
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
-
-            @Override
-            public void afterCompletion(int status) {
-                //this should be called if commit or rollback
-                ml.release();
-            }
-        });
-
+//        if (ml != null && ml.hasPreUpdateBeenCalled()) {
+//            return true; // true?
+//        }
+//        if(ml.acquireIfFree()) {
+//            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+//
+//                @Override
+//                public void afterCompletion(int status) {
+//                    //this should be called if commit or rollback
+//                    ml.release();
+//                }
+//            });
+//        }
 
         runnable.run();
 
-        if (ml != null) {
-            ml.markPreUpdateCalled();
-        }
+//        if (ml != null) {
+//            ml.markPreUpdateCalled();
+//        }
 
         return true;
     }
