@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -154,9 +155,60 @@ public class SchedulerPlugin{
         public TaskListener start(){
             return progress(0);
         }
+
+        /**
+         * Return this listener as a TaskCounter.  Any updates to the return counter
+         * will be reflected in this listener.  This will make a default message "$X of $total"
+         * where $X is the current count.
+         * @param totalCount the total number of items to be counted.
+         * @return a new TaskCounter.
+         */
+        public TaskCounter asCounter(int totalCount){
+            return asCounter(totalCount, null);
+        }
+        /**
+         * Return this listener as a TaskCounter.  Any updates to the return counter
+         * will be reflected in this listener.
+         * @param totalCount the total number of items to be counted.
+         * @param messageSuffix the end of the message to append to the end of
+         *                      "$X of $total" where $X is the current count. if set to
+         *                      {@code null}, then only "$X of $total" is used.
+         * @return a new TaskCounter.
+         */
+        public TaskCounter asCounter(int totalCount, String messageSuffix){
+            return new TaskCounter(this, totalCount, messageSuffix);
+        }
         
         
-        
+    }
+
+    /**
+     * A wrapper around a {@link TaskListener}
+     * that keeps track of the progress percentage for you
+     * when you call {@link #increment()}.
+     */
+    public static class TaskCounter {
+        private final TaskListener l;
+        private final int total;
+        private AtomicInteger counter = new AtomicInteger();
+
+        private String message;
+
+        public TaskCounter(TaskListener l, int total, String messageSuffix) {
+            this.l = l;
+            this.total = total;
+            this.message = messageSuffix==null? "%d of %d" :  "%d of %d "+ messageSuffix;
+        }
+
+        /**
+         * Increments the current count.
+         */
+        public void increment(){
+            int c = counter.incrementAndGet();
+
+            l.progress(c/(double) total);
+            l.message(String.format(message, c, total));
+        }
     }
     
 //    @Entity
