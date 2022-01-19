@@ -7,8 +7,12 @@ import java.util.UUID;
 
 @Data
 @AllArgsConstructor
-public class BeginReindexEvent {
+public class BeginReindexEvent implements ReindexOperationEvent {
 
     private UUID id;
     private long numberOfExpectedRecord;
+    @Override
+    public UUID getReindexId() {
+        return id;
+    }
 }

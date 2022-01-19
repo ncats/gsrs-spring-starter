@@ -5,6 +5,7 @@ import gsrs.EntityProcessorFactory;
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
@@ -96,6 +97,9 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private PrincipalRepository principalRepository;
 
+    @Autowired
+    private PrincipalService principalService;
+
     private Long id;
     @BeforeEach
     public void addUserToRepo(){
@@ -105,6 +109,8 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
         TransactionTemplate template = new TransactionTemplate(platformTransactionManager);
         template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         template.executeWithoutResult(status-> {
+                    principalService.clearCache();
+                    principalRepository.deleteAll();
                     principalRepository.saveAndFlush(new Principal("myUser", null));
                     principalRepository.saveAndFlush(new Principal("otherUser", null));
                 });

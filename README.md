@@ -1,4 +1,5 @@
 # GSRS 3.0 
+[![Build Status](https://app.travis-ci.com/ncats/gsrs-spring-starter.svg?branch=master)](https://app.travis-ci.com/ncats/gsrs-spring-starter)
 
 This is a GSRS API implementation using a Spring Boot 2 starter package.
 
@@ -7,9 +8,28 @@ The GSRS Spring Starter also works with a few other GSRS modules.  Each of the l
 upon the ones listed before it.  Clients do not need to use all of these modules.
 
 * `gsrs-spring-boot-starter` The main starter package that autoconfigures GSRS related spring configuration.
-* `gsrs-spring-legacy-indexer` Code to support the Legacy GSRS indexer code
+* `gsrs-spring-boot-autoconfigure` Spring Configuration and Controller classes that will be common for all GSRS 3.
+
+
+* `gsrs-rest-api` Abstract classes and interfaces for creating and consuming GSRS APIs.  GSRS 3 entity modules
+  extend these classes to make their own API modules that clients can use to consume GSRS services.
+  
+### Core Modules
+* `gsrs-core` Utility classes, interfaces and annotations that will be used by all other GSRS 3 modules.
+  
 * `gsrs-core-entities` GSRS data model  and JPA entities  of the common oft-used classes 
         that can be used by many microservices that aren't specific to one microservice.
+  
+### Optional Legacy Modules
+* `gsrs-scheduled-tasks` A package supporting legacy GSRS 2 scheduled tasks.
+* `gsrs-spring-legacy-indexer` Code to support the Legacy GSRS indexer code
+* `gsrs-spring-legacy-cache` A package supporting legacy GSRS 2 cache implementation.
+* `gsrs-spring-legacy-indexer` A package supporting legacy GSRS 2 lucene tasks.
+* `gsrs-spring-akka` A package wrapping legacy GSRS 2 Akka classes in a Spring Context.
+  
+### Test Modules
+* `gsrs-core-test` Utility classes for making automated GSRS 3 tests.
+  
 * `gsrs-spring-starter-tests` Test helper classes 
 
 ## Installing the GSRS Starter

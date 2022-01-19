@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 @Slf4j
 public abstract class GSRSDataSourceConfig {
-
-    @Autowired
+    //this is marked not required because test environments don't always have this Bean.
+    @Autowired(required = false)
     private Environment env;
     
 
@@ -24,22 +24,27 @@ public abstract class GSRSDataSourceConfig {
         return getProperty(key1,key2, null);
     }
     private Optional<String> getProperty(String key1, String key2, String def){
-        String prop1 = env.getProperty(key1);
-        if(prop1!=null ) {
-            if(prop1.equals("null")) {
-                return Optional.ofNullable(def);    
-            }
-            return Optional.of(prop1);
-        }else {
-            String prop2 = env.getProperty(key2);
-            if(prop2!=null ) {
-                if(prop2.equals("null")) {
-                    return Optional.ofNullable(def);    
+
+
+        if(env !=null) {
+            String prop1 = env.getProperty(key1);
+            if (prop1 != null) {
+                if (prop1.equals("null")) {
+                    return Optional.ofNullable(def);
                 }
-                return Optional.of(prop2);
+                return Optional.of(prop1);
+            } else {
+                String prop2 = env.getProperty(key2);
+                if (prop2 != null) {
+                    if (prop2.equals("null")) {
+                        return Optional.ofNullable(def);
+                    }
+                    return Optional.of(prop2);
+                }
+
             }
-            return Optional.ofNullable(def);
         }
+        return Optional.ofNullable(def);
         
     }
     public Map<String,?> additionalJpaProperties(String DATASOURCE_PROPERTY_PATH_PREFIX){
@@ -54,7 +59,7 @@ public abstract class GSRSDataSourceConfig {
 
         Optional<String> dialect = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.database-platform", "spring.jpa.database-platform");
         Optional<String> ddlSetting = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.ddl-auto", "spring.jpa.hibernate.ddl-auto", "update");
-        Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql");
+        Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql", "false");
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
         Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
         Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
@@ -66,6 +71,7 @@ public abstract class GSRSDataSourceConfig {
         
         log.debug("dirtiness Strat:" + dirtiness.orElse(null));
 
+        
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
         showSQL.ifPresent(d->map.put("hibernate.show_sql", d));
         dialect.ifPresent(d->map.put("hibernate.dialect", d));

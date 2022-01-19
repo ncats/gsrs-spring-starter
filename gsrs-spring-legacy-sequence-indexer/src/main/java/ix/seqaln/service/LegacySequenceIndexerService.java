@@ -72,10 +72,6 @@ public class LegacySequenceIndexerService implements SequenceIndexerService {
         return indexer.search(query, identity, gap, rt, seqType);
     }
 
-   
-    private void actualShutdown() {
-        indexer.shutdown();
-    }
     
     
     //Due to the order of shutdowns / startups that happens in the current

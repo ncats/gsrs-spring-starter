@@ -14,6 +14,7 @@ import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportGenerator;
 import gsrs.service.ExportService;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
@@ -202,7 +203,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             // TODO handle null couldn't find factory for params
             throw new IllegalArgumentException("could not find suitable factory for " + params);
         }
-        return factory.createNewExporter(pos, params);
+        Exporter<T> exporter= factory.createNewExporter(pos, params);
+        //autowire and proxy
+        return AutowireHelper.getInstance().autowireAndProxy(exporter);
     }
 
     private ETag saveAsEtag(List<Object> results, SearchResult result, HttpServletRequest request) {

@@ -17,6 +17,7 @@ import ix.core.search.LazyList.NamedCallable;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil.TypedCallable;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -30,6 +31,7 @@ import ix.utils.CallableUtil.TypedCallable;
  *
  * @param <T>
  */
+@Slf4j
 public class EntityFetcher<T> implements NamedCallable<Key,T>{
     private static Object getOrFetchRecordIfNotDirty(Key k) throws Exception {
         GsrsCache ixcache = getIxCache();
@@ -119,18 +121,27 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
                         TransactionTemplate ttemp = fetcher.theKey.getTransactionTemplate();
                         ttemp.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         ttemp.setReadOnly(true);
-                        return ttemp.execute(s->{
-                            BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
-                            if(be==null){
-                                return ifNot.get();
-                            }else{
-                                try {
-                                    return (T)be.getInstantiated();
-                                }catch(Exception e){
+                        try {
+                            T tret= ttemp.execute(s->{
+                                BackupEntity be = getBackupRepository().getByEntityKey(fetcher.theKey).orElse(null);
+                                if(be==null){
                                     return ifNot.get();
+                                }else{
+                                    try {
+                                        T ret=(T)be.getInstantiated();
+                                        return ret;
+                                    }catch(Exception e){
+                                        log.error("Trouble deserializing entity JSON", e);
+                                        return ifNot.get();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                            return tret;
+                        }catch(Exception e) {
+                            log.error("Error fetching record in transaction:" + fetcher.theKey.toString(), e);
+                            return ifNot.get();
+                        }
+                       
                     };
                     try{
                         return ixCache.getOrElseRawIfDirty(jkey, caller);

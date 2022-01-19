@@ -26,9 +26,14 @@ public class FilePathParserUtils {
         
         private File absoluteRootPath;
         
-        public File getFile() {
+        public File getFile(){
             File f1= FilePathParserUtils.getFile(suppliedFilePath, defaultFilePath, dateFormatter, timeFormatter, absoluteRootPath);
-            f1.mkdirs();
+            File parent = f1 ==null? null: f1.getParentFile();
+            //don't check for IOException to keep API interface backwards compatible
+            if(parent !=null){
+                parent.mkdirs();
+            }
+
             return f1;
         }
     }

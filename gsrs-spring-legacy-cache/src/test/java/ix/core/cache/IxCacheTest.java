@@ -1,9 +1,6 @@
 package ix.core.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.Serializable;
 import java.time.temporal.ChronoUnit;
@@ -17,10 +14,9 @@ import java.util.stream.Collectors;
 
 import javax.persistence.Id;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import gsrs.junit.TimeTraveller;
+import gsrs.junit.vintage.TimeTravellerRule;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -30,6 +26,8 @@ import ix.core.models.Session;
 public class IxCacheTest {
 
 	IxCache IxCache;
+	@Rule
+	public TimeTravellerRule timeTraveller = new TimeTravellerRule();
 
 	@Rule
 	public TemporaryFolder tmpDir = new TemporaryFolder();
@@ -112,8 +110,8 @@ public class IxCacheTest {
 	}
 
 	@Test
-//	@Ignore("the implementation of the cache must be call the generator function if another thread is still" +
-//			" working")
+	@Ignore("the implementation of the cache must be call the generator function if another thread is still" +
+			" working")
 	public void fetchSlowGeneratorWith2ThreadsShouldNotRecalculate() throws Exception {
 		final int staggeredThreads = 2;
 		final String result1="First";
@@ -136,7 +134,7 @@ public class IxCacheTest {
 
 		for(int i=0;i<staggeredThreads;i++){
 			new Thread(r).start();
-			Thread.sleep(10);
+			Thread.sleep(100);
 		}
 
 		cacheCalls.await();
@@ -256,16 +254,19 @@ public class IxCacheTest {
         MyEntityClass got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
+		assertSame("Cached model should be the same as initial model if not dirty" , s,got);
+		timeTraveller.freezeTime();
+		timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         IxCache.markChange();
+       timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
+        assertSame("Cached model should be the same as new model if IS dirty" , sOther,got);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return s;
         });
-        assertTrue("Cached model should be updated after dirty" , sOther==got);
+		assertSame("Cached model should be updated after dirty" , sOther,got);
     }
     
 

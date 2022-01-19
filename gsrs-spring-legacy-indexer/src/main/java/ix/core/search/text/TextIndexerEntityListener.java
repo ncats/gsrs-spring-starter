@@ -12,6 +12,7 @@ import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -44,7 +45,7 @@ public class TextIndexerEntityListener {
             AutowireHelper.getInstance().autowire(this);
         }
     }
-
+    @Async
     @TransactionalEventListener
     public void created(IndexCreateEntityEvent event) throws Exception{
         autowireIfNeeded();
@@ -89,10 +90,9 @@ public class TextIndexerEntityListener {
         }
     }
 
-
+    @Async
     @TransactionalEventListener
-    public void updateEntity(IndexUpdateEntityEvent event) throws Exception {
-//        System.out.println("updating index " + obj);
+    public void updateEntity(IndexUpdateEntityEvent event) {
         autowireIfNeeded();
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
@@ -104,6 +104,7 @@ public class TextIndexerEntityListener {
             }
         }
     }
+    @Async
     @TransactionalEventListener
     public void deleteEntity(IndexRemoveEntityEvent event) throws Exception {
 //        System.out.println("removing from index " + obj);

@@ -1,0 +1,13 @@
+language: java
+#this will run this on open jdks for both java 8 and java 11
+jdk:
+  - openjdk8
+  - openjdk11
+#this will reuse maven dependencies so it doesn't redownload everytime
+cache:
+  directories:
+    - $HOME/.m2
+
+script:
+  - ./mvnw clean install -DskipTests
+  - ./mvnw test

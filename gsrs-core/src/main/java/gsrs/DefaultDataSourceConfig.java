@@ -61,10 +61,7 @@ public class DefaultDataSourceConfig extends GSRSDataSourceConfig {
     public static final String NAME_ENTITY_MANAGER = PERSIST_UNIT + "EntityManager";
     protected static final String NAME_DATA_SOURCE_PROPERTIES = PERSIST_UNIT + "DataSourceProperties";
     protected static final String NAME_TRANSACTION_MANAGER = PERSIST_UNIT + "TransactionManager";
-    
-       
-    @Autowired
-    private Environment env;
+
     
 
     @Bean(name = NAME_ENTITY_MANAGER)

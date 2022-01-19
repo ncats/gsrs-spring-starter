@@ -204,7 +204,7 @@ public class UserProfileService {
             principal.username = newUserRequest.getUsername();
             principal.email = newUserRequest.getEmail();
             principal.admin = Boolean.TRUE.equals(newUserRequest.isAdmin());
-            principal.standardize();
+            principal.standardizeAndUpdate();
 
             UserProfile up = new UserProfile();
             up.user = principal;

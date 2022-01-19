@@ -5,6 +5,8 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import java.util.Objects;
+
 public class AutowireHelper implements ApplicationContextAware {
 
     private static AutowireHelper instance;
@@ -43,6 +45,7 @@ public class AutowireHelper implements ApplicationContextAware {
      * @throws NullPointerException if bean is null.
      */
     public <T> T autowireAndProxy(T bean){
+        Objects.requireNonNull(bean, "bean to autowire can not be null");
         return autowireAndProxy(bean, bean.getClass().getSimpleName());
     }
     /**

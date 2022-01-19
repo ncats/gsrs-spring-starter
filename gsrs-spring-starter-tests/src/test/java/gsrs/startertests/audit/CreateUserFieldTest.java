@@ -2,6 +2,7 @@ package gsrs.startertests.audit;
 
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Principal;
@@ -42,13 +43,18 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    private PrincipalService principalService;
+
     @BeforeEach
     public void addUserToRepo(){
         TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(ignored ->{
-            principalRepository.save(new Principal("myUser", null));
-            principalRepository.save(new Principal("otherUser", null));
+            principalRepository.deleteAll();
+            principalService.clearCache();
+            principalService.registerIfAbsent("myUser");
+            principalService.registerIfAbsent("otherUser");
         });
 
     }

@@ -33,11 +33,11 @@ public class GsrsLegacyCachePropertyConfiguration {
     private int maxElementsNotEvictable = DEFAULT_MAX_ELEMENTS;
     private int timeToLive = DEFAULT_TIME_TO_LIVE;
     private int timeToIdle = DEFAULT_TIME_TO_IDLE;
-    private boolean useFileDb = true;
+    private boolean useFileDb = false;
     @Value("${ix.debug:5}")
     private int debugLevel;
 
-    boolean clearpersist = false;
+    boolean clearpersist = true;
     private String base;
 
 
