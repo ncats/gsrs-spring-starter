@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.util.concurrent.Striped;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.io.IOUtil;
@@ -78,6 +79,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1041,6 +1043,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     private ConcurrentMap<String, SuggestLookup> lookups;
 	private ConcurrentMap<String, SortField.Type> sorters;
 
+	private Striped<Lock> stripedLock = Striped.lazyWeakLock(8);
 
 	private AtomicLong lastModified = new AtomicLong();
 
@@ -2485,8 +2488,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void update(EntityWrapper ew) throws Exception{
-	    remove(ew);
-	    add(ew, true);
+	    Lock l = stripedLock.get(ew.getKey());
+	    l.lock();
+	    try {
+            remove(ew);
+            add(ew, true);
+        }finally{
+	        l.unlock();
+        }
 
     }
     public void add(EntityWrapper ew) throws IOException {
@@ -2514,7 +2523,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		    return;
 		}
 
-
+        Lock l = stripedLock.get(ew.getKey());
+        l.lock();
         try{
             ew.toInternalJson();
 			HashMap<String,List<TextField>> fullText = new HashMap<>();
@@ -2609,7 +2619,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 //            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
-		}
+		}finally{
+            l.unlock();
+        }
 	}
 
 	//One more thing:
@@ -2660,26 +2672,32 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void remove(Key key) throws Exception {
-				Tuple<String,String> docKey=key.asLuceneIdTuple();
-				//if (DEBUG(2)){
-					log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
-				//}
+        Lock l = stripedLock.get(key);
+        l.lock();
+        try {
+            Tuple<String, String> docKey = key.asLuceneIdTuple();
+            //if (DEBUG(2)){
+            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+            //}
 
-				BooleanQuery q = new BooleanQuery();
-				q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-				q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            BooleanQuery q = new BooleanQuery();
+            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
 
-				indexerService.deleteDocuments(q);
-                notifyListenersDeleteDocuments(q);
+            indexerService.deleteDocuments(q);
+            notifyListenersDeleteDocuments(q);
 
-				if(textIndexerConfig.isFieldsuggest()){ //eliminate
-					BooleanQuery qa = new BooleanQuery();
-					qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX+docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-					qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
-                    indexerService.deleteDocuments(qa);
-                    notifyListenersDeleteDocuments(qa);
-				}
-				markChange();
+            if (textIndexerConfig.isFieldsuggest()) { //eliminate
+                BooleanQuery qa = new BooleanQuery();
+                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                indexerService.deleteDocuments(qa);
+                notifyListenersDeleteDocuments(qa);
+            }
+            markChange();
+        }finally{
+            l.unlock();
+        }
 	}
 	
 

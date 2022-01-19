@@ -2854,7 +2854,8 @@ public class EntityUtils {
 			this.kind = k;
 			this._id = id;
 		}
-		
+
+
 		public Key toRootKey() {
 		    return new Key(kind.getInherittedRootEntityInfo(),_id);
 		}
