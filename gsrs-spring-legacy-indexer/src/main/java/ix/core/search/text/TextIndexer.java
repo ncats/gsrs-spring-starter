@@ -1043,7 +1043,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     private ConcurrentMap<String, SuggestLookup> lookups;
 	private ConcurrentMap<String, SortField.Type> sorters;
 
-	private Striped<Lock> stripedLock = Striped.lazyWeakLock(80);
+	private Striped<Lock> stripedLock = Striped.lazyWeakLock(200);
 
 	private AtomicLong lastModified = new AtomicLong();
 
