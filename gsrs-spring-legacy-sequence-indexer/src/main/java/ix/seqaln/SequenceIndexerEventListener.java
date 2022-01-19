@@ -3,10 +3,12 @@ package ix.seqaln;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import com.google.common.util.concurrent.Striped;
 import gsrs.sequence.indexer.SequenceEntityIndexCreateEvent;
 import gsrs.sequence.indexer.SequenceEntityUpdateCreateEvent;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
@@ -42,6 +44,8 @@ import lombok.extern.slf4j.Slf4j;
 public class SequenceIndexerEventListener {
 
     private final SequenceIndexerService indexer;
+
+    private Striped<Lock> stripedLock = Striped.lazyWeakLock(8);
 //    private EntityManager em;
     
 //    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
@@ -110,33 +114,39 @@ public class SequenceIndexerEventListener {
     }
 
     private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k, SequenceEntity.SequenceType sequenceType) {
-        ew.streamSequenceFieldAndValues(d->true).map(p->p.v()).filter(s->s instanceof String).forEach(str->{
-            try {
-                boolean added=false;
-                Object value = ew.getValue();
-                SequenceEntity.SequenceType type=sequenceType;
-                if(type ==null && value instanceof SequenceEntity){
-                    type = ((SequenceEntity)value).computeSequenceType();
+        Lock l = stripedLock.get(ew.getKey());
+        l.lock();
+        try {
+            ew.streamSequenceFieldAndValues(d -> true).map(p -> p.v()).filter(s -> s instanceof String).forEach(str -> {
+                try {
+                    boolean added = false;
+                    Object value = ew.getValue();
+                    SequenceEntity.SequenceType type = sequenceType;
+                    if (type == null && value instanceof SequenceEntity) {
+                        type = ((SequenceEntity) value).computeSequenceType();
 
-                }
-                if(type==SequenceEntity.SequenceType.NUCLEIC_ACID){
-                        added=true;
+                    }
+                    if (type == SequenceEntity.SequenceType.NUCLEIC_ACID) {
+                        added = true;
                         indexer.add(k.getIdString(), NucleotideSequence.of(
                                 Nucleotide.cleanSequence(str.toString(), "N")));
-                }else if(type==SequenceEntity.SequenceType.PROTEIN) {
-                    added = true;
-                    indexer.add(k.getIdString(), ProteinSequence.of(
-                            AminoAcid.cleanSequence(str.toString(), "X")));
-                }
+                    } else if (type == SequenceEntity.SequenceType.PROTEIN) {
+                        added = true;
+                        indexer.add(k.getIdString(), ProteinSequence.of(
+                                AminoAcid.cleanSequence(str.toString(), "X")));
+                    }
 
 
-                if(!added){
-                    indexer.add(k.getIdString(), str.toString());
+                    if (!added) {
+                        indexer.add(k.getIdString(), str.toString());
+                    }
+                } catch (Exception e) {
+                    log.warn("Error indexing sequence", e);
                 }
-            } catch (Exception e) {
-                log.warn("Error indexing sequence", e);
-            }
-        });
+            });
+        }finally{
+            l.unlock();
+        }
     }
 
     @Async
@@ -161,8 +171,14 @@ public class SequenceIndexerEventListener {
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
-            removeFromIndex(ew, key);
-            addToIndex(ew, key,null);
+            Lock l = stripedLock.get(ew.getKey());
+            l.lock();
+            try {
+                removeFromIndex(ew, key);
+                addToIndex(ew, key, null);
+            }finally{
+                l.unlock();
+            }
         }
     }
     @Async
@@ -180,11 +196,16 @@ public class SequenceIndexerEventListener {
     }
 
     private void removeFromIndex(EntityUtils.EntityWrapper ew, EntityUtils.Key key) {
+        Lock l = stripedLock.get(key);
+        l.lock();
+        try {
+            ew.getEntityInfo().getSequenceFieldInfo().stream().findAny().ifPresent(s -> {
+                GsrsSpringUtils.tryTaskAtMost(() -> indexer.remove(key.getIdString()), t -> t.printStackTrace(), 2);
 
-        ew.getEntityInfo().getSequenceFieldInfo().stream().findAny().ifPresent(s -> {
-            GsrsSpringUtils.tryTaskAtMost(() -> indexer.remove(key.getIdString()), t -> t.printStackTrace(), 2);
-
-        });
+            });
+        }finally{
+            l.unlock();
+        }
     }
 
 
