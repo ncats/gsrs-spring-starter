@@ -69,6 +69,8 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
 
         // Add a session cookie
         Cookie sessionCookie = new Cookie( sessionCookieName, id );
+        sessionCookie.setHttpOnly(true);
+        sessionCookie.setSecure(true);
         response.addCookie( sessionCookie );
 //        gsrsCache.setRaw(id, session.id);
         // call the original impl

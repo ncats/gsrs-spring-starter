@@ -71,6 +71,7 @@ public class LoginController {
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
         sessionCookie.setHttpOnly(true);
+        sessionCookie.setSecure(true);
         sessionCookie.setPath("/"); //Maybe?
         
         
