@@ -99,7 +99,15 @@ public class EditLock {
     }
 
 
-
+    public boolean acquireIfFree(){
+        synchronized (count){
+            if(count.intValue() ==0){
+                acquire();
+                return true;
+            }
+            return false;
+        }
+    }
     public void acquire() {
         synchronized (count) {
             count.increment();
@@ -179,7 +187,9 @@ public class EditLock {
 
 
 	public int getCount() {
-		return count.intValue();
+        synchronized (count) {
+            return count.intValue();
+        }
 	}
 
     static class LockProxy implements Lock {
