@@ -1,10 +1,12 @@
 package gsrs.startertests.audit;
 
+import gsrs.AuditConfig;
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.GsrsJpaTest;
 import lombok.Data;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +22,7 @@ import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -47,6 +49,9 @@ public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Tes
 
     @Autowired
     protected TestEntityManager entityManager;
+
+    @Autowired
+    private AuditConfig auditConfig;
 
     @Test
     public void intialCreationShouldSetCreateDateAndLastModifiedToSameValue(){
@@ -75,6 +80,62 @@ public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Tes
 
         assertEquals("different", sut.getFoo());
         assertThat(sut.getCreationDate(), is(timeTraveller.getWhereWeWere().get().asLocalDate()) );
+        assertThat(sut.getLastModifiedDate(), is(timeTraveller.getCurrentLocalDate()) );
+    }
+
+    @Test
+    public void turnOffAuditShouldNotSetOnCreate(){
+        MyEntity sut = new MyEntity();
+        sut.setFoo("myFoo");
+        auditConfig.disableAuditingFor(()->{
+            entityManager.persistAndFlush(sut);
+        });
+
+
+
+        Assertions.assertNull(sut.getCreationDate());
+        Assertions.assertNull(sut.getLastModifiedDate());
+    }
+
+    @Test
+    public void turnOffAuditShouldNotUpdate(){
+        MyEntity sut = new MyEntity();
+        sut.setFoo("myFoo");
+        entityManager.persistAndFlush(sut);
+
+        timeTraveller.jumpAhead(1, TimeUnit.DAYS);
+
+        sut.setFoo("different");
+
+        auditConfig.disableAuditingFor(()->entityManager.persistAndFlush(sut));
+
+        LocalDate whereWeWere = timeTraveller.getWhereWeWere().get().asLocalDate();
+        assertThat(sut.getCreationDate(), is(whereWeWere) );
+        assertThat(sut.getLastModifiedDate(), is(whereWeWere) );
+    }
+
+    @Test
+    public void turnAuditOffThenOnAgain(){
+        MyEntity sut = new MyEntity();
+        sut.setFoo("myFoo");
+
+        entityManager.persistAndFlush(sut);
+        LocalDate createDate = timeTraveller.getCurrentLocalDate();
+        timeTraveller.jumpAhead(1, TimeUnit.DAYS);
+
+        sut.setFoo("different");
+        auditConfig.disableAuditingFor(()->entityManager.persistAndFlush(sut));
+
+        assertThat(sut.getCreationDate(), is(createDate) );
+        assertThat(sut.getLastModifiedDate(), is(createDate) );
+
+
+        timeTraveller.jumpAhead(1, TimeUnit.DAYS);
+        sut.setFoo("something completely different");
+        entityManager.persistAndFlush(sut);
+
+        assertEquals("something completely different", sut.getFoo());
+        assertThat(sut.getCreationDate(), is(createDate) );
         assertThat(sut.getLastModifiedDate(), is(timeTraveller.getCurrentLocalDate()) );
     }
 }
