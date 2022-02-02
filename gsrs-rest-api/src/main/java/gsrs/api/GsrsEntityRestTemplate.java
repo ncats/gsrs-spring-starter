@@ -67,22 +67,55 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
         ResponseEntity<String> response = doGet("("+anyKindOfId + ")",String.class);
-        if(response.getStatusCodeValue() == 404) {
+        // if(response.getStatusCodeValue() == 404) {
+        if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
         JsonNode node = mapper.readTree(response.getBody());
         return Optional.ofNullable(parseFromJson(node));
-
     }
+
+
+
     public <S extends T> Optional<S> findById(I id) throws IOException {
         return findByResolvedId(id.toString());
     }
+
     public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = doGet("("+id + ")", "key",String.class);
-        if(response.getStatusCodeValue() == 404) {
+        // if(response.getStatusCodeValue() == 404) {
+        if(!response.getStatusCode().is2xxSuccessful()) {
             return false;
         }
         return true;
+    }
+
+    public Boolean cautiousExistsById(String id, String jsonIdKey) throws IOException {
+        // returns:
+        // true if found and id form content checks out.
+        // false if explicitly not found (404)
+        // null if something went wrong. (Other 4xx, 500)
+        ResponseEntity<String> response = doGet("("+ id + ")", "key",String.class);
+        if(response.getStatusCode()==HttpStatus.NOT_FOUND) {
+            return false;
+        } if(response.getStatusCode().is2xxSuccessful()) {
+            // Trying not to get burned by unexpected errors
+            // (e.g. status 200 but wrong/empty content)
+            try {
+                JsonNode node = mapper.readTree(response.getBody());
+                String jsonIdValue = node.get(jsonIdKey).asText();
+                if (jsonIdValue != null && jsonIdValue.equals(id)) {
+                    return true;
+                } else {
+                    return null;
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     public ExistsCheckResult exists(String... anyKindOfIdString) throws IOException{
@@ -98,7 +131,8 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
         ResponseEntity<String> response = doGet("/?top=" + top +"&skip=" + skip,String.class);
-        if(response.getStatusCodeValue() == 404) {
+        // if(response.getStatusCodeValue() == 404) {
+        if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
         JsonNode node = mapper.readTree(response.getBody());

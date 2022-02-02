@@ -45,7 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
         LoopbackWebRequestHelper.class,
         HttpLoopBackConfig.class,
         DefaultIndexerEventFactoryFactory.class,
-        DefaultIndexerEventFactory.class,
+        DefaultIndexerEventFactory.class
 })
 public class GsrsApiAutoConfiguration {
 
@@ -59,6 +59,7 @@ public class GsrsApiAutoConfiguration {
     @Order(Integer.MAX_VALUE)
     @Transactional
     public void initializeEntityProcessors(ApplicationReadyEvent event){
+        System.out.println("===\n\n\nI am here xyz\n\n\n");
         adminService.runAsAdmin(entityProcessorFactory::initialize);
 
     }
