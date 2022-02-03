@@ -31,6 +31,25 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
+    private String logPath = "logs";
+    @Value("#{new Boolean('${gsrs.sessionSecure:true}')}")
+    private Boolean sessionCookieSecure;
+
+    public String getSessionCookieName() {
+        return sessionCookieName;
+    }
+
+    public void setSessionCookieName(String sessionCookieName) {
+        this.sessionCookieName = sessionCookieName;
+    }
+
+    public Boolean getSessionCookieSecure() {
+        return sessionCookieSecure;
+    }
+
+    public void setSessionCookieSecure(Boolean sessionCookieSecure) {
+        this.sessionCookieSecure = sessionCookieSecure;
+    }
 
     @Override
     public void onAuthenticationSuccess(
@@ -70,7 +89,9 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
         // Add a session cookie
         Cookie sessionCookie = new Cookie( sessionCookieName, id );
         sessionCookie.setHttpOnly(true);
-        sessionCookie.setSecure(true);
+        if(sessionCookieSecure==null || sessionCookieSecure.booleanValue()) {
+            sessionCookie.setSecure(true);
+        }
         response.addCookie( sessionCookie );
 //        gsrsCache.setRaw(id, session.id);
         // call the original impl
