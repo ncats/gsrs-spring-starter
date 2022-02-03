@@ -42,6 +42,9 @@ public class LoginController {
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
+    @Value("#{new Boolean('${gsrs.sessionSecure:true}')}")
+    private Boolean sessionCookieSecure;
+
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
     //so we can customize it. but that didn't work as the Session info assumes authentication
     //has already run and registered your session
@@ -71,7 +74,10 @@ public class LoginController {
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
         sessionCookie.setHttpOnly(true);
-        sessionCookie.setSecure(true);
+        if(sessionCookieSecure ==null || sessionCookieSecure.booleanValue()){
+            sessionCookie.setSecure(true);
+        }
+
         sessionCookie.setPath("/"); //Maybe?
         
         
