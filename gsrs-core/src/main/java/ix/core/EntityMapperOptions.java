@@ -31,4 +31,19 @@ public @interface EntityMapperOptions {
      */
     String getSelfRel() default "_self";
 
+    /**
+     * The JsonViews that need to be present
+     * to include the self rel.
+     * @return
+     */
+    Class<?>[] selfRelViews() default {};
+    /**
+     * Name of method of class that provides
+     * the id as a String.  If not set, (or set to {@code ""} then
+     * use the field or method annotated with @Id.
+     * @return the String of the public method name that takes no arguments and returns a String
+     * that is the id.
+     */
+    String idProviderRef() default "";
+
 }

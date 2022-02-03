@@ -69,11 +69,11 @@ public class AuditConfig {
      * otherwise it is likely the calls to get the current editor and datetime
      * won't be called until AFTER auditing is turned back on.
      * @param throwingRunnable
-     * @param <E>
-     * @throws E
+     * @param <E> the Throwable or Exception that the ThrowingRunnable can throw.
+     * @throws E the Throwable thrown by the ThrowingRunnable.
      */
     @hasAdminRole
-    public <E extends Throwable> void disableAuditingFor(Unchecked.ThrowingRunnable<E> throwingRunnable) throws E{
+    public <E extends Throwable> void disableAuditingForThrowable(Unchecked.ThrowingRunnable<E> throwingRunnable) throws E{
         Objects.requireNonNull(throwingRunnable);
         turnOffAuditing.set(Boolean.TRUE);
         try{
@@ -83,6 +83,33 @@ public class AuditConfig {
             turnOffAuditing.set(Boolean.FALSE);
         }
     }
+
+
+    /**
+     * Temporarily turn off auditing for while
+     * the given runnable is executed.
+     * This will make hibernate calls to get the current datetime
+     * and current user to return empty Optionals which
+     * should mean hibernate won't update the last edited/created fields.
+     *
+     * Note that because this is done in a threadlocal way just while this
+     * runnable is run any persistent changes should be flushed inside this runnable
+     * otherwise it is likely the calls to get the current editor and datetime
+     * won't be called until AFTER auditing is turned back on.
+     * @param runnable the Runnable to run without Auditing.
+     */
+    @hasAdminRole
+    public void disableAuditingFor(Runnable runnable) {
+        Objects.requireNonNull(runnable);
+        turnOffAuditing.set(Boolean.TRUE);
+        try{
+            runnable.run();
+        }finally{
+            //is this enough? does a delayed DB flush get run now or could it run after?  should we document to force flush?
+            turnOffAuditing.set(Boolean.FALSE);
+        }
+    }
+
     @Bean
     public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository
 //            , @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em

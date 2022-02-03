@@ -3,6 +3,7 @@ package gsrs.controller.hateoas;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.model.GsrsApiAction;
 import gsrs.model.Sizeable;
+import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.ObjectResourceReference;
 import ix.core.controllers.EntityFactory;
@@ -63,6 +64,22 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
     }
 
 
+    private static boolean shouldInclude(GsrsUnwrappedEntityModel<?> model, Class[] views){
+        if(views ==null){
+            return true;
+        }
+
+        boolean hasView=false;
+        for(Class v : views){
+            if(model.hasView(v)){
+                hasView=true;
+                break;
+            }
+        }
+        return hasView;
+
+
+    }
 
     private GsrsUnwrappedEntityModel<?> handleSingleObject(GsrsUnwrappedEntityModel<?> model, Object obj) {
         EntityUtils.EntityInfo<?> info = EntityUtils.EntityWrapper.of(obj).getEntityInfo();
@@ -72,13 +89,28 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
         CachedSupplier<String> idString = info.getIdString(obj);
         String id = idString.get();
-        //always add self
-        Link link = computeSelfLink(model, id);
-        if(link !=null) {
-            model.addRaw(link);
+
+        EntityMapperOptions entityMapperOptions = info.getEntityClass().getAnnotation(EntityMapperOptions.class);
+        boolean includeSelfLink = true;
+        if(entityMapperOptions !=null){
+
+            includeSelfLink = shouldInclude(model, entityMapperOptions.selfRelViews());
+        }
+        if(includeSelfLink) {
+            Link link = computeSelfLink(model, id);
+            if (link != null) {
+                model.addRaw(link);
+            }
         }
 
         for(EntityUtils.MethodMeta action : info.getApiActions()){
+            GsrsApiAction gsrsApiAction = action.getAnnotation(GsrsApiAction.class);
+            if(gsrsApiAction !=null){
+                if(!shouldInclude(model, gsrsApiAction.view())){
+                    continue;
+                }
+
+            }
             Optional<Object> value = action.getValue(obj);
             if(!value.isPresent()){
                 continue;
@@ -86,7 +118,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
             Object resource = value.get();
             if(resource !=null) {
                 //GSRS 2.x RestUrlLink object has 2 fields : url and type (for GET, DELETE etc)
-                GsrsApiAction gsrsApiAction = action.getAnnotation(GsrsApiAction.class);
+
                 String type = gsrsApiAction ==null? "GET": gsrsApiAction.type().name();
 
                 if (resource instanceof FieldResourceReference) {
