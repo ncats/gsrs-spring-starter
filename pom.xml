@@ -20,6 +20,7 @@
         <module>gsrs-rest-api</module>
         <module>gsrs-controlled-vocabulary-api</module>
         <module>gsrs-controlled-vocabulary</module>
+        <module>gsrs-data-exchange</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
