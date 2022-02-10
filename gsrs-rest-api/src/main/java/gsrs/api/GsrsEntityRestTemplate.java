@@ -67,23 +67,18 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
         ResponseEntity<String> response = doGet("("+anyKindOfId + ")",String.class);
-        // if(response.getStatusCodeValue() == 404) {
         if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
         JsonNode node = mapper.readTree(response.getBody());
         return Optional.ofNullable(parseFromJson(node));
+
     }
-
-
-
     public <S extends T> Optional<S> findById(I id) throws IOException {
         return findByResolvedId(id.toString());
     }
-
     public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = doGet("("+id + ")", "key",String.class);
-        // if(response.getStatusCodeValue() == 404) {
         if(!response.getStatusCode().is2xxSuccessful()) {
             return false;
         }
@@ -131,7 +126,6 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
         ResponseEntity<String> response = doGet("/?top=" + top +"&skip=" + skip,String.class);
-        // if(response.getStatusCodeValue() == 404) {
         if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
