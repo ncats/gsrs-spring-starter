@@ -85,10 +85,15 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         return true;
     }
 
+    // This function in starter is like entityExists but checks to see if ID in json matches the id passed.
+    // I feel like this is kind of good practice, but it might be that I don't understand the upstream code
+    // well enough. For example, exceptions might be raised that prevent the need for this.
     public Boolean cautiousExistsById(String id, String jsonIdKey) throws IOException {
-        // returns:
+        // Rationale: there is a lot going on in a substance api call.
+        // One could get burned by *just* checking the 200 status.
+        // This returns:
         // true if found and id form content checks out.
-        // false if explicitly not found (404)
+        // false if explicitly not found (404).
         // null if something went wrong. (Other 4xx, 500)
         ResponseEntity<String> response = doGet("("+ id + ")", "key",String.class);
         if(response.getStatusCode()==HttpStatus.NOT_FOUND) {
@@ -96,9 +101,15 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         } if(response.getStatusCode().is2xxSuccessful()) {
             // Trying not to get burned by unexpected errors
             // (e.g. status 200 but wrong/empty content)
+            // is there a better way to handle these exceptions?
             try {
                 JsonNode node = mapper.readTree(response.getBody());
-                String jsonIdValue = node.get(jsonIdKey).asText();
+                String jsonIdValue = null;
+                try {
+                    jsonIdValue = node.get(jsonIdKey).asText();
+                } catch (Exception ex) {
+                    return null;
+                }
                 if (jsonIdValue != null && jsonIdValue.equals(id)) {
                     return true;
                 } else {
@@ -120,8 +131,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                list.add(s);
            }
        }
-
-        return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
+       return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
     public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
