@@ -67,11 +67,15 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
         ResponseEntity<String> response = doGet("("+anyKindOfId + ")",String.class);
-        if(!response.getStatusCode().is2xxSuccessful()) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return Optional.empty();
+        }else if(response.getStatusCode().is2xxSuccessful()){
+            JsonNode node = mapper.readTree(response.getBody());
+            return Optional.ofNullable(parseFromJson(node));
+        }else{
+            throw new IOException("Unexpected server response:" + response.getStatusCode());
         }
-        JsonNode node = mapper.readTree(response.getBody());
-        return Optional.ofNullable(parseFromJson(node));
+
 
     }
     public <S extends T> Optional<S> findById(I id) throws IOException {
@@ -79,48 +83,12 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
     public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = doGet("("+id + ")", "key",String.class);
-        if(!response.getStatusCode().is2xxSuccessful()) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return false;
-        }
-        return true;
-    }
-
-    // This function in starter is like entityExists but checks to see if ID in json matches the id passed.
-    // I feel like this is kind of good practice, but it might be that I don't understand the upstream code
-    // well enough. For example, exceptions might be raised that prevent the need for this.
-    public Boolean cautiousExistsById(String id, String jsonIdKey) throws IOException {
-        // Rationale: there is a lot going on in a substance api call.
-        // One could get burned by *just* checking the 200 status.
-        // This returns:
-        // true if found and id form content checks out.
-        // false if explicitly not found (404).
-        // null if something went wrong. (Other 4xx, 500)
-        ResponseEntity<String> response = doGet("("+ id + ")", "key",String.class);
-        if(response.getStatusCode()==HttpStatus.NOT_FOUND) {
-            return false;
-        } if(response.getStatusCode().is2xxSuccessful()) {
-            // Trying not to get burned by unexpected errors
-            // (e.g. status 200 but wrong/empty content)
-            // is there a better way to handle these exceptions?
-            try {
-                JsonNode node = mapper.readTree(response.getBody());
-                String jsonIdValue = null;
-                try {
-                    jsonIdValue = node.get(jsonIdKey).asText();
-                } catch (Exception ex) {
-                    return null;
-                }
-                if (jsonIdValue != null && jsonIdValue.equals(id)) {
-                    return true;
-                } else {
-                    return null;
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                return null;
-            }
-        } else {
-            return null;
+        }else if(response.getStatusCode().is2xxSuccessful()){
+            return true;
+        }else{
+            throw new IOException("Unexpected server response: " + response.getStatusCode());
         }
     }
 
@@ -134,20 +102,26 @@ public abstract class GsrsEntityRestTemplate<T, I> {
        return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
-    public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
+    public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws IOException {
         ResponseEntity<String> response = doGet("/?top=" + top +"&skip=" + skip,String.class);
-        if(!response.getStatusCode().is2xxSuccessful()) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return Optional.empty();
+        } else if(response.getStatusCode().is2xxSuccessful()){
+            try {
+                JsonNode node = mapper.readTree(response.getBody());
+                WithoutContentPagedResult result = mapper.convertValue(node, WithoutContentPagedResult.class);
+                JsonNode array = node.get("content");
+                if (array.isArray()) {
+                    List<S> content = parseFromJsonList(array);
+                    return Optional.of(result.toPagedResult(content));
+                }
+                return Optional.of(result.toPagedResult(Collections.emptyList()));
+            }catch(Exception ex) {
+                throw new IOException("Error parsing response: " + response.getStatusCode().getReasonPhrase());
+            }
+        } else {
+            throw new IOException("Unexpected server response:" + response.getStatusCode());
         }
-        JsonNode node = mapper.readTree(response.getBody());
-        WithoutContentPagedResult result = mapper.convertValue(node, WithoutContentPagedResult.class);
-
-        JsonNode array = node.get("content");
-        if(array.isArray()){
-            List<S> content = parseFromJsonList(array);
-            return Optional.of(result.toPagedResult(content));
-        }
-        return Optional.of(result.toPagedResult(Collections.emptyList()));
     }
 
      public <S extends T> S create(S dto) throws IOException {
