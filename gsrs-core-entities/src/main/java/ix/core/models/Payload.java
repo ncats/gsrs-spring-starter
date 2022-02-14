@@ -16,6 +16,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name="ix_core_payload")
+@Indexable(indexed = false)//we don't want this indexed
 public class Payload extends BaseModel {
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
