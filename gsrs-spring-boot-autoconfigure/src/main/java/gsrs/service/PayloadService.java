@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface PayloadService {
 
@@ -47,6 +48,7 @@ public interface PayloadService {
     Payload createPayload (String name, String mime, InputStream content, PayloadPersistType persistType) throws IOException;
 
     Optional<InputStream> getPayloadAsInputStream(Payload payload) throws IOException;
+    Optional<InputStream> getPayloadAsInputStream(UUID payloadId) throws IOException;
 
     default Optional<InputStream> getPayloadAsUncompressedInputStream(Payload payload)throws IOException {
         Optional<InputStream> compressed = getPayloadAsInputStream(payload);

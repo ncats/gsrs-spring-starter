@@ -17,6 +17,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 
 //@Service
 public class LegacyPayloadService implements PayloadService {
@@ -124,7 +125,16 @@ public class LegacyPayloadService implements PayloadService {
         }
         return saveFile;
     }
-
+    @Override
+    @Transactional
+    public Optional<InputStream> getPayloadAsInputStream(UUID payloadId) throws IOException {
+        Optional<Payload> opt = payloadRepository.findById(payloadId);
+        if(opt.isPresent()){
+            //have to return a new empty for generics to work?
+            return Optional.empty();
+        }
+        return getPayloadAsInputStream(opt.get());
+    }
     @Override
     public Optional<InputStream> getPayloadAsInputStream(Payload payload) throws IOException {
         //this is almost the same as getAsFile except we do some different handling of db fetching to inputstream
