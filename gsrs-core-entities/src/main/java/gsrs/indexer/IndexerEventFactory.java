@@ -3,6 +3,8 @@ package gsrs.indexer;
 import ix.core.util.EntityUtils;
 import org.springframework.core.Ordered;
 
+import java.util.Optional;
+
 /**
  * Factory to create Indexing events for a given Object.
  * GSRS will have several IndexerEventFactories loaded
@@ -27,7 +29,11 @@ public interface IndexerEventFactory extends Ordered {
      *
      */
     default Object newCreateEventFor(EntityUtils.EntityWrapper ew){
-        return new IndexCreateEntityEvent(ew.getKey());
+        Optional<EntityUtils.Key> optKey = ew.getOptionalKey();
+        if(optKey.isPresent()) {
+            return new IndexCreateEntityEvent(optKey.get());
+        }
+        return null;
     }
     /**
      * Create a new UpdateIndexEvent object for the given wrapped Entity.
@@ -37,7 +43,11 @@ public interface IndexerEventFactory extends Ordered {
      * @return the event object to publish; or {@code null} if nothing should be published.
      */
     default Object newUpdateEventFor(EntityUtils.EntityWrapper ew){
-        return new IndexUpdateEntityEvent(ew.getKey());
+        Optional<EntityUtils.Key> optKey = ew.getOptionalKey();
+        if(optKey.isPresent()) {
+            return new IndexUpdateEntityEvent(optKey.get());
+        }
+        return null;
     }
     /**
      * Create a new RemoveIndexEvent object for the given wrapped Entity.
