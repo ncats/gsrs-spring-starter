@@ -171,10 +171,11 @@ public class AuditConfig {
             if(auth instanceof GsrsUserProfileDetails){
                 //refetch from repository because the one from the authentication is "detached"
                 //TODO: does that matter?
-                TransactionTemplate tx = new TransactionTemplate(transactionManager);
-                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.setReadOnly(true);
-                return tx.execute(s->principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id));
+//                TransactionTemplate tx = new TransactionTemplate(transactionManager);
+//                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//                tx.setReadOnly(true);
+//                return tx.execute(s->principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id));
+                return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
             String name = auth.getName();
@@ -207,8 +208,8 @@ public class AuditConfig {
                 if (value.isPresent()) {
                     Principal p = value.get();
                     //I don't think we need to have principal attached?
-                    return value;
-//                return Optional.of(em.contains(p)? p : em.merge(p));
+//                    return value;
+                return Optional.of(em.contains(p)? p : em.merge(p));
                 }
                 return value;
             }catch(Throwable t){
