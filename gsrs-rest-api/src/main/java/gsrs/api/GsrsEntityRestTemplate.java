@@ -116,7 +116,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                     return Optional.of(result.toPagedResult(content));
                 }
                 return Optional.of(result.toPagedResult(Collections.emptyList()));
-            }catch(Exception ex) {
+            }catch(Throwable t) {
                 throw new IOException("Error parsing response: " + response.getStatusCode().getReasonPhrase());
             }
         } else {
