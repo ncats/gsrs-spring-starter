@@ -31,7 +31,6 @@ public class LoginAndLogoutEventListener {
     public void onLogin(AuthenticationSuccessEvent event) {
         UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
 
-        System.out.println("Logged in user " + up + "  auth = " + event.getAuthentication());
 
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
         if(sessions.isEmpty()){

@@ -170,7 +170,10 @@ public class AuditConfig {
 
             if(auth instanceof GsrsUserProfileDetails){
                 //refetch from repository because the one from the authentication is "detached"
-                //TODO: does that matter?
+                //katzelda Feb 2022 - we need to keep this find call inside the same transaction
+                //because otherwise when we save a record that needs to get the current user (like in edited by)
+                //we need to have the Principal object in the same hibernate session otherwise the database flush will fail.
+
 //                TransactionTemplate tx = new TransactionTemplate(transactionManager);
 //                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 //                tx.setReadOnly(true);
