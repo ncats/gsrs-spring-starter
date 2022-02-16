@@ -28,25 +28,27 @@ public class TestFileParserHelper {
 
     @Test
     public void absoluteFilePathWithSetAbsoluteRootShouldBeAbsolute() throws IOException {
+        File myFile = new File("path/to/test");
         FileParser.FileParserBuilder builder = FileParser.builder();
-        File f = builder.absoluteRootPath(new File("/another"))
+        File f = builder.absoluteRootPath(new File("another").getAbsoluteFile())
         .defaultFilePath(null)
-        .suppliedFilePath("/path/to/test")
+        .suppliedFilePath(myFile.getAbsolutePath())
         .build().getFile();
         
-        assertEquals(new File("/path/to/test"), f);
+        assertEquals( myFile.getAbsolutePath(), f.getAbsolutePath());
     }
     
 
     @Test
     public void absoluteFilePathWithSetRelativeRootShouldBeAbsolute() throws IOException {
+        File myFile = new File("path/to/test");
         FileParser.FileParserBuilder builder = FileParser.builder();
-        File f = builder.absoluteRootPath(new File("./another"))
-        .defaultFilePath(null)
-        .suppliedFilePath("/path/to/test")
-        .build().getFile();
-        
-        assertEquals(new File("/path/to/test"), f);
+        File f = builder.absoluteRootPath(new File("another"))
+                .defaultFilePath(null)
+                .suppliedFilePath(myFile.getAbsolutePath())
+                .build().getFile();
+
+        assertEquals( myFile.getAbsolutePath(), f.getAbsolutePath());
     }
     
     
