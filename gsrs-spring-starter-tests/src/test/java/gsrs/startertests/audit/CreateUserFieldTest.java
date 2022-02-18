@@ -1,5 +1,6 @@
 package gsrs.startertests.audit;
 
+import gsrs.AuditConfig;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
@@ -25,7 +26,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -45,6 +46,9 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private PrincipalService principalService;
+
+    @Autowired
+    private AuditConfig auditConfig;
 
     @BeforeEach
     public void addUserToRepo(){
@@ -72,6 +76,18 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
         assertThat(sut.getLastModifiedBy().username).isEqualToIgnoringCase("myUser");
     }
 
+    @Test
+    @WithMockUser(username = "myUser")
+    public void noAuditIntialCreationShouldNotSetCreateDateOrLastModified(){
+        MyEntity sut = new MyEntity();
+        sut.setFoo("myFoo");
+        auditConfig.disableAuditingFor(()->entityManager.persistAndFlush(sut));
+
+
+        assertEquals("myFoo", sut.getFoo());
+        assertNull(sut.getCreatedBy());
+        assertNull(sut.getLastModifiedBy());
+    }
 
 
     @Entity

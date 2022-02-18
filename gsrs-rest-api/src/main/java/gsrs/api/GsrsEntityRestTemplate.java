@@ -67,11 +67,15 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
         ResponseEntity<String> response = doGet("("+anyKindOfId + ")",String.class);
-        if(response.getStatusCodeValue() == 404) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return Optional.empty();
+        }else if(response.getStatusCode().is2xxSuccessful()){
+            JsonNode node = mapper.readTree(response.getBody());
+            return Optional.ofNullable(parseFromJson(node));
+        }else{
+            throw new IOException("Unexpected server response:" + response.getStatusCode());
         }
-        JsonNode node = mapper.readTree(response.getBody());
-        return Optional.ofNullable(parseFromJson(node));
+
 
     }
     public <S extends T> Optional<S> findById(I id) throws IOException {
@@ -79,10 +83,13 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     }
     public boolean existsById(I id) throws IOException {
         ResponseEntity<String> response = doGet("("+id + ")", "key",String.class);
-        if(response.getStatusCodeValue() == 404) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return false;
+        }else if(response.getStatusCode().is2xxSuccessful()){
+            return true;
+        }else{
+            throw new IOException("Unexpected server response: " + response.getStatusCode());
         }
-        return true;
     }
 
     public ExistsCheckResult exists(String... anyKindOfIdString) throws IOException{
@@ -92,24 +99,29 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                list.add(s);
            }
        }
-
-        return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
+       return restTemplate.postForObject(prefix+"/@exists", list, ExistsCheckResult.class);
     }
 
-    public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws JsonProcessingException {
+    public <S extends T> Optional<PagedResult<S>> page(long top, long skip) throws IOException {
         ResponseEntity<String> response = doGet("/?top=" + top +"&skip=" + skip,String.class);
-        if(response.getStatusCodeValue() == 404) {
+        if(response.getStatusCode() == HttpStatus.NOT_FOUND){
             return Optional.empty();
+        } else if(response.getStatusCode().is2xxSuccessful()){
+            try {
+                JsonNode node = mapper.readTree(response.getBody());
+                WithoutContentPagedResult result = mapper.convertValue(node, WithoutContentPagedResult.class);
+                JsonNode array = node.get("content");
+                if (array.isArray()) {
+                    List<S> content = parseFromJsonList(array);
+                    return Optional.of(result.toPagedResult(content));
+                }
+                return Optional.of(result.toPagedResult(Collections.emptyList()));
+            }catch(Throwable t) {
+                throw new IOException("Error parsing response: " + response.getStatusCode().getReasonPhrase());
+            }
+        } else {
+            throw new IOException("Unexpected server response:" + response.getStatusCode());
         }
-        JsonNode node = mapper.readTree(response.getBody());
-        WithoutContentPagedResult result = mapper.convertValue(node, WithoutContentPagedResult.class);
-
-        JsonNode array = node.get("content");
-        if(array.isArray()){
-            List<S> content = parseFromJsonList(array);
-            return Optional.of(result.toPagedResult(content));
-        }
-        return Optional.of(result.toPagedResult(Collections.emptyList()));
     }
 
      public <S extends T> S create(S dto) throws IOException {

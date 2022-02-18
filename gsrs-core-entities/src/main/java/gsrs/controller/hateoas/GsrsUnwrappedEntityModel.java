@@ -7,13 +7,17 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import ix.core.controllers.EntityFactory;
+import ix.core.models.BeanViews;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * GSRS Controller Aware HATEOAS {@link RepresentationModel} implementation
@@ -26,10 +30,47 @@ import java.util.*;
  */
 public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrappedEntityModel<T>> {
 
+    private static Pattern COMMA_SEP_PATTERN = Pattern.compile(",");
+    private static Map<String, Class> viewMap = new CaseInsensitiveMap<>();
+
+    private static Map<String, Set<Class>> singletonSet = new HashMap<>();
+    static{
+        for(Class c : BeanViews.class.getClasses()){
+            String simpleName = c.getSimpleName();
+            viewMap.put(simpleName, c);
+            singletonSet.put(simpleName, Collections.singleton(c));
+
+        }
+        //handle no view case
+        singletonSet.put(null, Collections.emptySet());
+    }
     @JsonIgnore
     private boolean isCompact;
     @JsonIgnore
     private T obj;
+    @JsonIgnore
+    private Set<Class> views;
+
+    private static Set<Class> parseViews(String views){
+        if(views==null){
+            return Collections.emptySet();
+        }
+
+        String[] split = COMMA_SEP_PATTERN.split(views);
+        if(split.length==1){
+            //special case 1
+            return singletonSet.get(split[0]);
+
+        }
+        Set<Class> set = new HashSet<>();
+        for(String v : split){
+            Class c = viewMap.get(v);
+            if(c !=null){
+                set.add(c);
+            }
+        }
+        return set;
+    }
 
     /**
      * This is the list of Links we will in-line these as well
@@ -62,6 +103,7 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
                 this.ourLinks.putAll(m);
             }
         }
+        this.views = parseViews(view);
     }
     /**
      * Adds the link as a {@link GsrsCustomLink} which will handle its own json serialization.
@@ -166,6 +208,29 @@ public class GsrsUnwrappedEntityModel<T> extends RepresentationModel<GsrsUnwrapp
         return isCompact;
     }
 
+    public boolean hasView(Class v){
+        if(views ==null || views.isEmpty()){
+            return false;
+        }
+        if(views.contains(v)){
+            return true;
+        }
+        //view Classes can extend others so it's possible that
+        //we are asking if it has a view that is a PARENT class
+        //of one of our views
+
+        //internal extends JsonDiff
+        //JsonDiff extends Full
+        //we want hasView(JsonDiff) to be true if we have internal in our view list
+        //but if we only have JsonDiff in our view we want hasView(Internal) to be false
+        for(Class c : views){
+            if(v.isAssignableFrom(c)){
+                return true;
+            }
+        }
+        return false;
+
+    }
     public void setCompact(boolean compact) {
         isCompact = compact;
     }

@@ -3,8 +3,10 @@ package gsrs;
 import com.google.common.cache.CacheBuilder;
 import gov.nih.ncats.common.util.Caches;
 import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.common.util.Unchecked;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsUserProfileDetails;
+import gsrs.security.hasAdminRole;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +33,7 @@ import javax.persistence.PersistenceContext;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 
@@ -52,7 +55,61 @@ public class AuditConfig {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
-    
+    private static ThreadLocal<Boolean> turnOffAuditing = ThreadLocal.withInitial(()-> Boolean.FALSE);
+
+    /**
+     * Temporarily turn off auditing for while
+     * the given runnable is executed.
+     * This will make hibernate calls to get the current datetime
+     * and current user to return empty Optionals which
+     * should mean hibernate won't update the last edited/created fields.
+     *
+     * Note that because this is done in a threadlocal way just while this
+     * runnable is run any persistent changes should be flushed inside this runnable
+     * otherwise it is likely the calls to get the current editor and datetime
+     * won't be called until AFTER auditing is turned back on.
+     * @param throwingRunnable
+     * @param <E> the Throwable or Exception that the ThrowingRunnable can throw.
+     * @throws E the Throwable thrown by the ThrowingRunnable.
+     */
+    @hasAdminRole
+    public <E extends Throwable> void disableAuditingForThrowable(Unchecked.ThrowingRunnable<E> throwingRunnable) throws E{
+        Objects.requireNonNull(throwingRunnable);
+        turnOffAuditing.set(Boolean.TRUE);
+        try{
+            throwingRunnable.run();
+        }finally{
+            //is this enough? does a delayed DB flush get run now or could it run after?  should we document to force flush?
+            turnOffAuditing.set(Boolean.FALSE);
+        }
+    }
+
+
+    /**
+     * Temporarily turn off auditing for while
+     * the given runnable is executed.
+     * This will make hibernate calls to get the current datetime
+     * and current user to return empty Optionals which
+     * should mean hibernate won't update the last edited/created fields.
+     *
+     * Note that because this is done in a threadlocal way just while this
+     * runnable is run any persistent changes should be flushed inside this runnable
+     * otherwise it is likely the calls to get the current editor and datetime
+     * won't be called until AFTER auditing is turned back on.
+     * @param runnable the Runnable to run without Auditing.
+     */
+    @hasAdminRole
+    public void disableAuditingFor(Runnable runnable) {
+        Objects.requireNonNull(runnable);
+        turnOffAuditing.set(Boolean.TRUE);
+        try{
+            runnable.run();
+        }finally{
+            //is this enough? does a delayed DB flush get run now or could it run after?  should we document to force flush?
+            turnOffAuditing.set(Boolean.FALSE);
+        }
+    }
+
     @Bean
     public AuditorAware<Principal> createAuditorProvider(PrincipalRepository principalRepository
 //            , @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER)  EntityManager em
@@ -64,10 +121,11 @@ public class AuditConfig {
     @Primary
     public DateTimeProvider timeTraveller(){
         return ()-> {
+            if(turnOffAuditing.get().booleanValue()){
+                return Optional.empty();
+            }
+            return Optional.of(TimeUtil.getCurrentLocalDateTime());
 
-            Optional<TemporalAccessor> dt = Optional.of(TimeUtil.getCurrentLocalDateTime());
-
-            return dt;
         };
     }
     @Bean
@@ -75,7 +133,7 @@ public class AuditConfig {
         return new AuditingEntityListener();
     }
 
-    public static class SecurityAuditor implements AuditorAware<Principal> {
+    public class SecurityAuditor implements AuditorAware<Principal> {
         private PrincipalRepository principalRepository;
 
         private PlatformTransactionManager transactionManager;
@@ -102,6 +160,9 @@ public class AuditConfig {
         @Override
         @Transactional
         public Optional<Principal> getCurrentAuditor() {
+            if(turnOffAuditing.get().booleanValue()){
+                return Optional.empty();
+            }
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if(auth ==null || auth instanceof AnonymousAuthenticationToken){
                 return Optional.empty();
@@ -109,11 +170,15 @@ public class AuditConfig {
 
             if(auth instanceof GsrsUserProfileDetails){
                 //refetch from repository because the one from the authentication is "detached"
-                //TODO: does that matter?
-                TransactionTemplate tx = new TransactionTemplate(transactionManager);
-                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.setReadOnly(true);
-                return tx.execute(s->principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id));
+                //katzelda Feb 2022 - we need to keep this find call inside the same transaction
+                //because otherwise when we save a record that needs to get the current user (like in edited by)
+                //we need to have the Principal object in the same hibernate session otherwise the database flush will fail.
+
+//                TransactionTemplate tx = new TransactionTemplate(transactionManager);
+//                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//                tx.setReadOnly(true);
+//                return tx.execute(s->principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id));
+                return principalRepository.findById(((GsrsUserProfileDetails)auth).getPrincipal().user.id);
 
             }
             String name = auth.getName();
@@ -146,8 +211,8 @@ public class AuditConfig {
                 if (value.isPresent()) {
                     Principal p = value.get();
                     //I don't think we need to have principal attached?
-                    return value;
-//                return Optional.of(em.contains(p)? p : em.merge(p));
+//                    return value;
+                return Optional.of(em.contains(p)? p : em.merge(p));
                 }
                 return value;
             }catch(Throwable t){

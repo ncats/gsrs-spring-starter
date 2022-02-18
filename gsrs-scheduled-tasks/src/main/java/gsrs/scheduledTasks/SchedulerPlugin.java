@@ -333,7 +333,7 @@ public class SchedulerPlugin{
             return () -> {
                 if (enabled) {
                     if (check.get()) {
-                        StaticContextAccessor.getBean(AdminService.class).runAs(admin.get(), () -> runNow());
+                        StaticContextAccessor.getBean(AdminService.class).runAs(admin.get(), (Runnable) () -> runNow());
 
                     }
                 }

@@ -32,13 +32,13 @@ public class GsrsLogoutHandler implements LogoutHandler {
     @Override
     @Transactional
     public void logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) {
-        System.out.println("Logging out, found:" + authentication);
+
         if(authentication instanceof AbstractGsrsAuthenticationToken) {
             UserProfile up = ((AbstractGsrsAuthenticationToken) authentication).getUserProfile();
-            System.out.println("User profile is:" + up);
+
             if(up !=null) {
                 for (Session s : new ArrayList<>(sessionRepository.getActiveSessionsFor(up))) {
-                    System.out.println("Found active session:" + s);
+
                     s.expired = true;
                     s.setIsDirty("expired");
                     sessionRepository.saveAndFlush(s);

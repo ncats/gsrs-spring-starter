@@ -1132,6 +1132,8 @@ public class EntityUtils {
 		private String tableName = null;
 
 		private Class<?> idType = null;
+		private MethodMeta optionalSelfIdRefProvider=null;
+
 		//TODO katzelda Octobe 2020 : removed finders replace with repository inejction later
 //		private CachedSupplier<Model.Finder<?, T>> nativeVerySpecificFinder;
 
@@ -1264,6 +1266,14 @@ public class EntityUtils {
 			EntityMapperOptions entityMapperOptions = cls.getAnnotation(EntityMapperOptions.class);
 			if(cls.getAnnotation(EntityMapperOptions.class) !=null) {
 				this.collapsibleInKeyView = entityMapperOptions.collapsibleInKeyView();
+				String idProviderRef = entityMapperOptions.idProviderRef();
+				if(idProviderRef !=null && !("".equals(idProviderRef))){
+					try {
+						optionalSelfIdRefProvider = new MethodMeta(cls.getMethod(idProviderRef));
+					} catch (NoSuchMethodException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 			this.isIgnoredModel = (cls.getAnnotation(IgnoredModel.class) != null);
 			this.indexable = (Indexable) cls.getAnnotation(Indexable.class);
@@ -1295,29 +1305,9 @@ public class EntityUtils {
 			}
 			kind = cls.getName();
 
-			// ixFields.add(new FacetField(DIM_CLASS, kind));
-			dyna = (DynamicFacet) cls.getAnnotation(DynamicFacet.class);
-//			fields = Arrays.stream(cls.getFields())
-//					.map(f2 -> new FieldMeta(f2, dyna))
-//					.peek(f -> {
-//						if (f.isId()) {
-//							idField = f;
-//						} else if (f.isDynamicFacetLabel()) {
-//							dynamicLabelField = f;
-//						} else if (f.isDynamicFacetValue()) {
-//							dynamicValueField = f;
-//						}
-//						if (f.isDataVersion()) {
-//							versionField = f;
-//						}
-//						if (f.isDataValidationFlag()){
-//							validatedField = f;
-//						}
-//						if (f.isChangeReason()){
-//							this.changeReasonField=f;
-//						}
-//					})
-//					.collect(Collectors.toList());
+
+			dyna = cls.getAnnotation(DynamicFacet.class);
+
 
 			//katzelda Nov 2020: also check non-public fields
 			fields = findPublicAndOtherIndexableFields(cls).stream()
@@ -1672,12 +1662,44 @@ public class EntityUtils {
 			return shouldIndex;
 		}
 
-		// This may be unnecessary now. ID fetching isn't slow
+
+		/**
+		 * Get the ID of this entity as a String.
+		 * <p>
+		 *     The algorithm it uses to get the id is:
+		 * </p>
+		 * <ol>
+		 *     <li>If this entity had an {@link EntityMapperOptions#idProviderRef()}  set, then that method is invoked
+		 *     and the String result is returned.</li>
+		 *     <li>If this entity class has a field annotated with @Id then return the toString of that field's value</li>
+		 *     <li>If this class entity had a field annotated with @Id but that field was set to null,
+		 *     then look for the getter for that field and return the toString() of the result of that getter</li>
+		 * </ol>
+		 * If none of those return a non-null value, then return null.
+		 * @param e the Object instance of this Entity.
+		 * @return  a CachedSupplier that computes the id as a String.
+		 */
 		public CachedSupplier<String> getIdString(Object e) {
-			return new CachedSupplier<String>(() -> {
+			// This may be unnecessary now. ID fetching isn't slow
+			// katzelda Jan 2022: this is used by GsrsUnwrappedEntityModel to fetch the id to pass to controller route
+			return new CachedSupplier<>(() -> {
+				if(this.optionalSelfIdRefProvider !=null){
+					try {
+						Object result = optionalSelfIdRefProvider.m.invoke(e);
+						if(result ==null){
+							return null;
+						}
+						return result.toString();
+					} catch (IllegalAccessException illegalAccessException) {
+						illegalAccessException.printStackTrace();
+					} catch (InvocationTargetException invocationTargetException) {
+						invocationTargetException.printStackTrace();
+					}
+				}
 				Optional<?> id = this.getIdPossiblyFromEbeanMethod(e);
-				if (id.isPresent())
+				if (id.isPresent()) {
 					return id.get().toString();
+				}
 				return null;
 			});
 		}
