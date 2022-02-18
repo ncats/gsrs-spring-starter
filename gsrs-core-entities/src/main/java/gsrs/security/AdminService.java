@@ -60,6 +60,24 @@ public class AdminService {
         }
     }
 
+    /**
+     * Run the given Runnable with the given Authentication.
+     * @param authentication the Authentication to use, if set to {@code null},
+     *                        then it will run as someone not authenticated.
+     * @param runnable the runnable to execute.
+     * @throws NullPointerException if runnable is null.
+     */
+    public void runAs(Authentication authentication, Runnable runnable){
+        Objects.requireNonNull(runnable);
+        Authentication oldAuth = SecurityContextHolder.getContext().getAuthentication();
+        try {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            runnable.run();
+        } finally {
+            SecurityContextHolder.getContext().setAuthentication(oldAuth);
+        }
+    }
+
     public <E extends Throwable> void runAsCurrentUser(Unchecked.ThrowingRunnable<E> runnable) throws E {
        runAs(SecurityContextHolder.getContext().getAuthentication(), runnable);
     }

@@ -85,6 +85,18 @@ public interface Validator<T> {
 			@Override
 			public void addMessage(ValidationMessage message, Runnable appyAction) {
 				response.addValidationMessage(message);
+				if(message instanceof GinasProcessingMessage){
+					//backwards compatible fix
+					GinasProcessingMessage gpm = (GinasProcessingMessage) message;
+					if(gpm.suggestedChange && appyAction !=null){
+						appyAction.run();
+					}
+				}else {
+					// I guess always apply change?
+					if (appyAction != null) {
+						appyAction.run();
+					}
+				}
 
 			}
 		});
