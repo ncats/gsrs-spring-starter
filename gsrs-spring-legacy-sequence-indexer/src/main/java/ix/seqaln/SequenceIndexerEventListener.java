@@ -41,10 +41,6 @@ public class SequenceIndexerEventListener {
     private final SequenceIndexerService indexer;
 
     private Striped<Lock> stripedLock = Striped.lazyWeakLock(8);
-//    private EntityManager em;
-    
-//    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-//    private EntityManager em;
 
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
@@ -125,70 +121,73 @@ public class SequenceIndexerEventListener {
             Optional<EntityUtils.EntityWrapper<?>> opt = entitySupplier.get();
             if(opt.isPresent()) {
                 EntityUtils.EntityWrapper<?> ew = opt.get();
-                SequenceFileSupport sequenceFileSupport = (SequenceFileSupport) ew.getValue();
-                Object objectId = ew.getId().get();
-                try(Stream<SequenceFileSupport.SequenceFileData> stream = sequenceFileSupport.getSequenceFileData()){
-                    stream
-                            .peek(s-> System.out.println(s))
-                            .forEach( sfd->{
-                        //in unlikely event there are different types in different files
-                        SequenceEntity.SequenceType sequenceTypeForFile=  sfd.getSequenceType();
-                        //TODO if we add more file types change this to a switch or some kind of factory type lookup
-                        //to convert from a type into something that knows how to parse the file
-                        if(SequenceFileSupport.SequenceFileData.SequenceFileType.FASTA == sfd.getSequenceFileType()){
-                            try(InputStream in = sfd.createInputStream()){
-                                FastaParser fastaParser = FastaFileParser.create(in);
-                                fastaParser.parse(new FastaVisitor() {
-                                    @Override
-                                    public FastaRecordVisitor visitDefline(FastaVisitorCallback fastaVisitorCallback, String id, String comment) {
-                                        //TODO process comments
-                                        return new AbstractFastaRecordVisitor(id, comment) {
-                                            @Override
-                                            protected void visitRecord(String id, String comment, String seq) {
+                Lock l = stripedLock.get(ew.getKey());
+                l.lock();
+                try {
+                    SequenceFileSupport sequenceFileSupport = (SequenceFileSupport) ew.getValue();
+                    Object objectId = ew.getId().get();
+                    try (Stream<SequenceFileSupport.SequenceFileData> stream = sequenceFileSupport.getSequenceFileData()) {
+                        stream
+                                .forEach(sfd -> {
+                                    //in unlikely event there are different types in different files
+                                    SequenceEntity.SequenceType sequenceTypeForFile = sfd.getSequenceType();
+                                    //TODO if we add more file types change this to a switch or some kind of factory type lookup
+                                    //to convert from a type into something that knows how to parse the file
+                                    if (SequenceFileSupport.SequenceFileData.SequenceFileType.FASTA == sfd.getSequenceFileType()) {
+                                        try (InputStream in = sfd.createInputStream()) {
+                                            FastaParser fastaParser = FastaFileParser.create(in);
+                                            fastaParser.parse(new FastaVisitor() {
+                                                @Override
+                                                public FastaRecordVisitor visitDefline(FastaVisitorCallback fastaVisitorCallback, String id, String comment) {
+                                                    //TODO process comments
+                                                    return new AbstractFastaRecordVisitor(id, comment) {
+                                                        @Override
+                                                        protected void visitRecord(String id, String comment, String seq) {
 
 
-                                                try {
-                                                    if (sequenceTypeForFile == SequenceEntity.SequenceType.NUCLEIC_ACID) {
+                                                            try {
+                                                                if (sequenceTypeForFile == SequenceEntity.SequenceType.NUCLEIC_ACID) {
 
-                                                        indexer.add(">" + objectId + "|" + id, NucleotideSequence.of(
-                                                                Nucleotide.cleanSequence(seq, "N")));
-                                                    } else if (sequenceTypeForFile == SequenceEntity.SequenceType.PROTEIN) {
+                                                                    indexer.add(">" + objectId + "|" + id, NucleotideSequence.of(
+                                                                            Nucleotide.cleanSequence(seq, "N")));
+                                                                } else if (sequenceTypeForFile == SequenceEntity.SequenceType.PROTEIN) {
 
-                                                        indexer.add(">" + objectId + "|" + id, ProteinSequence.of(
-                                                                AminoAcid.cleanSequence(seq, "X")));
-                                                    }else{
-                                                        indexer.add(">" + objectId + "|" + id, seq);
-                                                    }
-                                                } catch (IOException e) {
-                                                    e.printStackTrace();
+                                                                    indexer.add(">" + objectId + "|" + id, ProteinSequence.of(
+                                                                            AminoAcid.cleanSequence(seq, "X")));
+                                                                } else {
+                                                                    indexer.add(">" + objectId + "|" + id, seq);
+                                                                }
+                                                            } catch (IOException e) {
+                                                                e.printStackTrace();
+                                                            }
+
+
+                                                        }
+                                                    };
                                                 }
 
+                                                @Override
+                                                public void visitEnd() {
 
-                                            }
-                                        };
+                                                }
+
+                                                @Override
+                                                public void halted() {
+
+                                                }
+                                            });
+
+
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
                                     }
 
-                                    @Override
-                                    public void visitEnd() {
-
-                                    }
-
-                                    @Override
-                                    public void halted() {
-
-                                    }
                                 });
-
-
-
-                            }catch(IOException e){
-                                e.printStackTrace();
-                            }
-                        }
-
-                    });
+                    }
+                }finally{
+                    l.unlock();
                 }
-
             }
         }
     }
