@@ -91,7 +91,7 @@ public class LegacyPayloadService implements PayloadService {
         //TODO does this belong here or in the configuration? maybe here? and make the configuration object a thin model?
         File saveFile = configuration.createNewSaveFileFor(payload);
         Files.move(tmpFile.toPath(), saveFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
-        tmpFile.renameTo(saveFile);
+//        tmpFile.renameTo(saveFile);
 
         //database persist
         if(ptype==PayloadPersistType.PERM){
@@ -129,7 +129,7 @@ public class LegacyPayloadService implements PayloadService {
     @Transactional
     public Optional<InputStream> getPayloadAsInputStream(UUID payloadId) throws IOException {
         Optional<Payload> opt = payloadRepository.findById(payloadId);
-        if(opt.isPresent()){
+        if(!opt.isPresent()){
             //have to return a new empty for generics to work?
             return Optional.empty();
         }
