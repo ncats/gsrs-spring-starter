@@ -12,6 +12,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.sequence.SequenceFileSupport;
 import gsrs.sequence.indexer.SequenceEntityIndexCreateEvent;
 import gsrs.sequence.indexer.SequenceEntityUpdateCreateEvent;
+import ix.core.models.Indexable;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
@@ -34,6 +35,14 @@ import ix.core.util.EntityUtils;
 import ix.seqaln.service.SequenceIndexerService;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A Spring Event Listener that will listen
+ * to the events having to do with Nucleic Acid and Protein sequences.
+ * Currently as of GSRS 3.0, this includes
+ * entities whose {@link ix.core.models.Indexable} annotated fields
+ * have {@link Indexable#sequence()} set to {@code true}
+ * and entities who implements {@link SequenceFileSupport}.
+ */
 @Component
 @Slf4j
 public class SequenceIndexerEventListener {
@@ -134,6 +143,7 @@ public class SequenceIndexerEventListener {
                                     //TODO if we add more file types change this to a switch or some kind of factory type lookup
                                     //to convert from a type into something that knows how to parse the file
                                     if (SequenceFileSupport.SequenceFileData.SequenceFileType.FASTA == sfd.getSequenceFileType()) {
+                                        String fastaFilename = sfd.getName();
                                         try (InputStream in = sfd.createInputStream()) {
                                             FastaParser fastaParser = FastaFileParser.create(in);
                                             fastaParser.parse(new FastaVisitor() {
@@ -148,14 +158,14 @@ public class SequenceIndexerEventListener {
                                                             try {
                                                                 if (sequenceTypeForFile == SequenceEntity.SequenceType.NUCLEIC_ACID) {
 
-                                                                    indexer.add(">" + objectId + "|" + id, NucleotideSequence.of(
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, NucleotideSequence.of(
                                                                             Nucleotide.cleanSequence(seq, "N")));
                                                                 } else if (sequenceTypeForFile == SequenceEntity.SequenceType.PROTEIN) {
 
-                                                                    indexer.add(">" + objectId + "|" + id, ProteinSequence.of(
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, ProteinSequence.of(
                                                                             AminoAcid.cleanSequence(seq, "X")));
                                                                 } else {
-                                                                    indexer.add(">" + objectId + "|" + id, seq);
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, seq);
                                                                 }
                                                             } catch (IOException e) {
                                                                 e.printStackTrace();

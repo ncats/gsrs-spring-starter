@@ -280,8 +280,19 @@ public class SequenceIndexer {
         public final List<Alignment> alignments = new ArrayList<Alignment>();
         public double score;
         public CutoffType scoreType;
-        
 
+        /**
+         * Create a new Result object with the same
+         * fields except a new id.
+         * @param newId
+         * @return
+         */
+        public Result copyWithNewId(String newId){
+            Result resultCopy=new Result(newId,query,target);
+            resultCopy.alignments.addAll(alignments);
+            resultCopy.setScore(score, scoreType);
+            return resultCopy;
+        }
         Result () {
             query = null;
             id = null;
@@ -1040,10 +1051,8 @@ public class SequenceIndexer {
                       //we have to make a copy with the  correct ID of the substance we are aligning
                   //but we can re-use the alignments
 
-                          Result resultCopy=new Result(entry.getKey().s,cachedResult.query,cachedResult.target);
-	              		resultCopy.alignments.addAll(cachedResult.alignments);
-	              		resultCopy.setScore(cachedResult.score,cachedResult.scoreType);
-	              		return resultCopy;
+
+	              		return cachedResult.copyWithNewId(entry.getKey().s);
 
                       }
 
