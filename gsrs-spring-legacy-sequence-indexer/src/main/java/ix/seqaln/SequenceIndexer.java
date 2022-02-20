@@ -39,7 +39,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.lucene.document.Field.Store.NO;
@@ -876,6 +875,7 @@ public class SequenceIndexer {
 	            for (int i = 0; i < docs.totalHits; ++i) {
 	                Document doc = kmerSearcher.doc(docs.scoreDocs[i].doc);
 	                final String id = doc.get(FIELD_ID);
+
 	                StringAndDouble sd = StringAndDouble.from(id, 0);
 		                seqMap.computeIfAbsent(sd, k->getSeq(k.s));
 		            }
@@ -908,6 +908,7 @@ public class SequenceIndexer {
 
                       Result cachedResult= _cachedResults.computeIfAbsent(tseq, k -> {
                           Result r = new Result(entry.getKey().s, querySeq.toString(), tseq);
+                          System.out.println("result r key.s = " + entry.getKey().s);
                           r.setScore(-1, rt);
                                   try {
 
@@ -920,9 +921,8 @@ public class SequenceIndexer {
                                           log.warn("trouble performing alignment for sequence", e);
                                           return r;
                                       }
-                                      long start=System.nanoTime();
                                       PairwiseSequenceAlignment alignment = alignmentHelper.align(querySeq, targetSeq, gap, rt);
-                                      long end=System.nanoTime();
+
                                       
                                       r.setScore(alignment.getPercentIdentity(), rt);
 
