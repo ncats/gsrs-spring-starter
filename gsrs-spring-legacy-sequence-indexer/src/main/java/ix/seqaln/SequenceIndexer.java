@@ -908,7 +908,6 @@ public class SequenceIndexer {
 
                       Result cachedResult= _cachedResults.computeIfAbsent(tseq, k -> {
                           Result r = new Result(entry.getKey().s, querySeq.toString(), tseq);
-                          System.out.println("result r key.s = " + entry.getKey().s);
                           r.setScore(-1, rt);
                                   try {
 
