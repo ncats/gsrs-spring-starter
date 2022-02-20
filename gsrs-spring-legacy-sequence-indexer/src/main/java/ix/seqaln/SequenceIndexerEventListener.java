@@ -125,6 +125,12 @@ public class SequenceIndexerEventListener {
         }
     }
 
+    /**
+     * Add any sequences from referenced sequence files.  This is where those
+     * sequence files are parsed.
+     * @param source
+     * @param entitySupplier
+     */
     private void addSequenceFileDataToIndex(EntityUtils.Key source, CachedSupplier<Optional<EntityUtils.EntityWrapper<?>>> entitySupplier) {
        if(SequenceFileSupport.class.isAssignableFrom(source.getEntityInfo().getEntityClass())){
             Optional<EntityUtils.EntityWrapper<?>> opt = entitySupplier.get();

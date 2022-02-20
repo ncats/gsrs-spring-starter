@@ -44,6 +44,10 @@ import java.util.stream.Collectors;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
+/**
+ * A lucene based index of genomic sequences
+ * with methods to add/remove and perform alignments.
+ */
 @Slf4j
 public class SequenceIndexer {
     static final String CACHE_NAME = SequenceIndexer.class.getName()+".Cache";
@@ -76,34 +80,6 @@ public class SequenceIndexer {
         }
     }
 
-    static class HSP implements Comparable<HSP> {
-        public String kmer;
-        public int i, j;
-
-        HSP (String kmer, int i, int j) {
-            this.kmer = kmer;
-            this.i = i;
-            this.j = j;
-        }
-        public int gap () { return Math.abs(i - j); }
-        public String toString () { return kmer+"["+i+","+j+"]"; }
-        public int compareTo (HSP hsp) {
-            int d = hsp.kmer.length() - kmer.length();
-            if (d == 0) {
-                d = gap () - hsp.gap();
-            }
-            if (d == 0) {
-                d = i - hsp.i;
-            }
-            if (d == 0) {
-                d = j - hsp.j;
-            }
-            if (d == 0) {
-                d = kmer.compareTo(hsp.kmer);
-            }
-            return d;
-        }
-    }
 
     public static class SEG implements Comparable<SEG>, Serializable {
         /**
