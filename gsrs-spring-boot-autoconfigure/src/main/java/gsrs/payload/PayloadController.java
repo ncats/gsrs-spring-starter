@@ -38,6 +38,10 @@ import gsrs.service.PayloadService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Payload;
 
+/**
+ * Controller for {@link Payload} data
+ * to match GSRS 2.x API.
+ */
 @ExposesResourceFor(Payload.class)
 //not plural so it matches context from GSRS 2.x
 @GsrsRestApiController(context="payload")
@@ -60,11 +64,6 @@ public class PayloadController{
    
             Payload payload = payloadService.createPayload(file.getOriginalFilename(), predictMimeTypeFromFile(file), file.getBytes(), PayloadService.PayloadPersistType.PERM);
 
-
-            //This is a very hacky way to force things as expected
-//            Link l1=  StaticContextAccessor.getBean(GsrsUnwrappedEntityModelProcessor.class).computeSelfLink(unwrapped, payload.id.toString());
-//            payload.url=l1.getHref() + "&format=raw";
-//
             //OK to match GSRS 2.x API
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(payload, queryParameters), HttpStatus.OK);
     }

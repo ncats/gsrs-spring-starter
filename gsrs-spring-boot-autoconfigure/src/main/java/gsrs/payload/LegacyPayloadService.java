@@ -19,7 +19,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 
-//@Service
+/**
+ * Payload Service implementation that uses the legacy
+ * GSRS 2.x Payload table and payload folder under the
+ * ginas home directory to save and return Files.
+ */
+
 public class LegacyPayloadService implements PayloadService {
 
     private final PayloadRepository payloadRepository;
@@ -91,7 +96,6 @@ public class LegacyPayloadService implements PayloadService {
         //TODO does this belong here or in the configuration? maybe here? and make the configuration object a thin model?
         File saveFile = configuration.createNewSaveFileFor(payload);
         Files.move(tmpFile.toPath(), saveFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
-//        tmpFile.renameTo(saveFile);
 
         //database persist
         if(ptype==PayloadPersistType.PERM){
