@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import java.util.UUID;
 
 @ConfigurationProperties("ix.core.files.persist")
 @Data
@@ -45,15 +46,18 @@ ix.core.files.persist.maxsize="30MB"
             }
         }
     }
-
     public Optional<File> getExistingFileFor(Payload payload){
-        File temp = new File(base,payload.id.toString());
+        return getExistingFileFor(payload.id);
+    }
+    public Optional<File> getExistingFileFor(UUID payloadId){
+        String uuidAsString = payloadId.toString();
+        File temp = new File(base,uuidAsString);
         if(temp.exists()){
             return Optional.of(temp);
         }
         if(!PERSIST_LOCATION_FILE.equals(location) && ! PERSIST_LOCATION_DB.equals(location) ) {
 
-            File newLoc = new File(location, payload.id.toString());
+            File newLoc = new File(location, uuidAsString);
             if (newLoc.exists()) {
                 return Optional.of(newLoc);
             }

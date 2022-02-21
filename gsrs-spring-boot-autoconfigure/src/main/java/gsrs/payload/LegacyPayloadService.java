@@ -128,9 +128,13 @@ public class LegacyPayloadService implements PayloadService {
     @Override
     @Transactional
     public Optional<InputStream> getPayloadAsInputStream(UUID payloadId) throws IOException {
+        Optional<File> existingFile = configuration.getExistingFileFor(payloadId);
+        if(existingFile.isPresent()){
+            return Optional.of(new FileInputStream(existingFile.get()));
+        }
+        //if we can't find it look in db
         Optional<Payload> opt = payloadRepository.findById(payloadId);
         if(!opt.isPresent()){
-            //have to return a new empty for generics to work?
             return Optional.empty();
         }
         return getPayloadAsInputStream(opt.get());
