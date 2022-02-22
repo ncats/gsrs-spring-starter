@@ -174,7 +174,7 @@ public class SequenceIndexerEventListener {
                                                                     indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, seq);
                                                                 }
                                                             } catch (IOException e) {
-                                                                e.printStackTrace();
+                                                                log.warn("Trouble FASTA sequence indexing:" + id, e);   
                                                             }
 
 
@@ -195,7 +195,7 @@ public class SequenceIndexerEventListener {
 
 
                                         } catch (IOException e) {
-                                            e.printStackTrace();
+                                            log.warn("Trouble FASTA sequence indexing:" + source.toString(), e);   
                                         }
                                     }
 
