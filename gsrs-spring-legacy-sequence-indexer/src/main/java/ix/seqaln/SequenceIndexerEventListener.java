@@ -1,44 +1,48 @@
 package ix.seqaln;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.Striped;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.sequence.SequenceFileSupport;
 import gsrs.sequence.indexer.SequenceEntityIndexCreateEvent;
 import gsrs.sequence.indexer.SequenceEntityUpdateCreateEvent;
+import ix.core.models.Indexable;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.Nucleotide;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
+import org.jcvi.jillion.fasta.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-import gsrs.DataSourceConfigRegistry;
-import gsrs.DefaultDataSourceConfig;
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.GsrsSpringUtils;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.SequenceEntity;
 import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.Key;
 import ix.seqaln.service.SequenceIndexerService;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A Spring Event Listener that will listen
+ * to the events having to do with Nucleic Acid and Protein sequences.
+ * Currently as of GSRS 3.0, this includes
+ * entities whose {@link ix.core.models.Indexable} annotated fields
+ * have {@link Indexable#sequence()} set to {@code true}
+ * and entities who implements {@link SequenceFileSupport}.
+ */
 @Component
 @Slf4j
 public class SequenceIndexerEventListener {
@@ -46,10 +50,6 @@ public class SequenceIndexerEventListener {
     private final SequenceIndexerService indexer;
 
     private Striped<Lock> stripedLock = Striped.lazyWeakLock(8);
-//    private EntityManager em;
-    
-//    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-//    private EntityManager em;
 
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
@@ -74,11 +74,14 @@ public class SequenceIndexerEventListener {
     }
 
     @EventListener
-    public void reindexingEntity(ReindexEntityEvent event) throws IOException {       
+    public void reindexingEntity(ReindexEntityEvent event) throws IOException {
+        EntityUtils.Key entityKey = event.getEntityKey();
         try {
-            addToIndex(event.getOptionalFetchedEntityToReindex().get(), event.getEntityKey(),null);
+            EntityUtils.EntityWrapper<?> ew = event.getOptionalFetchedEntityToReindex().get();
+            addSequenceFieldDataToIndex(ew, entityKey,null);
+            addSequenceFileDataToIndex(entityKey, CachedSupplier.of(()->Optional.of(ew) ));
         }catch(Exception e) {
-           log.warn("Trouble sequence indexing:" + event.getEntityKey(), e);
+           log.warn("Trouble sequence indexing:" + entityKey, e);
             
         }
     }
@@ -89,31 +92,123 @@ public class SequenceIndexerEventListener {
 
         if(event instanceof SequenceEntityIndexCreateEvent){
             indexSequencesFor(event.getSource(), ((SequenceEntityIndexCreateEvent)event).getSequenceType());
+        }else {
+            indexSequencesFor(event.getSource(), null);
         }
-        indexSequencesFor(event.getSource(),null);
     }
 
     private void indexSequencesFor(EntityUtils.Key source, SequenceEntity.SequenceType sequenceType) {
         try {
-            if(!source.getEntityInfo().couldHaveSequenceFields()) {
-                return;
-            }
-            Optional<EntityUtils.EntityWrapper<?>> opt= source.fetch();
-            if(opt.isPresent()) {
-                EntityUtils.EntityWrapper<?> ew = opt.get();
-                if (!ew.isEntity() || !ew.hasKey()) {
-                    return;
+            //fetch might be an expensive operation so wrap it in a cachedSupplier
+            //since we might call this more than once now
+            CachedSupplier<Optional<EntityUtils.EntityWrapper<?>>> entitySupplier = CachedSupplier.of(source::fetch);
+
+            if(source.getEntityInfo().couldHaveSequenceFields()) {
+                Optional<EntityUtils.EntityWrapper<?>> opt =entitySupplier.get();
+                if(opt.isPresent()) {
+                    EntityUtils.EntityWrapper<?> ew = opt.get();
+                    if (ew.isEntity()){
+                        Optional<EntityUtils.Key> optKey = ew.getOptionalKey();
+                        if(optKey.isPresent()) {
+                            EntityUtils.Key k = ew.getKey();
+                            addSequenceFieldDataToIndex(ew, k, sequenceType);
+                        }
+
+                    }
                 }
-                EntityUtils.Key k = ew.getKey();
-                addToIndex(ew, k, sequenceType);
             }
+            addSequenceFileDataToIndex(source, entitySupplier);
+
         }catch(Exception e) {
            log.warn("Trouble sequence indexing:" + source, e);
             
         }
     }
 
-    private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k, SequenceEntity.SequenceType sequenceType) {
+    /**
+     * Add any sequences from referenced sequence files.  This is where those
+     * sequence files are parsed.
+     * @param source
+     * @param entitySupplier
+     */
+    private void addSequenceFileDataToIndex(EntityUtils.Key source, CachedSupplier<Optional<EntityUtils.EntityWrapper<?>>> entitySupplier) {
+       if(SequenceFileSupport.class.isAssignableFrom(source.getEntityInfo().getEntityClass())){
+            Optional<EntityUtils.EntityWrapper<?>> opt = entitySupplier.get();
+            if(opt.isPresent()) {
+                EntityUtils.EntityWrapper<?> ew = opt.get();
+                Lock l = stripedLock.get(ew.getKey());
+                l.lock();
+                try {
+                    SequenceFileSupport sequenceFileSupport = (SequenceFileSupport) ew.getValue();
+                    Object objectId = ew.getId().get();
+                    try (Stream<SequenceFileSupport.SequenceFileData> stream = sequenceFileSupport.getSequenceFileData()) {
+                        stream
+                                .forEach(sfd -> {
+                                    //in unlikely event there are different types in different files
+                                    SequenceEntity.SequenceType sequenceTypeForFile = sfd.getSequenceType();
+                                    //TODO if we add more file types change this to a switch or some kind of factory type lookup
+                                    //to convert from a type into something that knows how to parse the file
+                                    if (SequenceFileSupport.SequenceFileData.SequenceFileType.FASTA == sfd.getSequenceFileType()) {
+                                        String fastaFilename = sfd.getName();
+                                        try (InputStream in = sfd.createInputStream()) {
+                                            FastaParser fastaParser = FastaFileParser.create(in);
+                                            fastaParser.parse(new FastaVisitor() {
+                                                @Override
+                                                public FastaRecordVisitor visitDefline(FastaVisitorCallback fastaVisitorCallback, String id, String comment) {
+                                                    //TODO process comments
+                                                    return new AbstractFastaRecordVisitor(id, comment) {
+                                                        @Override
+                                                        protected void visitRecord(String id, String comment, String seq) {
+
+
+                                                            try {
+                                                                if (sequenceTypeForFile == SequenceEntity.SequenceType.NUCLEIC_ACID) {
+
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, NucleotideSequence.of(
+                                                                            Nucleotide.cleanSequence(seq, "N")));
+                                                                } else if (sequenceTypeForFile == SequenceEntity.SequenceType.PROTEIN) {
+
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, ProteinSequence.of(
+                                                                            AminoAcid.cleanSequence(seq, "X")));
+                                                                } else {
+                                                                    indexer.add(">" + objectId + "|" +fastaFilename+"|"+ id, seq);
+                                                                }
+                                                            } catch (IOException e) {
+                                                                log.warn("Trouble FASTA sequence indexing:" + id, e);   
+                                                            }
+
+
+                                                        }
+                                                    };
+                                                }
+
+                                                @Override
+                                                public void visitEnd() {
+
+                                                }
+
+                                                @Override
+                                                public void halted() {
+
+                                                }
+                                            });
+
+
+                                        } catch (IOException e) {
+                                            log.warn("Trouble FASTA sequence indexing:" + source.toString(), e);   
+                                        }
+                                    }
+
+                                });
+                    }
+                }finally{
+                    l.unlock();
+                }
+            }
+        }
+    }
+
+    private void addSequenceFieldDataToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k, SequenceEntity.SequenceType sequenceType) {
         Lock l = stripedLock.get(ew.getKey());
         l.lock();
         try {
@@ -175,7 +270,7 @@ public class SequenceIndexerEventListener {
             l.lock();
             try {
                 removeFromIndex(ew, key);
-                addToIndex(ew, key, null);
+                addSequenceFieldDataToIndex(ew, key, null);
             }finally{
                 l.unlock();
             }
@@ -191,7 +286,7 @@ public class SequenceIndexerEventListener {
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
             removeFromIndex(ew, key);
-            addToIndex(ew, key, event.getSequenceType());
+            addSequenceFieldDataToIndex(ew, key, event.getSequenceType());
         }
     }
 

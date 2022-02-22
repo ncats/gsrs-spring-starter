@@ -19,7 +19,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 
-//@Service
+/**
+ * Payload Service implementation that uses the legacy
+ * GSRS 2.x Payload table and payload folder under the
+ * ginas home directory to save and return Files.
+ */
+
 public class LegacyPayloadService implements PayloadService {
 
     private final PayloadRepository payloadRepository;
@@ -91,7 +96,6 @@ public class LegacyPayloadService implements PayloadService {
         //TODO does this belong here or in the configuration? maybe here? and make the configuration object a thin model?
         File saveFile = configuration.createNewSaveFileFor(payload);
         Files.move(tmpFile.toPath(), saveFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
-        tmpFile.renameTo(saveFile);
 
         //database persist
         if(ptype==PayloadPersistType.PERM){
@@ -128,9 +132,13 @@ public class LegacyPayloadService implements PayloadService {
     @Override
     @Transactional
     public Optional<InputStream> getPayloadAsInputStream(UUID payloadId) throws IOException {
+        Optional<File> existingFile = configuration.getExistingFileFor(payloadId);
+        if(existingFile.isPresent()){
+            return Optional.of(new FileInputStream(existingFile.get()));
+        }
+        //if we can't find it look in db
         Optional<Payload> opt = payloadRepository.findById(payloadId);
-        if(opt.isPresent()){
-            //have to return a new empty for generics to work?
+        if(!opt.isPresent()){
             return Optional.empty();
         }
         return getPayloadAsInputStream(opt.get());

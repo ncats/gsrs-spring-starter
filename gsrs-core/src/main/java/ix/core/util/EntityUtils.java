@@ -1162,14 +1162,14 @@ public class EntityUtils {
 		});
 
 		private CachedSupplier<Boolean> hasPossibleSequence = CachedSupplier.of(()->{
-		    boolean couldHaveSequence = this
-		            .getTypeAndSubTypes()
-		            .stream()
-		            .map(tt->tt.getSequenceFieldInfo())
-		            .filter(tt->tt!=null)
-		            .anyMatch(tt->!tt.isEmpty())
-		            ;
-		    return couldHaveSequence;
+			boolean couldHaveSequence = this
+					.getTypeAndSubTypes()
+					.stream()
+					.map(tt->tt.getSequenceFieldInfo())
+					.filter(tt->tt!=null)
+					.anyMatch(tt->!tt.isEmpty())
+					;
+			return couldHaveSequence;
 		});
 		
 		private boolean isRootIndex=false;
@@ -1254,7 +1254,7 @@ public class EntityUtils {
 		public boolean couldHaveSequenceFields() {
 		    return hasPossibleSequence.get();
 		}
-        
+
 
 		public EntityInfo(Class<T> cls) {
 
