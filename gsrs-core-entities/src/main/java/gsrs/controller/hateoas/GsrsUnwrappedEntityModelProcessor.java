@@ -65,7 +65,7 @@ public class GsrsUnwrappedEntityModelProcessor implements RepresentationModelPro
 
 
     private static boolean shouldInclude(GsrsUnwrappedEntityModel<?> model, Class[] views){
-        if(views ==null){
+        if(views ==null || views.length==0){
             return true;
         }
 

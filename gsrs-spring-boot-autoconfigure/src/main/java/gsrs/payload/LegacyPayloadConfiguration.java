@@ -10,7 +10,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import java.util.UUID;
 
+/**
+ * Configuration for {@link LegacyPayloadService}
+ * using the GSRS 2.x key-value property files.
+ */
 @ConfigurationProperties("ix.core.files.persist")
 @Data
 public class LegacyPayloadConfiguration {
@@ -46,20 +51,47 @@ ix.core.files.persist.maxsize="30MB"
         }
     }
 
+    /**
+     * Get the file associated with the given payload.
+     * @param payload the payload to look for.
+     * @return an Optional wrapped File if the file is found;
+     * {@link Optional#empty()} if not found.
+     */
     public Optional<File> getExistingFileFor(Payload payload){
-        File temp = new File(base,payload.id.toString());
+        return getExistingFileFor(payload.id);
+    }
+    /**
+     * Get the file associated with the given payload UUID.
+     * @param payloadId the UUID of the payload to look for.
+     * @return an Optional wrapped File if the file is found;
+     * {@link Optional#empty()} if not found.
+     */
+    public Optional<File> getExistingFileFor(UUID payloadId){
+        String uuidAsString = payloadId.toString();
+        File temp = new File(base,uuidAsString);
         if(temp.exists()){
             return Optional.of(temp);
         }
         if(!PERSIST_LOCATION_FILE.equals(location) && ! PERSIST_LOCATION_DB.equals(location) ) {
 
-            File newLoc = new File(location, payload.id.toString());
+            File newLoc = new File(location, uuidAsString);
             if (newLoc.exists()) {
                 return Optional.of(newLoc);
             }
         }
         return Optional.empty();
     }
+
+    /**
+     * Create a new PERSIST File for the given Payload,
+     * the returned File will not contain any data and might not even
+     * be created yet but you should use this File to write the data for this payload.
+     * the Persist File is a more permanent file location
+     * @param payload the payload to associate the file to; can not be null and should have a non-null id.
+     * @return an Optional wrapped File of the file associated; or {@link Optional#empty()}
+     * if a file location could not be used.
+     * @throws IOException if there is a problem creating the directory structure for this file.
+     */
     public Optional<File> createNewPersistFileFor(Payload payload) throws IOException{
         if(PERSIST_LOCATION_FILE.equals(location) ||PERSIST_LOCATION_DB.equals(location) ){
             return Optional.empty();
@@ -72,12 +104,4 @@ ix.core.files.persist.maxsize="30MB"
         return Optional.of(newLoc);
 
     }
-
-//    @Bean
-//    @ConditionalOnMissingBean
-//    public PayloadService legacyPayloadService(PayloadRepository payloadRepository,
-//                                                      LegacyPayloadConfiguration configuration, FileDataRepository fileDataRepository) throws IOException {
-//
-//        return new LegacyPayloadService(payloadRepository, configuration, fileDataRepository);
-//    }
 }
