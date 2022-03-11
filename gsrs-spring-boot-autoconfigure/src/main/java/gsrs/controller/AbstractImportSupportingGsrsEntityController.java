@@ -1,28 +1,48 @@
 package gsrs.controller;
 
-import gsrs.dataExchange.model.ImportFieldHandling;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.payload.PayloadController;
+import gsrs.repository.PayloadRepository;
+import gsrs.security.hasAdminRole;
+import gsrs.service.PayloadService;
+import ix.core.models.Payload;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.util.Collection;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public abstract class AbstractImportSupportingGsrsEntityController<C extends AbstractImportSupportingGsrsEntityController, T, I >
         extends AbstractGsrsEntityController<C, T, I> {
 
     @Autowired
-    private PayloadService payloadService;
+    private static PayloadService payloadService;
     @Autowired
-    private PayloadRepository payloadRepository;
+    private static PayloadRepository payloadRepository;
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
         
     @Autowired
-    private GsrsControllerConfiguration controllerConfiguration;
+    private GsrsControllerConfiguration gsrsControllerConfiguration;
 
-  
-        
+
     @Data
-    public class ImportTaskMetaData{
+    public static class ImportTaskMetaData{
             
           private UUID id;
           
@@ -38,13 +58,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
           private String mimeType;  
           
           public Optional<Payload> fetchPayload(){
-                return payloadRepository.findById(payloadId);
+                return payloadRepository.findById(payloadID);
           }
           
-          public Stream<T> execute(){
+          public Stream<T> execute() throws Exception {
                  return fetchAdapterFactory()
                          .createAdapter(adapterSettings)
-                         .parse(payloadService.getPayloadAsInputStream(this.payloadID));
+                         .parse(payloadService.getPayloadAsInputStream(this.payloadID).get());
           }
             
           public ImportTaskMetaData copy(){
@@ -67,7 +87,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                          throw new IOException("Cannot predict settings with null import adapter");
                  }
                  ImportAdapterFactory<T> adaptFac= getImportAdapterFactory(adapter).orElse(null);
-                 if(this.adaptFac==null){
+                 if(adaptFac==null){
                          throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapter + "\"");
                  }
                  return adaptFac;
@@ -75,8 +95,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
           public ImportTaskMetaData predictSettings() throws Exception{
                  ImportAdapterFactory<T> adaptFac= fetchAdapterFactory();
-                 InputStream iStream =  payloadService.getPayloadAsInputStream(this.payloadID);
-                 ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream);
+                 Optional<InputStream> iStream =  payloadService.getPayloadAsInputStream(this.payloadID);
+                 ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
                  
                  ImportTaskMetaData newMeta = ImportTaskMetaData.copy();
                  newMeta.adapterSettings=predictedSettings.adapterSettings;
@@ -93,7 +113,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                   task.payloadID=p.id;
                   task.size=p.size;
                   task.mimeType=p.mimeType;
-                  task.filename=p.filename;
+                  task.filename=p.name;
                   return task;
           }
           //TODO: add _self link
@@ -114,7 +134,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
              importTask.id=UUID.randomUUID();
             }
             importTaskCache.put(importTask.id, importTask);
-            return importTask;
+            return Optional.of(importTask);
     }
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
@@ -125,7 +145,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         
     public static interface ImportAdapterFactory<T>{
             public String getAdapterName();
-            public List<String> getSupportedFileExtensions();           
+            public List<String> getSupportedFileExtensions();
             
             public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
             public ImportAdapterStatistics predictSettings(InputStream is);
@@ -142,7 +162,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ArrayList<>();         
     }
         
-    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name){
+    public static Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name){
         return getImportAdapters().stream().filter(n->name.equals(n.getAdapterName())).findFirst();
     }
             
@@ -159,7 +179,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @hasAdminRole
     @PostGsrsRestApiMapping("/import")
     public ResponseEntity<Object> handleImport(@RequestParam("file") MultipartFile file,
-                               @RequestParam Map<String, String> queryParameters) throws IOException {
+                               @RequestParam Map<String, String> queryParameters) throws Exception {
         try {
             //This follows 3 steps:
             // 1. save the file as a payload
@@ -189,7 +209,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if(adapterName!=null){
                     itmd.setAdapter(adapterName);
             }
-            itmd = saveImportTask(itmd);
+            itmd = saveImportTask(itmd).get();
             if(itmd.getAdapter()!=null && itmd.getAdapterSettings() == null){
                    itmd = itmd.predictSettings();
             }
@@ -235,7 +255,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
            ObjectMapper om = new ObjectMapper();
-           ImportTaskMetaData itmd = om.treeToValue(updatedJson,ImportTaskMetaData.class);
+           Optional<ImportTaskMetaData> itmd = om.treeToValue(updatedJson,ImportTaskMetaData.class);
             
            if(itmd.getAdapter()!=null && itmd.getAdapterSettings() == null){
                    itmd = itmd.predictSettings();
@@ -243,8 +263,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
            //TODO: validation
            //override any existing task version
-           itmd=saveImportTask(itmd);
-           return ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
+           itmd=saveImportTask(itmd.get());
+           return ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd.get(), queryParameters), HttpStatus.OK);
     }
        
         
