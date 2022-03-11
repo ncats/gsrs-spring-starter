@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.payload.PayloadController;
@@ -42,7 +43,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     @Data
-    public static class ImportTaskMetaData{
+    public class ImportTaskMetaData<TT>{
+          @JsonIgnore
+//          private AbstractImportSupportingGsrsEntityController parent;
+        
             
           private UUID id;
           
@@ -61,7 +65,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 return payloadRepository.findById(payloadID);
           }
           
-          public Stream<T> execute() throws Exception {
+          public Stream<TT> execute() throws Exception {
                  return fetchAdapterFactory()
                          .createAdapter(adapterSettings)
                          .parse(payloadService.getPayloadAsInputStream(this.payloadID).get());
@@ -69,6 +73,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
           public ImportTaskMetaData copy(){
                   ImportTaskMetaData task = new ImportTaskMetaData();
+//                  task.parent = this.parent;
                   task.id = this.id;
                   task.payloadID=this.payloadID;
                   task.size=this.size;
@@ -82,23 +87,25 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                   return task;
           }
             
-          public ImportAdapterFactory<T> fetchAdapterFactory() throws Exception{
+          public ImportAdapterFactory<TT> fetchAdapterFactory() throws Exception{
                  if(this.adapter==null){
                          throw new IOException("Cannot predict settings with null import adapter");
                  }
-                 ImportAdapterFactory<T> adaptFac= getImportAdapterFactory(adapter).orElse(null);
+                 ImportAdapterFactory<TT> adaptFac= (ImportAdapterFactory<TT>)  
+                         getImportAdapterFactory(adapter)
+                         .orElse(null);
                  if(adaptFac==null){
                          throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapter + "\"");
                  }
                  return adaptFac;
           }
             
-          public ImportTaskMetaData predictSettings() throws Exception{
-                 ImportAdapterFactory<T> adaptFac= fetchAdapterFactory();
+          public ImportTaskMetaData<TT> predictSettings() throws Exception{
+                 ImportAdapterFactory<TT> adaptFac=  fetchAdapterFactory();
                  Optional<InputStream> iStream =  payloadService.getPayloadAsInputStream(this.payloadID);
                  ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
                  
-                 ImportTaskMetaData newMeta = ImportTaskMetaData.copy();
+                 ImportTaskMetaData newMeta = copy();
                  newMeta.adapterSettings=predictedSettings.adapterSettings;
                  newMeta.adapterSchema=predictedSettings.adapterSchema;
 
@@ -107,18 +114,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
             
             
-          public static ImportTaskMetaData from(Payload p){
-                  ImportTaskMetaData task = new ImportTaskMetaData();
-                  task.id = UUID.randomUUID();
-                  task.payloadID=p.id;
-                  task.size=p.size;
-                  task.mimeType=p.mimeType;
-                  task.filename=p.name;
-                  return task;
-          }
+          
           //TODO: add _self link
     }
-    
+    public ImportTaskMetaData from(Payload p){
+        ImportTaskMetaData task = new ImportTaskMetaData();
+        task.id = UUID.randomUUID();
+        task.payloadID=p.id;
+        task.size=p.size;
+        task.mimeType=p.mimeType;
+        task.filename=p.name;
+        return task;
+    }
     
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //MECHANISM TO SAVE IMPORT META DATA
@@ -162,7 +169,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ArrayList<>();         
     }
         
-    public static Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name){
+    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name){
         return getImportAdapters().stream().filter(n->name.equals(n.getAdapterName())).findFirst();
     }
             
@@ -205,7 +212,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             });
 
             Payload payload = payloadRepository.findById(payloadId).get();
-            ImportTaskMetaData itmd = ImportTaskMetaData.from(payload);
+            ImportTaskMetaData itmd = from(payload);
             if(adapterName!=null){
                     itmd.setAdapter(adapterName);
             }
@@ -225,7 +232,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @GetGsrsRestApiMapping(value = {"/import({id})", "/import/{id}"})
     public ResponseEntity<Object> getImport(@PathVariable("id") String id,
                                    @RequestParam Map<String, String> queryParameters) throws IOException {
-        Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id)));
+        Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if(obj.isPresent()){
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters), HttpStatus.OK);
         }
@@ -235,9 +242,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //STEP 2.5: Retrieve & predict if needed
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/@predict", "/import/{id}/@predict"})
-    public ResponseEntity<Object> getImport(@PathVariable("id") String id,
-                                   @RequestParam Map<String, String> queryParameters) throws IOException {
-        Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id)));
+    public ResponseEntity<Object> getImportPredict(@PathVariable("id") String id,
+                                   @RequestParam Map<String, String> queryParameters) throws Exception {
+        Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if(obj.isPresent()){
             String adapterName = queryParameters.get("adapter");
             ImportTaskMetaData itmd = obj.get().copy();
@@ -255,7 +262,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
            ObjectMapper om = new ObjectMapper();
-           Optional<ImportTaskMetaData> itmd = om.treeToValue(updatedJson,ImportTaskMetaData.class);
+           ImportTaskMetaData itmd = om.treeToValue(updatedJson,ImportTaskMetaData.class);
             
            if(itmd.getAdapter()!=null && itmd.getAdapterSettings() == null){
                    itmd = itmd.predictSettings();
@@ -263,8 +270,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
            //TODO: validation
            //override any existing task version
-           itmd=saveImportTask(itmd.get());
-           return ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd.get(), queryParameters), HttpStatus.OK);
+           itmd=saveImportTask(itmd).get();
+           return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
     }
        
         
@@ -275,8 +282,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @hasAdminRole
     @PostGsrsRestApiMapping(value = {"/import({id})/@execute", "/import/{id}/@execute"})
     public ResponseEntity<Object> executeImport(@PathVariable("id") String id,
-                                   @RequestParam Map<String, String> queryParameters) throws IOException {
-           Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id)));
+                                   @RequestParam Map<String, String> queryParameters) throws Exception {
+           Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
            if(obj.isPresent()){
                 //TODO: make async and do other stuff:
                 ImportTaskMetaData itmd = obj.get();
