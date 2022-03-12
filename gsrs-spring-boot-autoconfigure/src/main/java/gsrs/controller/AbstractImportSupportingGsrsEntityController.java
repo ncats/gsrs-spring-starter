@@ -45,15 +45,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public class ImportTaskMetaData<TT>{
           @JsonIgnore
 //          private AbstractImportSupportingGsrsEntityController parent;
-        
-            
+
+
           private UUID myuuid;
 
-          /*public String getUuid() {
-              return myuuid.toString();
-          }*/
           public String getId() {
             return myuuid.toString();
+          }
+          public void setId(String newId) {
+              this.myuuid= UUID.fromString(newId);
           }
 
           //TODO: work on this
@@ -66,6 +66,17 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
           private String filename;
           private Long size;
           private String mimeType;
+
+          public ImportTaskMetaData() {
+          }
+          public ImportTaskMetaData(String payloadID, String filename, long size, String mimeType, String id ) {
+              //todo: add checks for valid input
+              this.payloadID=UUID.fromString(payloadID);
+              this.filename=filename;
+              this.size=size;
+              this.mimeType=mimeType;
+              this.myuuid= UUID.fromString(id);
+          }
 
           public Optional<Payload> fetchPayload(){
                 return payloadRepository.findById(payloadID);
