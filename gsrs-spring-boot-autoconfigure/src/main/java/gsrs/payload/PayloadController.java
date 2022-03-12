@@ -69,6 +69,7 @@ public class PayloadController{
     }
     
     public static String predictMimeTypeFromFile(MultipartFile file) {
+        System.out.println("predictMimeTypeFromFile");
         String defMime = "application/octet-stream";
         String ofname = file.getOriginalFilename();
         
@@ -91,6 +92,7 @@ public class PayloadController{
                 }
             }
         }
+        System.out.println("mimeType" + mimeType);
         if(mimeType==null) {
             mimeType = defMime;
         }

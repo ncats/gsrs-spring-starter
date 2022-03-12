@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -29,12 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public abstract class AbstractImportSupportingGsrsEntityController<C extends AbstractImportSupportingGsrsEntityController, T, I >
-        extends AbstractGsrsEntityController<C, T, I> {
+        extends AbstractLegacyTextSearchGsrsEntityController<C, T, I> {
 
     @Autowired
-    private static PayloadService payloadService;
+    private  PayloadService payloadService;
     @Autowired
-    private static PayloadRepository payloadRepository;
+    private  PayloadRepository payloadRepository;
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
         
@@ -48,8 +47,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 //          private AbstractImportSupportingGsrsEntityController parent;
         
             
-          private UUID id;
-          
+          private UUID myuuid;
+
+          /*public String getUuid() {
+              return myuuid.toString();
+          }*/
+          public String getId() {
+            return myuuid.toString();
+          }
+
           //TODO: work on this
           private String adapter;
           private JsonNode adapterSettings;
@@ -59,8 +65,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
           private UUID payloadID;
           private String filename;
           private Long size;
-          private String mimeType;  
-          
+          private String mimeType;
+
           public Optional<Payload> fetchPayload(){
                 return payloadRepository.findById(payloadID);
           }
@@ -74,7 +80,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
           public ImportTaskMetaData copy(){
                   ImportTaskMetaData task = new ImportTaskMetaData();
 //                  task.parent = this.parent;
-                  task.id = this.id;
+                  task.myuuid = this.myuuid;
                   task.payloadID=this.payloadID;
                   task.size=this.size;
                   task.mimeType=this.mimeType;
@@ -112,14 +118,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                  return newMeta;
           }
             
-            
+
             
           
           //TODO: add _self link
     }
     public ImportTaskMetaData from(Payload p){
         ImportTaskMetaData task = new ImportTaskMetaData();
-        task.id = UUID.randomUUID();
+        task.myuuid = UUID.randomUUID();
         task.payloadID=p.id;
         task.size=p.size;
         task.mimeType=p.mimeType;
@@ -137,10 +143,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
     
     private Optional<ImportTaskMetaData> saveImportTask(ImportTaskMetaData importTask){
-            if(importTask.id==null){
-             importTask.id=UUID.randomUUID();
+            if(importTask.myuuid ==null){
+             importTask.myuuid =UUID.randomUUID();
             }
-            importTaskCache.put(importTask.id, importTask);
+            importTaskCache.put(importTask.myuuid, importTask);
             return Optional.of(importTask);
     }
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -192,7 +198,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             // 1. save the file as a payload
             // 2. save an ImportTaskMetaData that wraps the payload
             // 3. return the ImportTaskMetaData
-                
+
             String adapterName = queryParameters.get("adapter");
                     
                     
@@ -202,15 +208,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 
             UUID payloadId = transactionTemplate.execute(status -> {
                 try {
-                    return payloadService.createPayload(file.getOriginalFilename(), 
-                                                        PayloadController.predictMimeTypeFromFile(file),
-                                                        file.getBytes(), 
-                                                        PayloadService.PayloadPersistType.TEMP).id;
+                    Payload payload = payloadService.createPayload(file.getOriginalFilename(),
+                            PayloadController.predictMimeTypeFromFile(file),
+                            file.getBytes(),
+                            PayloadService.PayloadPersistType.TEMP);
+                    return payload.id;
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             });
-
             Payload payload = payloadRepository.findById(payloadId).get();
             ImportTaskMetaData itmd = from(payload);
             if(adapterName!=null){
