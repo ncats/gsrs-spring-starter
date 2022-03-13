@@ -31,9 +31,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         extends AbstractLegacyTextSearchGsrsEntityController<C, T, I> {
 
     @Autowired
-    private PayloadService payloadService;
+    private  PayloadService payloadService;
     @Autowired
-    private PayloadRepository payloadRepository;
+    private  PayloadRepository payloadRepository;
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
         
@@ -42,7 +42,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     @Data
-    public static class ImportTaskMetaData<TT>{
+    public static class ImportTaskMetaData<T>{
           @JsonIgnore
 //          private AbstractImportSupportingGsrsEntityController parent;
 
@@ -103,16 +103,16 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
           //TODO: add _self link
     }
     
-    public Stream<TT> execute(ImportTaskMetaData<TT> task) throws Exception {
+    public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
                  return fetchAdapterFactory(task)
                          .createAdapter(task.adapterSettings)
                          .parse(payloadService.getPayloadAsInputStream(task.payloadID).get());
     }
-    private ImportAdapterFactory<TT> fetchAdapterFactory(ImportTaskMetaData<TT> task) throws Exception{
+    private ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception{
                  if(task.adapter==null){
                          throw new IOException("Cannot predict settings with null import adapter");
                  }
-                 ImportAdapterFactory<TT> adaptFac= (ImportAdapterFactory<TT>)  
+                 ImportAdapterFactory<T> adaptFac= (ImportAdapterFactory<T>)  
                          getImportAdapterFactory(task.adapter)
                          .orElse(null);
                  if(adaptFac==null){
@@ -125,12 +125,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             
 
             
-    private ImportTaskMetaData<TT> predictSettings(ImportTaskMetaData<TT> task) throws Exception{
-                 ImportAdapterFactory<TT> adaptFac=  fetchAdapterFactory(task);
+    private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception{
+                 ImportAdapterFactory<T> adaptFac=  fetchAdapterFactory(task);
                  Optional<InputStream> iStream =  payloadService.getPayloadAsInputStream(task.payloadID);
                  ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
                  
-                 ImportTaskMetaData<TT> newMeta = task.copy();
+                 ImportTaskMetaData<T> newMeta = task.copy();
                  newMeta.adapterSettings=predictedSettings.adapterSettings;
                  newMeta.adapterSchema=predictedSettings.adapterSchema;
 
@@ -322,5 +322,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
            }
            return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-     
+        
+        
+       
 }
