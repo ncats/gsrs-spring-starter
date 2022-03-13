@@ -42,7 +42,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     @Data
-    public class ImportTaskMetaData<TT>{
+    public static class ImportTaskMetaData<T>{
           @JsonIgnore
 //          private AbstractImportSupportingGsrsEntityController parent;
 
@@ -78,15 +78,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
               this.myuuid= UUID.fromString(id);
           }
 
-          public Optional<Payload> fetchPayload(){
-                return payloadRepository.findById(payloadID);
-          }
           
-          public Stream<TT> execute() throws Exception {
-                 return fetchAdapterFactory()
-                         .createAdapter(adapterSettings)
-                         .parse(payloadService.getPayloadAsInputStream(this.payloadID).get());
-          }
+          
+          
             
           public ImportTaskMetaData copy(){
                   ImportTaskMetaData task = new ImportTaskMetaData();
@@ -104,36 +98,48 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                   return task;
           }
             
-          public ImportAdapterFactory<TT> fetchAdapterFactory() throws Exception{
-                 if(this.adapter==null){
+          
+          
+          //TODO: add _self link
+    }
+    
+    public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
+                 return fetchAdapterFactory(task)
+                         .createAdapter(task.adapterSettings)
+                         .parse(payloadService.getPayloadAsInputStream(task.payloadID).get());
+    }
+    private ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception{
+                 if(task.adapter==null){
                          throw new IOException("Cannot predict settings with null import adapter");
                  }
-                 ImportAdapterFactory<TT> adaptFac= (ImportAdapterFactory<TT>)  
-                         getImportAdapterFactory(adapter)
+                 ImportAdapterFactory<T> adaptFac= (ImportAdapterFactory<T>)  
+                         getImportAdapterFactory(task.adapter)
                          .orElse(null);
                  if(adaptFac==null){
-                         throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapter + "\"");
+                         throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
                  }
                  return adaptFac;
-          }
+     }
             
-          public ImportTaskMetaData<TT> predictSettings() throws Exception{
-                 ImportAdapterFactory<TT> adaptFac=  fetchAdapterFactory();
-                 Optional<InputStream> iStream =  payloadService.getPayloadAsInputStream(this.payloadID);
+          
+            
+
+            
+    private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception{
+                 ImportAdapterFactory<T> adaptFac=  fetchAdapterFactory(task);
+                 Optional<InputStream> iStream =  payloadService.getPayloadAsInputStream(task.payloadID);
                  ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
                  
-                 ImportTaskMetaData newMeta = copy();
+                 ImportTaskMetaData<T> newMeta = task.copy();
                  newMeta.adapterSettings=predictedSettings.adapterSettings;
                  newMeta.adapterSchema=predictedSettings.adapterSchema;
 
                  return newMeta;
-          }
-            
-
-            
-          
-          //TODO: add _self link
-    }
+     }
+    private Optional<Payload> fetchPayload(ImportTaskMetaData task){
+                return payloadRepository.findById(task.getPayloadID());
+     }
+    
     public ImportTaskMetaData from(Payload p){
         ImportTaskMetaData task = new ImportTaskMetaData();
         task.myuuid = UUID.randomUUID();
@@ -235,7 +241,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             itmd = saveImportTask(itmd).get();
             if(itmd.getAdapter()!=null && itmd.getAdapterSettings() == null){
-                   itmd = itmd.predictSettings();
+                   itmd = predictSettings(itmd);
             }
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd,queryParameters), HttpStatus.OK);
         }catch(Throwable t){
@@ -268,7 +274,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if(adapterName!=null){
                     itmd.setAdapter(adapterName);
             }
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd.predictSettings(), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(predictSettings(itmd), queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -282,7 +288,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
            ImportTaskMetaData itmd = om.treeToValue(updatedJson,ImportTaskMetaData.class);
             
            if(itmd.getAdapter()!=null && itmd.getAdapterSettings() == null){
-                   itmd = itmd.predictSettings();
+                   itmd = predictSettings(itmd);
            }
             
            //TODO: validation
@@ -305,7 +311,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //TODO: make async and do other stuff:
                 ImportTaskMetaData itmd = obj.get();
                 
-                itmd.execute()
+                execute(itmd)
                     .forEach(t->{
                        //TODO do something with this, likely put into some other area as a large JSON dump
                        //which will have further processing
