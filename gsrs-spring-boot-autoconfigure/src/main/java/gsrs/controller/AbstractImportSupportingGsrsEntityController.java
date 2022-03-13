@@ -116,7 +116,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                          getImportAdapterFactory(task.adapter)
                          .orElse(null);
                  if(adaptFac==null){
-                         throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapter + "\"");
+                         throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
                  }
                  return adaptFac;
      }
