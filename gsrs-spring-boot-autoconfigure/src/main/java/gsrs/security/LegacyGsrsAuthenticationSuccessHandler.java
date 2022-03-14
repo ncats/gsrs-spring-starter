@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import gov.nih.ncats.common.util.TimeUtil;
 
 public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
@@ -28,6 +29,10 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
     @Autowired
     private GsrsCache gsrsCache;
 
+	
+    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
+    private Long sessionExpirationMS;
+	
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
@@ -66,7 +71,22 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
                 .map(oo->oo.standardize())
                 .orElse(null);
 
+        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
+       
+        sessions = sessions.stream()
+                           .filter(s->{
+                               if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
+                                  s.expired = true;
+                                  s.setIsDirty("expired");
+                                  sessionRepository.saveAndFlush(s);
+                                  return false;
+                               }
+                               return true;
+                           })
+                           .collect(Collectors.toList());
+	    
+	    
         String id =null;
         Session session=null;
         if(sessions.isEmpty()){
