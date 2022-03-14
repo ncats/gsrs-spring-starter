@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.function.EntityResponse;
 
+import gov.nih.ncats.common.util.TimeUtil;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.security.Principal;
@@ -42,6 +43,9 @@ public class LoginController {
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
+    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
+    private Long sessionExpirationMS;
+
     @Value("#{new Boolean('${gsrs.sessionSecure:true}')}")
     private Boolean sessionCookieSecure;
 
@@ -64,8 +68,21 @@ public class LoginController {
         if(up ==null){
             return gsrsControllerConfiguration.handleNotFound(parameters);
         }
-
+        
+        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
+       
+        sessions = sessions.stream()
+                           .filter(s->{
+                               if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
+                                  s.expired = true;
+                                  s.setIsDirty("expired");
+                                  sessionRepository.saveAndFlush(s);
+                                  return false;
+                               }
+                               return true;
+                           })
+                           .collect(Collectors.toList());
         Optional<Session> session = sessions.stream().findFirst();
 
         //session could be empty if we restarted or erased sessions on the server and a browser kept old session info
