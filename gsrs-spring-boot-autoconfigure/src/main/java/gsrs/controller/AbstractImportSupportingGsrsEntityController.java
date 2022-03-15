@@ -43,9 +43,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @Data
     public static class ImportTaskMetaData<T>{
-          @JsonIgnore
-//          private AbstractImportSupportingGsrsEntityController parent;
-
 
           private UUID myuuid;
 
@@ -77,14 +74,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
               this.mimeType=mimeType;
               this.myuuid= UUID.fromString(id);
           }
-
-          
-          
-          
             
           public ImportTaskMetaData copy(){
                   ImportTaskMetaData task = new ImportTaskMetaData();
-//                  task.parent = this.parent;
                   task.myuuid = this.myuuid;
                   task.payloadID=this.payloadID;
                   task.size=this.size;
@@ -174,11 +166,55 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
         
     public static interface ImportAdapterFactory<T>{
-            public String getAdapterName();
-            public List<String> getSupportedFileExtensions();
-            
-            public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
-            public ImportAdapterStatistics predictSettings(InputStream is);
+		/**
+		 * Returns the name of the adapter, to be used for lookups and registration
+		 * with a registry of {@link ImportAdapterFactory} possibilities.
+		 * @return
+		 *   "Key" name of adapter factory.
+		 */
+		public String getAdapterName();
+
+		/**
+		 * Returns list of supported file extensions this import adapter may support. This list
+		 * does not have to be exhaustive, but will serve as a hint when suggesting adapters from
+		 * a set of possible adapters.
+		 * 
+		 * @return
+		 *   list of supported file extensions
+		 */
+		public List<String> getSupportedFileExtensions();
+
+		/**
+		 * Creates an {@link ImportAdapter} based on the supplied {@link JsonNode}, which can
+		 * encode information about the initialization of the adapter. The adapterSettings typically
+		 * contain information like how individual fields of an input data stream map to fields in
+		 * an output record.
+		 * 
+		 * @param adapterSettings initialization settings which can be used to configure an {@link ImportAdapter}
+		 * @return
+		 */
+		public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
+
+		/**
+		 * <p>
+		 * Partially or completely read a given {@link InputStream} and produce {@link ImportAdapterStatistics}
+		 * as hints for how to create proper adapterSettings to be used in {@link #createAdapter(JsonNode)}.
+		 * </p>
+		 * 
+		 * <p>
+		 *  {@link ImportAdapterStatistics} has 2 intended elements:
+		 *  <ol>
+		 *  <li>adapterSettings -- a "best guess" set of initialization parameters</li>
+		 *  <li>adapterSchema  -- a higher-level model for what input options are available</li>
+		 *  </ol>
+		 * </p>
+		 * 
+		 * @param is the InputStream of real or example data to be analyzed
+		 * @return 
+		 *   {@link ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
+		 *   the {@link ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
+		 */
+		public ImportAdapterStatistics predictSettings(InputStream is);
     }
         
     @Data
@@ -297,7 +333,26 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
     }
        
-        
+    //STEP 3.5: Preview import
+        //!!!!NEEDS MORE WORK
+    @hasAdminRole
+    @PostGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
+    public ResponseEntity<Object> executeImport(@PathVariable("id") String id,
+                                   @RequestParam Map<String, String> queryParameters) throws Exception {
+           Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
+           if(obj.isPresent()){
+                //TODO: make async and do other stuff:
+                ImportTaskMetaData itmd = obj.get();
+                long limit = Long.parseLong(queryParameters.getOrDefault("limit","10"));
+                   
+                List<T> previewList = execute(itmd)
+                    .limit(limit)
+                    .collect(Collectors.toList());
+                 
+                return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(previewList, queryParameters), HttpStatus.OK);
+           }
+           return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }        
         
 
     //STEP 4: Execute import
