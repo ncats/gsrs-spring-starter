@@ -345,16 +345,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //TODO: make async and do other stuff:
                 ImportTaskMetaData itmd = obj.get();
                 long limit = Long.parseLong(queryParameters.getOrDefault("limit","10"));
-                   
 
-
-
-
-
-                Object previewList = execute(itmd)
+                List<T> previewList = (List<T>)(execute(itmd)
                     .limit(limit)
-                    .collect(Collectors.toList());
-                 
+                    .collect(Collectors.toList()));
+
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(previewList, queryParameters), HttpStatus.OK);
            }
            return gsrsControllerConfiguration.handleNotFound(queryParameters);
