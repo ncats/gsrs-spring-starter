@@ -42,29 +42,14 @@ public class GsrsFactoryConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         try {
             List<Map<String,Object>> list = validators.get(context);
-
             if(list==null || list.isEmpty()){
                 return Collections.emptyList();
             }
             List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {});
-//            List<ValidatorConfig> configs = new ArrayList<>();
-//            for (Map<String,Object> n : list) {
-//
-//                Class<? extends ValidatorConfig> configClass = (Class<? extends ValidatorConfig>) n.get("configClass");
-//                if(configClass ==null) {
-//                    configs.add(mapper.convertValue(n, ValidatorConfig.class));
-//                }else{
-//                    configs.add(mapper.convertValue(n, configClass));
-//                }
-//            }
             return configs;
         }catch(Throwable t){
             throw t;
         }
-//        ValidatorConfigList list = (ValidatorConfigList) validators.get(context);
-//        if(list ==null){
-//            return Collections.emptyList();
-//        }
-//        return list.getConfigList();
+
     }
 }
