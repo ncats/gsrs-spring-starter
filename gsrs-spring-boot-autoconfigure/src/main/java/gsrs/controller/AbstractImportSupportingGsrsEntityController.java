@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 public abstract class AbstractImportSupportingGsrsEntityController<C extends AbstractImportSupportingGsrsEntityController, T, I >
         extends AbstractLegacyTextSearchGsrsEntityController<C, T, I> {
@@ -337,18 +338,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         //!!!!NEEDS MORE WORK
     @hasAdminRole
     @PostGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
-    public ResponseEntity<Object> executeImport(@PathVariable("id") String id,
+    public ResponseEntity<Object> executePreview(@PathVariable("id") String id,
                                    @RequestParam Map<String, String> queryParameters) throws Exception {
            Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
            if(obj.isPresent()){
                 //TODO: make async and do other stuff:
                 ImportTaskMetaData itmd = obj.get();
                 long limit = Long.parseLong(queryParameters.getOrDefault("limit","10"));
-                   
-                List<T> previewList = execute(itmd)
+
+                List<T> previewList = (List<T>)(execute(itmd)
                     .limit(limit)
-                    .collect(Collectors.toList());
-                 
+                    .collect(Collectors.toList()));
+
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(previewList, queryParameters), HttpStatus.OK);
            }
            return gsrsControllerConfiguration.handleNotFound(queryParameters);
