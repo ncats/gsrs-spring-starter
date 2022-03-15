@@ -6,6 +6,7 @@ import gsrs.repository.UserProfileRepository;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
