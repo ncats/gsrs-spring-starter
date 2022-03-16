@@ -54,6 +54,9 @@ public class UserProfile extends IxModel{
 
 	// Not sure if this should be shown here?
 	public String getKey() {
+		if(key==null){
+			regenerateKey();
+		}
 		return key;
 	}
 
@@ -128,7 +131,7 @@ public class UserProfile extends IxModel{
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
-		return getComputedToken(this.user.computeStandardizedName(), this.key);
+		return getComputedToken(this.user.computeStandardizedName(), this.getKey());
 	}
 	public static String getComputedToken(String username, String key) {
 		if(key==null)return null;
@@ -142,13 +145,13 @@ public class UserProfile extends IxModel{
 	}
 
 	private String getPreviousComputedToken() {
-		if(key==null)return null;
+		if(getKey()==null)return null;
 		String date = "" + (Util.getCanonicalCacheTimeStamp() - 1);
-		return Util.sha1(date + this.user.computeStandardizedName() + this.key);
+		return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
 	}
 
 	public boolean acceptKey(String key) {
-		if (this.key==null)return false;
+		if (this.getKey()==null)return false;
 		if (key==null)return false;
 		if (key.equals(this.key))
 			return true;
@@ -156,7 +159,7 @@ public class UserProfile extends IxModel{
 	}
 
 	public boolean acceptToken(String token) {
-		if(key==null)return false;
+		if(getKey()==null)return false;
 		if(token==null)return false;
 		if (token.equals(this.getComputedToken()))
 			return true;
