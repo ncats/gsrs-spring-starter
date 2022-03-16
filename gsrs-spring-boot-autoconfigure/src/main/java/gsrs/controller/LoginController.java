@@ -64,9 +64,6 @@ public class LoginController {
     @Transactional
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
                                         HttpServletResponse response){
-
-        System.out.println("LOGIN controller login __alex__");
-
         UserProfile up =null;
         if(principal !=null){
             up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()))
@@ -79,48 +76,6 @@ public class LoginController {
 
         Optional<Session> session = this.cleanUpSessionsThenGetSession(up);
 
-        /*
-        // Should we not have a Utility method called something like
-        // Session s = cleanUpSessions(UserProfile up, List<Sessions> sessions)
-        // that handles this in all places?
-        // Also, is not being done twice when user provides credentials?
-//
-        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
-        List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
-       
-        sessions = sessions.stream()
-                           .filter(s->{
-                               if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
-                                  s.expired = true;
-                                  s.setIsDirty("expired");
-                                  sessionRepository.saveAndFlush(s);
-                                  return false;
-                               }
-                               return true;
-                           })
-                           .collect(Collectors.toList());
-
-        //copied this from LoginAndLogoutEventListener
-        if(sessions.isEmpty()){
-            //make new one?
-            Session s = new Session();
-            //this is so we don't have a stale entity
-            s.profile = Optional.ofNullable(up)
-                    .map(oo->oo.standardize())
-                    .orElse(null);
-            sessionRepository.saveAndFlush(s);
-        }
-         else{
-            // maybe this is not necessary? when just checking valid session?
-            long time = System.currentTimeMillis();
-            for(Session s : sessions){
-                s.accessed = time;
-            }
-            sessionRepository.saveAll(sessions);
-        }
-
-        Optional<Session> session = sessions.stream().findFirst();
-*/
 
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
@@ -211,7 +166,7 @@ public class LoginController {
         });
     }
 
-    Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
+    private Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
 
@@ -236,10 +191,10 @@ public class LoginController {
                     .map(oo->oo.standardize())
                     .orElse(null);
             sessionRepository.saveAndFlush(s);
-        }
-        else{
+            return Optional.of(s);
+        }else{
             // maybe this is not necessary? when just checking valid session?
-            long time = System.currentTimeMillis();
+            long time = TimeUtil.getCurrentTimeMillis();
             for(Session s : sessions){
                 s.accessed = time;
             }
