@@ -148,6 +148,7 @@ public class UserProfile extends IxModel{
 	}
 
 	public boolean acceptKey(String key) {
+		if (this.key==null)return false;
 		if (key==null)return false;
 		if (key.equals(this.key))
 			return true;
@@ -156,9 +157,10 @@ public class UserProfile extends IxModel{
 
 	public boolean acceptToken(String token) {
 		if(key==null)return false;
-		if (this.getComputedToken().equals(token))
+		if(token==null)return false;
+		if (token.equals(this.getComputedToken()))
 			return true;
-		if (this.getPreviousComputedToken().equals(token))
+		if (token.equals(this.getPreviousComputedToken()))
 			return true;
 		return false;
 	}
