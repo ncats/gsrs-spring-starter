@@ -17,6 +17,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import gov.nih.ncats.common.util.TimeUtil;
 
 public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
@@ -62,6 +64,8 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
             HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
 
+        // So, this method only applies to token auth.
+        // However, a session is created/adjusted following token auth
         if( !(authentication instanceof AbstractGsrsAuthenticationToken) ) {
             return;
         }
@@ -73,7 +77,7 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
 
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
-       
+
         sessions = sessions.stream()
                            .filter(s->{
                                if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){

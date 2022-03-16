@@ -22,6 +22,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.security.Principal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class LoginController {
@@ -52,12 +53,19 @@ public class LoginController {
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
     //so we can customize it. but that didn't work as the Session info assumes authentication
     //has already run and registered your session
+
+    // This method is called:
+    // after credentials are checked.
+    // when a cookie session key is checked successfully.
+
     @PreAuthorize("isAuthenticated()")
     @GetMapping("api/v1/whoami")
 //    @Transactional(readOnly = true)
     @Transactional
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
                                         HttpServletResponse response){
+
+        System.out.println("LOGIN controller login __alex__");
 
         UserProfile up =null;
         if(principal !=null){
@@ -68,7 +76,15 @@ public class LoginController {
         if(up ==null){
             return gsrsControllerConfiguration.handleNotFound(parameters);
         }
-        
+
+        Optional<Session> session = this.cleanUpSessionsThenGetSession(up);
+
+        /*
+        // Should we not have a Utility method called something like
+        // Session s = cleanUpSessions(UserProfile up, List<Sessions> sessions)
+        // that handles this in all places?
+        // Also, is not being done twice when user provides credentials?
+//
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
        
@@ -83,10 +99,28 @@ public class LoginController {
                                return true;
                            })
                            .collect(Collectors.toList());
-        Optional<Session> session = sessions.stream().findFirst();
 
-        //session could be empty if we restarted or erased sessions on the server and a browser kept old session info
-        // Add a session cookie
+        //copied this from LoginAndLogoutEventListener
+        if(sessions.isEmpty()){
+            //make new one?
+            Session s = new Session();
+            //this is so we don't have a stale entity
+            s.profile = Optional.ofNullable(up)
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+            sessionRepository.saveAndFlush(s);
+        }
+         else{
+            // maybe this is not necessary? when just checking valid session?
+            long time = System.currentTimeMillis();
+            for(Session s : sessions){
+                s.accessed = time;
+            }
+            sessionRepository.saveAll(sessions);
+        }
+
+        Optional<Session> session = sessions.stream().findFirst();
+*/
 
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
@@ -94,7 +128,6 @@ public class LoginController {
         if(sessionCookieSecure ==null || sessionCookieSecure.booleanValue()){
             sessionCookie.setSecure(true);
         }
-
         sessionCookie.setPath("/"); //Maybe?
         
         
@@ -176,5 +209,43 @@ public class LoginController {
             m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
 
         });
+    }
+
+    Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
+        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
+        List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
+
+        sessions = sessions.stream()
+                .filter(s->{
+                    if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
+                        s.expired = true;
+                        s.setIsDirty("expired");
+                        sessionRepository.saveAndFlush(s);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        //copied this from LoginAndLogoutEventListener
+        if(sessions.isEmpty()){
+            //make new one?
+            Session s = new Session();
+            //this is so we don't have a stale entity
+            s.profile = Optional.ofNullable(up)
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+            sessionRepository.saveAndFlush(s);
+        }
+        else{
+            // maybe this is not necessary? when just checking valid session?
+            long time = System.currentTimeMillis();
+            for(Session s : sessions){
+                s.accessed = time;
+            }
+            sessionRepository.saveAll(sessions);
+        }
+        Optional<Session> session = sessions.stream().findFirst();
+        return session;
     }
 }

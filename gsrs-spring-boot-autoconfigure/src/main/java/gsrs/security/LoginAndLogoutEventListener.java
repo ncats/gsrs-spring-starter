@@ -6,6 +6,7 @@ import gsrs.repository.UserProfileRepository;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class LoginAndLogoutEventListener {
@@ -36,13 +38,14 @@ public class LoginAndLogoutEventListener {
     @EventListener
     @Transactional
     public void onLogin(AuthenticationSuccessEvent event) {
-        UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
+        // This method is called:
+        // after user credentials are checked successfully
 
+        UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
 
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
 
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
-        List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
        
         sessions = sessions.stream()
                            .filter(s->{
