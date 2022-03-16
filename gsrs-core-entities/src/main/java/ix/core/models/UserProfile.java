@@ -131,6 +131,7 @@ public class UserProfile extends IxModel{
 		return getComputedToken(this.user.computeStandardizedName(), this.key);
 	}
 	public static String getComputedToken(String username, String key) {
+		if(key==null)return null;
 		String date = "" + Util.getCanonicalCacheTimeStamp();
 		return Util.sha1(date + username + key);
 	}
@@ -141,17 +142,20 @@ public class UserProfile extends IxModel{
 	}
 
 	private String getPreviousComputedToken() {
+		if(key==null)return null;
 		String date = "" + (Util.getCanonicalCacheTimeStamp() - 1);
 		return Util.sha1(date + this.user.computeStandardizedName() + this.key);
 	}
 
 	public boolean acceptKey(String key) {
+		if (key==null)return false;
 		if (key.equals(this.key))
 			return true;
 		return false;
 	}
 
 	public boolean acceptToken(String token) {
+		if(key==null)return false;
 		if (this.getComputedToken().equals(token))
 			return true;
 		if (this.getPreviousComputedToken().equals(token))
