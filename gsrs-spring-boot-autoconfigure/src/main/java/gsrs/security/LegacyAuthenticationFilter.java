@@ -51,13 +51,15 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private GsrsCache gsrsCache;
 
+    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
+    private Long sessionExpirationMS;
 
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
-    
+
     private void logHeaders(HttpServletRequest req){
         if(log.isDebugEnabled()) {
             log.debug("HEADERS ON REQUEST ===================");
@@ -68,14 +70,14 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             log.debug(allheaders.toString());
         }
     }
-    
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         if(authenticationConfiguration.isLogheaders()) {
             logHeaders(request);
         }
-        
+
         Authentication auth = null;
         Cookie[] allCookies = request.getCookies();
         if (allCookies != null) {
@@ -88,16 +90,21 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     cachedSessionIdt = UUID.fromString(id);
                 }catch(Exception e) {
-                    
+
                 }
 //                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
                 if(cachedSessionIdt !=null) {
                     UUID cachedSessionId = cachedSessionIdt;
-                    
+
                     TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
                     auth = transactionTemplate.execute(status ->{
                         Session session = sessionRepository.findById(cachedSessionId).orElse(null);
-                        if(session !=null && !session.expired){
+                        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
+                        if(session !=null && !session.expired
+                                // Added this check BEFORE post login session/expiration processing.
+                                // Without this check here, it was allow access one time too many.
+                                && session.created + expDelta > TimeUtil.getCurrentTimeMillis()
+                        ){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());
@@ -114,7 +121,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         if(authenticationConfiguration.isLogheaders()) {
             log.debug("After cookie authentication, auth is:" + auth);
         }
-        
+
         // TODO: TP changed below, but needs feedback
         // why != null? that doesn't sound right ...
         // changing to ==null
@@ -124,21 +131,21 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String username = Optional.ofNullable(authenticationConfiguration.getUsernameheader())
-                                      .map(e->request.getHeader(e))
-                                      .orElse(null);
+                    .map(e->request.getHeader(e))
+                    .orElse(null);
             String email =    Optional.ofNullable(authenticationConfiguration.getUseremailheader())
-                                      .map(e->request.getHeader(e))
-                                      .orElse(null);
+                    .map(e->request.getHeader(e))
+                    .orElse(null);
             List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
                     .map(e->request.getHeader(e))
                     .map(v->Arrays.stream(v.split(";"))
-                                  .map(r->r.trim())
-                                  .map(r->Role.valueOf(r))
-                                  .collect(Collectors.toList())
-                        )
+                            .map(r->r.trim())
+                            .map(r->Role.valueOf(r))
+                            .collect(Collectors.toList())
+                    )
                     .orElse(null);
-            
-                    
+
+
             if(username !=null){
                 if(authenticationConfiguration.isLogheaders()) {
                     log.debug("Trust USER IS:" + username);
@@ -153,7 +160,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
                 if(up !=null && up.active){
                     auth = new UserProfilePasswordAuthentication(up);
-                    
+
                 }
             }
         }
@@ -165,10 +172,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String username = request.getHeader("auth-username");
             String pass = request.getHeader("auth-password");
             if (username != null && pass != null) {
-                UserProfile up = 
+                UserProfile up =
                         Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
-                        .map(oo->oo.standardize())
-                        .orElse(null);
+                                .map(oo->oo.standardize())
+                                .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
                     up = autoregisterNewUser(username);
 
@@ -240,7 +247,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         if(auth !=null) {
             //add a new Session each time !?
-            
+
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
             SecurityContextHolder.getContext().setAuthentication(auth);

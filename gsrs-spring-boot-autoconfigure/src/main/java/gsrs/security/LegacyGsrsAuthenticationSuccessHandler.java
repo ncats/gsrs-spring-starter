@@ -3,6 +3,7 @@ package gsrs.security;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.SessionUtilities;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,10 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
     @Autowired
     private GsrsCache gsrsCache;
 
-	
+
     @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
     private Long sessionExpirationMS;
-	
+
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
@@ -75,22 +76,25 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
                 .map(oo->oo.standardize())
                 .orElse(null);
 
+        // Not sure this will work yet
+        // Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
+
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
 
         sessions = sessions.stream()
-                           .filter(s->{
-                               if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
-                                  s.expired = true;
-                                  s.setIsDirty("expired");
-                                  sessionRepository.saveAndFlush(s);
-                                  return false;
-                               }
-                               return true;
-                           })
-                           .collect(Collectors.toList());
-	    
-	    
+                .filter(s->{
+                    if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
+                        s.expired = true;
+                        s.setIsDirty("expired");
+                        sessionRepository.saveAndFlush(s);
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+
         String id =null;
         Session session=null;
         if(sessions.isEmpty()){
@@ -106,7 +110,7 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
             for(Session s : sessions){
                 id = s.id.toString();
                 session = s;
-		break;
+                break;
             }
         }
 

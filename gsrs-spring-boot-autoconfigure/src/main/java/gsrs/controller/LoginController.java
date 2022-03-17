@@ -5,6 +5,7 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.SessionUtilities;
 import ix.core.models.Group;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
@@ -67,15 +68,14 @@ public class LoginController {
         UserProfile up =null;
         if(principal !=null){
             up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()))
-                         .map(u->u.standardize())
-                         .orElse(null);
+                    .map(u->u.standardize())
+                    .orElse(null);
         }
         if(up ==null){
             return gsrsControllerConfiguration.handleNotFound(parameters);
         }
 
-        Optional<Session> session = this.cleanUpSessionsThenGetSession(up);
-
+        Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
 
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
@@ -84,13 +84,13 @@ public class LoginController {
             sessionCookie.setSecure(true);
         }
         sessionCookie.setPath("/"); //Maybe?
-        
-        
+
+
         response.addCookie( sessionCookie );
-        
-        
+
+
 //        System.out.println("set cookie:" + sessionId);
-        
+
 //        gsrsCache.setRaw(sessionId.toString(), sessionId);
         //we actually want to include the computed token here
         //which we jsonignore otherwise
@@ -122,7 +122,7 @@ public class LoginController {
     @Transactional
     @PostMapping({"api/v1/profile/@keygen"})
     public Object regenerateMyKeyPost(Principal principal,
-                                  @RequestParam Map<String, String> queryParameters){
+                                      @RequestParam Map<String, String> queryParameters){
         Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
@@ -164,43 +164,5 @@ public class LoginController {
             m.addKeyValuePair("groups", groups==null?Collections.emptyList(): groups);
 
         });
-    }
-
-    private Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
-        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
-        List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
-
-        sessions = sessions.stream()
-                .filter(s->{
-                    if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
-                        s.expired = true;
-                        s.setIsDirty("expired");
-                        sessionRepository.saveAndFlush(s);
-                        return false;
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-
-        //copied this from LoginAndLogoutEventListener
-        if(sessions.isEmpty()){
-            //make new one?
-            Session s = new Session();
-            //this is so we don't have a stale entity
-            s.profile = Optional.ofNullable(up)
-                    .map(oo->oo.standardize())
-                    .orElse(null);
-            sessionRepository.saveAndFlush(s);
-            return Optional.of(s);
-        }else{
-            // maybe this is not necessary? when just checking valid session?
-            long time = TimeUtil.getCurrentTimeMillis();
-            for(Session s : sessions){
-                s.accessed = time;
-            }
-            sessionRepository.saveAll(sessions);
-        }
-        Optional<Session> session = sessions.stream().findFirst();
-        return session;
     }
 }
