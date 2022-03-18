@@ -64,12 +64,13 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
             HttpServletRequest request,
             HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
-
+            System.out.println("========== Legacy ... onAuthenticationSuccess 1 =======");
         // So, this method only applies to token auth.
         // However, a session is created/adjusted following token auth
         if( !(authentication instanceof AbstractGsrsAuthenticationToken) ) {
             return;
         }
+        System.out.println("Legacy ... onAuthenticationSuccess 2");
 
         AbstractGsrsAuthenticationToken authenticationToken =    (AbstractGsrsAuthenticationToken) authentication;
         UserProfile up =  Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(authenticationToken.getUserProfile().getIdentifier()))

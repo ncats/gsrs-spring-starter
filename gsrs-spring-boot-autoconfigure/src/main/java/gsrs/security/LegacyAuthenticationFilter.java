@@ -102,7 +102,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
                         if(session !=null && !session.expired
                                 // Added this check BEFORE post login session/expiration processing.
-                                // Without this check here, it was allow access one time too many.
+                                // Without this check here, it was allowing access one time too many.
                                 && session.created + expDelta > TimeUtil.getCurrentTimeMillis()
                         ){
                             //Do we need to save this?

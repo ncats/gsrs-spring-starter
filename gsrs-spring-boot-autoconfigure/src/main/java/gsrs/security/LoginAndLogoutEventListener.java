@@ -41,6 +41,7 @@ public class LoginAndLogoutEventListener {
     public void onLogin(AuthenticationSuccessEvent event) {
         // This method is called:
         // after user credentials are checked successfully
+        System.out.println("========== Event ... onLogin 1 =======");
 
         UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
 
