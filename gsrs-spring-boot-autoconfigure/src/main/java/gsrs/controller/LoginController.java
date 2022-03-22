@@ -5,7 +5,7 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.services.SessionUtilities;
+import gsrs.security.SessionConfiguration;
 import ix.core.models.Group;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
@@ -16,14 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.function.EntityResponse;
 
-import gov.nih.ncats.common.util.TimeUtil;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.security.Principal;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 public class LoginController {
@@ -34,6 +31,8 @@ public class LoginController {
     @Autowired
     private SessionRepository sessionRepository;
 
+    @Autowired
+    private SessionConfiguration sessionConfiguration;
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
@@ -75,7 +74,7 @@ public class LoginController {
             return gsrsControllerConfiguration.handleNotFound(parameters);
         }
 
-        Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
+        Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
 
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());

@@ -1,13 +1,17 @@
 package ix.core.models;
 
 
+import ch.qos.logback.core.rolling.helper.TokenConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.security.TokenConfiguration;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.*;
 import java.util.*;
@@ -20,14 +24,17 @@ import java.util.*;
 public class UserProfile extends IxModel{
     private static ObjectMapper om = new ObjectMapper();
 
-    private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
+
+	private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
         up.addRole(Role.Query);
 
         return up;
     });
-    
-    
+
+	// __alex__, will this work in entity or do we need managed context?
+	private static TokenConfiguration tokenConfiguration = StaticContextAccessor.getBean(TokenConfiguration.class);
+
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
 	public Principal user;
@@ -131,22 +138,17 @@ public class UserProfile extends IxModel{
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
-		return getComputedToken(this.user.computeStandardizedName(), this.getKey());
-	}
-	public static String getComputedToken(String username, String key) {
-		if(key==null)return null;
-		String date = "" + Util.getCanonicalCacheTimeStamp();
-		return Util.sha1(date + username + key);
+		return tokenConfiguration.getComputedToken(this.user.computeStandardizedName(), this.getKey());
 	}
 
 	public Long getTokenTimeToExpireMS() {
-		long date = (Util.getCanonicalCacheTimeStamp() + 1) * Util.getTimeResolutionMS();
+		long date = (tokenConfiguration.getCanonicalCacheTimeStamp() + 1) * tokenConfiguration.timeResolutionMS();
 		return (date - TimeUtil.getCurrentTimeMillis());
 	}
 
 	private String getPreviousComputedToken() {
 		if(getKey()==null)return null;
-		String date = "" + (Util.getCanonicalCacheTimeStamp() - 1);
+		String date = "" + (tokenConfiguration.getCanonicalCacheTimeStamp() - 1);
 		return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
 	}
 

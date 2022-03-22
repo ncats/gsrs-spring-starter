@@ -3,7 +3,7 @@ package gsrs.security;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.services.SessionUtilities;
+import gsrs.security.SessionConfiguration;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
     //TODO this is the default session cookie name Spring uses or should we just use ix.session
     @Value("${gsrs.sessionKey}")
     private String sessionCookieName;
-    private String logPath = "logs";
+
     @Value("#{new Boolean('${gsrs.sessionSecure:true}')}")
     private Boolean sessionCookieSecure;
 
@@ -78,7 +78,7 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
                 .orElse(null);
 
         // Not sure this will work yet
-        // Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
+        // Optional<Session> session = SessionConfiguration.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
 
         long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);

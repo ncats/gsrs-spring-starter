@@ -3,7 +3,7 @@ package gsrs.security;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.services.SessionUtilities;
+import gsrs.security.SessionConfiguration;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
