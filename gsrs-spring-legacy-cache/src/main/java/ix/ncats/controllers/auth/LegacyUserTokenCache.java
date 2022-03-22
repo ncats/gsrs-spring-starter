@@ -33,10 +33,11 @@ public class LegacyUserTokenCache implements UserTokenCache {
 
 	   private UserProfileRepository userProfileRepository;
 
+	   
        private TokenConfiguration tokenConfiguration;
 
 	   @Autowired
-	   public LegacyUserTokenCache(UserProfileRepository userProfileRepository){
+	   public LegacyUserTokenCache(UserProfileRepository userProfileRepository, TokenConfiguration tokenConfiguration ){
 	    	this.userProfileRepository = Objects.requireNonNull(userProfileRepository);
 
 	    	//always hold onto the tokens for twice the time required

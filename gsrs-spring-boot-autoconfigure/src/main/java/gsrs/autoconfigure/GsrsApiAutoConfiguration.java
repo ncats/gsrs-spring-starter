@@ -66,15 +66,5 @@ public class GsrsApiAutoConfiguration {
 
     }
 
-    @Bean
-    @ConditionalOnMissingBean(SessionConfiguration.class)
-    public SessionConfiguration getSessionConfiguration(){
-        return new SessionConfiguration();
-    }
-    @Bean
-    @ConditionalOnMissingBean(TokenConfiguration.class)
-    public TokenConfiguration getTokenConfiguration(){
-        return new TokenConfiguration();
-    }
 
 }

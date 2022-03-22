@@ -46,6 +46,8 @@ public class PrincipalServiceImpl implements PrincipalService {
     @Override
     public Principal registerIfAbsent(String username){
         Boolean[] created = new Boolean[]{Boolean.FALSE};
+        //System.out.println(username);
+        
         Principal p= cache.computeIfAbsent(username.toUpperCase(), name-> {
             log.debug("currently there are " + principalRepository.count() + " principals in db");
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
