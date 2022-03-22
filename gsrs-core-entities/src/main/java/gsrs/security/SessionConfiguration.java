@@ -41,6 +41,7 @@ public class SessionConfiguration {
     }
 
     public Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
+        if(up==null)return Optional.empty();
         List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
 
         sessions = sessions.stream()

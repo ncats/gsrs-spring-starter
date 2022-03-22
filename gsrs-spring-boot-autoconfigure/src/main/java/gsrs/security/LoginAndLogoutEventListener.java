@@ -25,16 +25,8 @@ import java.util.stream.Collectors;
 public class LoginAndLogoutEventListener {
 
     @Autowired
-    private SessionRepository sessionRepository;
+    private SessionConfiguration sessionConfiguration;
 
-    @Autowired
-    private UserProfileRepository userProfileRepository;
-
-    @Autowired
-    private GsrsCache gsrsCache;
-
-    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
-    private Long sessionExpirationMS;
 
     @EventListener
     @Transactional
@@ -49,38 +41,8 @@ public class LoginAndLogoutEventListener {
         // org.hibernate.PersistentObjectException: detached entity passed to persist: ix.core.models.UserProfile
         // Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
 
-        List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
-
-        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
-
-        sessions = sessions.stream()
-                .filter(s->{
-                    if(TimeUtil.getCurrentTimeMillis() > s.created + expDelta){
-                        s.expired = true;
-                        s.setIsDirty("expired");
-                        sessionRepository.saveAndFlush(s);
-                        return false;
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-
-        if(sessions.isEmpty()){
-            //make new one?
-            Session s = new Session();
-            //this is so we don't have a stale entity
-
-            s.profile = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(up.user.username))
-                    .map(oo->oo.standardize())
-                    .orElse(null);
-
-            sessionRepository.saveAndFlush(s);
-        }else{
-            long time = System.currentTimeMillis();
-            for(Session s : sessions){
-                s.accessed = time;
-            }
-            sessionRepository.saveAll(sessions);
-        }
+        Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
+        
+        
     }
 }
