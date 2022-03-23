@@ -41,7 +41,7 @@ public class LoginAndLogoutEventListener {
         // org.hibernate.PersistentObjectException: detached entity passed to persist: ix.core.models.UserProfile
         // Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
 
-        Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
+         Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
         
         
     }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.GsrsRestResponseErrorHandler;
 
+import ix.core.models.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -59,9 +60,8 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
     @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
 
-    //TODO this is the default session cookie name Spring uses or should we just use ix.session
-    @Value("${gsrs.sessionKey}")
-    private String sessionCookieName;
+    @Autowired
+    private SessionConfiguration sessionConfiguration;
 
     private ObjectMapper mapper = new ObjectMapper();
     
@@ -139,7 +139,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
                 .and()
             .logout()
                 .logoutUrl("/logout")
-                .deleteCookies(sessionCookieName)
+                .deleteCookies(sessionConfiguration.sessionCookieName())
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
                 

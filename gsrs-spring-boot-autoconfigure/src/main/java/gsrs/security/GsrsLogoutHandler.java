@@ -26,8 +26,8 @@ public class GsrsLogoutHandler implements LogoutHandler {
     @Autowired
     private SessionRepository sessionRepository;
 
-    @Value("${gsrs.sessionKey}")
-    private String sessionCookieName;
+    @Autowired
+    private SessionConfiguration sessionConfiguration;
     
     @Override
     @Transactional
@@ -48,21 +48,21 @@ public class GsrsLogoutHandler implements LogoutHandler {
                 // The following 3 cookies are present to ensure logout works
                 // TODO: figure out path and secure settings if necessary
 
-                Cookie cookie = new Cookie(sessionCookieName, null);
+                Cookie cookie = new Cookie(sessionConfiguration.sessionCookieName(), null);
                 cookie.setMaxAge(0);
                 cookie.setPath("/");
                 cookie.setHttpOnly(true);
                 //add cookie to response
                 httpServletResponse.addCookie(cookie);
 
-                Cookie cookie2 = new Cookie(sessionCookieName, null);
+                Cookie cookie2 = new Cookie(sessionConfiguration.sessionCookieName(), null);
                 cookie2.setMaxAge(0);                
                 cookie2.setHttpOnly(true);
                 cookie2.setPath("/api/v1");
                 //add cookie to response
                 httpServletResponse.addCookie(cookie2);
 
-                Cookie cookie3 = new Cookie(sessionCookieName, null);
+                Cookie cookie3 = new Cookie(sessionConfiguration.sessionCookieName(), null);
                 cookie3.setMaxAge(0);                
                 cookie3.setHttpOnly(true);
                 //add cookie to response
