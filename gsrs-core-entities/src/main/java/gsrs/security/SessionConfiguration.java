@@ -3,6 +3,7 @@ package gsrs.security;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.repository.SessionRepository;
+import gsrs.repository.UserProfileRepository;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import ix.utils.Util;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -23,9 +25,11 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Accessors(fluent = true)
 public class SessionConfiguration {
-
+            
     @Autowired
     private SessionRepository sessionRepository;
+    @Autowired
+    private UserProfileRepository userProfileRepository;
 
     // gsrs.sessionExpirationMS ==> gsrs.sessions.sessionExpirationMS
     // gsrs.sessionKey ==> gsrs.sessions.sessionCookieName
@@ -59,10 +63,16 @@ public class SessionConfiguration {
         if(sessions.isEmpty()){
             //make new one?
             Session s = new Session();
+
+            s.profile = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(up.user.username))
+                    .map(oo->oo.standardize())
+                    .orElse(null);
+/*
             //this is so we don't have a stale entity
             s.profile = Optional.ofNullable(up)
                     .map(oo->oo.standardize())
                     .orElse(null);
+*/
             sessionRepository.saveAndFlush(s);
             return Optional.of(s);
         }else{
