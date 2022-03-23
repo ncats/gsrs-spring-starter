@@ -32,8 +32,26 @@ public class UserProfile extends IxModel{
         return up;
     });
 
-	// __alex__, will this work in entity or do we need managed context?
-	private static TokenConfiguration tokenConfiguration = StaticContextAccessor.getBean(TokenConfiguration.class);
+	private static CachedSupplier<TokenConfiguration> TOKEN_CONFIG= CachedSupplier.of(()->{
+		TokenConfiguration tokenConfiguration = StaticContextAccessor.getBean(TokenConfiguration.class);
+		if (tokenConfiguration == null) {
+			System.out.println(" === I AM NULL 1");
+			tokenConfiguration=TokenConfiguration.INSTANCE;
+		}
+		if (tokenConfiguration == null) {
+			System.out.println(" === I AM NULL 2");
+		}
+		System.out.println("=== TokenConfiguration.counter: "+TokenConfiguration.counter);
+
+		try{
+			throw new RuntimeException("");
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		System.out.println("=== end stack trace");
+
+		return tokenConfiguration;
+	});
 
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
@@ -83,9 +101,11 @@ public class UserProfile extends IxModel{
 	public List<Value> properties = new ArrayList<Value>();
 
 	public UserProfile() {
+		// System.out.println("USER profile zero param constructorTOKEN_CONFIG.get()"+ TOKEN_CONFIG.get());
 	}
 
 	public UserProfile(Principal user) {
+		// System.out.println("USER profile principal param constructorTOKEN_CONFIG.get()"+ TOKEN_CONFIG.get());
 		this.user = user;
 		//Wait ... what?
 		regenerateKey();
@@ -138,17 +158,20 @@ public class UserProfile extends IxModel{
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
-		return tokenConfiguration.getComputedToken(this.user.computeStandardizedName(), this.getKey());
+		return TOKEN_CONFIG.get().getComputedToken(
+				this.user.computeStandardizedName(),
+				this.getKey()
+		);
 	}
 
 	public Long getTokenTimeToExpireMS() {
-		long date = (tokenConfiguration.getCanonicalCacheTimeStamp() + 1) * tokenConfiguration.timeResolutionMS();
+		long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().timeResolutionMS();
 		return (date - TimeUtil.getCurrentTimeMillis());
 	}
 
 	private String getPreviousComputedToken() {
 		if(getKey()==null)return null;
-		String date = "" + (tokenConfiguration.getCanonicalCacheTimeStamp() - 1);
+		String date = "" + (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() - 1);
 		return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
 	}
 

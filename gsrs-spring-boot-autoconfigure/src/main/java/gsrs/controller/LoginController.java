@@ -40,16 +40,6 @@ public class LoginController {
     @Autowired
     private GsrsCache gsrsCache;
 
-    //TODO this is the default session cookie name Spring uses or should we just use ix.session
-    @Value("${gsrs.sessionKey}")
-    private String sessionCookieName;
-
-    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
-    private Long sessionExpirationMS;
-
-    @Value("#{new Boolean('${gsrs.sessionSecure:true}')}")
-    private Boolean sessionCookieSecure;
-
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
     //so we can customize it. but that didn't work as the Session info assumes authentication
     //has already run and registered your session
@@ -64,6 +54,8 @@ public class LoginController {
     @Transactional
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
                                         HttpServletResponse response){
+        //__alex__
+        System.out.println("==== LoginController login ====");
         UserProfile up =null;
         if(principal !=null){
             up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()))
@@ -77,9 +69,10 @@ public class LoginController {
         Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
 
         UUID sessionId = session.get().id;
-        Cookie sessionCookie = new Cookie( sessionCookieName, sessionId.toString());
+        Cookie sessionCookie = new Cookie( sessionConfiguration.sessionCookieName(), sessionId.toString());
         sessionCookie.setHttpOnly(true);
-        if(sessionCookieSecure ==null || sessionCookieSecure.booleanValue()){
+        // __alex__ remove booleanValue?
+        if(sessionConfiguration.sessionCookieSecure() ==null || sessionConfiguration.sessionCookieSecure().booleanValue()){
             sessionCookie.setSecure(true);
         }
         sessionCookie.setPath("/"); //Maybe?

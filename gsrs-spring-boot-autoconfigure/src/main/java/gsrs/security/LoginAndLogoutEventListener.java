@@ -37,7 +37,7 @@ public class LoginAndLogoutEventListener {
 
         UserProfile up = (UserProfile) event.getAuthentication().getPrincipal();
 
-        // When trying to use SessionUtilities.java I get this exception
+        // When trying to use sessionConfiguration, I get this exception
         // org.hibernate.PersistentObjectException: detached entity passed to persist: ix.core.models.UserProfile
         // Optional<Session> session = SessionUtilities.cleanUpSessionsThenGetSession(up, sessionRepository, sessionExpirationMS);
 
