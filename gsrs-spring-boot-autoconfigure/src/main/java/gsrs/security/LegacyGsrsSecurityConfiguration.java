@@ -139,7 +139,7 @@ public class LegacyGsrsSecurityConfiguration extends WebSecurityConfigurerAdapte
                 .and()
             .logout()
                 .logoutUrl("/logout")
-                .deleteCookies(sessionConfiguration.sessionCookieName())
+                .deleteCookies(sessionConfiguration.getSessionCookieName())
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
                 

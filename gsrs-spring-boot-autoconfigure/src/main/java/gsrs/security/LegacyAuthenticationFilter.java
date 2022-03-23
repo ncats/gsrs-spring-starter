@@ -78,7 +78,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         Cookie[] allCookies = request.getCookies();
         if (allCookies != null) {
             Cookie sessionCookie =
-                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionConfiguration.sessionCookieName()))
+                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionConfiguration.getSessionCookieName()))
                             .findFirst().orElse(null);
             if(sessionCookie !=null){
                 String id = sessionCookie.getValue();
@@ -95,12 +95,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
                     auth = transactionTemplate.execute(status ->{
                         Session session = sessionRepository.findById(cachedSessionId).orElse(null);
-                        if(session !=null && !session.expired
-                                // Added this check BEFORE post login session/expiration processing.
-                                // Without this check here, it was allowing access one time too many.
-                                && session.created + sessionConfiguration.calculateSessionExpirationDelta()
-                                > TimeUtil.getCurrentTimeMillis()
-                        ){
+                        if(session !=null && !sessionConfiguration.isExpired(session)){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());

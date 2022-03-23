@@ -52,9 +52,9 @@ public class LegacyGsrsAuthenticationSuccessHandler extends SavedRequestAwareAut
         Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
 
         // Add a session cookie
-        Cookie sessionCookie = new Cookie( sessionConfiguration.sessionCookieName(), session.map(ss->ss.id.toString()).orElse(null));
+        Cookie sessionCookie = new Cookie( sessionConfiguration.getSessionCookieName(), session.map(ss->ss.id.toString()).orElse(null));
         sessionCookie.setHttpOnly(true);
-        if(sessionConfiguration.sessionCookieSecure()) {
+        if(sessionConfiguration.getSessionCookieSecure()) {
             sessionCookie.setSecure(true);
         }
         response.addCookie( sessionCookie );

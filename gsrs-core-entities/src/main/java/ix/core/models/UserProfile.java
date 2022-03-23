@@ -165,7 +165,7 @@ public class UserProfile extends IxModel{
 	}
 
 	public Long getTokenTimeToExpireMS() {
-		long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().timeResolutionMS();
+		long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().getTimeResolutionMS();
 		return (date - TimeUtil.getCurrentTimeMillis());
 	}
 

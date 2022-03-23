@@ -69,10 +69,10 @@ public class LoginController {
         Optional<Session> session = sessionConfiguration.cleanUpSessionsThenGetSession(up);
 
         UUID sessionId = session.get().id;
-        Cookie sessionCookie = new Cookie( sessionConfiguration.sessionCookieName(), sessionId.toString());
+        Cookie sessionCookie = new Cookie( sessionConfiguration.getSessionCookieName(), sessionId.toString());
         sessionCookie.setHttpOnly(true);
         // __alex__ remove booleanValue?
-        if(sessionConfiguration.sessionCookieSecure() ==null || sessionConfiguration.sessionCookieSecure().booleanValue()){
+        if(sessionConfiguration.getSessionCookieSecure() ==null || sessionConfiguration.getSessionCookieSecure().booleanValue()){
             sessionCookie.setSecure(true);
         }
         sessionCookie.setPath("/"); //Maybe?

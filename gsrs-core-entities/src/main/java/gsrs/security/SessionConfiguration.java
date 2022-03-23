@@ -23,7 +23,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "gsrs.sessions")
 @Data
-@Accessors(fluent = true)
 public class SessionConfiguration {
             
     @Autowired
@@ -35,13 +34,25 @@ public class SessionConfiguration {
     // gsrs.sessionKey ==> gsrs.sessions.sessionCookieName
     // gsrs.sessionSecure ==> gsrs.sessions.sessionCookieSecure
 
-    private Long sessionExpirationMS = -1L;
+    private static final long MAX_SESSION_DURATION = 31557600000L; // 365 days
+
+    // A negative number results sessions that never expire!
+    private Long sessionExpirationMS = -1L;  // 60000 is one minute
     private String sessionCookieName  = "ix.session";
     private Boolean sessionCookieSecure = true;
     // private String logPath = "logs";
 
-    public Long calculateSessionExpirationDelta(){
-        return (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
+    private Long calculateSessionExpirationDelta(){
+        return (sessionExpirationMS==null || sessionExpirationMS<=0 || sessionExpirationMS > MAX_SESSION_DURATION)?MAX_SESSION_DURATION:sessionExpirationMS;
+    }
+
+    public boolean isExpired(Session session){
+        if(session.expired)return true;
+        if(sessionExpirationMS<=0)return false;
+        if(session.created + calculateSessionExpirationDelta() > TimeUtil.getCurrentTimeMillis()) {
+            return false;
+        }
+        return true;
     }
 
     public Optional<Session> cleanUpSessionsThenGetSession(UserProfile up) {
@@ -50,7 +61,7 @@ public class SessionConfiguration {
 
         sessions = sessions.stream()
                 .filter(s->{
-                    if(TimeUtil.getCurrentTimeMillis() > s.created + calculateSessionExpirationDelta()){
+                    if(isExpired(s)){
                         s.expired = true;
                         s.setIsDirty("expired");
                         sessionRepository.saveAndFlush(s);

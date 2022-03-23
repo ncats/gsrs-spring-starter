@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "gsrs.tokens")
 @Data
-@Accessors(fluent = true)
 public class TokenConfiguration {
     // private long timeResolutionMS = 3600L*1000L*24L;
     private long timeResolutionMS = 86400000;
@@ -23,7 +22,7 @@ public static int counter = 0;
                try{
             throw new RuntimeException("");
         }catch(Exception e){
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
 
@@ -31,7 +30,7 @@ public static int counter = 0;
 
     public long getCanonicalCacheTimeStamp(){
         long TIMESTAMP= TimeUtil.getCurrentTimeMillis();
-        return (long) Math.floor(TIMESTAMP/timeResolutionMS());
+        return (long) Math.floor(TIMESTAMP/getTimeResolutionMS());
     }
 
     public String getComputedToken(String username, String key) {
