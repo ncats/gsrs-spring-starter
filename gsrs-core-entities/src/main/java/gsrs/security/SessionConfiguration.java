@@ -30,10 +30,6 @@ public class SessionConfiguration {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
-    // gsrs.sessionExpirationMS ==> gsrs.sessions.sessionExpirationMS
-    // gsrs.sessionKey ==> gsrs.sessions.sessionCookieName
-    // gsrs.sessionSecure ==> gsrs.sessions.sessionCookieSecure
-
     private static final long MAX_SESSION_DURATION = 31557600000L; // 365 days
 
     // A negative number results sessions that never expire!
