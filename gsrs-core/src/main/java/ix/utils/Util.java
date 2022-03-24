@@ -48,8 +48,6 @@ public class Util {
 //    public static CachedSupplier<Long> TIME_RESOLUTION_MS=
 //    		ConfigHelper.supplierOf("ix.tokenexpiretime",(long)(3600*1000*24));
 
-    // public static CachedSupplier<Long> TIME_RESOLUTION_MS = CachedSupplier.of( ()-> 3600L*1000L*24L);
-
     private static int BUFFER_SIZE = 8192; //8K
 
     static Random rand = new Random ();
@@ -404,20 +402,6 @@ public class Util {
         }
         return is2;
     }
-
-
-    /* __alex__ comment out; put in  SessionConfiguration
-    //TODO katzelda October 2020 : commenting out cache related stuff that will be handled elsewhere
-
-    public static long getCanonicalCacheTimeStamp(){
-    	long TIMESTAMP= TimeUtil.getCurrentTimeMillis();
-        return (long) Math.floor(TIMESTAMP/getTimeResolutionMS());
-    }
-
-    public static long getTimeResolutionMS(){
-    	return TIME_RESOLUTION_MS.get().longValue();
-    }
-    */
 
     public static String generateSalt() {
         return Util.encrypt(TimeUtil.getCurrentDate().toString(), String.valueOf(Math.random()));

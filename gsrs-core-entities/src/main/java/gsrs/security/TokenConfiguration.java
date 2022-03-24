@@ -11,22 +11,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "gsrs.tokens")
 @Data
 public class TokenConfiguration {
-    // private long timeResolutionMS = 3600L*1000L*24L;
-    private long timeResolutionMS = 86400000;
 
-    public static TokenConfiguration INSTANCE;
-public static int counter = 0;
-    public TokenConfiguration() {
-        INSTANCE = this;
-                counter++;
-               try{
-            throw new RuntimeException("");
-        }catch(Exception e){
-            // e.printStackTrace();
-        }
-
-
-    }
+    private long timeResolutionMS = 86400000; // 3600L*1000L*24L;
 
     public long getCanonicalCacheTimeStamp(){
         long TIMESTAMP= TimeUtil.getCurrentTimeMillis();

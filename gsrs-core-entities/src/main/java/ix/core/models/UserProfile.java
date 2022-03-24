@@ -24,8 +24,7 @@ import java.util.*;
 public class UserProfile extends IxModel{
     private static ObjectMapper om = new ObjectMapper();
 
-
-	private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
+    private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
         up.addRole(Role.Query);
 
@@ -34,22 +33,6 @@ public class UserProfile extends IxModel{
 
 	private static CachedSupplier<TokenConfiguration> TOKEN_CONFIG= CachedSupplier.of(()->{
 		TokenConfiguration tokenConfiguration = StaticContextAccessor.getBean(TokenConfiguration.class);
-		if (tokenConfiguration == null) {
-			System.out.println(" === I AM NULL 1");
-			tokenConfiguration=TokenConfiguration.INSTANCE;
-		}
-		if (tokenConfiguration == null) {
-			System.out.println(" === I AM NULL 2");
-		}
-		System.out.println("=== TokenConfiguration.counter: "+TokenConfiguration.counter);
-
-		try{
-			throw new RuntimeException("");
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-		System.out.println("=== end stack trace");
-
 		return tokenConfiguration;
 	});
 
@@ -101,11 +84,9 @@ public class UserProfile extends IxModel{
 	public List<Value> properties = new ArrayList<Value>();
 
 	public UserProfile() {
-		// System.out.println("USER profile zero param constructorTOKEN_CONFIG.get()"+ TOKEN_CONFIG.get());
 	}
 
 	public UserProfile(Principal user) {
-		// System.out.println("USER profile principal param constructorTOKEN_CONFIG.get()"+ TOKEN_CONFIG.get());
 		this.user = user;
 		//Wait ... what?
 		regenerateKey();

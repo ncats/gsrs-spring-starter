@@ -52,7 +52,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private GsrsCache gsrsCache;
 
-
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 

@@ -54,8 +54,6 @@ public class LoginController {
     @Transactional
     public ResponseEntity<Object> login(Principal principal, @RequestParam Map<String, String> parameters,
                                         HttpServletResponse response){
-        //__alex__
-        System.out.println("==== LoginController login ====");
         UserProfile up =null;
         if(principal !=null){
             up = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()))
@@ -71,7 +69,6 @@ public class LoginController {
         UUID sessionId = session.get().id;
         Cookie sessionCookie = new Cookie( sessionConfiguration.getSessionCookieName(), sessionId.toString());
         sessionCookie.setHttpOnly(true);
-        // __alex__ remove booleanValue?
         if(sessionConfiguration.getSessionCookieSecure() ==null || sessionConfiguration.getSessionCookieSecure().booleanValue()){
             sessionCookie.setSecure(true);
         }
