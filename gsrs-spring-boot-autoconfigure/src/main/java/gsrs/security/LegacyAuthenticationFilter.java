@@ -1,7 +1,6 @@
 package gsrs.security;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
+    SessionConfiguration sessionConfiguration;
+
+    @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
     @Autowired
     private UserProfileRepository repository;
@@ -50,12 +51,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private GsrsCache gsrsCache;
-
-    @Value("#{new Long('${gsrs.sessionExpirationMS:-1}')}")
-    private Long sessionExpirationMS;
-
-    @Value("${gsrs.sessionKey}")
-    private String sessionCookieName;
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
@@ -82,7 +77,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         Cookie[] allCookies = request.getCookies();
         if (allCookies != null) {
             Cookie sessionCookie =
-                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionCookieName))
+                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionConfiguration.getSessionCookieName()))
                             .findFirst().orElse(null);
             if(sessionCookie !=null){
                 String id = sessionCookie.getValue();
@@ -99,12 +94,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
                     auth = transactionTemplate.execute(status ->{
                         Session session = sessionRepository.findById(cachedSessionId).orElse(null);
-                        long expDelta = (sessionExpirationMS==null || sessionExpirationMS<=0)?Long.MAX_VALUE:sessionExpirationMS;
-                        if(session !=null && !session.expired
-                                // Added this check BEFORE post login session/expiration processing.
-                                // Without this check here, it was allow access one time too many.
-                                && session.created + expDelta > TimeUtil.getCurrentTimeMillis()
-                        ){
+                        if(session !=null && !sessionConfiguration.isExpired(session)){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());

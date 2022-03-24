@@ -1,13 +1,17 @@
 package ix.core.models;
 
 
+import ch.qos.logback.core.rolling.helper.TokenConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.security.TokenConfiguration;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.*;
 import java.util.*;
@@ -26,8 +30,12 @@ public class UserProfile extends IxModel{
 
         return up;
     });
-    
-    
+
+	private static CachedSupplier<TokenConfiguration> TOKEN_CONFIG= CachedSupplier.of(()->{
+		TokenConfiguration tokenConfiguration = StaticContextAccessor.getBean(TokenConfiguration.class);
+		return tokenConfiguration;
+	});
+
 	@Basic(fetch = FetchType.EAGER)
 	@OneToOne(cascade = CascadeType.ALL)
 	public Principal user;
@@ -131,22 +139,20 @@ public class UserProfile extends IxModel{
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
-		return getComputedToken(this.user.computeStandardizedName(), this.getKey());
-	}
-	public static String getComputedToken(String username, String key) {
-		if(key==null)return null;
-		String date = "" + Util.getCanonicalCacheTimeStamp();
-		return Util.sha1(date + username + key);
+		return TOKEN_CONFIG.get().getComputedToken(
+				this.user.computeStandardizedName(),
+				this.getKey()
+		);
 	}
 
 	public Long getTokenTimeToExpireMS() {
-		long date = (Util.getCanonicalCacheTimeStamp() + 1) * Util.getTimeResolutionMS();
+		long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().getTimeResolutionMS();
 		return (date - TimeUtil.getCurrentTimeMillis());
 	}
 
 	private String getPreviousComputedToken() {
 		if(getKey()==null)return null;
-		String date = "" + (Util.getCanonicalCacheTimeStamp() - 1);
+		String date = "" + (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() - 1);
 		return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
 	}
 

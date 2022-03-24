@@ -4,9 +4,12 @@ import gsrs.EntityProcessorFactory;
 import gsrs.indexer.DefaultIndexerEventFactory;
 import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.security.AdminService;
-import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.SessionConfiguration;
+import gsrs.security.TokenConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
