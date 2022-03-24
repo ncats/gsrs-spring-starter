@@ -1,14 +1,10 @@
 package gsrs.security;
 
 import java.util.ArrayList;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
@@ -43,7 +39,9 @@ public class GsrsLogoutHandler implements LogoutHandler {
                     s.setIsDirty("expired");
                     sessionRepository.saveAndFlush(s);
                 }
-                userTokenCache.evictUser(up);
+
+                // Commenting out to allow valid computedTokens to work if session has expired.
+                // userTokenCache.evictUser(up);
 
                 // The following 3 cookies are present to ensure logout works
                 // TODO: figure out path and secure settings if necessary
@@ -67,9 +65,6 @@ public class GsrsLogoutHandler implements LogoutHandler {
                 cookie3.setHttpOnly(true);
                 //add cookie to response
                 httpServletResponse.addCookie(cookie3);
-
-
-
             }
 
         }
