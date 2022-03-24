@@ -3,8 +3,10 @@ package ix.ncats.controllers.auth;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.repository.UserProfileRepository;
 import gsrs.security.UserTokenCache;
+import gsrs.security.TokenConfiguration;
 import ix.core.models.UserProfile;
 import ix.utils.Util;
+import jdk.nashorn.internal.parser.Token;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
@@ -31,14 +33,16 @@ public class LegacyUserTokenCache implements UserTokenCache {
 
 	   private UserProfileRepository userProfileRepository;
 
+       private TokenConfiguration tokenConfiguration;
 
-		@Autowired
-	   public LegacyUserTokenCache(UserProfileRepository userProfileRepository){
-	    	this.userProfileRepository = Objects.requireNonNull(userProfileRepository);
+	   @Autowired
+	   public LegacyUserTokenCache(UserProfileRepository userProfileRepository, TokenConfiguration tokenConfiguration ){
+		   this.userProfileRepository = Objects.requireNonNull(userProfileRepository);
+		   this.tokenConfiguration = Objects.requireNonNull(tokenConfiguration);
 
 	    	//always hold onto the tokens for twice the time required
-	    	long tres=Util.getTimeResolutionMS()*2;
-	    	
+		   long tres = tokenConfiguration.getTimeResolutionMS()*2;
+
 	    	int maxElements=99999;
 	        
 	        CacheManager manager = LegacyUserTokenCache.manager.get();
@@ -61,14 +65,14 @@ public class LegacyUserTokenCache implements UserTokenCache {
 	}
 
 	private void updateIfNeeded() {
-		if (Util.getCanonicalCacheTimeStamp() != lastCacheUpdate) {
+		if (tokenConfiguration.getCanonicalCacheTimeStamp() != lastCacheUpdate) {
 			updateUserProfileTokenCache();
 		}
 	}
 
 	private void updateUserCache(UserProfileRepository.UserTokenInfo info){
 			String identifier = info.getUsername();
-		tokenCache.put(new Element(UserProfile.getComputedToken(info.getUsername(), info.getKey()), identifier));
+		tokenCache.put(new Element(tokenConfiguration.getComputedToken(info.getUsername(), info.getKey()), identifier));
 		//TODO commented out moved to a computeIfAbsent
 //		tokenCacheUserProfile.put(identifier, up);
 	}
@@ -140,7 +144,7 @@ public class LegacyUserTokenCache implements UserTokenCache {
     		stream.forEach(info->{
     			updateUserCache(info);
 			});
-			lastCacheUpdate=Util.getCanonicalCacheTimeStamp();
+			lastCacheUpdate=tokenConfiguration.getCanonicalCacheTimeStamp();
 		}
     }	
 }
