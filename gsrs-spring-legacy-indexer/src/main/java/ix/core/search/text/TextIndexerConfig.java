@@ -22,9 +22,6 @@ public class TextIndexerConfig {
     @Value("#{new Boolean('${ix.textindex.shouldLog:false}')}")
     private boolean shouldLog;
 
-    @Value("${ix.textindex.specialEncodings:}#{T(java.util.Collections).emptyList()}")
-    private List<SpecialEncoding> specialEncodings;
-
 //    private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
 
     @Value("#{new Integer('${ix.fetchWorkerCount:4}')}")

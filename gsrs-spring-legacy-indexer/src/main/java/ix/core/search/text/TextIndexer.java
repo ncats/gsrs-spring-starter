@@ -1085,8 +1085,6 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
     private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
-        // ,String EncodingsClass
-        // MyClass myInstance = (MyClass) Class.forName("MyClass").newInstance();
 
         // empty instance should only be used for
 		// facet subsearching so we only need to have
@@ -3356,11 +3354,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
             tmp=StandardEncoding.encode(tmp);
         }
-
-        // for(SpecialEncodingsConfiguration.SpecialEncoding se: SpecialEncodingsConfiguration.getSpecialEncodings()) {
-        //    tmp=SpecialEncodingsConfiguration.SpecialEncoding.encode(tmp);
-        // }
-		return tmp;
+        return tmp;
 
 	}
 
@@ -3381,12 +3375,6 @@ public class TextIndexer implements Closeable, ProcessListener {
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
             tmp=StandardEncoding.encode(tmp);
         }
-
-//        for(SpecialEncodingsConfiguration.SpecialEncoding se: SpecialEncodingsConfiguration.getSpecialEncodings()) {
-//            tmp=SpecialEncodingsConfiguration.SpecialEncoding.encode(tmp);
-//        }
-
-
         return tmp;
 	}
 
