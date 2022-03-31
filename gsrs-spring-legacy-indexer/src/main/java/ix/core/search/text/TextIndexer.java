@@ -3373,20 +3373,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final Pattern START_PATTERN = Pattern.compile(TextIndexer.GIVEN_START_WORD,Pattern.LITERAL );
 	private static final Pattern STOP_PATTERN = Pattern.compile(TextIndexer.GIVEN_STOP_WORD,Pattern.LITERAL );
 
-    public static final String LEVO_REGEX = "(-)";
-    public static final String DEXTRO_REGEX = "(+)";
-    public static final String RACEMIC_REGEX = "(+/-)";
-    public static final String RACEMIC_COMBO_REGEX = "±"; // Associated with RACEMIC_WORD
-
-    public static final Pattern LEVO_PATTERN = Pattern.compile(Pattern.quote(LEVO_REGEX));
-	private static final Pattern DEXTRO_PATTERN = Pattern.compile(Pattern.quote(DEXTRO_REGEX));
-    private static final Pattern RACEMIC_PATTERN = Pattern.compile(Pattern.quote(RACEMIC_REGEX));
-
-	public static final String LEVO_WORD = "LEVOROTATION";
-    public static final String RACEMIC_WORD = "RACEMICROTATION";
-	public static final String DEXTRO_WORD = "DEXTROROTATION";
-
-
 	/**
 	 * Add the specified field and value pair to the suggests
 	 * which are used for type-ahead queries.
