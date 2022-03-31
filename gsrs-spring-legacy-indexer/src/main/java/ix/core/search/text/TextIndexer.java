@@ -3351,7 +3351,6 @@ public class TextIndexer implements Closeable, ProcessListener {
             tmp=se.encode(tmp);
         }
         return tmp;
-
 	}
 
 	/*
