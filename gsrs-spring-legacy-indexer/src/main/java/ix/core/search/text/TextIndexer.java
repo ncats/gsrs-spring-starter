@@ -3346,6 +3346,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
+        // This is called when writing indexes and maybe other cases
 
 		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
 		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
@@ -3366,6 +3367,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	//TODO: this is a fairly hacky way to try to recreate simple character sequence-level
 	//functionality within lucene, and there needs to be a better way
 	private static String transformQueryForExactMatch(String in){
+        // This is called when doing searches and maybe other cases
 
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
