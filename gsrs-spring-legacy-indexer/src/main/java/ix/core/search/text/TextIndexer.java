@@ -1122,6 +1122,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
     
     private void initialSetup() throws IOException {
+
         searchManager = this.indexerService.createSearchManager();
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
@@ -3340,14 +3341,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static String toExactMatchString(String in){
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
-	
+
+
+
 	public static String toExactMatchQueryString(String in){
         return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
         String tmp = in;
-        for(StandardEncoding se: StandardEncodings.getEncodings()) {
+        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
             tmp=se.encode(tmp);
         }
         return tmp;
@@ -3364,7 +3367,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-        for(StandardEncoding se: StandardEncodings.getEncodings()) {
+        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
             tmp=se.encode(tmp);
         }
         return tmp;
