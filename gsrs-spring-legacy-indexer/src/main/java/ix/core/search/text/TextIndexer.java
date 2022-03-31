@@ -3347,13 +3347,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
         // This is called when writing indexes and maybe other cases
-
 		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
 		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
         tmp = RACEMIC_PATTERN.matcher(tmp).replaceAll(RACEMIC_WORD);
 
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
-            tmp=StandardEncoding.encode(tmp);
+            tmp=se.encode(tmp);
         }
         return tmp;
 
@@ -3375,7 +3374,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
         tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
-            tmp=StandardEncoding.encode(tmp);
+            tmp=se.encode(tmp);
         }
         return tmp;
 	}

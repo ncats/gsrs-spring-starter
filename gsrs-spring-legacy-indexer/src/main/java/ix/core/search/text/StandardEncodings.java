@@ -24,5 +24,9 @@ public class StandardEncodings {
          encodings.add(new StandardEncoding(replacementTokensGreek[i], replacementTokensGreek[i + 1]));
       }
    }
+
+
+
+
 }
 
