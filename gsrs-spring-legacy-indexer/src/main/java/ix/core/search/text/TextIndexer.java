@@ -2551,8 +2551,8 @@ public class TextIndexer implements Closeable, ProcessListener {
                             if(textIndexerConfig.isShouldLog()){
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
-// __alex__
-						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+// This is where you can see how things get indexed.
+//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}
@@ -3346,11 +3346,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
-        // This is called when writing indexes and maybe other cases
-		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
-		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
-        tmp = RACEMIC_PATTERN.matcher(tmp).replaceAll(RACEMIC_WORD);
-
+        String tmp = in;
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
             tmp=se.encode(tmp);
         }
@@ -3367,12 +3363,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	//functionality within lucene, and there needs to be a better way
 	private static String transformQueryForExactMatch(String in){
         // This is called when doing searches and maybe other cases
-
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
-		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
-        tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
         for(StandardEncoding se: StandardEncodings.getEncodings()) {
             tmp=se.encode(tmp);
         }
@@ -3382,13 +3374,18 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final Pattern START_PATTERN = Pattern.compile(TextIndexer.GIVEN_START_WORD,Pattern.LITERAL );
 	private static final Pattern STOP_PATTERN = Pattern.compile(TextIndexer.GIVEN_STOP_WORD,Pattern.LITERAL );
 
-	private static final Pattern LEVO_PATTERN = Pattern.compile(Pattern.quote("(-)"));
-	private static final Pattern DEXTRO_PATTERN = Pattern.compile(Pattern.quote("(+)"));
-    private static final Pattern RACEMIC_PATTERN = Pattern.compile(Pattern.quote("(+/-)"));
+    public static final String LEVO_REGEX = "(-)";
+    public static final String DEXTRO_REGEX = "(+)";
+    public static final String RACEMIC_REGEX = "(+/-)";
+    public static final String RACEMIC_COMBO_REGEX = "±"; // Associated with RACEMIC_WORD
 
-	private static final String LEVO_WORD = "LEVOROTATION";
-    private static final String RACEMIC_WORD = "RACEMICROTATION";
-	private static final String DEXTRO_WORD = "DEXTROROTATION";
+    public static final Pattern LEVO_PATTERN = Pattern.compile(Pattern.quote(LEVO_REGEX));
+	private static final Pattern DEXTRO_PATTERN = Pattern.compile(Pattern.quote(DEXTRO_REGEX));
+    private static final Pattern RACEMIC_PATTERN = Pattern.compile(Pattern.quote(RACEMIC_REGEX));
+
+	public static final String LEVO_WORD = "LEVOROTATION";
+    public static final String RACEMIC_WORD = "RACEMICROTATION";
+	public static final String DEXTRO_WORD = "DEXTROROTATION";
 
 
 	/**
