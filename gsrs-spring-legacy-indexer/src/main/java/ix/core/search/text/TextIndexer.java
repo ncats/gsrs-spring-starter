@@ -70,6 +70,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
+import sun.security.util.SecurityProviderConstants;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -103,6 +104,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
     private TextIndexerConfig textIndexerConfig;
+
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -1083,7 +1085,9 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
     private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
-        
+        // ,String EncodingsClass
+        // MyClass myInstance = (MyClass) Class.forName("MyClass").newInstance();
+
         // empty instance should only be used for
 		// facet subsearching so we only need to have
 		// a single thread...
@@ -2549,7 +2553,8 @@ public class TextIndexer implements Closeable, ProcessListener {
                             if(textIndexerConfig.isShouldLog()){
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
-//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+// __alex__
+						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}
@@ -3347,6 +3352,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
 		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
         tmp = RACEMIC_PATTERN.matcher(tmp).replaceAll(RACEMIC_WORD);
+
+        for(StandardEncoding se: StandardEncodings.getEncodings()) {
+            tmp=StandardEncoding.encode(tmp);
+        }
+
+        // for(SpecialEncodingsConfiguration.SpecialEncoding se: SpecialEncodingsConfiguration.getSpecialEncodings()) {
+        //    tmp=SpecialEncodingsConfiguration.SpecialEncoding.encode(tmp);
+        // }
 		return tmp;
 
 	}
@@ -3362,13 +3375,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-		
-		
 		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
 		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
         tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
+        for(StandardEncoding se: StandardEncodings.getEncodings()) {
+            tmp=StandardEncoding.encode(tmp);
+        }
 
-		return tmp;
+//        for(SpecialEncodingsConfiguration.SpecialEncoding se: SpecialEncodingsConfiguration.getSpecialEncodings()) {
+//            tmp=SpecialEncodingsConfiguration.SpecialEncoding.encode(tmp);
+//        }
+
+
+        return tmp;
 	}
 
 	private static final Pattern START_PATTERN = Pattern.compile(TextIndexer.GIVEN_START_WORD,Pattern.LITERAL );
