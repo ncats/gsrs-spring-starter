@@ -9,6 +9,7 @@ public class MappingParameter<T> {
     private boolean required = false;
     private T defaultValue;
     private Class<T> valueType;
+    private boolean displayInUI=true;
 
     public MappingParameter(MappingParameterBuilder builder) {
         this.fieldName = builder.getFieldName();
@@ -16,6 +17,7 @@ public class MappingParameter<T> {
         this.required = builder.isRequired();
         this.defaultValue = (T) builder.getDefaultValue();
         this.valueType = builder.getValueType();
+        this.displayInUI= builder.isDisplayInUI();
     }
 
     public static MappingParameterBuilder builder() {

@@ -9,6 +9,7 @@ public class MappingParameterBuilder<T> {
     private boolean required = false;
     private T defaultValue;
     private Class<T> valueType;
+    private boolean displayInUI=true;
 
     public MappingParameterBuilder setFieldName(String fieldName) {
         this.fieldName = fieldName;
@@ -35,6 +36,10 @@ public class MappingParameterBuilder<T> {
         return this;
     }
 
+    public MappingParameterBuilder setDisplayInUI(boolean displayOn) {
+        this.displayInUI= displayOn;
+        return this;
+    }
     public MappingParameter build() {
         return new MappingParameter(this);
     }
