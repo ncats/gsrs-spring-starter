@@ -70,7 +70,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.text.DateFormat;
@@ -103,6 +102,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
     private TextIndexerConfig textIndexerConfig;
+
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -1083,7 +1083,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
     private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
-        
+
         // empty instance should only be used for
 		// facet subsearching so we only need to have
 		// a single thread...
@@ -1120,6 +1120,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
     
     private void initialSetup() throws IOException {
+
         searchManager = this.indexerService.createSearchManager();
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
@@ -2562,6 +2563,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                             if(textIndexerConfig.isShouldLog()){
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
+// This is where you can see how things get indexed.
 //						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
@@ -3350,18 +3352,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static String toExactMatchString(String in){
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
-	
+
+
+
 	public static String toExactMatchQueryString(String in){
         return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
-
-		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
-		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
-        tmp = RACEMIC_PATTERN.matcher(tmp).replaceAll(RACEMIC_WORD);
-		return tmp;
-
+        String tmp = in;
+        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
+            tmp=se.encode(tmp);
+        }
+        return tmp;
 	}
 
 	/*
@@ -3372,29 +3375,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 	//TODO: this is a fairly hacky way to try to recreate simple character sequence-level
 	//functionality within lucene, and there needs to be a better way
 	private static String transformQueryForExactMatch(String in){
-
+        // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-		
-		
-		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
-		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
-        tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
-
-		return tmp;
+        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
+            tmp=se.encode(tmp);
+        }
+        return tmp;
 	}
 
 	private static final Pattern START_PATTERN = Pattern.compile(TextIndexer.GIVEN_START_WORD,Pattern.LITERAL );
 	private static final Pattern STOP_PATTERN = Pattern.compile(TextIndexer.GIVEN_STOP_WORD,Pattern.LITERAL );
-
-	private static final Pattern LEVO_PATTERN = Pattern.compile(Pattern.quote("(-)"));
-	private static final Pattern DEXTRO_PATTERN = Pattern.compile(Pattern.quote("(+)"));
-    private static final Pattern RACEMIC_PATTERN = Pattern.compile(Pattern.quote("(+/-)"));
-
-	private static final String LEVO_WORD = "LEVOROTATION";
-    private static final String RACEMIC_WORD = "RACEMICROTATION";
-	private static final String DEXTRO_WORD = "DEXTROROTATION";
-
 
 	/**
 	 * Add the specified field and value pair to the suggests

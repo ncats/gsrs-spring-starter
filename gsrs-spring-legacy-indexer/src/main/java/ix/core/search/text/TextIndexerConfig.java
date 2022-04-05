@@ -21,10 +21,7 @@ public class TextIndexerConfig {
     private boolean fieldsuggest;
     @Value("#{new Boolean('${ix.textindex.shouldLog:false}')}")
     private boolean shouldLog;
-    
-    
-    
-    
+
 //    private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
 
     @Value("#{new Integer('${ix.fetchWorkerCount:4}')}")
