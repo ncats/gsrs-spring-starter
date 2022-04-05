@@ -9,6 +9,7 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
+@Slf4j
 public abstract class AbstractImportSupportingGsrsEntityController<C extends AbstractImportSupportingGsrsEntityController, T, I>
         extends AbstractLegacyTextSearchGsrsEntityController<C, T, I> {
 
@@ -99,6 +101,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
+        log.trace("starting in execute. task: " + task.adapter);
         return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
                 .parse(payloadService.getPayloadAsInputStream(task.payloadID).get());
@@ -119,6 +122,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
+        log.trace("in predictSettings, task for file: " + task.getFilename());
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
         ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
@@ -252,7 +256,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             // 3. return the ImportTaskMetaData
 
             String adapterName = queryParameters.get("adapter");
-
+            log.trace("handleImport, adapterName: " + adapterName);
 
             TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -268,6 +272,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     throw new UncheckedIOException(e);
                 }
             });
+            log.trace("payloadid: " +  payloadId);
             Payload payload = payloadRepository.findById(payloadId).get();
             ImportTaskMetaData itmd = from(payload);
             if (adapterName != null) {
@@ -277,6 +282,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd);
             }
+            log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
         } catch (Throwable t) {
             t.printStackTrace();
