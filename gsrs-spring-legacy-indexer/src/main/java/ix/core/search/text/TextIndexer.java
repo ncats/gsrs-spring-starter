@@ -2008,6 +2008,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		//Promote special matches
 		if(searchResult.getOptions().getPromoteSpecialMatches() && searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
+		    
+		   
 		    //TODO katzelda October 2020 : don't support sponsored fields yet that's a Substance only thing
 		    //Special "promoted" match types
 			Set<String> specialExactMatchFields =  searchResult.getOptions()
@@ -2015,49 +2017,60 @@ public class TextIndexer implements Closeable, ProcessListener {
 			                                           .getSpecialFields();
 
 			if (searchResult.getQuery() != null ) {
-				try {
-				    // Look through each of the special fields and see if there's an exact match for one of them,
-				    // if there IS, promote it
-				    for (String sp : specialExactMatchFields) {
-						String theQuery = "\"" + toExactMatchQueryString(
-								TextIndexer.replaceSpecialCharsForExactMatch(searchResult.getQuery().trim().replace("\"", ""))).toLowerCase() + "\"";
-						//Set the default query field to the special field
-						QueryParser parser = new IxQueryParser(sp, indexerService.getIndexAnalyzer());
-						
-						Query tq = parser.parse(theQuery);
-						if(lsp instanceof DrillSidewaysLuceneSearchProvider){
-							DrillDownQuery ddq2 = new DrillDownQuery(facetsConfig, tq);
-								options.getDrillDownsMapExcludingRanges()
-								    .entrySet()
-								    .stream()
-								    .flatMap(e->e.getValue().stream())
-								    .filter(dp->{
-								        String drill = dp.getDrill();
-									    return !drill.startsWith("^") && ! drill.startsWith("!");
-								    })
-								    .forEach((dp)->{
-									ddq2.add(dp.getDrill(), dp.getPaths());
-								    });
-							tq=ddq2;
-						}
-						LuceneSearchProviderResult lspResult = lsp.search(searcher, taxon, tq,new FacetsCollector()); //special q
-						TopDocs td = lspResult.getTopDocs();
-						for (int j = 0; j < td.scoreDocs.length; j++) {
-							Document doc = searcher.doc(td.scoreDocs[j].doc);
-							//TODO katzelda October 2020 : don't do sponsored yet
-							try {
-								Key k = LuceneSearchResultPopulator.keyOf(doc);
-								
-								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
-							} catch (Exception e) {
-								log.error("error adding special match callable", e);
-							}
-						}
-
-					}
-				} catch (Exception ex) {
-				    log.warn("Error performing lucene search", ex);
-				}
+			    String tqq = searchResult.getQuery().trim().replace("\"", "");
+			    
+			    //Hacky way of avoiding exact match searches if the query looks complex
+			    //TODO: real parsing and analysis
+			    if(tqq.contains("*")||tqq.contains(":")||tqq.contains(" AND ")||tqq.contains(" OR ")) {
+			        
+			    }else {
+			    
+    				try {
+    				    
+    				    
+    				    // Look through each of the special fields and see if there's an exact match for one of them,
+    				    // if there IS, promote it
+    				    for (String sp : specialExactMatchFields) {
+    						String theQuery = "\"" + toExactMatchQueryString(
+    								TextIndexer.replaceSpecialCharsForExactMatch(tqq)).toLowerCase() + "\"";
+    						//Set the default query field to the special field
+    						QueryParser parser = new IxQueryParser(sp, indexerService.getIndexAnalyzer());
+    						
+    						Query tq = parser.parse(theQuery);
+    						if(lsp instanceof DrillSidewaysLuceneSearchProvider){
+    							DrillDownQuery ddq2 = new DrillDownQuery(facetsConfig, tq);
+    								options.getDrillDownsMapExcludingRanges()
+    								    .entrySet()
+    								    .stream()
+    								    .flatMap(e->e.getValue().stream())
+    								    .filter(dp->{
+    								        String drill = dp.getDrill();
+    									    return !drill.startsWith("^") && ! drill.startsWith("!");
+    								    })
+    								    .forEach((dp)->{
+    									ddq2.add(dp.getDrill(), dp.getPaths());
+    								    });
+    							tq=ddq2;
+    						}
+    						LuceneSearchProviderResult lspResult = lsp.search(searcher, taxon, tq,new FacetsCollector()); //special q
+    						TopDocs td = lspResult.getTopDocs();
+    						for (int j = 0; j < td.scoreDocs.length; j++) {
+    							Document doc = searcher.doc(td.scoreDocs[j].doc);
+    							//TODO katzelda October 2020 : don't do sponsored yet
+    							try {
+    								Key k = LuceneSearchResultPopulator.keyOf(doc);
+    								
+    								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
+    							} catch (Exception e) {
+    								log.error("error adding special match callable", e);
+    							}
+    						}
+    
+    					}
+    				} catch (Exception ex) {
+    				    log.warn("Error performing lucene search", ex);
+    				}
+			    }
 			}
 		}
 
@@ -3067,7 +3080,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
-					throw new RuntimeException(e);
+//					throw new RuntimeException(e);
 				}
 			}
 

@@ -51,6 +51,14 @@ public class IxContext {
         }else {
             url= req.getRequestURL().toString() + "?" + req.getQueryString();
         }
+        url=url.replace("^", "%5E")
+                .replace("<", "%3C")
+                .replace(">", "%3E")
+                .replace("[", "%5B")
+                .replace("]", "%5D")
+                .replace("{", "%7B")
+                .replace("}", "%7D")
+                .replace("`", "%60");
         return getEffectiveAdaptedURI(URI.create(url));
     }
     
