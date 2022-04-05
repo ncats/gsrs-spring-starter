@@ -70,8 +70,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
-import sun.security.util.SecurityProviderConstants;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.text.DateFormat;
