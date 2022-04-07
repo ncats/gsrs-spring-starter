@@ -97,8 +97,9 @@ public class ExportController {
      * @return
      */
     @PreAuthorize("isAuthenticated()")
-    @GetGsrsRestApiMapping(value = {"/{id}", "({id})"})
+    @GetGsrsRestApiMapping(value = {"/{id}"}) //, "({id})"
     public ResponseEntity<Object> getStatusOf(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
+        System.out.println("latest getStatusOf");
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
             return new ResponseEntity<>("could not find etag with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
@@ -117,7 +118,7 @@ public class ExportController {
      * @return
      */
     @PreAuthorize("isAuthenticated()")
-    @GetGsrsRestApiMapping(value = {"/{id}/@cancel", "({id})/@cancel"})
+    @GetGsrsRestApiMapping(value = {"/{id}/@cancel"}) //, "({id})/@cancel"
     public ResponseEntity<Object> cancel(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
@@ -162,7 +163,7 @@ public class ExportController {
      * @return
      */
     @PreAuthorize("isAuthenticated()")
-    @GetGsrsRestApiMapping(value = {"/{id}/download", "({id})/download"})
+    @GetGsrsRestApiMapping(value = {"/{id}/download"}) //, "({id})/download"
     public ResponseEntity<Object> download(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters) throws IOException {
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){

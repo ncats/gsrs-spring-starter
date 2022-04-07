@@ -18,6 +18,7 @@ import javax.persistence.PersistenceContext;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -62,8 +63,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityService<T, I> {
 
-    
+
     @Autowired
+    @Lazy
     private GsrsValidatorFactory validatorFactoryService;
 
     @Autowired
@@ -136,6 +138,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     }
 
     @PostConstruct
+    @Lazy
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
         //This is added to the initization Group so that we can reset this in tests

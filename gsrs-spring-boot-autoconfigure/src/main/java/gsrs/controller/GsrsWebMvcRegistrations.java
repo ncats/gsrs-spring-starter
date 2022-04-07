@@ -8,6 +8,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.servlet.mvc.condition.PatternsRequestCondition;
+import org.springframework.web.servlet.mvc.condition.RequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -67,16 +68,53 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
-                        Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
+                        //when we ran this under Spring Boot v 2.4.5,  the call
+                        // mapping.getPatternsCondition()
+                        // produced data and this worked.
+                        // with SB 2.6.6, mapping.getPatternsCondition() returned null
+                        // the code below trying to get patterns into the necessary data
+                        // structures
+                        System.out.println("version/i: " + i);
+                        Set<String> patterns;
+                        if( mapping.getPatternsCondition() == null) {
+                            System.out.println("mapping.getPatternsCondition() null 3");
+                            if(mapping.getActivePatternsCondition()!=null) {
+                                System.out.println("we have something here: " +
+                                        mapping.getActivePatternsCondition().getClass().getName());
+                            }
+                            patterns=mapping.getPatternValues();
+//                            System.out.println("got patterns " + patterns.size());
+//                            patterns.forEach(p-> System.out.println(p));
+                        } else {
+                            patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
                                 .combine(mapping.getPatternsCondition()).getPatterns();
-                        apiBasePatterns.addAll(patterns);
-                        apiBasesByVersions.add(patterns);
+                        }
+                        //apiBasePatterns.addAll(patterns);
+                        patterns.forEach(p->{
+                            if(!apiBasePatterns.contains(p)){
+                                apiBasePatterns.add(p);
+                            }
+                        });
+
+                        //make unique
+                        Set<String> cleanSet = new HashSet<>();
+                        cleanSet.addAll(patterns);
+                        apiBasesByVersions.add(cleanSet);
+
                     }
                 }else{
+                    System.out.println("not null!");
                     apiBasePatterns.addAll(mapping.getPatternsCondition().getPatterns());
                     apiBasesByVersions.add(mapping.getPatternsCondition().getPatterns());
                 }
 
+                System.out.println("apiBasePatterns size: " + apiBasePatterns.size());
+                apiBasePatterns.forEach(p-> System.out.println(p));
+                System.out.println("apiBasesByVersion size: " + apiBasesByVersions.size());
+                apiBasesByVersions.forEach(c-> {
+                    c.forEach(c2-> System.out.println(c2));
+                        }
+                );
                 //this will be overridden if we have get or post mappings
                 PatternsRequestCondition apiPattern = new PatternsRequestCondition(apiBasePatterns.toArray(new String[apiBasePatterns.size()]));
                 if (gsrsMapping != null) {
