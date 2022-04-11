@@ -104,6 +104,7 @@ public class GsrsApiSelector implements ImportSelector {
         //TODO make something other than CONF based validator?
         componentsToInclude.add(ValidatorConfigConverter.class);
         componentsToInclude.add(ConfigBasedValidatorFactoryConfiguration.class);
+        //todo add an analogous line for config-based import adapter factories
         componentsToInclude.add(URIPojoPointerParser.class);
         componentsToInclude.add(LambdaParseRegistry.class);
         componentsToInclude.add(RegisteredFunctionProperties.class);

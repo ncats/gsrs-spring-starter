@@ -1,12 +1,16 @@
 package gsrs;
 
+import akka.event.Logging;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.entityProcessor.EntityProcessorConfig;
+import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.validator.ValidatorConfig;
 import gsrs.validator.ValidatorConfigList;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -14,12 +18,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 @Component
 @ConfigurationProperties("gsrs")
 @Data
+@Slf4j
 public class GsrsFactoryConfiguration {
 
     private Map<String, List<Map<String,Object>>> validators;
+    private Map<String, List<Map<String,Object>>> importAdapterFactories;
     private List<EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers= false;
@@ -47,6 +54,7 @@ public class GsrsFactoryConfiguration {
                 return Collections.emptyList();
             }
             List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {});
+
 //            List<ValidatorConfig> configs = new ArrayList<>();
 //            for (Map<String,Object> n : list) {
 //
@@ -66,5 +74,27 @@ public class GsrsFactoryConfiguration {
 //            return Collections.emptyList();
 //        }
 //        return list.getConfigList();
+    }
+
+    public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
+        if(importAdapterFactories ==null) {
+
+            return Collections.emptyList();
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            List<Map<String, Object>> list = importAdapterFactories.get(context);
+            if(list==null || list.isEmpty()){
+                log.warn("no import adapter factory configuration info found!");
+                return Collections.emptyList();
+            }
+            List<? extends ImportAdapterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {});
+            return configs;
+        }
+        catch (Throwable t){
+            log.error("Error fetching import factory config");
+            throw t;
+        }
+
     }
 }
