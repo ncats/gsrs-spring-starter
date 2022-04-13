@@ -6,6 +6,7 @@ import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
+import gsrs.imports.ConfigBasedImportAdapterFactoryFactoryConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
@@ -104,7 +105,7 @@ public class GsrsApiSelector implements ImportSelector {
         //TODO make something other than CONF based validator?
         componentsToInclude.add(ValidatorConfigConverter.class);
         componentsToInclude.add(ConfigBasedValidatorFactoryConfiguration.class);
-        //todo add an analogous line for config-based import adapter factories
+        componentsToInclude.add(ConfigBasedImportAdapterFactoryFactoryConfiguration.class);
         componentsToInclude.add(URIPojoPointerParser.class);
         componentsToInclude.add(LambdaParseRegistry.class);
         componentsToInclude.add(RegisteredFunctionProperties.class);

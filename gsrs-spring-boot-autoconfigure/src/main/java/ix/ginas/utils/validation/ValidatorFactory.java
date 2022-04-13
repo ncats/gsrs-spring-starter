@@ -11,11 +11,13 @@ import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCategory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by katzelda on 5/7/18.
  */
 
+@Slf4j
 public class ValidatorFactory {
 
 
@@ -32,7 +34,7 @@ public class ValidatorFactory {
                p.initialize();
                plugins.put(p, conf);
            } catch (Exception e) {
-               e.printStackTrace();
+               log.warn("Exception during validator plugin init: ", e);
            }
 
        }

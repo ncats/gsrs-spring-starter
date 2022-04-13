@@ -3,11 +3,16 @@ package gsrs.controller;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.imports.GsrsImportAdapterFactoryFactory;
+import gsrs.imports.ImportAdapterFactory;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
+import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Payload;
+import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +48,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
+    @Autowired
+    private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
+
+    private CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
+            = CachedSupplier.of(() ->gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
+            this.getEntityService().getEntityClass()));
 
     @Data
     public static class ImportTaskMetaData<T> {
@@ -171,55 +182,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         public Stream<T> parse(InputStream is);
     }
 
-    public static interface ImportAdapterFactory<T> {
-        /**
-         * Returns the name of the adapter, to be used for lookups and registration
-         * with a registry of {@link ImportAdapterFactory} possibilities.
-         *
-         * @return "Key" name of adapter factory.
-         */
-        public String getAdapterName();
-
-        /**
-         * Returns list of supported file extensions this import adapter may support. This list
-         * does not have to be exhaustive, but will serve as a hint when suggesting adapters from
-         * a set of possible adapters.
-         *
-         * @return list of supported file extensions
-         */
-        public List<String> getSupportedFileExtensions();
-
-        /**
-         * Creates an {@link ImportAdapter} based on the supplied {@link JsonNode}, which can
-         * encode information about the initialization of the adapter. The adapterSettings typically
-         * contain information like how individual fields of an input data stream map to fields in
-         * an output record.
-         *
-         * @param adapterSettings initialization settings which can be used to configure an {@link ImportAdapter}
-         * @return
-         */
-        public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
-
-        /**
-         * <p>
-         * Partially or completely read a given {@link InputStream} and produce {@link ImportAdapterStatistics}
-         * as hints for how to create proper adapterSettings to be used in {@link #createAdapter(JsonNode)}.
-         * </p>
-         *
-         * <p>
-         * {@link ImportAdapterStatistics} has 2 intended elements:
-         *  <ol>
-         *  <li>adapterSettings -- a "best guess" set of initialization parameters</li>
-         *  <li>adapterSchema  -- a higher-level model for what input options are available</li>
-         *  </ol>
-         * </p>
-         *
-         * @param is the InputStream of real or example data to be analyzed
-         * @return {@link ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
-         * the {@link ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
-         */
-        public ImportAdapterStatistics predictSettings(InputStream is);
-    }
 
     @Data
     public static class ImportAdapterStatistics {
@@ -229,7 +191,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //TODO: Override in specific repos AND eventually use config parsing mechanism
     public List<ImportAdapterFactory<T>> getImportAdapters() {
-        return new ArrayList<>();
+        return importAdapterFactories.get();
     }
 
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
@@ -381,6 +343,5 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
-
 
 }

@@ -1,0 +1,61 @@
+package gsrs.imports;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+
+import java.io.InputStream;
+import java.util.List;
+
+public interface ImportAdapterFactory<T> {
+    /**
+     * Returns the name of the adapter, to be used for lookups and registration
+     * with a registry of {@link ImportAdapterFactory} possibilities.
+     *
+     * @return "Key" name of adapter factory.
+     */
+    public String getAdapterName();
+
+    /**
+     * Returns list of supported file extensions this import adapter may support. This list
+     * does not have to be exhaustive, but will serve as a hint when suggesting adapters from
+     * a set of possible adapters.
+     *
+     * @return list of supported file extensions
+     */
+    public List<String> getSupportedFileExtensions();
+
+    /**
+     * Creates an {@link AbstractImportSupportingGsrsEntityController.ImportAdapter} based on the supplied {@link JsonNode}, which can
+     * encode information about the initialization of the adapter. The adapterSettings typically
+     * contain information like how individual fields of an input data stream map to fields in
+     * an output record.
+     *
+     * @param adapterSettings initialization settings which can be used to configure an {@link AbstractImportSupportingGsrsEntityController.ImportAdapter}
+     * @return
+     */
+    public AbstractImportSupportingGsrsEntityController.ImportAdapter<T> createAdapter(JsonNode adapterSettings);
+
+    /**
+     * <p>
+     * Partially or completely read a given {@link InputStream} and produce {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics}
+     * as hints for how to create proper adapterSettings to be used in {@link #createAdapter(JsonNode)}.
+     * </p>
+     *
+     * <p>
+     * {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics} has 2 intended elements:
+     *  <ol>
+     *  <li>adapterSettings -- a "best guess" set of initialization parameters</li>
+     *  <li>adapterSchema  -- a higher-level model for what input options are available</li>
+     *  </ol>
+     * </p>
+     *
+     * @param is the InputStream of real or example data to be analyzed
+     * @return {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
+     * the {@link AbstractImportSupportingGsrsEntityController.ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
+     */
+    public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is);
+
+    default public void initialize() throws IllegalStateException {
+
+    }
+}
