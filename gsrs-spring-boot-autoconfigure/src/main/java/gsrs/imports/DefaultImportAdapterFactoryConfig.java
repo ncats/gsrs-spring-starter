@@ -3,12 +3,14 @@ package gsrs.imports;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ix.core.util.InheritanceTypeIdResolver;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@InheritanceTypeIdResolver.DefaultInstance
 public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryConfig {
 
     private Class importAdapterFactoryClass;
