@@ -14,6 +14,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
+
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
