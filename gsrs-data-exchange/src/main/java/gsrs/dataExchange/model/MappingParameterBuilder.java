@@ -10,6 +10,7 @@ public class MappingParameterBuilder<T> {
     private T defaultValue;
     private Class<T> valueType;
     private boolean displayInUI=true;
+    private String lookupKey;
 
     public MappingParameterBuilder setFieldName(String fieldName) {
         this.fieldName = fieldName;
@@ -51,6 +52,11 @@ public class MappingParameterBuilder<T> {
     public MappingParameterBuilder setFieldNameAndLabel(String fieldName, String fieldLabel) {
         this.fieldName = fieldName;
         this.label = fieldLabel;
+        return this;
+    }
+
+    public MappingParameterBuilder setLookupKey(String lookupKey) {
+        this.lookupKey=lookupKey;
         return this;
     }
 

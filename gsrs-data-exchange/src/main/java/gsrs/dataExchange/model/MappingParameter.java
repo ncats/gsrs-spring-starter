@@ -10,6 +10,11 @@ public class MappingParameter<T> {
     private T defaultValue;
     private Class<T> valueType;
     private boolean displayInUI=true;
+    private String lookupKey;
+
+    public String getLookupKey() {
+        return (lookupKey!=null && lookupKey.length()>0) ? lookupKey : fieldName;
+    }
 
     public MappingParameter(MappingParameterBuilder builder) {
         this.fieldName = builder.getFieldName();
@@ -18,6 +23,7 @@ public class MappingParameter<T> {
         this.defaultValue = (T) builder.getDefaultValue();
         this.valueType = builder.getValueType();
         this.displayInUI= builder.isDisplayInUI();
+        this.lookupKey=builder.getLookupKey();
     }
 
     public static MappingParameterBuilder builder() {

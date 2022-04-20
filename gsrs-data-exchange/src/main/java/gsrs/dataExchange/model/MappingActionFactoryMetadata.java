@@ -24,7 +24,7 @@ public class MappingActionFactoryMetadata {
         Map<String,Object> returnMap = new LinkedHashMap<>();
         initialParams.forEach((k,v)->returnMap.put(k,v));
         for(MappingParameter param: parameterFields){
-            if(!returnMap.containsKey(param.getFieldName())){
+            if(!returnMap.containsKey(param.getLookupKey())){
                 Object o = param.getDefaultValue();
                 if(o!=null){
                     returnMap.put(param.getFieldName(),o);
@@ -32,6 +32,11 @@ public class MappingActionFactoryMetadata {
                 if(param.isRequired()){
                     throw new IllegalStateException("Required field:\"" +  param.getFieldName() + "\" is not present and has no default value");
                 }
+            } else if(returnMap.containsKey(param.getLookupKey() ) && !returnMap.containsKey(param.getFieldName())) {
+                System.out.println(String.format("replaced %s (value: %s) with %s", param.getLookupKey(),
+                        returnMap.get(param.getLookupKey()), param.getFieldName()));
+                returnMap.put(param.getFieldName(), returnMap.get(param.getLookupKey()));
+                returnMap.remove(param.getLookupKey());
             }
         }
         return returnMap;
