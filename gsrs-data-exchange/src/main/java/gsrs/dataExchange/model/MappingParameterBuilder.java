@@ -9,7 +9,7 @@ public class MappingParameterBuilder<T> {
     private boolean required = false;
     private T defaultValue;
     private Class<T> valueType;
-    private boolean displayInUI=true;
+    private boolean expectedToChange =true;
     private String lookupKey;
 
     public MappingParameterBuilder setFieldName(String fieldName) {
@@ -37,8 +37,8 @@ public class MappingParameterBuilder<T> {
         return this;
     }
 
-    public MappingParameterBuilder setDisplayInUI(boolean displayOn) {
-        this.displayInUI= displayOn;
+    public MappingParameterBuilder setExpectedToChange(boolean displayOn) {
+        this.expectedToChange = displayOn;
         return this;
     }
     public MappingParameter build() {

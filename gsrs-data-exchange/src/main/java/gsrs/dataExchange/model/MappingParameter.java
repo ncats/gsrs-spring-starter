@@ -1,15 +1,19 @@
 package gsrs.dataExchange.model;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class MappingParameter<T> {
     private String fieldName;
     private String label;
     private boolean required = false;
     private T defaultValue;
     private Class<T> valueType;
-    private boolean displayInUI=true;
+    //todo: discuss usefulness of this field:
+    private boolean expectedToChange =true;
+    //todo: discuss usefulness of this field:
     private String lookupKey;
 
     public String getLookupKey() {
@@ -22,7 +26,7 @@ public class MappingParameter<T> {
         this.required = builder.isRequired();
         this.defaultValue = (T) builder.getDefaultValue();
         this.valueType = builder.getValueType();
-        this.displayInUI= builder.isDisplayInUI();
+        this.expectedToChange = builder.isExpectedToChange();
         this.lookupKey=builder.getLookupKey();
     }
 

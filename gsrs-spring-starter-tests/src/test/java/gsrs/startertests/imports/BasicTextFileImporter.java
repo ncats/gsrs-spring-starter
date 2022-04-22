@@ -38,7 +38,12 @@ public class BasicTextFileImporter implements AbstractImportSupportingGsrsEntity
                             TextRecordContext record = new TextRecordContext(line, DELIM);
                             actions.stream().forEach(a -> {
                                 log.trace("running action " + a.getClass().getName());
-                                object[0] = a.act(object[0], record);
+                                try {
+                                    object[0] = a.act(object[0], record);
+                                } catch (Exception e) {
+                                     log.error("error parsing actions", e);
+                                    //todo: handle exception better... rethrow?
+                                }
                             });
                             return object[0];
                         }
