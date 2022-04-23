@@ -20,4 +20,6 @@ public interface CodeProcessorField {
     Boolean isShowInUi();
     void setShowInUi(Boolean showInUi);
 
+    String getLookupKey();
+    void setLookupKey(String key);
     }
