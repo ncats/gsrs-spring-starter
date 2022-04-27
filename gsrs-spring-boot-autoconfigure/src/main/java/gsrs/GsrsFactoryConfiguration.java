@@ -76,6 +76,10 @@ public class GsrsFactoryConfiguration {
 //        return list.getConfigList();
     }
 
+    /*
+    retrieve a set of configuration items for the creation of AdapterFactory/ies based on
+    context -- the name of a type of entity that the Adapters will create.
+     */
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
         if(importAdapterFactories ==null) {
 

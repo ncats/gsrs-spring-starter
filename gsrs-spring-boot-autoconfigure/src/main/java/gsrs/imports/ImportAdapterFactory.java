@@ -6,6 +6,10 @@ import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import java.io.InputStream;
 import java.util.List;
 
+/*
+Creates a class that can process data from a file and convert it into domain objects
+using Actions for individual parts of the data
+ */
 public interface ImportAdapterFactory<T> {
     /**
      * Returns the name of the adapter, to be used for lookups and registration

@@ -11,6 +11,9 @@ import ix.ginas.utils.validation.ValidatorPlugin;
 import java.util.List;
 import java.util.Map;
 
+/*
+Information necessary to create an ImportAdapterFactory
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "configClass", defaultImpl = DefaultImportAdapterFactoryConfig.class)
 @JsonTypeIdResolver(InheritanceTypeIdResolver.class)
 public interface ImportAdapterFactoryConfig {

@@ -1,12 +1,12 @@
 package gsrs.imports;
 
-class CodeProcessorFieldImpl implements CodeProcessorField {
+public class CodeProcessorFieldImpl implements CodeProcessorField {
 
     private String fieldName;  // used for identification within code and metadata
     private String fieldLabel;      // display within UI
     private Object defaultValue;
     private Class fieldType;
-    private Boolean showInUi;
+    private Boolean expectedToChange;
     private Boolean required;   //required for UI
     private String lookupKey;
 
@@ -61,13 +61,13 @@ class CodeProcessorFieldImpl implements CodeProcessorField {
     }
 
     @Override
-    public Boolean isShowInUi() {
-        return this.showInUi;
+    public Boolean isExpectedToChange() {
+        return this.expectedToChange;
     }
 
     @Override
-    public void setShowInUi(Boolean showInUi) {
-        this.showInUi=showInUi;
+    public void setExpectedToChange(Boolean showInUi) {
+        this.expectedToChange =showInUi;
     }
 
     @Override

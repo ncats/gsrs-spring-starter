@@ -17,8 +17,8 @@ public interface CodeProcessorField {
     Object getDefaultValue();
     void setDefaultValue(Object defaultValue);
 
-    Boolean isShowInUi();
-    void setShowInUi(Boolean showInUi);
+    Boolean isExpectedToChange();
+    void setExpectedToChange(Boolean showInUi);
 
     String getLookupKey();
     void setLookupKey(String key);
