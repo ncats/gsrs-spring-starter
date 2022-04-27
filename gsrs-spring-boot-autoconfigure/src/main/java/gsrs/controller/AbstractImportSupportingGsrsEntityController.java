@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.ImportAdapterStatistics;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
@@ -139,8 +140,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
 
         ImportTaskMetaData<T> newMeta = task.copy();
-        newMeta.adapterSettings = predictedSettings.adapterSettings;
-        newMeta.adapterSchema = predictedSettings.adapterSchema;
+        newMeta.adapterSettings = predictedSettings.getAdapterSettings();
+        newMeta.adapterSchema = predictedSettings.getAdapterSchema();
 
         return newMeta;
     }
@@ -176,18 +177,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return Optional.of(importTask);
     }
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-    public static interface ImportAdapter<T> {
-        public Stream<T> parse(InputStream is);
-    }
-
-
-    @Data
-    public static class ImportAdapterStatistics {
-        private JsonNode adapterSettings;
-        private JsonNode adapterSchema;
-    }
 
     //TODO: Override in specific repos AND eventually use config parsing mechanism
     public List<ImportAdapterFactory<T>> getImportAdapters() {

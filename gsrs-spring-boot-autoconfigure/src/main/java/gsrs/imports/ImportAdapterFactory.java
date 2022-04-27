@@ -37,16 +37,16 @@ public interface ImportAdapterFactory<T> {
      * @param adapterSettings initialization settings which can be used to configure an {@link AbstractImportSupportingGsrsEntityController.ImportAdapter}
      * @return
      */
-    public AbstractImportSupportingGsrsEntityController.ImportAdapter<T> createAdapter(JsonNode adapterSettings);
+    public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
 
     /**
      * <p>
-     * Partially or completely read a given {@link InputStream} and produce {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics}
+     * Partially or completely read a given {@link InputStream} and produce {@link ImportAdapterStatistics}
      * as hints for how to create proper adapterSettings to be used in {@link #createAdapter(JsonNode)}.
      * </p>
      *
      * <p>
-     * {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics} has 2 intended elements:
+     * {@link ImportAdapterStatistics} has 2 intended elements:
      *  <ol>
      *  <li>adapterSettings -- a "best guess" set of initialization parameters</li>
      *  <li>adapterSchema  -- a higher-level model for what input options are available</li>
@@ -54,10 +54,10 @@ public interface ImportAdapterFactory<T> {
      * </p>
      *
      * @param is the InputStream of real or example data to be analyzed
-     * @return {@link AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
-     * the {@link AbstractImportSupportingGsrsEntityController.ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
+     * @return {@link ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
+     * the {@link ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
      */
-    public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is);
+    public ImportAdapterStatistics predictSettings(InputStream is);
 
     default public void initialize() throws IllegalStateException {
 

@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
+import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.ImportAdapterStatistics;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,7 +31,7 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapter<GinasCommonData> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<GinasCommonData> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<GinasCommonData, TextRecordContext>> actions = null;
         try {
@@ -42,7 +44,7 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is) {
         return null;
     }
 

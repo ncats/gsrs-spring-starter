@@ -23,12 +23,12 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     }
 
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapter createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter createAdapter(JsonNode adapterSettings) {
         return null;
     }
 
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is) {
         return null;
     }
 

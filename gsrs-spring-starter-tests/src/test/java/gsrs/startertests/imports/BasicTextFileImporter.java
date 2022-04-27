@@ -2,6 +2,7 @@ package gsrs.startertests.imports;
 
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
+import gsrs.imports.ImportAdapter;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Slf4j
-public class BasicTextFileImporter implements AbstractImportSupportingGsrsEntityController.ImportAdapter<GinasCommonData> {
+public class BasicTextFileImporter implements ImportAdapter<GinasCommonData> {
 
     private final String DELIM = ",";
 

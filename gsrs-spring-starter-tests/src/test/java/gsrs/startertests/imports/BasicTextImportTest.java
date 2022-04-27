@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
+import gsrs.imports.ImportAdapter;
 import ix.ginas.models.GinasCommonData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ public class BasicTextImportTest {
         BasicImportFactory basicImportFactory = new BasicImportFactory();
 
         ObjectNode settings=createSimpleObjectNode();
-        AbstractImportSupportingGsrsEntityController.ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
+        ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
         Stream<GinasCommonData> objects= adapter.parse(fis);
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
@@ -56,7 +57,7 @@ public class BasicTextImportTest {
         BasicImportFactory basicImportFactory = new BasicImportFactory();
 
         ObjectNode settings=createComplexObjectNode();
-        AbstractImportSupportingGsrsEntityController.ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
+        ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
         Stream<GinasCommonData> objects= adapter.parse(fis);
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
