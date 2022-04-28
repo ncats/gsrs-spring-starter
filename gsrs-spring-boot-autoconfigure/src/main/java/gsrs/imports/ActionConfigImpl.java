@@ -1,13 +1,16 @@
 package gsrs.imports;
 
+import ix.core.util.InheritanceTypeIdResolver;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@InheritanceTypeIdResolver.DefaultInstance
 public class ActionConfigImpl implements ActionConfig{
     private String actionName;
     private Class actionClass;
-    private List<CodeProcessorField> fields;
+    private List<CodeProcessorFieldImpl> fields;
     private Map<String, Object> parameters = new HashMap<>();
 
     @Override
@@ -31,12 +34,12 @@ public class ActionConfigImpl implements ActionConfig{
     }
 
     @Override
-    public List<CodeProcessorField> getFields() {
+    public List<CodeProcessorFieldImpl> getFields() {
         return this.fields;
     }
 
     @Override
-    public void setFields(List<CodeProcessorField> fields) {
+    public void setFields(List<CodeProcessorFieldImpl> fields) {
         this.fields=fields;
     }
 

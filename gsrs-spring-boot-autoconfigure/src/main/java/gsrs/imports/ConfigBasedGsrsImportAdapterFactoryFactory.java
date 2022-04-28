@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAdapterFactoryFactory {
+
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
-
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {

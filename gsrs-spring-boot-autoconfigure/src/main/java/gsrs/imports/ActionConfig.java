@@ -1,5 +1,7 @@
 package gsrs.imports;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import java.util.List;
 import java.util.Map;
 
@@ -13,8 +15,8 @@ public interface ActionConfig {
     Class getActionClass();
     void setActionClass(Class actionClass);
 
-    List<CodeProcessorField> getFields();
-    void setFields(List<CodeProcessorField> fields);
+    List<CodeProcessorFieldImpl> getFields();
+    void setFields(List<CodeProcessorFieldImpl> fields);
 
     //parameters allow configuration of a generic action, for example,
     // a generic code handler that handles multiple code systems.
