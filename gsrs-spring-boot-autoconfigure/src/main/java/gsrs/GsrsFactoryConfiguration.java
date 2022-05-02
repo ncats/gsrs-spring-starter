@@ -81,6 +81,7 @@ public class GsrsFactoryConfiguration {
     context -- the name of a type of entity that the Adapters will create.
      */
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
+        log.trace("starting in getImportAdapterFactories");
         if(importAdapterFactories ==null) {
 
             return Collections.emptyList();
@@ -88,6 +89,9 @@ public class GsrsFactoryConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         try {
             List<Map<String, Object>> list = importAdapterFactories.get(context);
+            log.trace("list:");
+            list.forEach(i->i.keySet().forEach(k->log.trace("key: %s; value: %s", k, i.get(k))));
+
             if(list==null || list.isEmpty()){
                 log.warn("no import adapter factory configuration info found!");
                 return Collections.emptyList();

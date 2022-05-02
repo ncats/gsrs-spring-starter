@@ -17,6 +17,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
+        log.trace("newFactory.  clazz: " + clazz.getName());
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
         ObjectMapper mapper = new ObjectMapper();
         return configs.stream().map(c ->
