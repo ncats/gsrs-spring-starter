@@ -6,18 +6,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.entityProcessor.EntityProcessorConfig;
+import gsrs.imports.DefaultImportAdapterFactoryConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.validator.ValidatorConfig;
 import gsrs.validator.ValidatorConfigList;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @ConfigurationProperties("gsrs")
@@ -30,6 +32,9 @@ public class GsrsFactoryConfiguration {
     private List<EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers= false;
+
+    @Value("${gsrs.importAdapterFactories.substances}")
+    private String rawImportConfigString;
 
     public List<EntityProcessorConfig> getEntityProcessors(){
         if(entityProcessors ==null){
@@ -81,22 +86,41 @@ public class GsrsFactoryConfiguration {
     context -- the name of a type of entity that the Adapters will create.
      */
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
-        log.trace("starting in getImportAdapterFactories");
+        log.warn("starting in getImportAdapterFactories. context: " +context);
+        log.warn("rawImportConfigString: " + rawImportConfigString);
+        String decodedConfig="";
+        try {
+            decodedConfig = URLDecoder.decode(rawImportConfigString, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         if(importAdapterFactories ==null) {
 
             return Collections.emptyList();
         }
         ObjectMapper mapper = new ObjectMapper();
-        try {
-            List<Map<String, Object>> list = importAdapterFactories.get(context);
-            log.trace("list:");
-            list.forEach(i->i.keySet().forEach(k->log.trace("key: %s; value: %s", k, i.get(k))));
 
-            if(list==null || list.isEmpty()){
+        try {
+            /*List<Map<String, Object>> valueList = importAdapterFactories.get(context);
+            if(valueList==null || valueList.isEmpty()){
                 log.warn("no import adapter factory configuration info found!");
                 return Collections.emptyList();
             }
-            List<? extends ImportAdapterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {});
+            log.warn("list:");
+            valueList.forEach(i->i.keySet().forEach(k-> {
+                log.warn(String.format("key: %s; value: %s; value type: %s",
+                        k, i.get(k), i.get(k).getClass().getName()));
+                *//*if(i.get(k) instanceof LinkedHashMap) {
+                    Map map = (Map)i.get(k);
+                    List singleSet = (List) map.values().stream().collect(Collectors.toList());
+                    log.warn("going to replace value for key " + k);
+                    i.put(k, singleSet);
+                }*//*
+            }));*/
+
+            List<? extends ImportAdapterFactoryConfig> configs = mapper.convertValue(decodedConfig,
+                    mapper.getTypeFactory().constructCollectionType (ArrayList.class, DefaultImportAdapterFactoryConfig.class));
+            //new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {}
             return configs;
         }
         catch (Throwable t){
