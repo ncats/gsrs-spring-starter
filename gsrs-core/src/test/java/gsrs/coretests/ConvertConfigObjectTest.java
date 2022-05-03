@@ -77,20 +77,17 @@ public class ConvertConfigObjectTest {
         objectMap.put("defaultValue", "PRIMARY");
         objectMap.put("fieldLabel", "Primary or Alternative");
         arrayMap.put("1", objectMap);
+        action.put("parameters", arrayMap);
 
-        String arrayMapString  = EntityUtils.convertClean(arrayMap, new TypeReference<String>() { });
-        //        mapper.writeValueAsString(arrayMap);
-        action.put("fields", arrayMapString);
-        Map<String, Object> parameterNode = new LinkedHashMap<>();
-        parameterNode.put("codeSystem", "CAS");
-        action.put("parameters", parameterNode);
-
-        Object data=EntityUtils.convertClean(action, new TypeReference<String>() { });
-        String nodeData = data.toString();
-        System.out.println("nodeData: " + nodeData);
-
-        JsonNode node= (JsonNode) EntityUtils.convertConfigObject(nodeData);
-        System.out.println("returned node: " + node.toPrettyString());
-        Assertions.assertNotNull(node);
+        List arrayMapObject = EntityUtils.convertClean(arrayMap, new TypeReference<List>() { });
+        Assertions.assertNotNull(arrayMapObject);
+        Assertions.assertEquals(ArrayList.class, arrayMapObject.getClass());
+        
+        Map newMapObject = EntityUtils.convertClean(action, new TypeReference<Map>() { });
+        
+        Assertions.assertNotNull(newMapObject);
+        Object o = newMapObject.get("parameters");
+        Assertions.assertEquals(ArrayList.class, o.getClass());
+        
     }
 }
