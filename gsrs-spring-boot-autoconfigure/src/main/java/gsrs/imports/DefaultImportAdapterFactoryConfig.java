@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.util.InheritanceTypeIdResolver;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -11,15 +13,32 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @InheritanceTypeIdResolver.DefaultInstance
+@AllArgsConstructor
+@NoArgsConstructor
 public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryConfig {
 
     private Class importAdapterFactoryClass;
-    private Class newObjClass;
-    private List<ActionConfig> actions;
+    //private Class newObjClass;
+    //private List<ActionConfig> actions;
     private List<String> extensions;
     private String adapterName;
     private Map<String, Object> parameters;
 
+    public DefaultImportAdapterFactoryConfig(String adapterName, Class importAdapterFactoryClass, List<String> extensions) {
+        this.adapterName=adapterName;
+        this.importAdapterFactoryClass= importAdapterFactoryClass;
+        this.extensions=extensions;
+    }
+
+    public DefaultImportAdapterFactoryConfig(String adapterName, String importAdapterFactoryClassName, List<String> extensions) {
+        this.adapterName=adapterName;
+        try {
+            this.importAdapterFactoryClass= Class.forName( importAdapterFactoryClassName);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        this.extensions=extensions;
+    }
     /**
      * Catch all for additional JSON properties found will be assumed to be
      * parameters to pass to the validator class similar to {@link #parameters}.

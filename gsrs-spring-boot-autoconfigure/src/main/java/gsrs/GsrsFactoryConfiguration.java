@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.entityProcessor.EntityProcessorConfig;
-import gsrs.imports.DefaultImportAdapterFactoryConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.validator.ValidatorConfig;
 import gsrs.validator.ValidatorConfigList;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,7 +33,7 @@ public class GsrsFactoryConfiguration {
 
     private boolean createUnknownUsers= false;
 
-    @Value("${gsrs.importAdapterFactories.substances}")
+    @Value("${gsrs.raw.importAdapterFactories.substances}")
     private String rawImportConfigString;
 
     public List<EntityProcessorConfig> getEntityProcessors(){
@@ -85,45 +85,34 @@ public class GsrsFactoryConfiguration {
     retrieve a set of configuration items for the creation of AdapterFactory/ies based on
     context -- the name of a type of entity that the Adapters will create.
      */
+    @SneakyThrows
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
         log.warn("starting in getImportAdapterFactories. context: " +context);
         log.warn("rawImportConfigString: " + rawImportConfigString);
         String decodedConfig="";
-        try {
-            decodedConfig = URLDecoder.decode(rawImportConfigString, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        if( rawImportConfigString!= null && rawImportConfigString.trim().length() >0) {
+            try {
+                decodedConfig = URLDecoder.decode(rawImportConfigString, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                log.error("error decoding data " + e.getMessage());
+                e.printStackTrace();
+            }
         }
-        if(importAdapterFactories ==null) {
-
+        if(importAdapterFactories ==null && (decodedConfig == null || decodedConfig.length()==0)) {
+            log.warn("going to return empty list");
             return Collections.emptyList();
         }
         ObjectMapper mapper = new ObjectMapper();
 
         try {
-            /*List<Map<String, Object>> valueList = importAdapterFactories.get(context);
-            if(valueList==null || valueList.isEmpty()){
-                log.warn("no import adapter factory configuration info found!");
-                return Collections.emptyList();
-            }
-            log.warn("list:");
-            valueList.forEach(i->i.keySet().forEach(k-> {
-                log.warn(String.format("key: %s; value: %s; value type: %s",
-                        k, i.get(k), i.get(k).getClass().getName()));
-                *//*if(i.get(k) instanceof LinkedHashMap) {
-                    Map map = (Map)i.get(k);
-                    List singleSet = (List) map.values().stream().collect(Collectors.toList());
-                    log.warn("going to replace value for key " + k);
-                    i.put(k, singleSet);
-                }*//*
-            }));*/
-
-            List<? extends ImportAdapterFactoryConfig> configs = mapper.convertValue(decodedConfig,
-                    mapper.getTypeFactory().constructCollectionType (ArrayList.class, DefaultImportAdapterFactoryConfig.class));
+            log.warn("decodedConfig: " + decodedConfig);
+            List<? extends ImportAdapterFactoryConfig> configs = mapper.readValue(decodedConfig,
+                    new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {});
+//                    mapper.getTypeFactory().constructCollectionType (ArrayList.class, DefaultImportAdapterFactoryConfig.class));
             //new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {}
             return configs;
         }
-        catch (Throwable t){
+        catch (Exception t){
             log.error("Error fetching import factory config");
             throw t;
         }

@@ -14,7 +14,7 @@ import java.util.*;
 public class TestDefaultImportAdapterFactoryConfig {
 
     @Test
-    public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException, JsonProcessingException {
+    public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         String substanceContext="substance";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
         Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();

@@ -184,6 +184,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
+        log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
+        if( getImportAdapters().size()  > 0) {
+            getImportAdapters().forEach(a->log.trace("adapter with name: "+ a.getAdapterName()));
+        }
         return getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
     }
 
