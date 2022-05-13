@@ -9,6 +9,7 @@ import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.validator.ValidatorConfig;
 import gsrs.validator.ValidatorConfigList;
+import ix.core.util.EntityUtils;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +86,31 @@ public class GsrsFactoryConfiguration {
     retrieve a set of configuration items for the creation of AdapterFactory/ies based on
     context -- the name of a type of entity that the Adapters will create.
      */
+    public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
+        //using 'warn' because 'trace' does not work
+        log.warn("starting in getImportAdapterFactories.  context: " + context);
+        if(importAdapterFactories ==null) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Map<String, Object>> list = importAdapterFactories.get(context);
+            log.trace("list:");
+            list.forEach(i->i.keySet().forEach(k->log.warn(String.format("key: %s; value: %s", k, i.get(k)))));
+
+            if(list==null || list.isEmpty()){
+                log.warn("no import adapter factory configuration info found!");
+                return Collections.emptyList();
+            }
+            List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {});
+            log.warn("total configs: " + configs.size());
+            return configs;
+        }
+        catch (Throwable t){
+            log.error("Error fetching import factory config");
+            throw t;
+        }
+    }
+    /* tested this but using Tyler's implementation, above
     @SneakyThrows
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
         log.warn("starting in getImportAdapterFactories. context: " +context);
@@ -117,5 +143,5 @@ public class GsrsFactoryConfiguration {
             throw t;
         }
 
-    }
+    }*/
 }

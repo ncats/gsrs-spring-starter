@@ -11,9 +11,7 @@ import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
-import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Payload;
-import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +39,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     private PayloadService payloadService;
+
     @Autowired
     private PayloadRepository payloadRepository;
+
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
@@ -108,12 +108,31 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             return task;
         }
 
+        @Override
+        public String toString() {
+            StringBuilder returnBuilder = new StringBuilder();
+            returnBuilder.append("internalUuid: ");
+            returnBuilder.append(internalUuid);
+            returnBuilder.append("\n");
+            returnBuilder.append("adapter: ");
+            returnBuilder.append(this.adapter);
+            returnBuilder.append("\n");
+            returnBuilder.append("adapterSettings: ");
+            returnBuilder.append(this.adapterSettings == null ? "null" : this.adapterSettings.toPrettyString());
+            returnBuilder.append("\n");
+            returnBuilder.append("adapterSchema: " );
+            returnBuilder.append(this.adapterSchema ==null ? "null" : this.adapterSchema.toPrettyString());
+            returnBuilder.append("\n");
+            returnBuilder.append("payloadID: ");
+            returnBuilder.append(this.payloadID);
+            return returnBuilder.toString();
+        }
 
         //TODO: add _self link
     }
 
     public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
-        log.trace("starting in execute. task: " + task.adapter);
+        log.trace("starting in execute. task: " + task.toString());
         return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
                 .parse(payloadService.getPayloadAsInputStream(task.payloadID).get());
@@ -134,15 +153,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
-        log.trace("in predictSettings, task for file: " + task.getFilename());
+        log.trace("in predictSettings, task for file: " + task.getFilename() + " with payload: " +task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
+        log.trace("got back adaptFac with name: " + adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
         ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
 
         ImportTaskMetaData<T> newMeta = task.copy();
         newMeta.adapterSettings = predictedSettings.getAdapterSettings();
         newMeta.adapterSchema = predictedSettings.getAdapterSchema();
-
         return newMeta;
     }
 
@@ -236,6 +255,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             itmd = saveImportTask(itmd).get();
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd);
+                //save after we assign the fields we'll need later on
+                itmd = saveImportTask(itmd).get();
             }
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
@@ -279,6 +300,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @PutGsrsRestApiMapping(value = {"/import"})
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in updateImport");
         ObjectMapper om = new ObjectMapper();
         ImportTaskMetaData itmd = om.treeToValue(updatedJson, ImportTaskMetaData.class);
 
@@ -298,10 +320,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @PostGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreview(@PathVariable("id") String id,
                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("executePreview.  id: " + id);
         Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if (obj.isPresent()) {
             //TODO: make async and do other stuff:
             ImportTaskMetaData itmd = obj.get();
+
             long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
 
             List<T> previewList = (List<T>) (execute(itmd)

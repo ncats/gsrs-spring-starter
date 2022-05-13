@@ -29,12 +29,12 @@ public interface ImportAdapterFactory<T> {
     public List<String> getSupportedFileExtensions();
 
     /**
-     * Creates an {@link AbstractImportSupportingGsrsEntityController.ImportAdapter} based on the supplied {@link JsonNode}, which can
+     * Creates an {@link ImportAdapter} based on the supplied {@link JsonNode}, which can
      * encode information about the initialization of the adapter. The adapterSettings typically
      * contain information like how individual fields of an input data stream map to fields in
      * an output record.
      *
-     * @param adapterSettings initialization settings which can be used to configure an {@link AbstractImportSupportingGsrsEntityController.ImportAdapter}
+     * @param adapterSettings initialization settings which can be used to configure an {@link ImportAdapter}
      * @return
      */
     public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
