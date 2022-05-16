@@ -317,7 +317,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //STEP 3.5: Preview import
     //!!!!NEEDS MORE WORK
     @hasAdminRole
-    @PostGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
+    @GetGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreview(@PathVariable("id") String id,
                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("executePreview.  id: " + id);
@@ -332,7 +332,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     .limit(limit)
                     .collect(Collectors.toList()));
 
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(previewList, queryParameters), HttpStatus.OK);
+            log.trace("queryParameters:");
+            queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));
+            return new ResponseEntity<>(previewList, HttpStatus.OK);
+            //GsrsControllerUtil.enhanceWithView(previewList, queryParameters)
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
