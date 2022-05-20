@@ -3,8 +3,6 @@ package gsrs.startertests.imports;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
@@ -20,6 +18,8 @@ import java.util.Map;
 
 @Slf4j
 public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData> {
+    private String fileName;
+
     @Override
     public String getAdapterName() {
         return "Basic Import Adapter";
@@ -46,6 +46,16 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is) {
         return null;
+    }
+
+    @Override
+    public void setFileName(String fileName) {
+        this.fileName=fileName;
+    }
+
+    @Override
+    public String getFileName() {
+        return this.fileName;
     }
 
     public static List<MappingAction<GinasCommonData, TextRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {

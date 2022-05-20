@@ -148,6 +148,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
+        adaptFac.setFileName(task.filename);
         return adaptFac;
     }
 
@@ -252,12 +253,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (adapterName != null) {
                 itmd.setAdapter(adapterName);
             }
-            itmd = saveImportTask(itmd).get();
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd);
                 //save after we assign the fields we'll need later on
-                itmd = saveImportTask(itmd).get();
             }
+            itmd = saveImportTask(itmd).get();
+
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
         } catch (Throwable t) {
@@ -315,7 +316,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 3.5: Preview import
-    //!!!!NEEDS MORE WORK
+    //May required additional work
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreview(@PathVariable("id") String id,
@@ -332,8 +333,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     .limit(limit)
                     .collect(Collectors.toList()));
 
-            log.trace("queryParameters:");
-            queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));
+            /*log.trace("queryParameters:");
+            queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));*/
             return new ResponseEntity<>(previewList, HttpStatus.OK);
             //GsrsControllerUtil.enhanceWithView(previewList, queryParameters)
         }

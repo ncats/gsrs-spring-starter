@@ -59,6 +59,9 @@ public interface ImportAdapterFactory<T> {
      */
     public ImportAdapterStatistics predictSettings(InputStream is);
 
+    public void setFileName(String fileName);
+    public String getFileName();
+
     default public void initialize() throws IllegalStateException {
 
     }

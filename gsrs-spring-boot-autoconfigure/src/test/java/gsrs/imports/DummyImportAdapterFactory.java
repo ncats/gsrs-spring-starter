@@ -9,6 +9,8 @@ import java.util.List;
 
 public class DummyImportAdapterFactory implements ImportAdapterFactory {
 
+    private String fileName;
+
     public String ADAPTER_NAME="Dummy Import Adapter";
     @Override
     public String getAdapterName() {
@@ -30,6 +32,16 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is) {
         return null;
+    }
+
+    @Override
+    public void setFileName(String fileName) {
+        this.fileName=fileName;
+    }
+
+    @Override
+    public String getFileName() {
+        return this.fileName;
     }
 
     @Override
