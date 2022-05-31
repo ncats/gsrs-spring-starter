@@ -25,7 +25,7 @@ public class BasicTextFileImporter implements ImportAdapter<GinasCommonData> {
     }
 
     @Override
-    public Stream<GinasCommonData> parse(InputStream is) {
+    public Stream<GinasCommonData> parse(InputStream is, String encoding) {
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader bufferedReader = new BufferedReader(isr);
         if (!(actions.size()==1 && actions.get(0).getClass().getName().contains("BasicMappingAction"))){
@@ -68,4 +68,5 @@ public class BasicTextFileImporter implements ImportAdapter<GinasCommonData> {
             return objects;
         }
     }
+
 }

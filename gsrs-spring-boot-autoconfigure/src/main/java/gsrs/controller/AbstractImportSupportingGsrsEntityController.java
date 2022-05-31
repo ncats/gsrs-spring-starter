@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -80,17 +81,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         private String filename;
         private Long size;
         private String mimeType;
+        private String fileEncoding;
 
         public ImportTaskMetaData() {
         }
 
-        public ImportTaskMetaData(String payloadID, String filename, long size, String mimeType, String id) {
+        public ImportTaskMetaData(String payloadID, String filename, long size, String mimeType, String id, String fileEncoding) {
             //todo: add checks for valid input
             this.payloadID = UUID.fromString(payloadID);
             this.filename = filename;
             this.size = size;
             this.mimeType = mimeType;
             this.internalUuid = UUID.fromString(id);
+            this.fileEncoding= fileEncoding;
         }
 
         public ImportTaskMetaData copy() {
@@ -104,6 +107,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             task.adapter = this.adapter;
             task.adapterSettings = this.adapterSettings;
             task.adapterSchema = this.adapterSchema;
+            task.fileEncoding = this.fileEncoding;
 
             return task;
         }
@@ -133,9 +137,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
         log.trace("starting in execute. task: " + task.toString());
+        log.trace("using encoding " + task.fileEncoding);
         return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
-                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get());
+                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), task.fileEncoding);
     }
 
     private ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
@@ -232,6 +237,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
             String adapterName = queryParameters.get("adapter");
             log.trace("handleImport, adapterName: " + adapterName);
+            String fileEncoding= queryParameters.get("fileEncoding");
+            log.trace("fileEncoding: " + fileEncoding);
 
             TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -253,6 +260,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (adapterName != null) {
                 itmd.setAdapter(adapterName);
             }
+            itmd.setFileEncoding(fileEncoding);
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd);
                 //save after we assign the fields we'll need later on

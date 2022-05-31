@@ -16,6 +16,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -38,7 +39,7 @@ public class BasicTextImportTest {
 
         ObjectNode settings=createSimpleObjectNode();
         ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
-        Stream<GinasCommonData> objects= adapter.parse(fis);
+        Stream<GinasCommonData> objects= adapter.parse(fis, Charset.defaultCharset().name());
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");
@@ -58,7 +59,7 @@ public class BasicTextImportTest {
 
         ObjectNode settings=createComplexObjectNode();
         ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
-        Stream<GinasCommonData> objects= adapter.parse(fis);
+        Stream<GinasCommonData> objects= adapter.parse(fis, Charset.defaultCharset().name());
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");

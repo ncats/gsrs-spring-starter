@@ -78,7 +78,7 @@ public final class GsrsControllerUtil {
 
     public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
         String view = queryParameters.get("view");
-        log.trace("in enhanceWithView: " + view);
+        //log.trace("in enhanceWithView: " + view);
 
         GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj, view);
         //default view is compact
