@@ -39,7 +39,7 @@ public class TestDefaultImportAdapterFactoryConfig {
                 System.out.println("set field value");
             }
         }  */
-        Field configField= factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
+        Field configField= factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.gsrs.startertests.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
         configField.setAccessible(true);
         configField.set(factoryFactory, config);
 

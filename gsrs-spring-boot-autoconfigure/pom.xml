@@ -162,12 +162,13 @@
 	    <artifactId>tika-core</artifactId>
 	    <version>1.22</version>
 	</dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
+
+    <!--dependency>
+           <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-data-exchange</artifactId>
             <version>3.1-SNAPSHOT</version>
             <scope>compile</scope>
-        </dependency>
+    </dependency-->
     </dependencies>
 
 </project>

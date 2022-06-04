@@ -54,6 +54,7 @@ public class TextIndexerFactory {
         deepKinds = Optional.ofNullable(textIndexerConfig)
                 .map(cf->cf.getDeepFields()
                 .stream()
+                .peek(c-> System.out.println("looking for class: " + c))
                 .map(s->{
                     try{
                         return EntityUtils.getEntityInfoFor(s).getTypeAndSubTypes();

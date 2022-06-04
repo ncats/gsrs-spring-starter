@@ -1,0 +1,36 @@
+2022-05-31 11:29:28.266  INFO 84520 --- [main] g.n.n.g.GsrsDiscoveryApplicationTests    : Starting GsrsDiscoveryApplicationTests using Java 1.8.0_211 on LAPTOP-OVI2BLMU with PID 84520 (started by mitch in E:\ncats_source\gsrs-spring-starter\gsrs-discovery)
+2022-05-31 11:29:28.267  INFO 84520 --- [main] g.n.n.g.GsrsDiscoveryApplicationTests    : No active profile set, falling back to default profiles: default
+2022-05-31 11:29:29.230  INFO 84520 --- [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=e78931cc-2ef6-3099-ae96-af2071323c8b
+2022-05-31 11:29:30.063  INFO 84520 --- [main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2022-05-31 11:29:32.037  INFO 84520 --- [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+2022-05-31 11:29:34.006  INFO 84520 --- [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+2022-05-31 11:29:34.025  INFO 84520 --- [main] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses Jersey
+2022-05-31 11:29:34.164  WARN 84520 --- [main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. You can switch to using Caffeine cache, by adding it to the classpath.
+2022-05-31 11:29:34.322  INFO 84520 --- [main] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+2022-05-31 11:29:34.364  INFO 84520 --- [main] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+2022-05-31 11:29:34.365  INFO 84520 --- [main] com.netflix.discovery.DiscoveryClient    : Client configured to neither register nor query for data.
+2022-05-31 11:29:34.381  INFO 84520 --- [main] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1654010974380 with initial instances count: 0
+2022-05-31 11:29:34.439  INFO 84520 --- [main] c.n.eureka.DefaultEurekaServerContext    : Initializing ...
+2022-05-31 11:29:34.441  WARN 84520 --- [main] c.n.eureka.cluster.PeerEurekaNodes       : The replica size seems to be empty. Check the route 53 DNS Registry
+2022-05-31 11:29:34.477  INFO 84520 --- [main] c.n.e.registry.AbstractInstanceRegistry  : Finished initializing remote region registries. All known remote regions: []
+2022-05-31 11:29:34.479  INFO 84520 --- [main] c.n.eureka.DefaultEurekaServerContext    : Initialized
+2022-05-31 11:29:34.624  INFO 84520 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+2022-05-31 11:29:34.668  INFO 84520 --- [main] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application UNKNOWN with eureka with status UP
+2022-05-31 11:29:34.671  INFO 84520 --- [Thread-10] o.s.c.n.e.server.EurekaServerBootstrap   : Setting the eureka configuration..
+2022-05-31 11:29:34.714  INFO 84520 --- [Thread-10] o.s.c.n.e.server.EurekaServerBootstrap   : isAws returned false
+2022-05-31 11:29:34.714  INFO 84520 --- [Thread-10] o.s.c.n.e.server.EurekaServerBootstrap   : Initialized server context
+2022-05-31 11:29:34.714  INFO 84520 --- [Thread-10] c.n.e.r.PeerAwareInstanceRegistryImpl    : Got 1 instances from neighboring DS node
+2022-05-31 11:29:34.715  INFO 84520 --- [Thread-10] c.n.e.r.PeerAwareInstanceRegistryImpl    : Renew threshold is: 1
+2022-05-31 11:29:34.715  INFO 84520 --- [Thread-10] c.n.e.r.PeerAwareInstanceRegistryImpl    : Changing status to UP
+2022-05-31 11:29:34.718  INFO 84520 --- [main] g.n.n.g.GsrsDiscoveryApplicationTests    : Started GsrsDiscoveryApplicationTests in 8.414 seconds (JVM running for 9.357)
+2022-05-31 11:29:34.730  INFO 84520 --- [Thread-10] e.s.EurekaServerInitializerConfiguration : Started Eureka Server
+2022-05-31 11:29:34.932  INFO 84520 --- [SpringContextShutdownHook] o.s.c.n.e.s.EurekaServiceRegistry        : Unregistering application UNKNOWN with eureka with status DOWN
+2022-05-31 11:29:34.934  INFO 84520 --- [SpringContextShutdownHook] o.s.c.n.e.server.EurekaServerBootstrap   : Shutting down Eureka Server..
+2022-05-31 11:29:34.945  INFO 84520 --- [SpringContextShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shutting down ...
+2022-05-31 11:29:34.955  INFO 84520 --- [SpringContextShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shut down
+2022-05-31 11:29:34.955  INFO 84520 --- [SpringContextShutdownHook] o.s.c.n.e.server.EurekaServerBootstrap   : Eureka Service is now shutdown...
+2022-05-31 11:29:34.956  INFO 84520 --- [SpringContextShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shutting down ...
+2022-05-31 11:29:34.960  INFO 84520 --- [SpringContextShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shut down
+2022-05-31 11:29:34.968  INFO 84520 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2022-05-31 11:29:34.971  INFO 84520 --- [SpringContextShutdownHook] com.netflix.discovery.DiscoveryClient    : Shutting down DiscoveryClient ...
+2022-05-31 11:29:34.972  INFO 84520 --- [SpringContextShutdownHook] com.netflix.discovery.DiscoveryClient    : Completed shut down of DiscoveryClient

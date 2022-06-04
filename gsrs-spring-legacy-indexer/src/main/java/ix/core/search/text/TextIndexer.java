@@ -2549,10 +2549,10 @@ public class TextIndexer implements Closeable, ProcessListener {
                             if(textIndexerConfig.isShouldLog()){
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
-//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
-//							if (DEBUG(2)){
-//								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
-//							}
+						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+							if (DEBUG(2)){
+								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+							}
 							TextField tf=new TextField(FULL_TEXT_FIELD, text, NO);
 							//tf.set
 							doc.add(tf);
@@ -3409,4 +3409,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			log.trace("Can't create Lookup!", ex);
 		}
 	}
+
+    private boolean DEBUG(int level) {
+        return true;
+    }
 }

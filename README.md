@@ -874,7 +874,7 @@ own TestEntityProcessorFactory instance which passes along the EntityProcessors 
 
 ```java
 
-@GsrsJpaTest(classes =GsrsSpringApplication.class)
+@GsrsJpaTest(classes =gsrs.startertests.GsrsSpringApplication.class)
 @ActiveProfiles("test")
 @Import(EntityProcessorTest.MyConfig.class)
 public class EntityProcessorTest  extends AbstractGsrsJpaEntityJunit5Test {
