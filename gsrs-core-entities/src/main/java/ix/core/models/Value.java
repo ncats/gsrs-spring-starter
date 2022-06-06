@@ -9,7 +9,12 @@ import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
-@Table(name="ix_core_value")
+@Table(name = "ix_core_value",
+    indexes = {
+        @Index(name = "value_label_index", columnList = "label"),
+        @Index(name = "value_term_index", columnList = "term")
+    }
+)
 @Inheritance
 @DiscriminatorValue("VAL")
 @JsonInclude(JsonInclude.Include.NON_NULL)

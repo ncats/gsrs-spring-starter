@@ -27,7 +27,12 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name="ix_core_edit")
+@Table(name = "ix_core_edit",
+    indexes = {
+        @Index(name = "refid_core_edit_index", columnList = "refid"),
+        @Index(name = "kind_core_edit_index", columnList = "kind")
+    }
+)
 @History(store = false)
 @Indexable(indexed = false)
 public class Edit extends BaseModel {
