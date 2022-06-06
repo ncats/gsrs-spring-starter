@@ -89,7 +89,7 @@ public class ImportMetadata {
     @Indexable
     private RecordValidationStatus validationStatus;
 
-    @Indexable
+    @Indexable(name="processStatus", facet = true)
     private RecordProcessStatus processStatus;
 
     @Indexable()

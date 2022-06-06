@@ -38,7 +38,7 @@ public class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
     @BeforeEach
     public void setup() throws Exception {
         indexer = tif.getDefaultInstance();
-
+        addSomeDocuments();
     }
 
     @AfterEach
@@ -48,8 +48,7 @@ public class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
 
 
     @Test
-    public void testIndex1() throws Exception {
-        addSomeDocuments();
+    public void testIndexName() throws Exception {
         Query q = indexer.getQueryParser().parse("\"Funky File\"");
         SearchResult sr=SearchResult.createBuilder().build();
         TopDocs hits = indexer.withSearcher(searcher->{
@@ -62,9 +61,47 @@ public class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
     }
 
     @Test
-    public void testIndex2() throws Exception {
-        addSomeDocuments();
-        Query q = indexer.getQueryParser().parse("root_ImportStatus:*accepted*"); //metadata_
+    public void testIndexImportStatus() throws Exception {
+        Query q = indexer.getQueryParser().parse("root_importStatus:\"^accepted$\""); //metadata_
+        SearchResult sr=SearchResult.createBuilder().build();
+        TopDocs hits = indexer.withSearcher(searcher->{
+            try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
+                return indexer.firstPassLuceneSearch(searcher,taxon,sr,null, q);
+            }
+        });
+        Assertions.assertEquals(1, hits.scoreDocs.length);
+        System.out.println("hits.scoreDocs.length: " + hits.scoreDocs.length);
+    }
+
+    @Test
+    public void testIndexImportStatus2() throws Exception {
+        Query q = indexer.getQueryParser().parse("root_processStatus:\"^loaded$\"");
+        SearchResult sr=SearchResult.createBuilder().build();
+        TopDocs hits = indexer.withSearcher(searcher->{
+            try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
+                return indexer.firstPassLuceneSearch(searcher,taxon,sr,null, q);
+            }
+        });
+        Assertions.assertEquals(2, hits.scoreDocs.length);
+        System.out.println("hits.scoreDocs.length: " + hits.scoreDocs.length);
+    }
+
+    @Test
+    public void testIndexSearchEntityClass() throws Exception {
+        Query q = indexer.getQueryParser().parse("root_entityClass:\"^Substance$\"");
+        SearchResult sr=SearchResult.createBuilder().build();
+        TopDocs hits = indexer.withSearcher(searcher->{
+            try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
+                return indexer.firstPassLuceneSearch(searcher,taxon,sr,null, q);
+            }
+        });
+        Assertions.assertEquals(3, hits.scoreDocs.length);
+        System.out.println("hits.scoreDocs.length: " + hits.scoreDocs.length);
+    }
+
+    @Test
+    public void testIndexSearchValidationStatus() throws Exception {
+        Query q = indexer.getQueryParser().parse("root_validationStatus:\"^valid$\"");
         SearchResult sr=SearchResult.createBuilder().build();
         TopDocs hits = indexer.withSearcher(searcher->{
             try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
@@ -76,22 +113,44 @@ public class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
     }
 
     private void addSomeDocuments() throws IOException {
-        ImportMetadata importData = new ImportMetadata();
+        ImportMetadata importMetadata = new ImportMetadata();
         UUID testRecordId = UUID.randomUUID();
-        importData.setRecordId(testRecordId);
-        importData.setSourceName("Funky File");
-        importData.setImportStatus(ImportMetadata.RecordImportStatus.accepted);
-        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(importData);
+        importMetadata.setRecordId(testRecordId);
+        importMetadata.setEntityClass("Potato");
+        importMetadata.setSourceName("Funky File");
+        importMetadata.setImportStatus(ImportMetadata.RecordImportStatus.accepted);
+        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(importMetadata);
         indexer.add(wrapper);
 
-        ImportMetadata importMetadata = new ImportMetadata();
+        ImportMetadata importMetadata2 = new ImportMetadata();
         UUID recordId = UUID.randomUUID();
-        importMetadata.setImportStatus(ImportMetadata.RecordImportStatus.imported);
-        importMetadata.setEntityClass("Substance");
-        importMetadata.setSourceName("Normal File");
-        importMetadata.setRecordId(recordId);
-        EntityUtils.EntityWrapper wrapper2 = EntityUtils.EntityWrapper.of(importMetadata);
+        importMetadata2.setImportStatus(ImportMetadata.RecordImportStatus.imported);
+        importMetadata2.setEntityClass("Substance");
+        importMetadata2.setSourceName("Normal File");
+        importMetadata2.setRecordId(recordId);
+        EntityUtils.EntityWrapper wrapper2 = EntityUtils.EntityWrapper.of(importMetadata2);
         indexer.add(wrapper2);
 
+        ImportMetadata importMetadata3 = new ImportMetadata();
+        UUID recordId3 = UUID.randomUUID();
+        importMetadata3.setImportStatus(ImportMetadata.RecordImportStatus.staged);
+        importMetadata3.setEntityClass("Substance");
+        importMetadata3.setSourceName("Experimental File");
+        importMetadata3.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
+        importMetadata3.setRecordId(recordId3);
+        EntityUtils.EntityWrapper wrapper3 = EntityUtils.EntityWrapper.of(importMetadata3);
+        indexer.add(wrapper3);
+
+        ImportMetadata importMetadata4 = new ImportMetadata();
+        UUID recordId4 = UUID.randomUUID();
+        importMetadata4.setImportStatus(ImportMetadata.RecordImportStatus.staged);
+        importMetadata4.setEntityClass("Substance");
+        importMetadata4.setSourceName("Additional File");
+        importMetadata4.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
+        importMetadata4.setVersion(7);
+        importMetadata4.setValidationStatus(ImportMetadata.RecordValidationStatus.valid);
+        importMetadata4.setRecordId(recordId4);
+        EntityUtils.EntityWrapper wrapper4 = EntityUtils.EntityWrapper.of(importMetadata4);
+        indexer.add(wrapper4);
     }
 }
