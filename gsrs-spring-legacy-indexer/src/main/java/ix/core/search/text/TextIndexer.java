@@ -37,9 +37,14 @@ import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.*;
 import org.apache.lucene.facet.*;
@@ -1267,10 +1272,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 		fields.put(FIELD_ID, new KeywordAnalyzer());
 		fields.put(FIELD_KIND, new KeywordAnalyzer());
 		//dkatzel 2017-08 no stop words
-		return new PerFieldAnalyzerWrapper(new StandardAnalyzer(LUCENE_VERSION, CharArraySet.EMPTY_SET), fields);
+        StandardAnalyzer  standardAnalyzer = new StandardAnalyzer(LUCENE_VERSION, CharArraySet.EMPTY_SET);
+        Analyzer gsrsAnalyzer = new GSRSModifiedStandardAnalyzer(standardAnalyzer, CharArraySet.EMPTY_SET);
+		return new PerFieldAnalyzerWrapper(gsrsAnalyzer, fields);
 	}
 
-	/**
+    /**
 	 * Create a empty RAM instance. This is useful for searching/filtering of a
 	 * subset of the documents stored.
 	 */
@@ -2564,7 +2571,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
 // This is where you can see how things get indexed.
-//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}
