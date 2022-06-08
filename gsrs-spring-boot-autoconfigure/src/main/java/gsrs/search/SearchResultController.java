@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -97,7 +98,12 @@ public class SearchResultController {
                 .map(Tuple.vmap(sl->sl.toArray(new String[0])))
                 .collect(Tuple.toMap())
                 ;
-        
+
+        // if query is null, add q parameter
+        if(query == null){
+            query = Optional.ofNullable(paramMap.getOrDefault("q",null)).filter(v->v!=null).map(v->v[0]).orElse(null);
+        }
+
         SearchRequest searchRequest = new SearchRequest.Builder()
                 .top(top)
                 .skip(skip)
