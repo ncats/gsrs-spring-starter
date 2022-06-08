@@ -58,7 +58,6 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -2564,7 +2563,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
 // This is where you can see how things get indexed.
-//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}
@@ -3361,7 +3360,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
         String tmp = in;
-        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
+        for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
             tmp=se.encode(tmp);
         }
         return tmp;
@@ -3378,7 +3377,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
+        for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
             tmp=se.encode(tmp);
         }
         return tmp;

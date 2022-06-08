@@ -5,15 +5,14 @@ import lombok.Data;
 import java.util.regex.Pattern;
 
 @Data
-public class StandardEncoding implements IndexedTextEncoder{
+public class RegexIndexedTextEncoder implements IndexedTextEncoder{
 
     private String regex;
     private String replaceWith;
     private Pattern _pattern;
 
-    public StandardEncoding() {}
 
-    public StandardEncoding(String regex, String replaceWith) {
+    public RegexIndexedTextEncoder(String regex, String replaceWith) {
         this.regex = regex;
         this.replaceWith = replaceWith;
         _pattern=Pattern.compile(Pattern.quote(regex));
