@@ -42,7 +42,8 @@ public class DefaultIndexedTextEncoderFactory {
          encodings.add(new RegexIndexedTextEncoder(replacementTokensGreek[i], replacementTokensGreek[i + 1]));
       }
 
-      //add special case for colon char
+      encodings.add(new ColonIndexedTextEncoder());
+/*      //add special case for colon char
       encodings.add(
               (qtest)->{
          // \"root_names_name:"AZT : ABC" AND root_names_name:"AZT : DEF"\"
@@ -62,6 +63,10 @@ public class DefaultIndexedTextEncoderFactory {
          }
          return qtest;
       });
+   }
+
+
+ */
    }
 }
 

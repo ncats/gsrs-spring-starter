@@ -11,7 +11,6 @@ public class RegexIndexedTextEncoder implements IndexedTextEncoder{
     private String replaceWith;
     private Pattern _pattern;
 
-
     public RegexIndexedTextEncoder(String regex, String replaceWith) {
         this.regex = regex;
         this.replaceWith = replaceWith;

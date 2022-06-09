@@ -3359,6 +3359,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
+        // This is called when indexing.
         String tmp = in;
         for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
             tmp=se.encode(tmp);
@@ -3378,7 +3379,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
         for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
-            tmp=se.encode(tmp);
+            tmp=se.encodeQuery(tmp);
         }
         return tmp;
 	}
