@@ -21,10 +21,7 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
-import ix.core.models.FV;
-import ix.core.models.Facet;
-import ix.core.models.FacetFilter;
-import ix.core.models.FieldedQueryFacet;
+import ix.core.models.*;
 import ix.core.search.*;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.SearchOptions.DrillAndPath;
@@ -3361,9 +3358,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static String replaceSpecialCharsForExactMatch(String in) {
         // This is called when indexing.
         String tmp = in;
-        for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
-            tmp=se.encode(tmp);
-        }
+        // Works with all encoders applies the "encode" method on all of them
+        DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encode(tmp);
         return tmp;
 	}
 
@@ -3378,9 +3374,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-        for(IndexedTextEncoder se: DefaultIndexedTextEncoderFactory.getInstance().getEncodings()) {
-            tmp=se.encodeQuery(tmp);
-        }
+
+        // Works with all encoders applies the "encodeQuery" method on all of them
+        DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encodeQuery(tmp);
         return tmp;
 	}
 

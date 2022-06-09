@@ -4,16 +4,23 @@ public interface IndexedTextEncoder{
     public String encode(String s);
 
     default String encodeQuery(String s){
-        IndexedTextEncoder _this=this;
-        return _this.encode(s);
+        return encode(s);
     }
 
     default IndexedTextEncoder combine(IndexedTextEncoder enc){
         IndexedTextEncoder _this=this;
-        return (s)->{
-            String e=_this.encode(s);
-            return enc.encode(e);
+        return new IndexedTextEncoder (){
+            @Override
+            public String encode(String s){
+                return enc.encode(_this.encode(s));
+            }
+
+            @Override
+            public String encodeQuery(String s){
+                return enc.encodeQuery(_this.encodeQuery(s));
+            }
         };
     }
+
 
 }

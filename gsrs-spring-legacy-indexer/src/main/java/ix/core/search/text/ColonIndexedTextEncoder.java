@@ -26,7 +26,7 @@ public class ColonIndexedTextEncoder implements IndexedTextEncoder{
                 String tmp = qtest.replace("\\\"", "QUOTE_TEMPORARY");
                 String[] parts = tmp.split("\"");
                 for(int i=1;i<parts.length;i+=2){
-                    parts[i]="\""+parts[i].replace(":", "XCOLONX")+"\"";
+                    parts[i]="\""+parts[i].replace(":", COLON_WORD)+"\"";
                 }
 //            String modified1 = Arrays.stream(parts).collect(Collectors.joining("\""));
                 String modified1 = Arrays.stream(parts).collect(Collectors.joining(""));

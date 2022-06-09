@@ -1,11 +1,9 @@
 package ix.core.search.text;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class DefaultIndexedTextEncoderFactory {
+public class DefaultIndexedTextEncoderFactory implements IndexedTextEncodersFactory{
 
    private static final String LEVO_REGEX = "(-)";
    private static final String DEXTRO_REGEX = "(+)";
@@ -22,51 +20,31 @@ public class DefaultIndexedTextEncoderFactory {
 
    private static DefaultIndexedTextEncoderFactory _INSTANCE;
 
-   private List<IndexedTextEncoder> encodings = new ArrayList<IndexedTextEncoder>();
-
-   public List<IndexedTextEncoder> getEncodings(){ return encodings; }
+   private IndexedTextEncoder encoder;
 
    public static DefaultIndexedTextEncoderFactory getInstance(){
       if(_INSTANCE==null)_INSTANCE=new DefaultIndexedTextEncoderFactory();
       return _INSTANCE;
    }
 
-   private DefaultIndexedTextEncoderFactory() {
-      encodings.add(new RegexIndexedTextEncoder(LEVO_REGEX, LEVO_WORD));
-      encodings.add(new RegexIndexedTextEncoder(DEXTRO_REGEX, DEXTRO_WORD));
-      encodings.add(new RegexIndexedTextEncoder(RACEMIC_REGEX, RACEMIC_WORD));
-      encodings.add(new RegexIndexedTextEncoder(RACEMIC_COMBO_REGEX, RACEMIC_WORD));
-
-      String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
-      for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
-         encodings.add(new RegexIndexedTextEncoder(replacementTokensGreek[i], replacementTokensGreek[i + 1]));
-      }
-
-      encodings.add(new ColonIndexedTextEncoder());
-/*      //add special case for colon char
-      encodings.add(
-              (qtest)->{
-         // \"root_names_name:"AZT : ABC" AND root_names_name:"AZT : DEF"\"
-                 System.out.println("====> qtest:" + qtest);
-         if(qtest.contains("\"") && qtest.contains(":")){
-            String tmp = qtest.replace("\\\"", "QUOTE_TEMPORARY");
-            String[] parts = tmp.split("\"");
-            for(int i=1;i<parts.length;i+=2){
-               parts[i]="\""+parts[i].replace(":", COLON_WORD)+"\"";
-            }
-//            String modified1 = Arrays.stream(parts).collect(Collectors.joining("\""));
-            String modified1 = Arrays.stream(parts).collect(Collectors.joining(""));
-//            String modified1 = Arrays.stream(parts).map(p->"\""+p+"\"").collect(Collectors.joining(""));
-            String modified2 = modified1.replace("QUOTE_TEMPORARY","\\\"");
-
-            return modified2;
-         }
-         return qtest;
-      });
+   @Override
+   public IndexedTextEncoder getEncoder() {
+       return encoder;
    }
 
+   private DefaultIndexedTextEncoderFactory() {
+         List<IndexedTextEncoder> encodings = new ArrayList<>();
+         encodings.add(new RegexIndexedTextEncoder(LEVO_REGEX, LEVO_WORD));
+         encodings.add(new RegexIndexedTextEncoder(DEXTRO_REGEX, DEXTRO_WORD));
+         encodings.add(new RegexIndexedTextEncoder(RACEMIC_REGEX, RACEMIC_WORD));
+         encodings.add(new RegexIndexedTextEncoder(RACEMIC_COMBO_REGEX, RACEMIC_WORD));
 
- */
+         String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
+         for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
+            encodings.add(new RegexIndexedTextEncoder(replacementTokensGreek[i], replacementTokensGreek[i + 1]));
+         }
+         encodings.add(new ColonIndexedTextEncoder());
+         encoder = encodings.stream().reduce((a,b)->a.combine(b)).get();
    }
 }
 
