@@ -2018,9 +2018,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    
 			    //Hacky way of avoiding exact match searches if the query looks complex
 			    //TODO: real parsing and analysis
-			    if(tqq.contains("*")||tqq.contains(":")||tqq.contains(" AND ")||tqq.contains(" OR ")) {
-			        
-			    }else {
+// temp comment out			    if(false || tqq.contains("*")||tqq.contains(":")||tqq.contains(" AND ")||tqq.contains(" OR ")) {
+
+// temp comment out			    } // end if
+// temp comment out                else {
 			    
     				try {
     				    
@@ -2067,7 +2068,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     				} catch (Exception ex) {
     				    log.warn("Error performing lucene search", ex);
     				}
-			    }
+// temp comment out			    } // end else
 			}
 		}
 
@@ -3356,10 +3357,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
-        // This is called when indexing.
+        // This is called when indexing or in cases where just field value in the input parameter value.
         String tmp = in;
-        // Works with all encoders applies the "encode" method on all of them
-        DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encode(tmp);
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encode(tmp);
         return tmp;
 	}
 
@@ -3375,8 +3376,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
 
-        // Works with all encoders applies the "encodeQuery" method on all of them
-        DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encodeQuery(tmp);
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encodeQuery(tmp);
         return tmp;
 	}
 

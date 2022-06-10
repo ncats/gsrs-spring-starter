@@ -1,5 +1,5 @@
 package ix.core.search.text;
 
-interface IndexedTextEncodersFactory {
+interface IndexedTextEncodersFactory{
   IndexedTextEncoder getEncoder();
 }
