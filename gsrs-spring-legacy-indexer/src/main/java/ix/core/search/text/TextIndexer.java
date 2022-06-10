@@ -2018,10 +2018,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    
 			    //Hacky way of avoiding exact match searches if the query looks complex
 			    //TODO: real parsing and analysis
-// temp comment out			    if(false || tqq.contains("*")||tqq.contains(":")||tqq.contains(" AND ")||tqq.contains(" OR ")) {
+                if(tqq.contains("*")||Pattern.matches("_.*:", tqq)||tqq.contains(" AND ")||tqq.contains(" OR ")) {
 
-// temp comment out			    } // end if
-// temp comment out                else {
+                } else {
 			    
     				try {
     				    
@@ -2068,10 +2067,9 @@ public class TextIndexer implements Closeable, ProcessListener {
     				} catch (Exception ex) {
     				    log.warn("Error performing lucene search", ex);
     				}
-// temp comment out			    } // end else
+                } // end if else
 			}
 		}
-
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
