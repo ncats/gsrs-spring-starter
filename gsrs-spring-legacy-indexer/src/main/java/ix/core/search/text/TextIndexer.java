@@ -21,10 +21,7 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
-import ix.core.models.FV;
-import ix.core.models.Facet;
-import ix.core.models.FacetFilter;
-import ix.core.models.FieldedQueryFacet;
+import ix.core.models.*;
 import ix.core.search.*;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.SearchOptions.DrillAndPath;
@@ -58,7 +55,6 @@ import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -131,8 +127,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
 	static final String ENTITY_PREFIX = "entity";
-	
-	private List<IndexListener> listeners = new ArrayList<>();
+
+    private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
+
+    private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
 
@@ -2022,9 +2020,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    
 			    //Hacky way of avoiding exact match searches if the query looks complex
 			    //TODO: real parsing and analysis
-			    if(tqq.contains("*")||tqq.contains(":")||tqq.contains(" AND ")||tqq.contains(" OR ")) {
-			        
-			    }else {
+                if(tqq.contains("*")||COMPLEX_QUERY_REGEX.matcher(tqq).find()||tqq.contains(" AND ")||tqq.contains(" OR ")) {
+
+                } else {
 			    
     				try {
     				    
@@ -2071,10 +2069,9 @@ public class TextIndexer implements Closeable, ProcessListener {
     				} catch (Exception ex) {
     				    log.warn("Error performing lucene search", ex);
     				}
-			    }
+                } // end if else
 			}
 		}
-
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
@@ -3360,10 +3357,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
+        // This is called when indexing or in cases where just field value in the input parameter value.
         String tmp = in;
-        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
-            tmp=se.encode(tmp);
-        }
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encode(tmp);
         return tmp;
 	}
 
@@ -3378,9 +3375,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-        for(StandardEncoding se: StandardEncodings.getInstance().getEncodings()) {
-            tmp=se.encode(tmp);
-        }
+
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encodeQuery(tmp);
         return tmp;
 	}
 
