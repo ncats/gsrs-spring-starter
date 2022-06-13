@@ -2559,7 +2559,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
 // This is where you can see how things get indexed.
-						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
+//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}

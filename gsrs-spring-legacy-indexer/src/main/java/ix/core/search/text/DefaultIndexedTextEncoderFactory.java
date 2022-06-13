@@ -12,7 +12,7 @@ public class DefaultIndexedTextEncoderFactory implements IndexedTextEncodersFact
         Then when "β-carotene" comes in as a search, the query is encoded as .BETA.-carotene before
         the search takes place. Thus, it is found in the index.
     In another case, the colon ":"  was problematic because lucene splits on colons when indexing.
-    This had to be handled with care because the colon has special meaning in GSRS API query search
+    This had to be handled with care because the colon has special meaning in the GSRS API query search
     Term syntax.
     */
     private static final String LEVO_REGEX = "(-)";
