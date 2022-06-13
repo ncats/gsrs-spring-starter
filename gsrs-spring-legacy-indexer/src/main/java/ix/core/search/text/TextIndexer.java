@@ -127,8 +127,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
 	static final String ENTITY_PREFIX = "entity";
-	
-	private List<IndexListener> listeners = new ArrayList<>();
+
+    private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
+
+    private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
 
@@ -2018,7 +2020,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    
 			    //Hacky way of avoiding exact match searches if the query looks complex
 			    //TODO: real parsing and analysis
-                if(tqq.contains("*")||Pattern.matches("_.*:", tqq)||tqq.contains(" AND ")||tqq.contains(" OR ")) {
+                if(tqq.contains("*")||COMPLEX_QUERY_REGEX.matcher(tqq).find()||tqq.contains(" AND ")||tqq.contains(" OR ")) {
 
                 } else {
 			    
