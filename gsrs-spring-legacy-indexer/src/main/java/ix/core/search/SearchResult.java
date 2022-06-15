@@ -514,9 +514,10 @@ public class SearchResult {
 
 	public void addSponsoredNamedCallable(NamedCallable<Key,Object> c) {
 		//System.out.println("Sponsored record: " + c.getName());
-		sponsored.put(c.getName(), c);
-		matches.addCallable(c);
-		processAddition(c);
+		if(sponsored.put(c.getName(), c)==null){
+			matches.addCallable(c);
+			processAddition(c);
+		}
 	}
 
 	/**
