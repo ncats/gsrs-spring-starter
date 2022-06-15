@@ -74,7 +74,6 @@ class LuceneSearchResultPopulator {
 				//and that can cause a problem
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
 				try {
-					// Key k = keyOf(doc);
 					Key k = keyOf(doc).toRootKey();
 					result.addNamedCallable(new EntityFetcher(k));
 				} catch (Exception e) {

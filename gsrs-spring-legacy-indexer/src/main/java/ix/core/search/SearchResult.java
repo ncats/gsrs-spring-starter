@@ -39,8 +39,7 @@ public class SearchResult {
 	private String query;
 	final private List<Facet> facets = new ArrayList<Facet>();
 	final private List<FieldedQueryFacet> suggestFacets = new ArrayList<FieldedQueryFacet>();
-    // alex try change
-	// private final LazyList<Key,Object> matches = new LazyList<>(o -> (EntityWrapper.of(o)).getKey());
+
 	private final LazyList<Key,Object> matches = new LazyList<>(o -> (EntityWrapper.of(o)).getKey().toRootKey());
 	
 	private List<?> result; // final result when there are no more updates
