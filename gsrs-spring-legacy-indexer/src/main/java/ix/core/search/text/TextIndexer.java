@@ -2054,12 +2054,14 @@ public class TextIndexer implements Closeable, ProcessListener {
     						LuceneSearchProviderResult lspResult = lsp.search(searcher, taxon, tq,new FacetsCollector()); //special q
     						TopDocs td = lspResult.getTopDocs();
     						for (int j = 0; j < td.scoreDocs.length; j++) {
+
     							Document doc = searcher.doc(td.scoreDocs[j].doc);
     							//TODO katzelda October 2020 : don't do sponsored yet
     							try {
-    								Key k = LuceneSearchResultPopulator.keyOf(doc);
-    								
-    								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
+                                    if(j>=options.getSkip()) {
+                                        Key k = LuceneSearchResultPopulator.keyOf(doc);
+                                        searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
+                                    }
     							} catch (Exception e) {
     								log.error("error adding special match callable", e);
     							}
