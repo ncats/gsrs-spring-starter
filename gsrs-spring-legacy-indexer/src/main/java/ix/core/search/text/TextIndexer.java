@@ -1474,9 +1474,17 @@ public class TextIndexer implements Closeable, ProcessListener {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
-    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());    				
-    				query = parser.parse(QueryParser.escape(qtext));
-                    /*System.out.println("query class: " + query.getClass().getName());*/
+    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
+    				String processedQtext = qtext.trim();
+    				//phrase query with wildcards 
+     				if( processedQtext.startsWith("\"") && processedQtext.endsWith("\"")
+     						&& ( processedQtext.contains("*") || processedQtext.contains("?"))) {
+    					processedQtext = qtext.replaceAll("[&\\|\\.\\-\\+\\^\\(\\)\\{\\}\\[\\]]", " ");  
+    				}    					
+//    				log.error("processedQtext: " + processedQtext);
+    				query = parser.parse(processedQtext);
+//                    System.out.println("query class: " + query.getClass().getName());
+//                    log.error("BooleanQuery.getMaxClauseCount:" + BooleanQuery.getMaxClauseCount());
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
     				throw new IllegalStateException(ex);
