@@ -135,4 +135,20 @@ public class QueryParseTest {
        
     }
     
+    @Test
+    public void replaceSpecialCharactersWithSpaceInComplexPhraseQuery() {
+    	
+    	assertEquals("\"*OAT 2*\"", TextIndexer.preProcessQueryText("\"*OAT-2*\""));
+    	assertEquals("\"*OAT 2*\"", TextIndexer.preProcessQueryText("\"*OAT.2*\""));
+    	assertEquals("root_names_name:\"*OCT 1*\"", TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\""));
+    	assertEquals("root_names_name:\"*OCT 123*\"", TextIndexer.preProcessQueryText("root_names_name:  \"*OCT-123*\""));
+    	assertEquals("root_names_name:\"*OCT 1*\" AND   root_codes_code:\"*OCT 2*\" OR root_approvalID:\"*OCT 3*\"", 
+    			TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\" AND   root_codes_code:  \"*OCT-2*\" OR root_approvalID:\"*OCT-3*\""));
+    	assertEquals("root_names_name:\"*OCT 1*\" AND   (root_codes_code:\"*OCT 2*\" OR root_approvalID:\"*OCT 3*\")", 
+    			TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\" AND   (root_codes_code:  \"*OCT-2*\" OR root_approvalID:\"*OCT-3*\")"));
+    	assertEquals("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 2*\" root_references_citation:\"*OCT 4*\")",
+    			TextIndexer.preProcessQueryText("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 2*\" root_references_citation:\"*OCT-4*\")"));
+    	
+    }   
+    
 }
