@@ -80,6 +80,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1474,9 +1475,9 @@ public class TextIndexer implements Closeable, ProcessListener {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
-    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
-    				query = parser.parse(qtext);
-                    /*System.out.println("query class: " + query.getClass().getName());*/
+    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
+    				String processedQtext = preProcessQueryText(qtext);
+    				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
     				throw new IllegalStateException(ex);
@@ -1533,8 +1534,45 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		return searchResult;
+	}	
+	
+	//replace special characters ComplexPhraseQueryParser does not like with space
+	public static String preProcessQueryText(String qtext) {
+		
+		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
+		Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");	
+		
+		String processedQtext = qtext.trim();
+			
+		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
+		if(singlePhraseMatcher.matches()) {
+			processedQtext = replaceCharacterWithSpace(processedQtext);					
+		}else {
+			StringBuilder qtextSB = new StringBuilder();
+			Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);			
+		
+			int endPos = 0;
+			while(multiPhraseMatcher.find()) {				
+				endPos = multiPhraseMatcher.end();	           
+				qtextSB.append(multiPhraseMatcher.group(2));
+				qtextSB.append(replaceCharacterWithSpace(multiPhraseMatcher.group(4)));	         
+			}
+			if(endPos>0) {
+				qtextSB.append(processedQtext.substring(endPos));			
+				processedQtext = qtextSB.toString();
+			}
+		}		
+		return processedQtext;
 	}
-
+	
+	private static String replaceCharacterWithSpace(String inputString) {
+		String result = inputString;
+		if(inputString.contains("*")) {
+			result = inputString.replaceAll("([&\\.\\-])", " ");
+		}
+		return result;
+	}
+	
 	private static FieldCacheTermsFilter filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
         return filterForKinds(einfo);
