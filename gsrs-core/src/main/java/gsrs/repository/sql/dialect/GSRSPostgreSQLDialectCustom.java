@@ -1,6 +1,6 @@
 package gsrs.repository.sql.dialect;
 
-import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
 import org.hibernate.type.descriptor.sql.LongVarcharTypeDescriptor;
 import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
@@ -8,7 +8,7 @@ import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
 /*
 Designed by Tyler Peryea
 */
-public class GSRSPostgreSQLDialectCustom extends PostgreSQLDialect {
+public class GSRSPostgreSQLDialectCustom extends PostgreSQL9Dialect {
 
     public GSRSPostgreSQLDialectCustom() {
         super();
