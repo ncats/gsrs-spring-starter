@@ -1475,8 +1475,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
-    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());    				
-    				String processedQtext = preProcessQueryText(qtext);    				
+    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
+    				String processedQtext = preProcessQueryText(qtext);
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1557,8 +1557,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 				qtextSB.append(multiPhraseMatcher.group(2));
 				qtextSB.append(replaceCharacterWithSpace(multiPhraseMatcher.group(4)));	         
 			}
-			qtextSB.append(processedQtext.substring(endPos));			
-			processedQtext = qtextSB.toString();				
+			if(endPos>0) {
+				qtextSB.append(processedQtext.substring(endPos));			
+				processedQtext = qtextSB.toString();
+			}
 		}		
 		return processedQtext;
 	}
