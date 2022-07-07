@@ -2150,8 +2150,46 @@ public class TextIndexer implements Closeable, ProcessListener {
                     //swallow
                 }
             }
-            FieldNameDecorator fnd=fndt;
 
+            // For Application Module
+            if ("gov.hhs.gsrs.application.application.models.Application".equals(entityMeta.getName())) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.application.application.ApplicationFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            // For Product Module
+            if ("gov.hhs.gsrs.products.productall.models.ProductMainAll".equals(entityMeta.getName())) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.products.productall.ProductFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            // For Adverse Event PT, DME, and CVM Modules
+            if (("gov.hhs.gsrs.adverseevents.adverseeventpt.models.AdverseEventPt".equals(entityMeta.getName()))
+                    || ("gov.hhs.gsrs.adverseevents.adverseeventdme.models.AdverseEventDme".equals(entityMeta.getName()))
+                    || ("gov.hhs.gsrs.adverseevents.adverseeventcvm.models.AdverseEventCvm".equals(entityMeta.getName()))) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.adverseevents.AdverseEventFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            FieldNameDecorator fnd=fndt;
 
 			getQueryBreakDownFor(query).stream().forEach(oq->{
 				try{
