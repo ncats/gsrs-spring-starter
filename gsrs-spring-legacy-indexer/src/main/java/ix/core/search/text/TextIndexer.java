@@ -128,7 +128,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
 	static final String ENTITY_PREFIX = "entity";
-	private static final String REPLACE_STRING = "XDASHSPACEX";
+	private static final String DASH_WORD = "XDASHX";
+	private static final String SPACE_WORD = "XSPACEX";
+	
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
 
@@ -1477,8 +1479,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
-    				String processedQtext = preProcessQueryText(qtext);
-    				log.error("In search escape String: " + processedQtext); 
+    				String processedQtext = preProcessQueryText(qtext);    				
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -3428,9 +3429,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public static String replaceTokenSplitCharsWithString(String in){		
-		String replaceString = in.replaceAll("[\\s\\-]", REPLACE_STRING);
-		log.error("replaceString: " + replaceString);
-		return replaceString;
+		String replaceString = in.replaceAll("[\\-]", DASH_WORD);	
+		String resultString = replaceString.replaceAll("[\\s]", SPACE_WORD);
+		return resultString;	 
 	}
 
 	public static String toExactMatchQueryString(String in){
