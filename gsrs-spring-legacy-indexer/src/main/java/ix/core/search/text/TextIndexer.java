@@ -128,6 +128,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
 	static final String ENTITY_PREFIX = "entity";
+	private static final String REPLACE_STRING = "XDASHSPACEX";
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
 
@@ -1477,6 +1478,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
     				String processedQtext = preProcessQueryText(qtext);
+    				log.error("In search escape String: " + processedQtext); 
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1546,7 +1548,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			
 		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
 		if(singlePhraseMatcher.matches()) {
-			processedQtext = replaceCharacterWithSpace(processedQtext);					
+			processedQtext = replaceTokenSplitCharsWithString(processedQtext);					
 		}else {
 			StringBuilder qtextSB = new StringBuilder();
 			Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);			
@@ -1555,7 +1557,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			while(multiPhraseMatcher.find()) {				
 				endPos = multiPhraseMatcher.end();	           
 				qtextSB.append(multiPhraseMatcher.group(2));
-				qtextSB.append(replaceCharacterWithSpace(multiPhraseMatcher.group(4)));	         
+				qtextSB.append(replaceTokenSplitCharsWithString(multiPhraseMatcher.group(4)));	         
 			}
 			if(endPos>0) {
 				qtextSB.append(processedQtext.substring(endPos));			
@@ -1563,14 +1565,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 		}		
 		return processedQtext;
-	}
-	
-	private static String replaceCharacterWithSpace(String inputString) {
-		String result = inputString;
-		if(inputString.contains("*")) {
-			result = inputString.replaceAll("([&\\.\\-])", " ");
-		}
-		return result;
 	}
 	
 	private static FieldCacheTermsFilter filterForKinds(Class<?> cls){
@@ -3401,11 +3395,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 
 			String exactMatchStr = toExactMatchString(text);
+			String exactMatchStrContinuous = toExactMatchStringContinuous(text);
 
 			if (!(value instanceof Number)) {
 				if (!name.equals(full)){
 					// Added exact match
 					fields.accept(new TextField(full,exactMatchStr, NO));
+					fields.accept(new TextField(full,exactMatchStrContinuous , NO));
 				}
 			}
 
@@ -3418,6 +3414,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 			// Added exact match
 			fields.accept(new TextField(name, exactMatchStr , store));
+			fields.accept(new TextField(name, exactMatchStrContinuous , store));
 		}
 	}
 	
@@ -3426,7 +3423,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
 
+	public static String toExactMatchStringContinuous(String in){
+		return TextIndexer.START_WORD + replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(in)) + TextIndexer.STOP_WORD;
+	}
 
+	public static String replaceTokenSplitCharsWithString(String in){		
+		String replaceString = in.replaceAll("[\\s\\-]", REPLACE_STRING);
+		log.error("replaceString: " + replaceString);
+		return replaceString;
+	}
 
 	public static String toExactMatchQueryString(String in){
         return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
