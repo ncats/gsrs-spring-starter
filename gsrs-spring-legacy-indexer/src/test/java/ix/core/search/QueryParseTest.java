@@ -136,18 +136,24 @@ public class QueryParseTest {
     }
     
     @Test
-    public void replaceSpecialCharactersWithSpaceInComplexPhraseQuery() {
+    public void replaceDashAndSpaceWithReplaceStringInComplexPhraseQuery() {
     	
-    	assertEquals("\"*OAT 2*\"", TextIndexer.preProcessQueryText("\"*OAT-2*\""));
-    	assertEquals("\"*OAT 2*\"", TextIndexer.preProcessQueryText("\"*OAT.2*\""));
-    	assertEquals("root_names_name:\"*OCT 1*\"", TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\""));
-    	assertEquals("root_names_name:\"*OCT 123*\"", TextIndexer.preProcessQueryText("root_names_name:  \"*OCT-123*\""));
-    	assertEquals("root_names_name:\"*OCT 1*\" AND   root_codes_code:\"*OCT 2*\" OR root_approvalID:\"*OCT 3*\"", 
+    	assertEquals("*OAT-2*", TextIndexer.preProcessQueryText("*OAT-2*"));
+    	assertEquals("OAT-2", TextIndexer.preProcessQueryText("OAT-2"));
+    	assertEquals("\"*OATXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT.2*\""));
+    	assertEquals("\"*OATXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT&2*\""));    	
+    	assertEquals("\"*OATXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT-2*\""));
+    	assertEquals("\"*OATXSPACEX2XSPACEXBETAXSPACEX*\"", TextIndexer.preProcessQueryText("\"*OAT-2β*\""));
+    	assertEquals("\"*OATXSPACEXXSPACEXXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT---2*\""));
+    	assertEquals("\"*OATXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT 2*\""));
+    	assertEquals("root_names_name:\"*OCTXSPACEX1*\"", TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\""));
+    	assertEquals("root_names_name:\"*OCTXSPACEX123*\"", TextIndexer.preProcessQueryText("root_names_name:  \"*OCT-123*\""));
+    	assertEquals("root_names_name:\"*OCTXSPACEX1*\" AND   root_codes_code:\"*OCTXSPACEX2*\" OR root_approvalID:\"*OCTXSPACEX3*\"", 
     			TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\" AND   root_codes_code:  \"*OCT-2*\" OR root_approvalID:\"*OCT-3*\""));
-    	assertEquals("root_names_name:\"*OCT 1*\" AND   (root_codes_code:\"*OCT 2*\" OR root_approvalID:\"*OCT 3*\")", 
+    	assertEquals("root_names_name:\"*OCTXSPACEX1*\" AND   (root_codes_code:\"*OCTXSPACEX2*\" OR root_approvalID:\"*OCTXSPACEX3*\")", 
     			TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\" AND   (root_codes_code:  \"*OCT-2*\" OR root_approvalID:\"*OCT-3*\")"));
-    	assertEquals("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 2*\" root_references_citation:\"*OCT 4*\")",
-    			TextIndexer.preProcessQueryText("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 2*\" root_references_citation:\"*OCT-4*\")"));
+    	assertEquals("(root_names_name:\"*OCTXSPACEX2*\" AND root_codes_code:\"*OCTXSPACEX2*\") OR (root_approvalID:\"*OCTXSPACEX3*\" root_references_citation:\"*OCTXSPACEX4*\")",
+    			TextIndexer.preProcessQueryText("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 3*\" root_references_citation:\"*OCT-4*\")"));
     	
     }   
     
