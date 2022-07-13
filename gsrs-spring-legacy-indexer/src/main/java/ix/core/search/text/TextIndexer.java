@@ -1481,8 +1481,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
-    				String processedQtext = preProcessQueryText(qtext);   
-    				log.error("After preprocess: " + processedQtext);
+    				String processedQtext = preProcessQueryText(qtext);    				
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
