@@ -138,9 +138,12 @@ public class QueryParseTest {
     @Test
     public void replaceDashAndSpaceWithReplaceStringInComplexPhraseQuery() {
     	
-    	assertEquals("\"*OAT.2*\"", TextIndexer.preProcessQueryText("\"*OAT.2*\""));
     	assertEquals("*OAT-2*", TextIndexer.preProcessQueryText("*OAT-2*"));
+    	assertEquals("OAT-2", TextIndexer.preProcessQueryText("OAT-2"));
+    	assertEquals("\"*OATXPERIODX2*\"", TextIndexer.preProcessQueryText("\"*OAT.2*\""));
+    	assertEquals("\"*OATXAMPERSANDX2*\"", TextIndexer.preProcessQueryText("\"*OAT&2*\""));    	
     	assertEquals("\"*OATXDASHX2*\"", TextIndexer.preProcessQueryText("\"*OAT-2*\""));
+    	assertEquals("\"*OATXDASHXXDASHXXDASHX2*\"", TextIndexer.preProcessQueryText("\"*OAT---2*\""));
     	assertEquals("\"*OATXSPACEX2*\"", TextIndexer.preProcessQueryText("\"*OAT 2*\""));
     	assertEquals("root_names_name:\"*OCTXDASHX1*\"", TextIndexer.preProcessQueryText("root_names_name:\"*OCT-1*\""));
     	assertEquals("root_names_name:\"*OCTXDASHX123*\"", TextIndexer.preProcessQueryText("root_names_name:  \"*OCT-123*\""));

@@ -130,6 +130,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	static final String ENTITY_PREFIX = "entity";
 	private static final String DASH_WORD = "XDASHX";
 	private static final String SPACE_WORD = "XSPACEX";
+	private static final String AMPERSAND_WORD = "XAMPERSANDX";
+	private static final String PERIOD_WORD = "XPERIODX";
 	
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
@@ -1479,7 +1481,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
-    				String processedQtext = preProcessQueryText(qtext);    				
+    				String processedQtext = preProcessQueryText(qtext);   
+    				log.error("After preprocess: " + processedQtext);
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1542,13 +1545,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 	//replace special characters ComplexPhraseQueryParser does not like with space
 	public static String preProcessQueryText(String qtext) {
 		
-		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
-		Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");	
-		
 		String processedQtext = qtext.trim();
+		
+		if( !processedQtext.contains("*") || !processedQtext.contains("\"") )
+			return processedQtext;
+		
+		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
+		Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");		
 			
 		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
-		if(singlePhraseMatcher.matches()) {
+		if(singlePhraseMatcher.matches()) {			
 			processedQtext = replaceTokenSplitCharsWithString(processedQtext);					
 		}else {
 			StringBuilder qtextSB = new StringBuilder();
@@ -1558,7 +1564,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 			while(multiPhraseMatcher.find()) {				
 				endPos = multiPhraseMatcher.end();	           
 				qtextSB.append(multiPhraseMatcher.group(2));
-				qtextSB.append(replaceTokenSplitCharsWithString(multiPhraseMatcher.group(4)));	         
+				String currentString = multiPhraseMatcher.group(4);
+				if(currentString.contains("*"))
+					qtextSB.append(replaceTokenSplitCharsWithString(currentString));
+				else
+					qtextSB.append(currentString);
 			}
 			if(endPos>0) {
 				qtextSB.append(processedQtext.substring(endPos));			
@@ -3428,10 +3438,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return TextIndexer.START_WORD + replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(in)) + TextIndexer.STOP_WORD;
 	}
 
-	public static String replaceTokenSplitCharsWithString(String in){		
-		String replaceString = in.replaceAll("[\\-]", DASH_WORD);	
-		String resultString = replaceString.replaceAll("[\\s]", SPACE_WORD);
-		return resultString;	 
+	public static String replaceTokenSplitCharsWithString(String in){			
+		String replaceString = in.replaceAll("[\\-]", DASH_WORD)
+				.replaceAll("[\\s]", SPACE_WORD)
+				.replaceAll("[\\.]", PERIOD_WORD)
+				.replaceAll("[&]", AMPERSAND_WORD);
+		return replaceString;	 
 	}
 
 	public static String toExactMatchQueryString(String in){
