@@ -127,12 +127,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_STOP_WORD = "$";
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
-	static final String ENTITY_PREFIX = "entity";
-	private static final String DASH_WORD = "XDASHX";
-	private static final String SPACE_WORD = "XSPACEX";
-	private static final String AMPERSAND_WORD = "XAMPERSANDX";
-	private static final String PERIOD_WORD = "XPERIODX";
-	
+	static final String ENTITY_PREFIX = "entity";	
+	private static final String SPACE_WORD = "XSPACEX";	
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
 
@@ -1481,7 +1477,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
-    				String processedQtext = preProcessQueryText(qtext);    				
+    				String processedQtext = preProcessQueryText(qtext);
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1554,7 +1550,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			
 		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
 		if(singlePhraseMatcher.matches()) {			
-			processedQtext = replaceTokenSplitCharsWithString(processedQtext);					
+			processedQtext = replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(processedQtext));					
 		}else {
 			StringBuilder qtextSB = new StringBuilder();
 			Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);			
@@ -1565,7 +1561,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				qtextSB.append(multiPhraseMatcher.group(2));
 				String currentString = multiPhraseMatcher.group(4);
 				if(currentString.contains("*"))
-					qtextSB.append(replaceTokenSplitCharsWithString(currentString));
+					qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
 				else
 					qtextSB.append(currentString);
 			}
@@ -3438,10 +3434,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public static String replaceTokenSplitCharsWithString(String in){			
-		String replaceString = in.replaceAll("[\\-]", DASH_WORD)
-				.replaceAll("[\\s]", SPACE_WORD)
-				.replaceAll("[\\.]", PERIOD_WORD)
-				.replaceAll("[&]", AMPERSAND_WORD);
+		String replaceString = in.replaceAll("[&\\-\\s\\.]", SPACE_WORD);
 		return replaceString;	 
 	}
 
