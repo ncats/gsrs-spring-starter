@@ -230,6 +230,11 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
 
         String q7 = "root_names_name:\"OAT-2*\" AND abc-def*";
         String q7r = "root_names_name:\"OATXSPACEX2*\" AND abc-def*";
-        assertEquals(q6r, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q6));
+        assertEquals(q7r, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q7));
+
+        String q8 = "root_names_name:\"abc-βdef*\"";
+        String q8r = "root_names_name:\"abcXSPACEXXSPACEXBETAXSPACEXdef*\"";
+        assertEquals(q8r, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q8));
+
     }
 }
