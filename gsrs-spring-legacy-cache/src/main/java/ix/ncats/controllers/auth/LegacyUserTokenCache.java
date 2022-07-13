@@ -6,7 +6,9 @@ import gsrs.security.UserTokenCache;
 import gsrs.security.TokenConfiguration;
 import ix.core.models.UserProfile;
 import ix.utils.Util;
-import jdk.nashorn.internal.parser.Token;
+// unused import - causes intellij to choke when running tests.
+// can we remove?
+// import jdk.nashorn.internal.parser.Token;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;

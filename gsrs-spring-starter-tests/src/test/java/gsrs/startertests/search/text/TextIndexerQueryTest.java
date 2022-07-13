@@ -2,6 +2,7 @@ package gsrs.startertests.search.text;
 
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -24,6 +25,9 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ActiveProfiles("test")
 @GsrsJpaTest( classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
@@ -194,6 +198,38 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         
         assertEquals(4, hits.totalHits);       
         
-    }   
-   
+    }
+
+    @Test
+    public void confirmPhraseQueryWithFieldNamePatternWorks() throws Exception {
+        String q0 = "root_names_name:\"abc*\"";
+        assertEquals(q0, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q0));
+        String q1 = "root_names_name:\"abc*\" AND root_names_name:\"def*\"";
+        assertEquals(q1, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q1));
+
+        // Since this does not match the regex dash is not converted here.
+        String q2 = "xxx:\"abc-def*\"";
+        assertEquals(q2, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q2));
+
+        // Since this does not match the regex dash is not converted here.
+        String q3 = "name with: colon a-a";
+        assertEquals(q3, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q3));
+
+        // Since this does not match the no change.
+        String q4 = "name with: \"colon*\"";
+        assertEquals(q4, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q4));
+
+        // First one matches regex, but second does not; still no change since there are no
+        // special characters converted.
+        String q5 = "root_names_name:\"abc*\" AND def*";
+        assertEquals(q5, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q5));
+
+        String q6 = "root_names_name:\"OAT-2*\" AND root_names_name:\"OAT&2*\"";
+        String q6r = "root_names_name:\"OATXSPACEX2*\" AND root_names_name:\"OATXSPACEX2*\"";
+        assertEquals(q6r, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q6));
+
+        String q7 = "root_names_name:\"OAT-2*\" AND abc-def*";
+        String q7r = "root_names_name:\"OATXSPACEX2*\" AND abc-def*";
+        assertEquals(q6r, TextIndexer.preprocessWithPhraseQueryWithFieldNamePattern(q6));
+    }
 }

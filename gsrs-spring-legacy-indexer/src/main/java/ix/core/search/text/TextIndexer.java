@@ -1545,34 +1545,43 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if( !processedQtext.contains("*") || !processedQtext.contains("\"") )
 			return processedQtext;
 		
-		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
-		Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");		
-			
+		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");
+
+
 		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
 		if(singlePhraseMatcher.matches()) {			
 			processedQtext = replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(processedQtext));					
 		}else {
-			StringBuilder qtextSB = new StringBuilder();
-			Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);			
-		
-			int endPos = 0;
-			while(multiPhraseMatcher.find()) {				
-				endPos = multiPhraseMatcher.end();	           
-				qtextSB.append(multiPhraseMatcher.group(2));
-				String currentString = multiPhraseMatcher.group(4);
-				if(currentString.contains("*"))
-					qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
-				else
-					qtextSB.append(currentString);
-			}
-			if(endPos>0) {
-				qtextSB.append(processedQtext.substring(endPos));			
-				processedQtext = qtextSB.toString();
-			}
+            processedQtext = preprocessWithPhraseQueryWithFieldNamePattern(processedQtext);
 		}		
 		return processedQtext;
 	}
-	
+
+    // original:
+    // private static final Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");
+    private static final Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(((?=.*_.*:)([^\"\\:]*\\:))(\\s)*(\"[^\"]*\"))");
+
+    public static String preprocessWithPhraseQueryWithFieldNamePattern(String processedQtext) {
+        StringBuilder qtextSB = new StringBuilder();
+        Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);
+        int endPos = 0;
+        while(multiPhraseMatcher.find()) {
+            endPos = multiPhraseMatcher.end();
+            qtextSB.append(multiPhraseMatcher.group(3)); // original was 3
+            String currentString = multiPhraseMatcher.group(5); // original was 4
+            if(currentString.contains("*"))
+                qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
+            else
+                qtextSB.append(currentString);
+        }
+        if(endPos>0) {
+            qtextSB.append(processedQtext.substring(endPos));
+            processedQtext = qtextSB.toString();
+        }
+        return processedQtext;
+    }
+
+
 	private static FieldCacheTermsFilter filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
         return filterForKinds(einfo);
