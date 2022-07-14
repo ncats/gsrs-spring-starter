@@ -1536,41 +1536,42 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		return searchResult;
 	}	
-	
-	private static Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
+
+    private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
 	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
 	
 	//replace special characters ComplexPhraseQueryParser does not like with space
 	public static String preProcessQueryText(String qtext) {
-		
-		String processedQtext = qtext.trim();
-		
-		if( !processedQtext.contains("*") || !processedQtext.contains("\"") )
-			return processedQtext;
-					
-		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
-		if(singlePhraseMatcher.matches()) {			
-			processedQtext = replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(processedQtext));					
-		}else {
-			StringBuilder qtextSB = new StringBuilder();
-			Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);			
-		
-			int endPos = 0;
-			while(multiPhraseMatcher.find()) {				
-				endPos = multiPhraseMatcher.end();	           
-				qtextSB.append(multiPhraseMatcher.group(2));
-				String currentString = multiPhraseMatcher.group(3);
-				if(currentString.contains("*"))
-					qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
-				else
-					qtextSB.append(currentString);
-			}
-			if(endPos>0) {
-				qtextSB.append(processedQtext.substring(endPos));			
-				processedQtext = qtextSB.toString();
-			}
-		}		
-		return processedQtext;
+	    String processedQtext = qtext.trim();
+
+	    //This extra processing is only required if there's at least a * AND a quote,
+	    //otherwise it won't do anything
+	    if( !processedQtext.contains("*") || !processedQtext.contains("\"") ) {
+	        return processedQtext;
+	    }
+
+	    //If there's an explicit escaped quote, replace it with a temporary term
+	    //that will be used to recover the old quote character later
+	    if(processedQtext.contains("\\\"")) {
+	        processedQtext=processedQtext.replace("\\\"", QUOTE_TMP_REPLACE);
+	    }
+	    StringBuilder qtextSB = new StringBuilder();
+	    Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);           
+	    int endPos = 0;
+	    while(multiPhraseMatcher.find()) {              
+	        endPos = multiPhraseMatcher.end();             
+	        qtextSB.append(multiPhraseMatcher.group(2));
+	        String currentString = multiPhraseMatcher.group(3);
+	        if(currentString.contains("*"))
+	            qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
+	        else
+	            qtextSB.append(currentString);
+	    }
+	    if(endPos>0) {
+	        qtextSB.append(processedQtext.substring(endPos));           
+	        processedQtext = qtextSB.toString();
+	    }
+	    return processedQtext.replace(QUOTE_TMP_REPLACE,"\\\"");
 	}
 	
 	private static FieldCacheTermsFilter filterForKinds(Class<?> cls){

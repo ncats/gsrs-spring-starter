@@ -135,9 +135,17 @@ public class QueryParseTest {
        
     }
     
+
+    @Test
+    public void replaceSpaceButNotEscapedQuoteInReplaceStringInComplexPhraseQuery() {
+
+        assertEquals("\"*testwith\\\"escapedquoteXSPACEXworks\"",
+                TextIndexer.preProcessQueryText("\"*testwith\\\"escapedquote works\""));
+    }
     @Test
     public void replaceDashAndSpaceWithReplaceStringInComplexPhraseQuery() {
-    	
+
+        
     	assertEquals("*OAT-2*", TextIndexer.preProcessQueryText("*OAT-2*"));
     	assertEquals("OAT-2", TextIndexer.preProcessQueryText("OAT-2"));
     	
@@ -180,6 +188,8 @@ public class QueryParseTest {
     	
     	assertEquals("(root_names_name:\"*OCTXSPACEX2*\" AND root_codes_code:\"*OCTXSPACEX2*\") OR (root_approvalID:\"*OCTXSPACEX3*\" AND root_references_citation:\"*OCTXSPACEX4*\")",
     			TextIndexer.preProcessQueryText("(root_names_name:\"*OCT 2*\" AND root_codes_code:\"*OCT 2*\") OR (root_approvalID:\"*OCT 3*\" AND root_references_citation:\"*OCT-4*\")"));
+    	
+    	
     	    	    	
     }   
     
