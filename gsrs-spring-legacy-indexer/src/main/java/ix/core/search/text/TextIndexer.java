@@ -1477,7 +1477,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     		} else {
     			try {
     				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
-    				String processedQtext = preProcessQueryText(qtext);
+    				String processedQtext = preProcessQueryText(qtext);    				
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
@@ -1537,6 +1537,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return searchResult;
 	}	
 	
+	private static Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
+	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
+	
 	//replace special characters ComplexPhraseQueryParser does not like with space
 	public static String preProcessQueryText(String qtext) {
 		
@@ -1544,10 +1547,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		
 		if( !processedQtext.contains("*") || !processedQtext.contains("\"") )
 			return processedQtext;
-		
-		Pattern singlePhraseQueryNoFieldNamePattern = Pattern.compile("\"([^\"]*)\"");		
-		Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"\\:]*\\:)(\\s)*(\"[^\"]*\"))");		
-			
+					
 		Matcher singlePhraseMatcher = singlePhraseQueryNoFieldNamePattern.matcher(processedQtext);
 		if(singlePhraseMatcher.matches()) {			
 			processedQtext = replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(processedQtext));					
@@ -1559,7 +1559,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			while(multiPhraseMatcher.find()) {				
 				endPos = multiPhraseMatcher.end();	           
 				qtextSB.append(multiPhraseMatcher.group(2));
-				String currentString = multiPhraseMatcher.group(4);
+				String currentString = multiPhraseMatcher.group(3);
 				if(currentString.contains("*"))
 					qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
 				else
@@ -3434,10 +3434,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public static String replaceTokenSplitCharsWithString(String in){			
-		String replaceString = in.replaceAll("[&\\-\\s\\.]", SPACE_WORD);
-		return replaceString;	 
+		return in.replaceAll("[&\\-\\s\\.]", SPACE_WORD);			 
 	}
-
+	
 	public static String toExactMatchQueryString(String in){
         return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
     }
