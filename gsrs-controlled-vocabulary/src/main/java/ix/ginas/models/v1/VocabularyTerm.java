@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
+import ix.core.models.ForceUpdatableModel;
 import ix.core.models.IxModel;
 import ix.core.models.ParentReference;
 import ix.ginas.models.EmbeddedKeywordList;
@@ -26,7 +27,7 @@ import javax.persistence.*;
 @Getter
 @Setter
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_vocabulary_term_seq", allocationSize = 1)
-public class VocabularyTerm extends IxModel {
+public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	/**
 	 * 
 	 */
@@ -101,5 +102,11 @@ public class VocabularyTerm extends IxModel {
 				", selected=" + selected +
 				"} " + super.toString();
 	}
+
+
+    @Override
+    public void forceUpdate() {
+        this.setIsAllDirty();
+    }
 
 }
