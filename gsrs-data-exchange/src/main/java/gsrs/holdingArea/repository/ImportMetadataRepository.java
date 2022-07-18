@@ -1,6 +1,6 @@
-package gsrs.holdingarea.repository;
+package gsrs.holdingArea.repository;
 
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingArea.model.ImportMetadata;
 import gsrs.repository.GsrsVersionedRepository;
 
 import java.util.UUID;

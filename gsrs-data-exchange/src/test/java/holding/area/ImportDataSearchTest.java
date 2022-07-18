@@ -1,7 +1,7 @@
 package holding.area;
 
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingArea.model.ImportMetadata;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.GsrsSpringApplication;

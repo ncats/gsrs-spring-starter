@@ -1,6 +1,6 @@
-package gsrs.holdingarea.repository;
+package gsrs.holdingArea.repository;
 
-import gsrs.holdingarea.model.DefinitionalValueTuple;
+import gsrs.holdingArea.model.DefinitionalValueTuple;
 import ix.core.validator.GinasProcessingMessage;
 
 import java.sql.Clob;

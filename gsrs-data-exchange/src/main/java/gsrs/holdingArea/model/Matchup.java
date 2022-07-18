@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.holdingArea.model;
 
 import ix.core.models.Backup;
 import ix.core.models.Indexable;

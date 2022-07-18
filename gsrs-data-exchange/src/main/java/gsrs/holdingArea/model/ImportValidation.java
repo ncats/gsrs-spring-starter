@@ -1,6 +1,10 @@
-package gsrs.holdingarea.model;
+package gsrs.holdingArea.model;
 
+import ix.core.models.Indexable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -13,7 +17,10 @@ import java.util.UUID;
 @Table(name = "ix_import_validation")
 @Slf4j
 @Data
-public class Validation {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ImportValidation {
 
     public enum ImportValidationType {
         info,
@@ -21,11 +28,14 @@ public class Validation {
         error
     }
 
+
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
+    @Column(length =40, updatable = false, unique = false)
+    @Indexable
     private UUID RecordId;
 
+    @Indexable
     private int version;
 
     @Id
@@ -34,14 +44,19 @@ public class Validation {
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
     @Column(length =40, updatable = false, unique = true)
+    @Indexable
     private UUID ValidationId;
 
+    @Indexable
     private ImportValidationType ValidationType;
 
+    @Indexable
     private String ValidationMessage;
 
     @Lob
+    @Indexable
     private String ValidationJson;
 
+    @Indexable
     private Date ValidationDate;
 }

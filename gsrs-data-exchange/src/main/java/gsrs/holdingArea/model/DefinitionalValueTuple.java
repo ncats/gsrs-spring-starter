@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.holdingArea.model;
 
 import lombok.Data;
 

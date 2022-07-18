@@ -1,8 +1,8 @@
-package gsrs.holdingarea.repository;
+package gsrs.holdingArea.repository;
 
-import gsrs.holdingarea.model.DefinitionalValueTuple;
-import gsrs.holdingarea.model.ImportData;
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingArea.model.DefinitionalValueTuple;
+import gsrs.holdingArea.model.ImportData;
+import gsrs.holdingArea.model.ImportMetadata;
 import ix.core.validator.GinasProcessingMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 

@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.holdingArea.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.EntityMapperOptions;
@@ -7,41 +7,48 @@ import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
 import ix.ginas.models.utils.JSONEntity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 @Backup
-@JSONEntity(name = "metadata", title = "Metadata")
 @Entity
 @Table(name = "ix_import_metadata")
 @Slf4j
 @IndexableRoot
 @Data
-public class ImportMetadata {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ImportMetadata implements Serializable {
 
     public enum RecordImportStatus {
-        staged,
-        accepted,
-        imported,
-        merged,
-        rejected;
+        staged, //first status
+        accepted, //someone reviewed and approved it
+        imported, //imported as new record in permanent db
+        merged, //data from this record was copied into an existing record
+        rejected  //someone decided not to use this record
     }
 
     public enum RecordImportType {
+        unknown,
         create,
         merge
     }
 
     public enum RecordVersionStatus {
-        current, 
+        current,
         superseded
     }
 
@@ -54,8 +61,9 @@ public class ImportMetadata {
     }
 
     public enum RecordProcessStatus {
+        received, //we've created rows for the record in our table but haven't processed yet
+        parsed, //done basic parsing but haven't fully loaded
         loaded,
-        parsed,
         validated,
         indexed
     }
@@ -95,6 +103,12 @@ public class ImportMetadata {
     @Indexable()
     private String entityClass;
 
+    /*
+    To record why this import was rejected or processed in a certain way.
+     */
+    @Indexable()
+    private String reason;
+
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
@@ -113,9 +127,8 @@ public class ImportMetadata {
             @JoinColumn(name="RecordId", referencedColumnName = "RecordId"),
             @JoinColumn(name="version", referencedColumnName = "version")
     })
-    public List<Validation> validations = new ArrayList<>();
+    public List<gsrs.holdingArea.model.ImportValidation> validations = new ArrayList<>();
 
-    public ImportMetadata() {
-
-    }
+    @Indexable
+    private String dataFormat;
 }
