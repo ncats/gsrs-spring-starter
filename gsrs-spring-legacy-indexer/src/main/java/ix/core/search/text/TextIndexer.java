@@ -3101,8 +3101,8 @@ public class TextIndexer implements Closeable, ProcessListener {
                     log.error("Trouble starting up textindexer on reindexing", e);
                 }
             } catch(Exception e) {
-                // Add catch here for logging, and sneaky throw
-                log.error("Trouble clearing all indexes on reindexing", e);
+                // Add catch here for logging, and then sneaky throw
+                log.error("Trouble clearing all indexes on reindexing.");
                 Sneak.sneakyThrow(e);
             }finally {
                 flushDaemon.unLockFlush();
