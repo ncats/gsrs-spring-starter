@@ -12,6 +12,7 @@ import com.google.common.util.concurrent.Striped;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.io.IOUtil;
+import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -32,6 +33,7 @@ import ix.core.util.EntityUtils.Key;
 import ix.core.util.LogUtil;
 import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -3041,17 +3043,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 	
     
     
-	public void clearAllIndexes(boolean setupForReindexing) {
+    public void clearAllIndexes(boolean setupForReindexing) {
         if(!isReindexing.get()) {
             flushDaemon.lockFlush();
             try {
                 //0. Notify and mark that it's happening
                 isReindexing.set(true);
                 notifyListenersRemoveAll();
-                
+
                 //0.5 Set up space for use in reindexing
                 alreadySeenDuringReindexingMode = Collections.newSetFromMap(new ConcurrentHashMap<>(100_000));
-                
+
                 //*************
                 //1. START CLEAR SUGGEST
                 //*************
@@ -3062,7 +3064,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 //*************
                 //1. END CLEAR SUGGEST
                 //*************
-                
+
                 //*************
                 //2. START CLEAR SORTERS
                 //*************
@@ -3071,7 +3073,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 //*************
                 //2. END CLEAR SORTERS
                 //*************
-                
+
                 //*************
                 //3. START CLEAR core index service
                 //*************
@@ -3079,8 +3081,8 @@ public class TextIndexer implements Closeable, ProcessListener {
                 //*************
                 //3. END CLEAR core index service
                 //*************
-                
-                
+
+
                 //*************
                 //4. START CLEAR FACETS [THIS IS NEW]
                 //*************
@@ -3092,14 +3094,16 @@ public class TextIndexer implements Closeable, ProcessListener {
                 //*************
                 //4. END CLEAR FACETS  [THIS IS NEW]
                 //*************
-                
+
                 try {
                     this.initialSetup();
                 } catch (Exception e) {
                     log.error("Trouble starting up textindexer on reindexing", e);
                 }
-
-               
+            } catch(Exception e) {
+                // Add catch here for logging, and sneaky throw
+                log.error("Trouble clearing all indexes on reindexing", e);
+                Sneak.sneakyThrow(e);
             }finally {
                 flushDaemon.unLockFlush();
             }
