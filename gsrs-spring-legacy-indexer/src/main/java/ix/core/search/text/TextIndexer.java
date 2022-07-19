@@ -121,6 +121,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final char SORT_ASCENDING_CHAR = '^';
 	private static final int EXTRA_PADDING = 2;
 	private static final String FULL_TEXT_FIELD = "text";
+	public static final String FULL_IDENTIFIER_FIELD = "identifiers";
 	private static final String SORT_PREFIX = "SORT_";
 	protected static final String STOP_WORD = " THE_STOP";
 	protected static final String START_WORD = "THE_START ";
@@ -1476,7 +1477,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
-    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());     				
+    			    String defField = Optional.ofNullable(options.getDefaultField()).orElse(FULL_TEXT_FIELD);
+    				QueryParser parser = new IxQueryParser(defField, indexerService.getIndexAnalyzer());     				
     				String processedQtext = preProcessQueryText(qtext);    				
     				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
@@ -2326,12 +2328,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 			return exactQuery;
 		};
-		Predicate<Term> isGeneric = (t->t.field().equals(FULL_TEXT_FIELD));
+		Predicate<Term> isGeneric = (t->t.field().equals(FULL_TEXT_FIELD) || t.field().equals(FULL_IDENTIFIER_FIELD));
 
-		//First, we explicity allow TermQueries
+		//First, we explicitly allow TermQueries
 		if(q instanceof TermQuery){
 			Term tq=((TermQuery)q).getTerm();
-			if(tq.field().equals(FULL_TEXT_FIELD)){
+			if(isGeneric.test(tq)){
 				PhraseQuery exactQuery = new PhraseQuery();
 				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
@@ -2598,6 +2600,20 @@ public class TextIndexer implements Closeable, ProcessListener {
         add(ew,!shouldNotAdd);
         
     }
+    
+    private boolean shouldIndexAsIdentifier(EntityInfo ei, String field) {
+
+        Set<String> ikeys = ei.getSpecialFields();
+        if (ikeys != null) {
+
+            if (ikeys.contains(field)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
 	/**
 	 * recursively index any object annotated with Entity
 	 */
@@ -2632,6 +2648,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Consumer<IndexableField> fieldCollector = f->{
 
 					if(f instanceof TextField || f instanceof StringField){
+					    String fname=f.name();
 						String text = f.stringValue();
 						if (text != null) {
                             if(textIndexerConfig.isShouldLog()){
@@ -2645,9 +2662,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 							TextField tf=new TextField(FULL_TEXT_FIELD, text, NO);
 							//tf.set
 							doc.add(tf);
-							if(textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && f.name().startsWith(ROOT +"_")){
+							if(textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && fname.startsWith(ROOT +"_")){
 								fullText.computeIfAbsent(f.name(),k->new ArrayList<TextField>())
 									.add(tf);
+							}
+							if(shouldIndexAsIdentifier(ew.getRootEntityInfo(),fname)) {
+							    TextField tff=new TextField(FULL_IDENTIFIER_FIELD, text, NO);
+	                            doc.add(tff);							    
 							}
 						}
 					}else if(f instanceof FacetField){
