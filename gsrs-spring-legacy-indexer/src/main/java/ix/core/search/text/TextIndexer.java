@@ -2612,7 +2612,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
     
     private boolean shouldIndexAsIdentifier(EntityInfo ei, String field) {
-
+        // Identifiers are fields considered worth matching exactly, as opposed to a general text field.
+        // Allows for searches to have an easy way to search identifier-level things (e.g. names, codes, uuids, inchis)
         Set<String> ikeys = ei.getSpecialFields();
         if (ikeys != null) {
 
