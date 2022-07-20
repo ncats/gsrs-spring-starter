@@ -17,7 +17,7 @@ public interface ImportAdapterFactory<T> {
      *
      * @return "Key" name of adapter factory.
      */
-    public String getAdapterName();
+    String getAdapterName();
 
     /**
      * Returns list of supported file extensions this import adapter may support. This list
@@ -26,7 +26,7 @@ public interface ImportAdapterFactory<T> {
      *
      * @return list of supported file extensions
      */
-    public List<String> getSupportedFileExtensions();
+    List<String> getSupportedFileExtensions();
 
     /**
      * Creates an {@link ImportAdapter} based on the supplied {@link JsonNode}, which can
@@ -37,7 +37,7 @@ public interface ImportAdapterFactory<T> {
      * @param adapterSettings initialization settings which can be used to configure an {@link ImportAdapter}
      * @return
      */
-    public ImportAdapter<T> createAdapter(JsonNode adapterSettings);
+    ImportAdapter<T> createAdapter(JsonNode adapterSettings);
 
     /**
      * <p>
@@ -62,7 +62,14 @@ public interface ImportAdapterFactory<T> {
     public void setFileName(String fileName);
     public String getFileName();
 
-    default public void initialize() throws IllegalStateException {
+    default void initialize() throws IllegalStateException {
 
     }
+
+    /**
+     * Returns the name of the holding service class to be called at the end of the import process
+     *
+     * @return "Key" name of holding service class (that implements interface HoldingService
+     */
+    String getHoldingServiceName();
 }

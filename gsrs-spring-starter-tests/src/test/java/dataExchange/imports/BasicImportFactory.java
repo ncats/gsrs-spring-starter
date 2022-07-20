@@ -1,4 +1,4 @@
-package gsrs.startertests.imports;
+package dataExchange.imports;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,6 +56,11 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     @Override
     public String getFileName() {
         return this.fileName;
+    }
+
+    @Override
+    public String getHoldingServiceName() {
+        return null;
     }
 
     public static List<MappingAction<GinasCommonData, TextRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {

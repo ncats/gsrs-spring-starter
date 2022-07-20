@@ -1,17 +1,16 @@
-package gsrs.holdingArea.repository;
+package gsrs.holdingArea.service;
 
-import gsrs.holdingArea.model.DefinitionalValueTuple;
-import gsrs.holdingArea.model.ImportData;
-import gsrs.holdingArea.model.ImportMetadata;
-import ix.core.validator.GinasProcessingMessage;
+import gsrs.holdingArea.model.*;
+import gsrs.holdingArea.repository.ImportDataRepository;
+import gsrs.holdingArea.repository.ImportMetadataRepository;
+import ix.core.validator.ValidationMessage;
+import ix.ginas.models.GinasCommonData;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.sql.Clob;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class DefaultHoldingAreaService implements HoldingAreaService {
+public class BasicHoldingAreaService implements HoldingAreaService {
 
     @Autowired
     ImportMetadataRepository metadataRepository;
@@ -37,13 +36,19 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         return saved.getRecordId().toString();
     }
 
+
     @Override
-    public String updateRecord(String recordId, Clob jsonData) {
+    public String createRecord(CreateRecordParameters parameters) {
         return null;
     }
 
     @Override
-    public Clob retrieveRecord(String recordId, int version, String view) {
+    public String updateRecord(String recordId, String jsonData) {
+        return null;
+    }
+
+    @Override
+    public String retrieveRecord(String recordId, int version, String view) {
         return null;
     }
 
@@ -53,21 +58,34 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public List<String> findRecords(String query) {
-
-        List<String> records = new ArrayList<>();
-        //dataRepository.f
-
-        return records;
-    }
-
-    @Override
-    public List<DefinitionalValueTuple> calculateDefinitions(Clob json) {
+    public <T> List<T> findRecords(String query, Class<T> cls) {
         return null;
     }
 
     @Override
-    public List<GinasProcessingMessage> validateRecord(Clob json) {
+    public List<MatchableKeyValueTuple> calculateDefinitions(String json) {
         return null;
     }
+
+    @Override
+    public byte[] getDefinitionalHash(String json) {
+        return new byte[0];
+    }
+
+    @Override
+    public List<ValidationMessage> validateRecord(String json) {
+        return null;
+    }
+
+    @Override
+    public List<MatchableKeyValueTuple> calculateMatchables(GinasCommonData substance) {
+        return null;
+    }
+
+    @Override
+    public MatchedRecordSummary findMatches(List<MatchableKeyValueTuple> recordMatchables) {
+        return null;
+    }
+
+
 }

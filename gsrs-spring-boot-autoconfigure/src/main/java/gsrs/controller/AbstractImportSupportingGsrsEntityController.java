@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.holdingArea.model.CreateRecordParameters;
+import gsrs.holdingArea.service.HoldingAreaService;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
@@ -12,6 +14,7 @@ import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
+import ix.ginas.models.GinasCommonData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
+import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -82,6 +85,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         private Long size;
         private String mimeType;
         private String fileEncoding;
+        private String holdingAreaRecordId;
 
         public ImportTaskMetaData() {
         }
@@ -157,6 +161,22 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return adaptFac;
     }
 
+
+    private HoldingAreaService getHoldingAreaService(ImportTaskMetaData<T> task) throws Exception {
+        if (task.adapter == null) {
+            throw new IOException("Cannot predict settings with null import adapter");
+        }
+        ImportAdapterFactory<T> adaptFac = (ImportAdapterFactory<T>)
+                getImportAdapterFactory(task.adapter)
+                        .orElse(null);
+        if (adaptFac == null) {
+            throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
+        }
+        Class c= Class.forName( adaptFac.getHoldingServiceName());
+        Constructor constructor= c.getConstructor(String.class);
+        Object o = constructor.newInstance(this.getEntityService().getContext());
+        return (HoldingAreaService)o;
+    }
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
         log.trace("in predictSettings, task for file: " + task.getFilename() + " with payload: " +task.payloadID);
@@ -254,7 +274,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     throw new UncheckedIOException(e);
                 }
             });
-            log.trace("payloadid: " +  payloadId);
+            log.trace("payloadid: " + payloadId);
             Payload payload = payloadRepository.findById(payloadId).get();
             ImportTaskMetaData itmd = from(payload);
             if (adapterName != null) {
@@ -266,6 +286,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //save after we assign the fields we'll need later on
             }
             itmd = saveImportTask(itmd).get();
+            log.trace("going to create CreateRecordParameters");
+            CreateRecordParameters parameters = CreateRecordParameters.builder()
+                    .jsonData(new String(file.getBytes()))
+                    .entityClass(GinasCommonData.class)
+                    .formatType(file.getContentType())
+                    .rawData(file.getBytes())
+                    .source(file.getOriginalFilename())
+                    .build();
+            HoldingAreaService holdingAreaService= getHoldingAreaService(itmd);
+            log.trace("Created holdingAreaService of type " + holdingAreaService.getClass().getName());
+            String recordId =holdingAreaService.createRecord(parameters);
+            log.trace("Created holding area record: " + recordId);
+            itmd.setHoldingAreaRecordId(recordId);
 
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);

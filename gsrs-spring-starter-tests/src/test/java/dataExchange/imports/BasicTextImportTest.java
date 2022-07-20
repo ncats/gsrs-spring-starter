@@ -1,4 +1,4 @@
-package gsrs.startertests.imports;
+package dataExchange.imports;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -41,7 +41,7 @@ public class BasicTextImportTest {
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");
-            o.getMatchContextProperties().keySet().forEach(k -> System.out.println(String.format("key: %s; value: %s", k, o.getMatchContextProperties().get(k))));
+            o.getMatchContextProperties().keySet().forEach(k -> System.out.printf("key: %s; value: %s\n", k, o.getMatchContextProperties().get(k)));
             counter.incrementAndGet();
         });
         Assertions.assertEquals(2, counter.get());
@@ -61,7 +61,7 @@ public class BasicTextImportTest {
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");
-            o.getMatchContextProperties().keySet().forEach(k -> System.out.println(String.format("key: %s; value: %s", k, o.getMatchContextProperties().get(k))));
+            o.getMatchContextProperties().keySet().forEach(k -> System.out.printf("key: %s; value: %s\n", k, o.getMatchContextProperties().get(k)));
             counter.incrementAndGet();
         });
         Assertions.assertEquals(2, counter.get());
@@ -93,7 +93,7 @@ public class BasicTextImportTest {
 
         TextNode textNode = JsonNodeFactory.instance.textNode("import text 1");
         actionNode.set("actionName", textNode);
-        TextNode textNode2 = JsonNodeFactory.instance.textNode("gsrs.startertests.imports.Item2MappingAction");
+        TextNode textNode2 = JsonNodeFactory.instance.textNode("dataExchange.imports.Item2MappingAction");
         actionNode.set("actionClassName", textNode2);
 
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
@@ -108,7 +108,7 @@ public class BasicTextImportTest {
 
         textNode = JsonNodeFactory.instance.textNode("import text 2");
         actionNode2.set("actionName", textNode);
-        TextNode textNode3 = JsonNodeFactory.instance.textNode("gsrs.startertests.imports.Item1MappingAction");
+        TextNode textNode3 = JsonNodeFactory.instance.textNode("dataExchange.imports.Item1MappingAction");
         actionNode2.set("actionClassName", textNode3);
 
         ObjectNode parameters2 = JsonNodeFactory.instance.objectNode();

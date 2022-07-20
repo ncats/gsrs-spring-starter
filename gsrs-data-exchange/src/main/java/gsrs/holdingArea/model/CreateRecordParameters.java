@@ -18,4 +18,5 @@ public class CreateRecordParameters {
     private InputStream rawDataSource;
     private Class entityClass;
     private String formatType;
+
 }

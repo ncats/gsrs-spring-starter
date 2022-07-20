@@ -48,4 +48,9 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     public void initialize() throws IllegalStateException {
         ImportAdapterFactory.super.initialize();
     }
+
+    @Override
+    public String getHoldingServiceName() {
+        return null;
+    }
 }

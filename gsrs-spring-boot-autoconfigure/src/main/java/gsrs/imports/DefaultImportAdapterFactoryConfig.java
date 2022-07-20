@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.util.InheritanceTypeIdResolver;
+import ix.ginas.models.GinasCommonData;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
@@ -23,6 +24,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private List<String> extensions;
     private String adapterName;
     private Map<String, Object> parameters;
+    private Class holdingAreaServiceClass;
 
     public DefaultImportAdapterFactoryConfig(String adapterName, Class importAdapterFactoryClass, List<String> extensions) {
         this.adapterName=adapterName;
@@ -102,17 +104,26 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public ImportAdapterFactory newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
+    public ImportAdapterFactory<GinasCommonData> newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader)  {
 
         if(parameters !=null && !parameters.isEmpty()){
-            return (ImportAdapterFactory) mapper.convertValue(parameters, importAdapterFactoryClass);
+            return (ImportAdapterFactory<GinasCommonData>) mapper.convertValue(parameters, importAdapterFactoryClass);
         }
         if(unknownParameters !=null && !unknownParameters.isEmpty()){
-            return (ImportAdapterFactory) mapper.convertValue(unknownParameters, importAdapterFactoryClass);
+            return (ImportAdapterFactory<GinasCommonData>) mapper.convertValue(unknownParameters, importAdapterFactoryClass);
 
         }
-        return (ImportAdapterFactory) mapper.convertValue(Collections.emptyMap(), importAdapterFactoryClass);
+        return (ImportAdapterFactory<GinasCommonData>) mapper.convertValue(Collections.emptyMap(), importAdapterFactoryClass);
 
     }
 
+    @Override
+    public Class getHoldingServiceClass() {
+        return this.holdingAreaServiceClass;
+    }
+
+    @Override
+    public void setHoldingServiceClass(Class clazz) {
+        this.holdingAreaServiceClass = clazz;
+    }
 }

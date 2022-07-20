@@ -1,4 +1,4 @@
-package holding.area;
+package dataExchange.area;
 
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.holdingArea.model.ImportMetadata;
@@ -28,7 +28,7 @@ import java.util.UUID;
 
 @ActiveProfiles("test")
 @GsrsJpaTest( classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
-public class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
+class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     private TextIndexerFactory tif;

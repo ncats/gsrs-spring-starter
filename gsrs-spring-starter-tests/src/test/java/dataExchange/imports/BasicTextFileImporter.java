@@ -1,13 +1,11 @@
-package gsrs.startertests.imports;
+package dataExchange.imports;
 
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;

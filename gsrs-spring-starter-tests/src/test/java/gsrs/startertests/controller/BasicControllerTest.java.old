@@ -32,8 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Disabled("can't get mockMVC to run yet")
 @SpringBootTest
 @AutoConfigureMockMvc
-@ContextConfiguration(classes = {gsrs.startertests.GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class, MockMvc.class})
-//@ContextConfiguration(classes = {gsrs.startertests.GsrsSpringApplication.class})
+@ContextConfiguration(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class, MockMvc.class})
+//@ContextConfiguration(classes = {GsrsSpringApplication.class})
 @ActiveProfiles("test")
 //@GsrsJpaTest(classes = { GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class, MyEntityRepository.class, MockMvc.class})
 //@Import({MyEntity.class, MyController.class,

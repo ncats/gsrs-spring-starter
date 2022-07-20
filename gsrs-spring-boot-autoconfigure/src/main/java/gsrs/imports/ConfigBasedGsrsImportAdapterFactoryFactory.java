@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,7 +34,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                     }
                     return null;
                 })
-                .filter(i -> i != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
     }

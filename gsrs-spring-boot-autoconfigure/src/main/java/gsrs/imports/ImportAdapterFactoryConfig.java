@@ -33,4 +33,7 @@ public interface ImportAdapterFactoryConfig {
     void setExtensions(List<String> extensions);
 
     ImportAdapterFactory newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
+
+    Class getHoldingServiceClass();
+    void setHoldingServiceClass(Class holdingServiceClass);
 }
