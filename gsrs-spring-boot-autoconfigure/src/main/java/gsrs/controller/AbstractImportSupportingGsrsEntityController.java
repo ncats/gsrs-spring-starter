@@ -166,7 +166,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (task.adapter == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
-        ImportAdapterFactory<T> adaptFac = (ImportAdapterFactory<T>)
+        ImportAdapterFactory<T> adaptFac =
                 getImportAdapterFactory(task.adapter)
                         .orElse(null);
         if (adaptFac == null) {
