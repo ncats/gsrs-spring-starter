@@ -1,4 +1,4 @@
-package dataExchange.imports;
+package gsrs.dataExchange.imports;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

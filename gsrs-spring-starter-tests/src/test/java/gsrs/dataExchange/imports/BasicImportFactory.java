@@ -1,4 +1,4 @@
-package dataExchange.imports;
+package gsrs.dataExchange.imports;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;

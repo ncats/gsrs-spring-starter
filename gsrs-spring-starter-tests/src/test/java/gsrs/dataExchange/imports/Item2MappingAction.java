@@ -1,4 +1,4 @@
-package dataExchange.imports;
+package gsrs.dataExchange.imports;
 
 import gsrs.dataExchange.model.MappingAction;
 import ix.ginas.models.GinasCommonData;

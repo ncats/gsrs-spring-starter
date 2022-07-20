@@ -1,5 +1,6 @@
 package gsrs.startertests.indexValueMaker;
 
+import gsrs.GsrsSpringApplication;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.text.IndexValueMaker;
@@ -17,7 +18,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@GsrsJpaTest(classes =GsrsSpringApplication.class)
+@GsrsJpaTest(classes = GsrsSpringApplication.class)
 public class IndexValueMakerFactoryTest extends AbstractGsrsJpaEntityJunit5Test {
 
 

@@ -1,4 +1,4 @@
-package dataExchange.startertests;
+package gsrs.dataExchange.startertests;
 
 import gsrs.EnableGsrsApi;
 import gsrs.EnableGsrsBackup;

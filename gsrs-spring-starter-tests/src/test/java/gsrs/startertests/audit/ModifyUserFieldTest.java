@@ -2,6 +2,7 @@ package gsrs.startertests.audit;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.AuditConfig;
+import gsrs.GsrsSpringApplication;
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;

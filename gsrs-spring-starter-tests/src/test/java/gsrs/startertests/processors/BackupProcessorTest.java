@@ -1,8 +1,8 @@
 package gsrs.startertests.processors;
 
+import gsrs.GsrsSpringApplication;
 import gsrs.repository.BackupRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
-import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.History;
 import ix.core.models.*;

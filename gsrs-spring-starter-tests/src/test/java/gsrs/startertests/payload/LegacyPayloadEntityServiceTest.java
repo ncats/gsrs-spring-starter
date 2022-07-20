@@ -1,11 +1,11 @@
 package gsrs.startertests.payload;
 
+import gsrs.GsrsSpringApplication;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.payload.LegacyPayloadService;
 import gsrs.service.PayloadService;
 import gsrs.startertests.GsrsJpaTest;
-import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Payload;
 import org.junit.jupiter.api.Test;

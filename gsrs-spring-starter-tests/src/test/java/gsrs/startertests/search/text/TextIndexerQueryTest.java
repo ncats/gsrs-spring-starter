@@ -3,6 +3,7 @@ package gsrs.startertests.search.text;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import gsrs.GsrsSpringApplication;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -19,7 +20,6 @@ import org.springframework.test.context.ActiveProfiles;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
-import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;

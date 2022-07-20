@@ -1,9 +1,6 @@
-package gsrs.startertests;
+package gsrs;
 
 
-import gsrs.EnableGsrsApi;
-import gsrs.EnableGsrsBackup;
-import gsrs.EnableGsrsJpaEntities;
 import gsrs.repository.UserProfileRepository;
 
 import org.springframework.boot.SpringApplication;
