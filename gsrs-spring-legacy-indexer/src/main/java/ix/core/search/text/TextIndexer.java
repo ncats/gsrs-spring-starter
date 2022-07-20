@@ -2312,7 +2312,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static List<Tuple<Query,MATCH_TYPE>> getQueryBreakDownFor(Query q){
 		List<Tuple<Query,MATCH_TYPE>> suggestedQueries = new ArrayList<Tuple<Query,MATCH_TYPE>>();
 
-		Function<Stream<Term>, PhraseQuery> exatctQueryMaker = lterms->{
+		Function<Stream<Term>, PhraseQuery> exactQueryMaker = lterms->{
 			PhraseQuery exactQuery = new PhraseQuery();
 			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 			lterms.forEach(tq->{
@@ -2328,6 +2328,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 			return exactQuery;
 		};
+		Function<Stream<Term>, WildcardQuery> wildcardQueryMaker = lterms->{
+		    
+		    WildcardQuery qq= lterms
+		            .map(tq->new WildcardQuery(new Term(FULL_TEXT_FIELD,tq.text())))
+		            .reduce((a,b)->b)
+		            .orElse(null);
+		    return qq;
+            
+        };
 		Predicate<Term> isGeneric = (t->t.field().equals(FULL_TEXT_FIELD) || t.field().equals(FULL_IDENTIFIER_FIELD));
 
 		//First, we explicitly allow TermQueries
@@ -2338,12 +2347,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
 				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
-				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exatctQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
-				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(q,MATCH_TYPE.WORD));
+				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exactQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
+				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(new TermQuery(new Term(FULL_TEXT_FIELD,tq.text())),MATCH_TYPE.WORD));
 			}
 		}else if(q instanceof PhraseQuery){
 			PhraseQuery pq =(PhraseQuery)q;
 			Term[] terms=pq.getTerms();
+			
 			if(Arrays.stream(terms).allMatch(isGeneric)){
 				boolean starts=terms[0].text().equalsIgnoreCase(TextIndexer.START_WORD.trim());
 				boolean ends=terms[terms.length-1].text().equalsIgnoreCase(TextIndexer.STOP_WORD.trim());
@@ -2352,7 +2362,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					//was exact
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									q,
+							        exactQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.FULL)
 								);
 				}else if(starts){
@@ -2362,13 +2372,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}else{
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									exatctQueryMaker.apply(Arrays.stream(terms)),
+									exactQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.FULL)
 								);
 
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									q,
+							        phraseQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.WORD)
 								);
 				}
@@ -2388,7 +2398,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					if(terms.stream().allMatch(isGeneric)){
 						suggestedQueries.add(
 								new Tuple<Query, MATCH_TYPE>(
-										exatctQueryMaker.apply(terms.stream()),
+										exactQueryMaker.apply(terms.stream()),
 										MATCH_TYPE.FULL)
 									);
 
@@ -2400,7 +2410,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 						suggestedQueries.add(
 								new Tuple<Query, MATCH_TYPE>(
-										q,
+								        phraseQueryMaker.apply(terms.stream()),
 										MATCH_TYPE.WORD)
 									);
 
@@ -2422,7 +2432,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(isGeneric.test(wq.getTerm())){
 				suggestedQueries.add(
 						new Tuple<Query, MATCH_TYPE>(
-								q,
+						        wildcardQueryMaker.apply(Stream.of(wq.getTerm())),
 								MATCH_TYPE.CONTAINS)
 							);
 			}else{
@@ -2433,7 +2443,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(isGeneric.test(pq.getPrefix())){
 				suggestedQueries.add(
 						new Tuple<Query, MATCH_TYPE>(
-								q,
+								new PrefixQuery(new Term(FULL_TEXT_FIELD, pq.getPrefix().text())),
 								MATCH_TYPE.WORD_STARTS_WITH)
 							);
 			}else{
