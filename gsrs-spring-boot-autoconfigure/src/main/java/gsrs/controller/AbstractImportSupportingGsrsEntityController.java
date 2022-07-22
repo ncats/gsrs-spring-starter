@@ -13,6 +13,7 @@ import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
 import ix.ginas.models.GinasCommonData;
 import lombok.Data;
@@ -175,7 +176,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Class c= Class.forName( adaptFac.getHoldingServiceName());
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
-        return (HoldingAreaService)o;
+        return AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService)o);
     }
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {

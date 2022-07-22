@@ -2,6 +2,7 @@ package gsrs.holdingArea.service;
 
 import gsrs.holdingArea.model.CreateRecordParameters;
 import gsrs.holdingArea.model.MatchedRecordSummary;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.models.GinasCommonData;
 
