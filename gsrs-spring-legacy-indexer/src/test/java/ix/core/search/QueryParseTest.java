@@ -18,9 +18,9 @@ import ix.core.search.text.TextIndexer.IxQueryParser;
 public class QueryParseTest {
 
     private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-            .compile("\"([^\" .-]*)\"");
+            .compile("\"([^\" .=-]*)\"");
     final static String[] BREAK_TOKENS = new String[] {
-            " ", ".", "-"      
+            " ", ".", "-", "="      
           };
 
     @Test
@@ -127,7 +127,7 @@ public class QueryParseTest {
 
         for(String t: BREAK_TOKENS) {
             Query q = iqp.parse("text:\"*rentu" + t + "xima*\"");
-            
+            System.out.println(t);
             assertTrue("Complex phrase query should NOT be phrase query", !(q instanceof PhraseQuery));
             assertTrue("Complex phrase query should contain *", q.toString().contains("*rentu" + t + "xima*"));
             assertEquals("Complex phrase query ComplexPhraseQuery Object", "org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser$ComplexPhraseQuery",q.getClass().getName());

@@ -1351,7 +1351,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         //step to turn quoted "words" into unquoted words. This isn't a perfect solution and should
         //be replaced with something more robust.
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                .compile("\"([^\" .-=]*)\"");
+                .compile("\"([^\" .=-]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
