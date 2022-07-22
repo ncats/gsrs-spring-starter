@@ -1346,8 +1346,12 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
         
       
+        //The version and mechanisms we use for lucene have difficulty with quotes around
+        //a single term, since that isn't considered a valid phrase query. This is part of a pre-process
+        //step to turn quoted "words" into unquoted words. This isn't a perfect solution and should
+        //be replaced with something more robust.
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                .compile("\"([^\" .-]*)\"");
+                .compile("\"([^\" .-=]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
