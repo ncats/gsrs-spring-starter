@@ -15,6 +15,7 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
+import ix.core.search.text.TextIndexerFactory;
 import ix.ginas.models.GinasCommonData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -176,6 +177,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Class c= Class.forName( adaptFac.getHoldingServiceName());
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
+
         return AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService)o);
     }
 

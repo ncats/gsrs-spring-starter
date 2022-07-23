@@ -29,4 +29,5 @@ public interface HoldingAreaService {
 
     MatchedRecordSummary findMatches(List<gsrs.holdingArea.model.MatchableKeyValueTuple> recordMatchables);
 
+    void setTextIndexerFactory(TextIndexerFactory textIndexerFactory);
 }
