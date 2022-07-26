@@ -129,7 +129,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
 	static final String ENTITY_PREFIX = "entity";	
-	private static final String SPACE_WORD = "XSPACEX";	
+	private static final String SPACE_WORD = "_XSPCX_";
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
 

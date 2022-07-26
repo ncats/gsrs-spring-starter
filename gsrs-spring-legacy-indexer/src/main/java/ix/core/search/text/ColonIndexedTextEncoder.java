@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 @Data
 public class ColonIndexedTextEncoder implements IndexedTextEncoder{
 
-    private static final String COLON_WORD = "XCOLONX";
+    private static final String COLON_WORD = "_XCLNX_";
 
     public ColonIndexedTextEncoder() {}
 
@@ -28,7 +28,7 @@ public class ColonIndexedTextEncoder implements IndexedTextEncoder{
         is needed. This is how a search having a colon should be encoded.
         Example:
         \"root_names_name:"AZT : ABC" AND root_names_name:"AZT : DEF"\"
-        ==> \"root_names_name:"AZT XCOLONX ABC" AND root_names_name:"AZT XCOLONX DEF"\"
+        ==> \"root_names_name:"AZT _XCLNX_ ABC" AND root_names_name:"AZT _XCLNX_ DEF"\"
         */
         if(qtest.contains("\"") && qtest.contains(":")){
             // We want to conserve the escaped quotes that might be in the full search term.
