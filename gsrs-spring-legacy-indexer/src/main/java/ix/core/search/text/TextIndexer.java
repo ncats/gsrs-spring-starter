@@ -3285,8 +3285,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void createDynamicField(Consumer<IndexableField> fieldTaker, IndexableValue iv) {
 		facetsConfig.setMultiValued(iv.name(), true);
 		facetsConfig.setRequireDimCount(iv.name(), true);
-		fieldTaker.accept(new FacetField(iv.name(), iv.value().toString()));
-		fieldTaker.accept(new TextField(iv.path(), TextIndexer.START_WORD + iv.value().toString() + TextIndexer.STOP_WORD, NO));
+		String val= iv.value().toString();
+		fieldTaker.accept(new FacetField(iv.name(), val));
+		
+		fieldTaker.accept(new TextField(iv.path(), toExactMatchString(val), NO));
+                fieldTaker.accept(new TextField(iv.path(), toExactMatchStringContinuous(val), NO));
 
 		if(iv.suggest()){
 			addSuggestedField(iv.name(),iv.value().toString(),iv.suggestWeight());
