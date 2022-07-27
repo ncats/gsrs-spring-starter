@@ -66,7 +66,7 @@ public class SequenceIndexer {
     });
 
     public static enum CutoffType{
-        LOCAL,
+//        LOCAL,
         GLOBAL,
         SUB;
 

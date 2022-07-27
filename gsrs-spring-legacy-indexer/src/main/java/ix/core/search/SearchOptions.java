@@ -84,6 +84,7 @@ public class SearchOptions implements RequestOptions {
     private String ffilter=DEFAULT_FFILTER;
 	
 	
+    private String defaultField=null;
 
 
     // whether drilldown (false) or sideway (true)
@@ -175,6 +176,7 @@ public class SearchOptions implements RequestOptions {
 		     	ofBoolean("sideway", a->setSideway(a), ()->isSideway(),true),
 		     	ofBoolean("wait", a->setWait(a), ()->isWait(),false),
 		     	ofSingleString("ffilter", a->ffilter=a, ()->ffilter),
+		     	ofSingleString("defaultField", a->defaultField=a, ()->defaultField),
 		     	ofSingleString("filter", a->filter=a, ()->filter),
 		     	ofSingleString("kind", a->{
 		     		try{
@@ -410,6 +412,7 @@ public class SearchOptions implements RequestOptions {
         private boolean includeBreakdown=true;
         private boolean promoteSpecialMatches =true;
 		
+        private String defaultField;
 		private String filter;
 		
 		private List<String> facets = new ArrayList<>();
@@ -447,6 +450,7 @@ public class SearchOptions implements RequestOptions {
 			includeFacets(so.getIncludeFacets());
 			includeBreakdown(so.getIncludeBreakdown());
 			promoteSpecialMatches(so.getPromoteSpecialMatches());
+			defaultField(so.defaultField);
 			return this;
 		}
 
@@ -484,6 +488,13 @@ public class SearchOptions implements RequestOptions {
             this.ffilter = ffilter;
             return this;
         }
+		
+		public Builder defaultField(String defaultField) {
+            this.defaultField = defaultField;
+            return this;
+        }
+        
+		
 
 		public Builder sideway(boolean sideway) {
 			this.sideway = sideway;
@@ -760,6 +771,10 @@ public class SearchOptions implements RequestOptions {
 	public boolean getPromoteSpecialMatches()  {
 	    return this.promoteSpecialMatches;
 	}
+	
+    public String getDefaultField() {
+        return this.defaultField;
+    }
 	 
 	private static FacetLongRange asDateFacet(String fname) {
 	    return asDateFacet(fname, getDefaultDateOrderMap());
@@ -844,5 +859,9 @@ public class SearchOptions implements RequestOptions {
         // Older than 2 Years
         map.put("Older than 2 years", now -> now.minusYears(6000));
         return map;
+    }
+
+    public void setDefaultField(String defaultField) {
+        this.defaultField=defaultField;
     }
 }

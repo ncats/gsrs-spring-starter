@@ -27,7 +27,7 @@ import java.util.List;
 @Getter
 @Setter
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_controlled_vocab_seq", allocationSize = 1)
-public class ControlledVocabulary extends IxModel {
+public class ControlledVocabulary extends IxModel implements ForceUpdatableModel {
 
     private static final long serialVersionUID = 5455592961232451608L;
 
@@ -140,6 +140,12 @@ public class ControlledVocabulary extends IxModel {
     public void setDomain(String domain) {
         this.domain = domain;
         setIsDirty("domain");
+    }
+
+    @Override
+    public void forceUpdate() {
+        // TODO Auto-generated method stub
+        this.setIsAllDirty();
     }
 
 

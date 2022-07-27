@@ -45,6 +45,7 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         indexer.remove(new MatchAllDocsQuery());
     }
     
+   
     
     @Test
     public void confirmWildcardPhraseQueryGetsPhraseResults() throws Exception{
@@ -155,5 +156,44 @@ public class TextIndexerQueryTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals(4, hits.totalHits);
 
     }
+    
+   
+    @Test
+    public void confirmPhraseWildcardWithSpecialCharacterGetsResults() throws Exception{
 
+        Document doc1 = new Document();
+        doc1.add(new TextField("text", indexer.toExactMatchStringContinuous("brentuximab-tedotin"), NO));
+        indexer.addDoc(doc1);
+        Document doc2 = new Document();
+        doc2.add(new TextField("text", indexer.toExactMatchStringContinuous("brentuximab&tedoton"), NO));
+        indexer.addDoc(doc2);
+        Document doc3 = new Document();
+        doc3.add(new TextField("text", indexer.toExactMatchStringContinuous("brentuximab tevoton"), NO));
+        indexer.addDoc(doc3);
+        Document doc4 = new Document();
+        doc4.add(new TextField("text", indexer.toExactMatchStringContinuous("brentuximad-tevoton"), NO));
+        indexer.addDoc(doc4);
+        Document doc5 = new Document();
+        doc5.add(new TextField("text", indexer.toExactMatchStringContinuous("not actually brentuximab.tedotin"), NO));
+        indexer.addDoc(doc5);
+        
+        Document doc6 = new Document();
+        doc6.add(new TextField("text", indexer.toExactMatchStringContinuous("prentuximab-tedoton"), NO));
+        indexer.addDoc(doc6);
+            				
+    	String processedQtext = indexer.preProcessQueryText("\"*rentuximab-tedot*\"");    				
+    	Query q = indexer.getQueryParser().parse(processedQtext);     
+             
+
+        SearchResult sr=SearchResult.createBuilder().build();
+        TopDocs hits = indexer.withSearcher(searcher->{
+            try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
+                return indexer.firstPassLuceneSearch(searcher,taxon,sr,null, q);
+            }
+        });   
+        
+        assertEquals(4, hits.totalHits);       
+        
+    }   
+   
 }

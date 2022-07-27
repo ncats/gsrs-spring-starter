@@ -1,25 +1,18 @@
 package gsrs;
 
-import akka.event.Logging;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.validator.ValidatorConfig;
-import gsrs.validator.ValidatorConfigList;
 import ix.core.util.EntityUtils;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @ConfigurationProperties("gsrs")
@@ -27,14 +20,22 @@ import java.util.Map;
 @Slf4j
 public class GsrsFactoryConfiguration {
 
-    private Map<String, List<Map<String,Object>>> validators;
-    private Map<String, List<Map<String,Object>>> importAdapterFactories;
+    private Map<String, List<Map<String, Object>>> validators;
+    private Map<String, List<Map<String, Object>>> importAdapterFactories;
+
+    private Map<String, Map<String, Object>> search;
+
     private List<EntityProcessorConfig> entityProcessors;
 
-    private boolean createUnknownUsers= false;
+    private boolean createUnknownUsers = false;
 
-    public List<EntityProcessorConfig> getEntityProcessors(){
-        if(entityProcessors ==null){
+    public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
+        if (search == null) return Optional.empty();
+        return Optional.ofNullable(search.get(context));
+    }
+
+    public List<EntityProcessorConfig> getEntityProcessors() {
+        if (entityProcessors == null) {
             //nothing set
             return Collections.emptyList();
         }
@@ -42,20 +43,20 @@ public class GsrsFactoryConfiguration {
     }
 
 
-
-    public List<? extends ValidatorConfig> getValidatorConfigByContext(String context){
-        if(validators ==null){
+    public List<? extends ValidatorConfig> getValidatorConfigByContext(String context) {
+        if (validators == null) {
             //nothing set
             return Collections.emptyList();
         }
         ObjectMapper mapper = new ObjectMapper();
         try {
-            List<Map<String,Object>> list = validators.get(context);
+            List<Map<String, Object>> list = validators.get(context);
 
-            if(list==null || list.isEmpty()){
+            if (list == null || list.isEmpty()) {
                 return Collections.emptyList();
             }
-            List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {});
+            List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
+            });
 
 //            List<ValidatorConfig> configs = new ArrayList<>();
 //            for (Map<String,Object> n : list) {
@@ -68,7 +69,7 @@ public class GsrsFactoryConfiguration {
 //                }
 //            }
             return configs;
-        }catch(Throwable t){
+        } catch (Throwable t) {
             throw t;
         }
 //        ValidatorConfigList list = (ValidatorConfigList) validators.get(context);
@@ -84,22 +85,22 @@ public class GsrsFactoryConfiguration {
      */
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
         log.trace("starting in getImportAdapterFactories");
-        if(importAdapterFactories ==null) {
+        if (importAdapterFactories == null) {
             return Collections.emptyList();
         }
         try {
             List<Map<String, Object>> list = importAdapterFactories.get(context);
             log.trace("list:");
-            list.forEach(i->i.keySet().forEach(k->log.trace("key: %s; value: %s", k, i.get(k))));
+            list.forEach(i -> i.keySet().forEach(k -> log.trace("key: %s; value: %s", k, i.get(k))));
 
-            if(list==null || list.isEmpty()){
+            if (list == null || list.isEmpty()) {
                 log.warn("no import adapter factory configuration info found!");
                 return Collections.emptyList();
             }
-            List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {});
+            List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
+            });
             return configs;
-        }
-        catch (Exception t){
+        } catch (Exception t) {
             log.error("Error fetching import factory config");
             throw t;
         }
