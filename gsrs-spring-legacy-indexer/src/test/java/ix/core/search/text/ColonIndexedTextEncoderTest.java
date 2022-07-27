@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 
 public class ColonIndexedTextEncoderTest {
-    private static final String TEST_COLON_WORD = "XCOLONX";
+    private static final String TEST_COLON_WORD = "_XCLNX_";
 
     @Test
     public void basicEncoderTest() throws Exception {
