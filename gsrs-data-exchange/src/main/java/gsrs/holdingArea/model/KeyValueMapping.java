@@ -17,7 +17,6 @@ import java.util.UUID;
 @Data
 public class KeyValueMapping {
 
-
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
@@ -41,4 +40,8 @@ public class KeyValueMapping {
 
     @Indexable(name="Location")
     private String dataLocation;//staging area or permanent database
+
+    @Indexable
+    private String kind;
+
 }

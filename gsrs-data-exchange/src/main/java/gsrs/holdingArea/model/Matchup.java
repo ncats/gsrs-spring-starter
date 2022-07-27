@@ -12,7 +12,7 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Backup
-@Table(name = "ix_import_matchup")
+@Table(name = "ix_import_matchup", indexes = {@Index(name="idx_ix_import_matchup_kind", columnList = "kind")})
 @Slf4j
 @Data
 @IndexableRoot
@@ -55,4 +55,8 @@ public class Matchup {
 
     @Indexable(name="MatchLevel")
     private int matchLevel;
+
+    @Indexable
+    @Column(length = 255)
+    private String kind;
 }

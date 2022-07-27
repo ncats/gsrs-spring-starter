@@ -13,7 +13,8 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Backup
-@Table(name = "ix_import_data")
+@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_kind", columnList = "kind"),
+        @Index(name="idx_ix_import_data_version", columnList = "version")})
 @Slf4j
 @Data
 @Entity
@@ -34,4 +35,8 @@ public class ImportData {
 
     @Lob
     private String data;
+
+    @Indexable
+    @Column(length = 255)
+    private String kind;
 }

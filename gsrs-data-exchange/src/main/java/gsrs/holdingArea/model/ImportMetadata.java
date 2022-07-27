@@ -24,7 +24,7 @@ import java.util.UUID;
 
 @Backup
 @Entity
-@Table(name = "ix_import_metadata")
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_kind", columnList = "kind")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -131,4 +131,9 @@ public class ImportMetadata implements Serializable {
 
     @Indexable
     private String dataFormat;
+
+    @Indexable
+    @Column(length = 255)
+    private String kind;
+
 }

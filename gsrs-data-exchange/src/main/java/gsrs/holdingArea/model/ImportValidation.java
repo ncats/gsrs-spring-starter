@@ -14,7 +14,10 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "ix_import_validation")
+@Table(name = "ix_import_validation", indexes = {@Index(name="idx_ix_import_validation_kind", columnList = "kind"),
+        @Index(name="idx_ix_import_validation_version", columnList = "version")})
+/*,
+        @Index(name="idx_ix_import_validation_type", columnList = "ValidationType")*/
 @Slf4j
 @Data
 @Builder
@@ -48,6 +51,7 @@ public class ImportValidation {
     private UUID ValidationId;
 
     @Indexable
+    @Column(length =255, updatable = false, unique = false)
     private ImportValidationType ValidationType;
 
     @Indexable
@@ -59,4 +63,7 @@ public class ImportValidation {
 
     @Indexable
     private Date ValidationDate;
+
+    @Indexable
+    private String kind;
 }
