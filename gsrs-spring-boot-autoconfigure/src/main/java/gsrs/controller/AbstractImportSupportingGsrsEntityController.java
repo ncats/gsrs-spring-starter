@@ -58,6 +58,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
 
+    @Autowired
+    private TextIndexerFactory textIndexerFactory;
+
     private CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
             = CachedSupplier.of(() ->gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
             this.getEntityService().getEntityClass()));
@@ -298,7 +301,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     .source(file.getOriginalFilename())
                     .build();
             HoldingAreaService holdingAreaService= getHoldingAreaService(itmd);
-            log.trace("Created holdingAreaService of type " + holdingAreaService.getClass().getName());
+            log.trace("Created holdingAreaService of type {}. textIndexerFactory: {}", holdingAreaService.getClass().getName(),
+                    textIndexerFactory);
+            if(textIndexerFactory == null){
+                textIndexerFactory = new TextIndexerFactory();
+                textIndexerFactory= AutowireHelper.getInstance().autowireAndProxy(textIndexerFactory);
+                log.trace("forced autowiring");
+            }
+            holdingAreaService.setTextIndexerFactory(textIndexerFactory);
             String recordId =holdingAreaService.createRecord(parameters);
             log.trace("Created holding area record: " + recordId);
             itmd.setHoldingAreaRecordId(recordId);
