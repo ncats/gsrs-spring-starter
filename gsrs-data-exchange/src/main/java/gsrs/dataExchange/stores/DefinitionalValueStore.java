@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public interface DefinitionalValueStore {
-    public void add(DefinitionalValue df);
-    public void add(String id, String key, String val, String qualifier);
-    public void removeAll(String id);
-    public List<DefinitionalValue> find(DefinitionalValue seek);
-    public List<DefinitionalValue> find(String key, String val, String qualifier);
-    public List<DefinitionalValue> find(String id);
-    public void clearAll();
-    public Stream<DefinitionalValue> findAll();
+    void add(DefinitionalValue df);
+    void add(String id, String key, String val, String qualifier);
+    void removeAll(String id);
+    List<DefinitionalValue> find(DefinitionalValue seek);
+    List<DefinitionalValue> find(String key, String val, String qualifier);
+    List<DefinitionalValue> find(String id);
+    void clearAll();
+    Stream<DefinitionalValue> findAll();
 }

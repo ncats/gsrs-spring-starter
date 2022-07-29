@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.UUID;
 
-public class BasicHoldingAreaService implements HoldingAreaService {
+public class BasicHoldingAreaService /* implements HoldingAreaService*/ {
 
     @Autowired
     ImportMetadataRepository metadataRepository;
@@ -38,57 +38,57 @@ public class BasicHoldingAreaService implements HoldingAreaService {
     }
 
 
-    @Override
+    //@Override
     public String createRecord(CreateRecordParameters parameters) {
         return null;
     }
 
-    @Override
+    //@Override
     public String updateRecord(String recordId, String jsonData) {
         return null;
     }
 
-    @Override
+    //@Override
     public String retrieveRecord(String recordId, int version, String view) {
         return null;
     }
 
-    @Override
+    //@Override
     public void deleteRecord(String recordId, int version) {
 
     }
 
-    @Override
+    //@Override
     public <T> List<T> findRecords(String query, Class<T> cls) {
         return null;
     }
 
-    @Override
+    //@Override
     public List<MatchableKeyValueTuple> calculateDefinitions(String json) {
         return null;
     }
 
-    @Override
+    //@Override
     public byte[] getDefinitionalHash(String json) {
         return new byte[0];
     }
 
-    @Override
+    //@Override
     public List<ValidationMessage> validateRecord(String json) {
         return null;
     }
 
-    @Override
-    public List<MatchableKeyValueTuple> calculateMatchables(GinasCommonData substance) {
+    //@Override
+    public List<MatchableKeyValueTuple> calculateMatchables(Object object) {
         return null;
     }
 
-    @Override
+    //@Override
     public MatchedRecordSummary findMatches(List<MatchableKeyValueTuple> recordMatchables) {
         return null;
     }
 
-    @Override
+    //@Override
     public void setTextIndexerFactory(TextIndexerFactory textIndexerFactory){
 
     }

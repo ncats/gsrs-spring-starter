@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface DefinitionalValueExtractor<T> {
-    public List<DefinitionalValue> extract(T obj);
+    List<DefinitionalValue> extract(T obj);
 
-    public default DefinitionalValueExtractor<T> combine(DefinitionalValueExtractor<T> another){
+    default DefinitionalValueExtractor<T> combine(DefinitionalValueExtractor<T> another){
 
         return (t)->{
             List<DefinitionalValue> list1 = new ArrayList<>(this.extract(t));

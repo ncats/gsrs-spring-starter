@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SDFRecord {
-    public String getStructure();
-    public Optional<String> getProperty(String name);
-    public List<String> getProperties();
+    String getStructure();
+    Optional<String> getProperty(String name);
+    List<String> getProperties();
 }

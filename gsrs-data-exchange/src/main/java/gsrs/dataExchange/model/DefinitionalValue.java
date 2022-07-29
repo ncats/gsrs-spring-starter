@@ -19,4 +19,5 @@ public class DefinitionalValue {
 
     @Indexable(name="Qualifier")
     private String qualifier;
+
 }

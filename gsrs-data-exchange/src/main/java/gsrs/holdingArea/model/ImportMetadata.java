@@ -24,7 +24,7 @@ import java.util.UUID;
 
 @Backup
 @Entity
-@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_kind", columnList = "kind")})
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class", columnList = "entityClass")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -71,10 +71,20 @@ public class ImportMetadata implements Serializable {
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true, name = "Id")
+    private UUID instanceId; //always unique!  changes when data change
+
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true, name = "RecordId")
-    private UUID recordId;
+    @Column(length =40, updatable = false, unique = true, name = "groupId")
+    @OneToOne
+    private UUID recordId; //stays the same for a given record
+
+    @Indexable(facet = true)
+    private int version;
 
     @Indexable(name = "SourceName", suggest = true)
     private String sourceName;
@@ -101,6 +111,7 @@ public class ImportMetadata implements Serializable {
     private RecordProcessStatus processStatus;
 
     @Indexable()
+    @Column(length = 255)
     private String entityClass;
 
     /*
@@ -131,9 +142,5 @@ public class ImportMetadata implements Serializable {
 
     @Indexable
     private String dataFormat;
-
-    @Indexable
-    @Column(length = 255)
-    private String kind;
 
 }

@@ -23,11 +23,11 @@ public class MappingActionFactoryMetadata {
 
     public Map<String, Object> resolveAndValidate(Map<String, Object> initialParams){
         Map<String,Object> returnMap = new LinkedHashMap<>();
-        initialParams.forEach((k,v)->returnMap.put(k,v));
+        returnMap.putAll(initialParams);
         for(MappingParameter param: parameterFields){
             if(returnMap.containsKey(param.getLookupKey())){
-                System.out.println(String.format("replaced %s (value: %s) with %s", param.getLookupKey(),
-                        returnMap.get(param.getLookupKey()), param.getFieldName()));
+                System.out.printf("replaced %s (value: %s) with %s%n", param.getLookupKey(),
+                        returnMap.get(param.getLookupKey()), param.getFieldName());
                 /*returnMap.put(param.getFieldName(), returnMap.get(param.getLookupKey()));
                 if?????????
                 returnMap.remove(param.getLookupKey());*/
