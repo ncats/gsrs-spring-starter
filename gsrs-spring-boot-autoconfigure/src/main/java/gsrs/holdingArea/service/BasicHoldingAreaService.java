@@ -5,7 +5,6 @@ import gsrs.holdingArea.repository.ImportDataRepository;
 import gsrs.holdingArea.repository.ImportMetadataRepository;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.validator.ValidationMessage;
-import ix.ginas.models.GinasCommonData;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -39,7 +38,7 @@ public class BasicHoldingAreaService /* implements HoldingAreaService*/ {
 
 
     //@Override
-    public String createRecord(CreateRecordParameters parameters) {
+    public String createRecord(ImportRecordParameters parameters) {
         return null;
     }
 

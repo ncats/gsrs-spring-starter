@@ -59,8 +59,8 @@ public @interface GsrsJpaTest {
     @AliasFor(annotation = ContextConfiguration.class)
     Class[] classes() default {};
 
-    @AliasFor(
+    /*@AliasFor(
             annotation = ImportAutoConfiguration.class
     )
-    Class<?>[] excludeAutoConfiguration() default {};
+    Class<?>[] excludeAutoConfiguration() default {};*/
 }

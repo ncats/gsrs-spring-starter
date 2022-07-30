@@ -48,7 +48,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -59,14 +59,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
-            <version>3.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-spring-legacy-indexer</artifactId>
-            <version>3.1-SNAPSHOT</version>
-            <scope>test</scope>
+            <version>${gsrs.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>

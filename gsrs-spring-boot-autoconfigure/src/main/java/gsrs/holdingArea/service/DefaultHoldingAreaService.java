@@ -3,13 +3,10 @@ package gsrs.holdingArea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.holdingArea.extractors.*;
 import gsrs.holdingArea.model.*;
 import gsrs.holdingArea.repository.*;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.GsrsValidatorFactory;
-import gsrs.validator.ValidatorConfig;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
@@ -26,7 +23,6 @@ import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import gsrs.holdingArea.service.HoldingAreaService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,7 +94,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
 
     @Override
-    public String createRecord(CreateRecordParameters parameters) {
+    public String createRecord(ImportRecordParameters parameters) {
         Objects.requireNonNull(indexer, "need a text indexer!");
         ImportData data = new ImportData();
         data.setData(parameters.getJsonData());
@@ -178,6 +174,11 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
+    public ImportMetadata retrieveRecord(String recordId, int version) {
+        return null;
+    }
+
+    @Override
     public String retrieveRecord(String recordId, int version, String view) {
         return importDataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
@@ -185,6 +186,22 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     @Override
     public void deleteRecord(String recordId, int version) {
         importDataRepository.deleteById(UUID.fromString(recordId));
+    }
+
+    @Override
+    public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
+        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+        SearchResult result = transactionSearch.execute(ts -> {
+            try {
+                ImportMetadataLegacySearchService importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
+                SearchResult sresult = importMetadataLegacySearchService.search(sr.getQuery(), sr.getOptions());
+                return sresult;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+
+            }
+        });
+        return null;
     }
 
     public <T> void registerEntityService(HoldingAreaEntityService<T> service){

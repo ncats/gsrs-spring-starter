@@ -24,7 +24,7 @@ import java.util.UUID;
 
 @Backup
 @Entity
-@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class", columnList = "entityClass")})
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entityClassName")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -92,9 +92,6 @@ public class ImportMetadata implements Serializable {
     @Indexable
     private Date versionCreationDate;
 
-    @Indexable(facet = true)
-    private int version;
-
     @Indexable(name="ImportStatus", facet = true)
     private RecordImportStatus importStatus;
 
@@ -110,9 +107,9 @@ public class ImportMetadata implements Serializable {
     @Indexable(name="processStatus", facet = true)
     private RecordProcessStatus processStatus;
 
-    @Indexable()
+    @Indexable
     @Column(length = 255)
-    private String entityClass;
+    private String entityClassName;
 
     /*
     To record why this import was rejected or processed in a certain way.
@@ -123,20 +120,18 @@ public class ImportMetadata implements Serializable {
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
-            @JoinColumn(name="RecordId", referencedColumnName = "RecordId"),
-            @JoinColumn(name="version", referencedColumnName = "version")
+            @JoinColumn(name="InstanceId", referencedColumnName = "InstanceId")
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<KeyValueMapping> KeyValueMappings = new ArrayList<>();
 
-    @JSONEntity(title = "Validations")
+    @JSONEntity(title = "ImportValidations")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
     @JoinColumns({
-            @JoinColumn(name="RecordId", referencedColumnName = "RecordId"),
-            @JoinColumn(name="version", referencedColumnName = "version")
+            @JoinColumn(name="InstanceId", referencedColumnName = "InstanceId")
     })
     public List<gsrs.holdingArea.model.ImportValidation> validations = new ArrayList<>();
 

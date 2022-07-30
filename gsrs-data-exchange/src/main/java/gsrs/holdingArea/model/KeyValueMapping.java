@@ -11,7 +11,9 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "ix_import_mapping")
+@Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "key"),
+        @Index(name="idx_ix_import_mapping_value", columnList = "value"),
+        @Index(name="idx_ix_import_mapping_instance_id", columnList = "instanceId")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -27,7 +29,7 @@ public class KeyValueMapping {
 
     @Type(type = "uuid-char" )
     @Column(length =40, updatable = false, unique = false)
-    private UUID recordId;
+    private UUID instanceId;
 
     @Indexable(name = "Key", suggest = true)
     private String key;

@@ -13,15 +13,14 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Backup
-@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_kind", columnList = "kind"),
-        @Index(name="idx_ix_import_data_version", columnList = "version")})
+@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_entity_class_name", columnList = "entityClassName"),
+        @Index(name="idx_ix_import_data_version", columnList = "version"), @Index(name="idx_ix_import_data_record_id", columnList = "recordId")})
 @Slf4j
 @Data
 @Entity
 @IndexableRoot
 public class ImportData {
 
-    @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
@@ -29,6 +28,15 @@ public class ImportData {
     @Column(length =40, updatable = false, unique = true)
     @Indexable(name="RecordId")
     private UUID recordId;
+
+    @Id
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true)
+    @Indexable(name="instanceId")
+    private UUID instanceId;
 
     @Indexable(name="Version")
     private int version;
@@ -38,5 +46,5 @@ public class ImportData {
 
     @Indexable
     @Column(length = 255)
-    private String kind;
+    private String entityClassName;
 }

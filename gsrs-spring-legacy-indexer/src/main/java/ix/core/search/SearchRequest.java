@@ -5,7 +5,7 @@ import ix.core.search.SearchOptions.SearchTermFilter;
 import ix.core.search.text.TextIndexer;
 import ix.utils.Util;
 import org.apache.lucene.queryparser.classic.ParseException;
-//import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Query;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;

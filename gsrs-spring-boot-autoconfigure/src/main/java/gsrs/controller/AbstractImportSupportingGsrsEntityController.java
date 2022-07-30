@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.holdingArea.model.CreateRecordParameters;
+import gsrs.holdingArea.model.ImportRecordParameters;
 import gsrs.holdingArea.service.HoldingAreaService;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.imports.ImportAdapterFactory;
@@ -293,7 +293,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             itmd = saveImportTask(itmd).get();
             log.trace("going to create CreateRecordParameters");
-            CreateRecordParameters parameters = CreateRecordParameters.builder()
+            ImportRecordParameters parameters = ImportRecordParameters.builder()
                     .jsonData(new String(file.getBytes()))
                     .entityClass(GinasCommonData.class)
                     .formatType(file.getContentType())
