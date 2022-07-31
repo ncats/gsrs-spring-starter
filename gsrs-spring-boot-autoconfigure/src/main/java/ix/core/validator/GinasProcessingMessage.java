@@ -66,6 +66,9 @@ public class GinasProcessingMessage implements ValidationMessage {
 	public static GinasProcessingMessage WARNING_MESSAGE(String msg){
 		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg);
 	}
+	public static GinasProcessingMessage NOTICE_MESSAGE(String msg){
+		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg);
+	}
 	public static GinasProcessingMessage INFO_MESSAGE(String msg){
 		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg);
 	}
@@ -84,7 +87,7 @@ public class GinasProcessingMessage implements ValidationMessage {
 	}
 	@JsonIgnore
 	public boolean isProblem(){
-		return messageType == MESSAGE_TYPE.ERROR ||messageType == MESSAGE_TYPE.WARNING;
+		return messageType == MESSAGE_TYPE.ERROR || messageType == MESSAGE_TYPE.WARNING || messageType == MESSAGE_TYPE.NOTICE;
 	}
 	@JsonIgnore
 	public boolean isError(){
