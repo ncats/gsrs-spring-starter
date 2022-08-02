@@ -177,7 +177,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
-        Class c= Class.forName( adaptFac.getHoldingServiceName());
+        Class<T> c= adaptFac.getHoldingService();
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
 
@@ -308,7 +308,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 textIndexerFactory= AutowireHelper.getInstance().autowireAndProxy(textIndexerFactory);
                 log.trace("forced autowiring");
             }
-            holdingAreaService.setTextIndexerFactory(textIndexerFactory);
+            //holdingAreaService.setTextIndexerFactory(textIndexerFactory);
             String recordId =holdingAreaService.createRecord(parameters);
             log.trace("Created holding area record: " + recordId);
             itmd.setHoldingAreaRecordId(recordId);

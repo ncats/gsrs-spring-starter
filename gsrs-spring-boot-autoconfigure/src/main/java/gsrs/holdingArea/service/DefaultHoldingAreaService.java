@@ -58,6 +58,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
+    @Autowired
+    private ImportMetadataLegacySearchService importMetadataLegacySearchService;
+
     private ValidatorFactory validatorFactory;
 
     private TextIndexer indexer;
@@ -65,8 +68,6 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     private final String context;
 
     private MatchableCalculationConfig matchableCalculationConfig;
-
-    private final static String replaceChar = "_";
 
     public final static String CURRENT_SOURCE ="Holding Area";
 
@@ -99,14 +100,17 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         ImportData data = new ImportData();
         data.setData(parameters.getJsonData());
         UUID recordId = UUID.randomUUID();
+        UUID instanceId= UUID.randomUUID();
         data.setRecordId(recordId);
         data.setVersion(1);
+        data.setInstanceId(instanceId);
         Objects.requireNonNull(importDataRepository,"importDataRepository is required");
         ImportData saved = importDataRepository.saveAndFlush(data);
 
         ImportMetadata metadata = new ImportMetadata();
         metadata.setRecordId(recordId);
-        metadata.setEntityClass(parameters.getEntityClass().getName());
+        metadata.setInstanceId(instanceId);
+        metadata.setEntityClassName(parameters.getEntityClass().getName());
         metadata.setImportStatus(ImportMetadata.RecordImportStatus.staged);
         metadata.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
         metadata.setValidationStatus(ImportMetadata.RecordValidationStatus.pending);
@@ -143,18 +147,18 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         ValidationResponse response= _entityServiceRegistry.get(parameters.getEntityClass()).validate(domainObject);
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
         if( response!=null) {
-            persistValidationInfo(response, 1, recordId);
+            persistValidationInfo(response, 1, instanceId);
             overallStatus = getOverallValidationStatus(response);
         }
 
         log.trace("overallStatus: " + overallStatus);
-        updateImportValidationStatus(recordId, overallStatus);
+        updateImportValidationStatus(instanceId, overallStatus);
 
         //TODO: extend this to other types of objects
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-        persistDefinitionalValues(definitionalValueTuples, recordId);
-        metadataRepository.updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
+        persistDefinitionalValues(definitionalValueTuples, instanceId);
+        metadataRepository.updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
         //  validation, when done would trigger the next event
@@ -163,7 +167,6 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         // the next step
         // will
         //todo: run duplicate check
-
 
         return saved.getRecordId().toString();
     }
@@ -175,12 +178,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public ImportMetadata retrieveRecord(String recordId, int version) {
-        return null;
-    }
-
-    @Override
-    public String retrieveRecord(String recordId, int version, String view) {
-        return importDataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
+        return metadataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
 
     @Override
@@ -188,55 +186,12 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         importDataRepository.deleteById(UUID.fromString(recordId));
     }
 
-    @Override
-    public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        SearchResult result = transactionSearch.execute(ts -> {
-            try {
-                ImportMetadataLegacySearchService importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
-                SearchResult sresult = importMetadataLegacySearchService.search(sr.getQuery(), sr.getOptions());
-                return sresult;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
 
-            }
-        });
-        return null;
-    }
 
     public <T> void registerEntityService(HoldingAreaEntityService<T> service){
         _entityServiceRegistry.put(service.getEntityClass().toString(), service);
     }
-    /*
-    under construction
-     */
-    @Override
-    public <T> List<T> findRecords(String query, Class<T> cls) {
 
-        //todo: see whether 'query' requires formatting
-        SearchRequest request = new SearchRequest.Builder()
-                .kind(cls)
-                .fdim(0)
-                .query(query)
-                .top(Integer.MAX_VALUE)
-                .build();
-        List<T> importMetadataObjects = getSearchList(request, cls);
-        try {
-            SearchResult sr = SearchResult.createBuilder().build();
-            Query finalQ = indexer.getQueryParser().parse(query);
-            TopDocs hits = indexer.withSearcher(searcher -> {
-                try (TaxonomyReader taxon = new DirectoryTaxonomyReader(indexer.getTaxonWriter())) {
-                    return indexer.firstPassLuceneSearch(searcher, taxon, sr, null, finalQ);
-                }
-            });
-            Arrays.stream(hits.scoreDocs).forEach(d -> {
-                //todo: get something useful out of this
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return importMetadataObjects;
-    }
 
     @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
@@ -244,23 +199,46 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public List<ValidationMessage> validateRecord(String json) {
-        Substance substance = processSubstance(json);
-        ValidationResponse<Substance> response = validateEntity(substance);
-        assert response != null;
-        return response.getValidationMessages();
+    public ValidationResponse validateRecord(String entityClass, String json) {
+
+        try {
+            Object object = deserializeObject (entityClass, json);
+            return _entityServiceRegistry.get(entityClass).validate(object);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
-    public MatchedRecordSummary findMatches(List<MatchableKeyValueTuple> recordMatchables){
+    public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
+        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+        return transactionSearch.execute(ts -> {
+            try {
+                importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
+                SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
+                return searchResult;
+            }
+            catch (Exception e) {
+                log.error("Error running search", e);
+            }
+            return null;
+         });
+    }
+
+    @Override
+    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException {
+        Class objectClass = Class.forName(entityClass);
         MatchedRecordSummary summary = new MatchedRecordSummary();
         summary.setQuery(recordMatchables);
+        //todo: test this
         recordMatchables.forEach(m -> {
             List<KeyValueMapping> mappings = keyValueMappingRepository.findMappingsByKeyAndValue(m.getKey(), m.getValue());
             log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
             List<MatchedKeyValue.MatchingRecordReference> matches=mappings.stream()
                     .map(ma-> MatchedKeyValue.MatchingRecordReference.builder()
-                            .recordId(EntityUtils.Key.of(Substance.class, ma.getRecordId()))
+                            .recordId(EntityUtils.Key.of(objectClass, ma.getInstanceId() ))
                             .sourceName(CURRENT_SOURCE)
                             .build())
                     .collect(Collectors.toList());
@@ -281,45 +259,8 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         this.matchableCalculationConfig = matchableCalculationConfig;
     }
 
-    public MatchableCalculationConfig getMatchableCalculationConfig() {
-        if (this.matchableCalculationConfig == null) {
-            this.matchableCalculationConfig = getDefaultMatchableCalculationConfig();
-        }
-        return this.matchableCalculationConfig;
-    }
-
     private <T> List<MatchableKeyValueTuple> getMatchables(T entity) {
-        /*MatchableKeyValueTupleExtractor<T> mainExtractor = (t,c)->{
-            //todo: replace with something more robust -- factory config-based lookup
-            // see index value makers as example
-            c.accept(MatchableKeyValueTuple.builder().key("test_key").value("test_value").build());
-        };*/
-        Substance substance = (Substance) entity;
-        List<MatchableKeyValueTuple> definitions = handleDefinitionalHashCalculation(substance);
-        List<MatchableKeyValueTuple> definitionsFinal = new ArrayList<>(definitions);
-        //mainExtractor.extract(entity, definitions::add);
-
-        List<MatchableKeyValueTupleExtractor<Substance>> extractors = getExtractors(entity.getClass());
-
-        extractors.forEach(e -> e.extract(substance, definitionsFinal::add));
-        /*
-        Remove def hash elements from matchables... filter out the stuff that's useful
-        get the full definitional hash instead of elements
-        1) get collection of matchable key-value tuple extractors
-
-        concept of a reduction
-
-        todo: list of MKVTExtractors
-            names -- all names
-            names -- display name
-            codes -- selected codes based on config
-            def hash....
-            UUID of main record
-            Approval ID - simplest possible thing for v 1 (verbatim approval ID....)
-            create these within substance (and other entity) module
-            based on
-         */
-        return definitionsFinal;
+        return _entityServiceRegistry.get(entity.getClass().getName()).extractKVM(entity);
     }
 
 
@@ -335,13 +276,13 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     /*
     question: does this method need to return something?
      */
-    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID recordId) {
+    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId) {
 
         definitionalValues.forEach(kv -> {
             KeyValueMapping mapping = new KeyValueMapping();
             mapping.setKey(kv.getKey());
             mapping.setValue(kv.getValue());
-            mapping.setRecordId(recordId);
+            mapping.setInstanceId(instanceId);
             keyValueMappingRepository.saveAndFlush(mapping);
             //index for searching
             EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
@@ -353,11 +294,10 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         });
     }
 
-    private <T> List<T> getSearchList(SearchRequest sr, Class<T> cls) {
+    /*private <T> List<T> getSearchList(SearchRequest sr, Class<T> cls) {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<T> foundObjects = transactionSearch.execute(ts -> {
             try {
-                importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
                 SearchResult sresult = importMetadataLegacySearchService.search(sr.getQuery(), sr.getOptions());
                 List<T> first = sresult.getMatches();
                 log.trace("first size: {}", first.size());
@@ -376,16 +316,16 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             }
         });
         return foundObjects;
-    }
+    }*/
 
 
-    public byte[] calculateDefinitionalHash(Substance substance) {
+    /*public byte[] calculateDefinitionalHash(Substance substance) {
         DefHashCalcRequirements defHashCalcRequirements = new DefHashCalcRequirements(definitionalElementFactory, substanceSearchService, transactionManager);
         DefinitionalElements definitionalElements = defHashCalcRequirements.getDefinitionalElementFactory().computeDefinitionalElementsFor(substance);
         return definitionalElements.getDefinitionalHash();
-    }
+    }*/
 
-    private List<gsrs.holdingArea.model.MatchableKeyValueTupleExtractor<Substance>> getExtractors(Class T) {
+    /*private List<gsrs.holdingArea.model.MatchableKeyValueTupleExtractor<Substance>> getExtractors(Class T) {
         List<gsrs.holdingArea.model.MatchableKeyValueTupleExtractor<Substance>> extractors = new ArrayList<>();
         //todo: get from config
         AllNamesMatchableExtractor<Substance> namesMatchableExtractor = new AllNamesMatchableExtractor<>();
@@ -399,12 +339,12 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         UUIDMatchableExtractor uuidMatchableExtractor = new UUIDMatchableExtractor();
         extractors.add(uuidMatchableExtractor);
         return extractors;
-    }
+    }*/
 
     /*
     TODO: Make this validate in a generic way!
      */
-    private <T> ValidationResponse<T> validateEntity(T newEntity) {
+    /*private <T> ValidationResponse<T> validateEntity(T newEntity) {
         Objects.requireNonNull(substanceEntityService, "Must have a SubstanceEntityService!");
         try {
             ValidationResponse response = substanceEntityService.validateEntity(((Substance) newEntity).toFullJsonNode());
@@ -413,7 +353,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             e.printStackTrace();
         }
         return null;
-    }
+    }*/
 
     private <T> ValidatorCallback createCallbackFor(T entity, ValidationResponse<T> response) {
         return new ValidatorCallback() {
@@ -452,7 +392,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         };
     }
 
-    private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID recordId) {
+    private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
         List<UUID> validationIds = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
             gsrs.holdingArea.model.ImportValidation.ImportValidationType type = gsrs.holdingArea.model.ImportValidation.ImportValidationType.info;
@@ -469,7 +409,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
                     .ValidationJson(validationResponse.toString())
                     .ValidationMessage(m.getMessage())
                     .version(version)
-                    .RecordId(recordId)
+                    .instanceId(instanceId)
                     .build();
 
             importValidationRepository.saveAndFlush(validation);
@@ -478,23 +418,12 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         return validationIds;
     }
 
-    private MatchableCalculationConfig getDefaultMatchableCalculationConfig() {
-        //hard-code temporarily.
-        // todo: Move to config
-        MatchableCalculationConfig config = new MatchableCalculationConfig();
-        config.setCodeSystems(Arrays.asList("CAS", "NCI"));
-        config.setIncludeDisplayName(true);
-        config.setIncludeUuid(true);
-        config.setIncludeApprovalId(true);
-        config.setObjectClass(ix.ginas.models.v1.Substance.class);
-        return config;
+
+    private void updateImportValidationStatus(UUID instanceId, ImportMetadata.RecordValidationStatus status) {
+        metadataRepository.updateRecordValidationStatus(instanceId, status);
     }
 
-    private void updateImportValidationStatus(UUID recordId, ImportMetadata.RecordValidationStatus status) {
-        metadataRepository.updateRecordValidationStatus(recordId, status);
-    }
-
-    private ImportMetadata.RecordValidationStatus getOverallValidationStatus(ValidationResponse<Substance> validationResponse) {
+    private ImportMetadata.RecordValidationStatus getOverallValidationStatus(ValidationResponse validationResponse) {
         ImportMetadata.RecordValidationStatus response = ImportMetadata.RecordValidationStatus.valid;
 
         if (validationResponse.getValidationMessages().stream().anyMatch(m -> ((ValidationMessage) m).getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR)) {
@@ -517,4 +446,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         Object domainObject = _entityServiceRegistry.get(entityClassName).parse(node);
         return domainObject;
     }
+
+    private ValidationResponse  handleValidation(String entityClass, Object object) {
+        return _entityServiceRegistry.get(entityClass).validate(object);
+    }
+
 }

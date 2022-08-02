@@ -19,6 +19,7 @@ import java.util.Map;
 @Slf4j
 public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData> {
     private String fileName;
+    private Class holdingAreaService;
 
     @Override
     public String getAdapterName() {
@@ -59,8 +60,13 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
-    public String getHoldingServiceName() {
-        return null;
+    public void setHoldingService(Class newClass) {
+        this.holdingAreaService= newClass;
+    }
+
+    @Override
+    public Class getHoldingService(){
+        return this.holdingAreaService;
     }
 
     public static List<MappingAction<GinasCommonData, TextRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {

@@ -10,6 +10,7 @@ import java.util.List;
 public class DummyImportAdapterFactory implements ImportAdapterFactory {
 
     private String fileName;
+    private Class holdingAreaServiceClass;
 
     public String ADAPTER_NAME="Dummy Import Adapter";
     @Override
@@ -50,7 +51,12 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     }
 
     @Override
-    public String getHoldingServiceName() {
-        return null;
+    public Class getHoldingService() {
+        return this.holdingAreaServiceClass;
+    }
+
+    @Override
+    public void setHoldingService(Class holdingAreaService){
+        this.holdingAreaServiceClass = holdingAreaService;
     }
 }

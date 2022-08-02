@@ -58,5 +58,5 @@ public class Matchup {
 
     @Indexable
     @Column(length = 255)
-    private String kind;
+    private String entityClass;
 }

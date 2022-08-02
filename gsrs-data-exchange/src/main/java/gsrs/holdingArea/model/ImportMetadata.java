@@ -72,7 +72,7 @@ public class ImportMetadata implements Serializable {
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true, name = "Id")
+    @Column(length =40, updatable = false, unique = true, name = "instanceId")
     private UUID instanceId; //always unique!  changes when data change
 
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
@@ -80,7 +80,7 @@ public class ImportMetadata implements Serializable {
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
     @Column(length =40, updatable = false, unique = true, name = "groupId")
-    @OneToOne
+    //@OneToOne
     private UUID recordId; //stays the same for a given record
 
     @Indexable(facet = true)
@@ -108,7 +108,7 @@ public class ImportMetadata implements Serializable {
     private RecordProcessStatus processStatus;
 
     @Indexable
-    @Column(length = 255)
+    @Column(length = 255, name="entityClassName")
     private String entityClassName;
 
     /*
@@ -120,7 +120,7 @@ public class ImportMetadata implements Serializable {
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
-            @JoinColumn(name="InstanceId", referencedColumnName = "InstanceId")
+            @JoinColumn(name="instanceId", referencedColumnName = "instanceId")
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
@@ -131,7 +131,7 @@ public class ImportMetadata implements Serializable {
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
     @JoinColumns({
-            @JoinColumn(name="InstanceId", referencedColumnName = "InstanceId")
+            @JoinColumn(name="instanceId", referencedColumnName = "instanceId")
     })
     public List<gsrs.holdingArea.model.ImportValidation> validations = new ArrayList<>();
 

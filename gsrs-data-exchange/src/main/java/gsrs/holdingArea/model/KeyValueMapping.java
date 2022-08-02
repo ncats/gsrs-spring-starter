@@ -28,7 +28,7 @@ public class KeyValueMapping {
     private UUID mappingId;
 
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
+    @Column(length =40, updatable = false, unique = false, name="instanceId")
     private UUID instanceId;
 
     @Indexable(name = "Key", suggest = true)
@@ -44,6 +44,6 @@ public class KeyValueMapping {
     private String dataLocation;//staging area or permanent database
 
     @Indexable
-    private String kind;
+    private String entityClass;
 
 }

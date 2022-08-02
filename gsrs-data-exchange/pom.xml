@@ -39,12 +39,6 @@
             <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
-        <!--dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
-            <version>${gsrs.version}</version>
-            <scope>compile</scope>
-        </dependency-->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
@@ -66,12 +60,5 @@
             <artifactId>spring-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-spring-starter-tests</artifactId>
-            <version>3.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency-->
-
     </dependencies>
 </project>

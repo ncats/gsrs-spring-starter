@@ -11,7 +11,7 @@ import java.util.UUID;
 @Repository
 public interface ImportValidationRepository extends GsrsVersionedRepository<ImportValidation, UUID> {
 
-    @Query("select i from ImportValidation i where i.RecordId = ?1")
-    List<ImportValidation> retrieveValidationsByRecordId(UUID recordId);
+    @Query("select i from ImportValidation i where i.instanceId = ?1")
+    List<ImportValidation> retrieveValidationsByRecordId(UUID instanceId);
 
 }

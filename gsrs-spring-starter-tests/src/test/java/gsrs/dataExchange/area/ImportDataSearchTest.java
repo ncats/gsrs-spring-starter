@@ -34,6 +34,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
 
     private TextIndexer indexer;
 
+    private String objectName="gsrs.holdingArea.model.ImportMetadata";
     @BeforeEach
     public void setup() throws Exception {
         indexer = tif.getDefaultInstance();
@@ -115,7 +116,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         ImportMetadata importMetadata = new ImportMetadata();
         UUID testRecordId = UUID.randomUUID();
         importMetadata.setRecordId(testRecordId);
-        importMetadata.setEntityClass("Potato");
+        importMetadata.setEntityClassName(objectName);
         importMetadata.setSourceName("Funky File");
         importMetadata.setImportStatus(ImportMetadata.RecordImportStatus.accepted);
         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(importMetadata);
@@ -124,7 +125,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         ImportMetadata importMetadata2 = new ImportMetadata();
         UUID recordId = UUID.randomUUID();
         importMetadata2.setImportStatus(ImportMetadata.RecordImportStatus.imported);
-        importMetadata2.setEntityClass("Substance");
+        importMetadata2.setEntityClassName(objectName);
         importMetadata2.setSourceName("Normal File");
         importMetadata2.setRecordId(recordId);
         EntityUtils.EntityWrapper wrapper2 = EntityUtils.EntityWrapper.of(importMetadata2);
@@ -133,7 +134,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         ImportMetadata importMetadata3 = new ImportMetadata();
         UUID recordId3 = UUID.randomUUID();
         importMetadata3.setImportStatus(ImportMetadata.RecordImportStatus.staged);
-        importMetadata3.setEntityClass("Substance");
+        importMetadata3.setEntityClassName(objectName);
         importMetadata3.setSourceName("Experimental File");
         importMetadata3.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
         importMetadata3.setRecordId(recordId3);
@@ -143,7 +144,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         ImportMetadata importMetadata4 = new ImportMetadata();
         UUID recordId4 = UUID.randomUUID();
         importMetadata4.setImportStatus(ImportMetadata.RecordImportStatus.staged);
-        importMetadata4.setEntityClass("Substance");
+        importMetadata4.setEntityClassName(objectName);
         importMetadata4.setSourceName("Additional File");
         importMetadata4.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
         importMetadata4.setVersion(7);

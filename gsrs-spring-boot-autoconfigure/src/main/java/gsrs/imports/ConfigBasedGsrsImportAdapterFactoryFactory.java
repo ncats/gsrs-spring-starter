@@ -25,6 +25,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 {
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
+                        iaf.setHoldingService(c.getHoldingServiceClass());
                         iaf = AutowireHelper.getInstance().autowireAndProxy(iaf);
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();

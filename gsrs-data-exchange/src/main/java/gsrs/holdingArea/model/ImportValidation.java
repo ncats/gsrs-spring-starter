@@ -66,5 +66,6 @@ public class ImportValidation {
     private Date ValidationDate;
 
     @Indexable
+    @Column(length = 255, name="entityClassName")
     private String entityClassName;
 }
