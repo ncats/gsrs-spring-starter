@@ -81,7 +81,7 @@ public class UserProfile extends IxModel{
     @JoinTable(name="ix_core_userprof_prop", inverseJoinColumns = {
             @JoinColumn(name="ix_core_value_id")
     })
-	public List<Value> properties = new ArrayList<Value>();
+	public Set<Value> properties = new HashSet<Value>();
 
 	public UserProfile() {
 	}

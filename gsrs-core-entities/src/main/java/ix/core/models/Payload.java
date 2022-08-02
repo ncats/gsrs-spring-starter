@@ -11,7 +11,9 @@ import org.hibernate.annotations.Type;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -49,7 +51,7 @@ public class Payload extends BaseModel {
     @JoinTable(name="ix_core_payload_property", inverseJoinColumns = {
             @JoinColumn(name="ix_core_value_id")
     })
-    public List<Value> properties = new ArrayList<Value>();
+    public Set<Value> properties = new HashSet<Value>();
 
     public Payload() {
     	

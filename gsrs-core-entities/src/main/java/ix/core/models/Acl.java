@@ -1,8 +1,19 @@
 package ix.core.models;
 
-import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 
 @Entity
 @Table(name="ix_core_acl")
@@ -24,18 +35,17 @@ public class Acl extends LongBaseModel {
 
     @ManyToMany(cascade= CascadeType.ALL)
     @Basic(fetch= FetchType.EAGER)
-//    @JoinTable(name="ix_core_acl_principal")
     @JoinTable(name="ix_core_acl_principal", inverseJoinColumns = {
             @JoinColumn(name="ix_core_principal_id")
     })
-    public List<Principal> principals = new ArrayList<Principal>();
+    public Set<Principal> principals = new HashSet<Principal>();
 
     @ManyToMany(cascade= CascadeType.ALL)
     @Basic(fetch= FetchType.EAGER)
     @JoinTable(name="ix_core_acl_group", inverseJoinColumns = {
             @JoinColumn(name="ix_core_group_id")
     })
-    public List<Group> groups = new ArrayList<Group>();
+    public Set<Group> groups = new HashSet<Group>();
 
     public Acl() {}
     public Acl(Permission perm) {
