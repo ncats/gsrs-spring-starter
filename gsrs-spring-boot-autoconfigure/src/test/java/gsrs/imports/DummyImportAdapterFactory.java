@@ -51,12 +51,12 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     }
 
     @Override
-    public Class getHoldingService() {
+    public Class getHoldingAreaService() {
         return this.holdingAreaServiceClass;
     }
 
     @Override
-    public void setHoldingService(Class holdingAreaService){
+    public void setHoldingAreaService(Class holdingAreaService){
         this.holdingAreaServiceClass = holdingAreaService;
     }
 }

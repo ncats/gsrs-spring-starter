@@ -162,6 +162,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
+        log.trace("in fetchAdapterFactory, adaptFac: {}, holding area service: {}", adaptFac.getClass().getName(), adaptFac.getHoldingAreaService().getName());
         adaptFac.setFileName(task.filename);
         return adaptFac;
     }
@@ -177,7 +178,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
-        Class<T> c= adaptFac.getHoldingService();
+        Class<T> c= adaptFac.getHoldingAreaService();
+        log.trace("in getHoldingAreaService, HoldingAreaService: {}", c.getName());
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
 

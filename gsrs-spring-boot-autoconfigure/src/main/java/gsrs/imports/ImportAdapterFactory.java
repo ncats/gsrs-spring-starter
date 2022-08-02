@@ -71,6 +71,6 @@ public interface ImportAdapterFactory<T> {
      *
      * @return "Key" name of holding service class (that implements interface HoldingService
      */
-    Class getHoldingService();
-    void setHoldingService(Class holdingService);
+    Class getHoldingAreaService();
+    void setHoldingAreaService(Class holdingService);
 }
