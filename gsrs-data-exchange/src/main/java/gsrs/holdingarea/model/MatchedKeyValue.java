@@ -1,4 +1,4 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import ix.core.util.EntityUtils;
 import lombok.AllArgsConstructor;
@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 public class MatchedKeyValue {
 
-    private gsrs.holdingArea.model.MatchableKeyValueTuple tupleUsedInMatching;
+    private gsrs.holdingarea.model.MatchableKeyValueTuple tupleUsedInMatching;
     private List<MatchingRecordReference> matchingRecords;
 
     @Data

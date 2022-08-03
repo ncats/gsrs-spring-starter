@@ -1,6 +1,6 @@
-package gsrs.holdingArea.repository;
+package gsrs.holdingarea.repository;
 
-import gsrs.holdingArea.model.RawImportData;
+import gsrs.holdingarea.model.RawImportData;
 import gsrs.repository.GsrsVersionedRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

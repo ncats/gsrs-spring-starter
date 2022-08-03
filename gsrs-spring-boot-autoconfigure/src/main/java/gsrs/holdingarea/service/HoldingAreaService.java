@@ -1,8 +1,8 @@
-package gsrs.holdingArea.service;
+package gsrs.holdingarea.service;
 
-import gsrs.holdingArea.model.ImportRecordParameters;
-import gsrs.holdingArea.model.ImportMetadata;
-import gsrs.holdingArea.model.MatchedRecordSummary;
+import gsrs.holdingarea.model.ImportRecordParameters;
+import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingarea.model.MatchedRecordSummary;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.validator.ValidationResponse;
@@ -22,8 +22,8 @@ public interface HoldingAreaService {
 
     ValidationResponse validateRecord(String entityClass, String json);
 
-    <T> List<gsrs.holdingArea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
+    <T> List<gsrs.holdingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 
-    MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingArea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
+    MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
 
 }

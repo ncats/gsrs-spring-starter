@@ -1,4 +1,4 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import gov.nih.ncats.common.Tuple;
 import ix.core.util.EntityUtils;
@@ -30,13 +30,13 @@ public class MatchedRecordSummary {
                                    get all entity.keys that map, given a set of matchableKeys (fields)
                                     which have a matchable key found in a set of field names.
      */
-    private List<gsrs.holdingArea.model.MatchableKeyValueTuple> query = new ArrayList<>();
+    private List<gsrs.holdingarea.model.MatchableKeyValueTuple> query = new ArrayList<>();
     private List<MatchedKeyValue> matches = new ArrayList<>();
 
     public List<String> getMultiplyMatchedKeys(){
 
         return query.stream()
-                .map(gsrs.holdingArea.model.MatchableKeyValueTuple::getKey)
+                .map(gsrs.holdingarea.model.MatchableKeyValueTuple::getKey)
                 .filter(k->matches.stream(). anyMatch(ma->ma.getTupleUsedInMatching().getKey().equals(k)))
                 .map(i->{
                     long count= matches.size();
@@ -49,7 +49,7 @@ public class MatchedRecordSummary {
     }
     public List<String> getUniqueMatchingKeys(){
         return query.stream()
-                .map(gsrs.holdingArea.model.MatchableKeyValueTuple::getKey)
+                .map(gsrs.holdingarea.model.MatchableKeyValueTuple::getKey)
                 .distinct()
                 .collect(Collectors.toList());
     }

@@ -1,7 +1,7 @@
-package gsrs.holdingArea.service;
+package gsrs.holdingarea.service;
 
-import gsrs.holdingArea.model.ImportMetadata;
-import gsrs.holdingArea.repository.ImportMetadataRepository;
+import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingarea.repository.ImportMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import gsrs.legacy.LegacyGsrsSearchService;

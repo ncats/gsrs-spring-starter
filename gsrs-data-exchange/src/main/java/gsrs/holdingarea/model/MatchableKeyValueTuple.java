@@ -1,4 +1,4 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import ix.core.models.Indexable;
 import lombok.AllArgsConstructor;

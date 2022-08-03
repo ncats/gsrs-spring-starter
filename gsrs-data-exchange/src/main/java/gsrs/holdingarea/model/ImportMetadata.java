@@ -1,4 +1,4 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.EntityMapperOptions;
@@ -133,7 +133,7 @@ public class ImportMetadata implements Serializable {
     @JoinColumns({
             @JoinColumn(name="instanceId", referencedColumnName = "instanceId")
     })
-    public List<gsrs.holdingArea.model.ImportValidation> validations = new ArrayList<>();
+    public List<gsrs.holdingarea.model.ImportValidation> validations = new ArrayList<>();
 
     @Indexable
     private String dataFormat;

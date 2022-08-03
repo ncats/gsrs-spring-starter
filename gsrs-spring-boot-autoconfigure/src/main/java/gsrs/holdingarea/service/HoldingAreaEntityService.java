@@ -1,7 +1,7 @@
-package gsrs.holdingArea.service;
+package gsrs.holdingarea.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.holdingArea.model.MatchableKeyValueTuple;
+import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.validator.ValidationResponse;
 import java.util.List;

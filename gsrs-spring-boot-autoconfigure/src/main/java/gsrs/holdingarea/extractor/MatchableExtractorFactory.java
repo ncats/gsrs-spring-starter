@@ -1,7 +1,7 @@
-package gsrs.holdingArea.extractor;
+package gsrs.holdingarea.extractor;
 
-import gsrs.holdingArea.model.MatchableKeyValueTupleExtractor;
-import gsrs.holdingArea.service.HoldingAreaEntityService;
+import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
+import gsrs.holdingarea.service.HoldingAreaEntityService;
 
 public interface MatchableExtractorFactory {
         <T> MatchableKeyValueTupleExtractor<T> createExtractorFor(Class <T> cls);

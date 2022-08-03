@@ -1,9 +1,9 @@
-package gsrs.holdingArea.model;
+package gsrs.holdingarea.model;
 
 import java.util.function.Consumer;
 
 public interface MatchableKeyValueTupleExtractor<T> {
-    void extract(T t, Consumer<gsrs.holdingArea.model.MatchableKeyValueTuple> c);
+    void extract(T t, Consumer<gsrs.holdingarea.model.MatchableKeyValueTuple> c);
 
     default MatchableKeyValueTupleExtractor<T> combine(MatchableKeyValueTupleExtractor<T> matchableKeyValueTupleExtractor) {
         MatchableKeyValueTupleExtractor<T> _this = this;

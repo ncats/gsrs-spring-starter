@@ -1,10 +1,10 @@
-package gsrs.holdingArea.service;
+package gsrs.holdingarea.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.holdingArea.model.*;
-import gsrs.holdingArea.repository.*;
+import gsrs.holdingarea.model.*;
+import gsrs.holdingarea.repository.*;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.SearchRequest;
@@ -15,10 +15,6 @@ import ix.core.util.EntityUtils;
 import ix.core.validator.*;
 import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -325,8 +321,8 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         return definitionalElements.getDefinitionalHash();
     }*/
 
-    /*private List<gsrs.holdingArea.model.MatchableKeyValueTupleExtractor<Substance>> getExtractors(Class T) {
-        List<gsrs.holdingArea.model.MatchableKeyValueTupleExtractor<Substance>> extractors = new ArrayList<>();
+    /*private List<gsrs.holdingarea.model.MatchableKeyValueTupleExtractor<Substance>> getExtractors(Class T) {
+        List<gsrs.holdingarea.model.MatchableKeyValueTupleExtractor<Substance>> extractors = new ArrayList<>();
         //todo: get from config
         AllNamesMatchableExtractor<Substance> namesMatchableExtractor = new AllNamesMatchableExtractor<>();
         extractors.add(namesMatchableExtractor);
@@ -395,14 +391,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
         List<UUID> validationIds = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
-            gsrs.holdingArea.model.ImportValidation.ImportValidationType type = gsrs.holdingArea.model.ImportValidation.ImportValidationType.info;
+            gsrs.holdingarea.model.ImportValidation.ImportValidationType type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.info;
             if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR) {
-                type = gsrs.holdingArea.model.ImportValidation.ImportValidationType.error;
+                type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.error;
             } else if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING) {
-                type = gsrs.holdingArea.model.ImportValidation.ImportValidationType.warning;
+                type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.warning;
             }
             UUID validationId = UUID.randomUUID();
-            gsrs.holdingArea.model.ImportValidation validation = gsrs.holdingArea.model.ImportValidation.builder()
+            gsrs.holdingarea.model.ImportValidation validation = gsrs.holdingarea.model.ImportValidation.builder()
                     .ValidationId(validationId)
                     .ValidationDate(new Date())
                     .ValidationType(type)
