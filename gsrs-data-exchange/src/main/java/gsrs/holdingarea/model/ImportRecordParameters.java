@@ -17,7 +17,7 @@ public class ImportRecordParameters {
     private String source;
     private byte[] rawData;
     private InputStream rawDataSource;
-    private Class entityClass;
+    private String entityClassName;
     private String formatType;
     private UUID recordId;//will be null for creation; populated when updating
 

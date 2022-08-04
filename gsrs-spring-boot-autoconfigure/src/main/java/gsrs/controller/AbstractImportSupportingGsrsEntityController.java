@@ -16,7 +16,6 @@ import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
 import ix.core.search.text.TextIndexerFactory;
-import ix.ginas.models.GinasCommonData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -146,7 +145,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
         log.trace("starting in execute. task: " + task.toString());
-        log.trace("using encoding " + task.fileEncoding);
+        log.trace("using encoding {}, looking for payload with ID {}", task.fileEncoding, task.payloadID);
         return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
                 .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), task.fileEncoding);
@@ -187,9 +186,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
-        log.trace("in predictSettings, task for file: " + task.getFilename() + " with payload: " +task.payloadID);
+        log.trace("in predictSettings, task for file: {}  with payload: {}", task.getFilename(),task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
-        log.trace("got back adaptFac with name: " + adaptFac.getAdapterName());
+        log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
         ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
 
@@ -294,10 +293,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //save after we assign the fields we'll need later on
             }
             itmd = saveImportTask(itmd).get();
-            log.trace("going to create CreateRecordParameters");
+            /*log.trace("going to create CreateRecordParameters");
+            String fileData =new String(file.getBytes());
             ImportRecordParameters parameters = ImportRecordParameters.builder()
-                    .jsonData(new String(file.getBytes()))
-                    .entityClass(GinasCommonData.class)
+                    .jsonData()
+                    .entityClassName("ix.ginas.models.v1.Substance")
                     .formatType(file.getContentType())
                     .rawData(file.getBytes())
                     .source(file.getOriginalFilename())
@@ -310,10 +310,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 textIndexerFactory= AutowireHelper.getInstance().autowireAndProxy(textIndexerFactory);
                 log.trace("forced autowiring");
             }
+            holdingAreaService.setIndexer(textIndexerFactory.getDefaultInstance());
             //holdingAreaService.setTextIndexerFactory(textIndexerFactory);
             String recordId =holdingAreaService.createRecord(parameters);
             log.trace("Created holding area record: " + recordId);
             itmd.setHoldingAreaRecordId(recordId);
+
+             */
 
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
@@ -391,6 +394,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     .limit(limit)
                     .collect(Collectors.toList()));
 
+            HoldingAreaService service = getHoldingAreaService(itmd);
+            ObjectMapper mapper = new ObjectMapper();
+            for(T object : previewList) {
+                log.trace("going to call saveHoldingAreaRecord with data of type {}", object.getClass().getName());
+                log.trace(object.toString());
+                saveHoldingAreaRecord(service, mapper.writeValueAsString(object), itmd);
+            }
+
             /*log.trace("queryParameters:");
             queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));*/
             return new ResponseEntity<>(previewList, HttpStatus.OK);
@@ -400,6 +411,16 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
 
+    private String saveHoldingAreaRecord(HoldingAreaService service, String json, ImportTaskMetaData importTaskMetaData) {
+        ImportRecordParameters parameters = ImportRecordParameters.builder()
+                .jsonData(json)
+                .entityClassName("ix.ginas.models.v1.Substance")
+                .formatType(importTaskMetaData.mimeType)
+                //.rawData(importTaskMetaData.)
+                .source(importTaskMetaData.getFilename())
+                .build();
+        return service.createRecord(parameters);
+    }
     //STEP 4: Execute import
     //!!!!NEEDS MORE WORK
     @hasAdminRole

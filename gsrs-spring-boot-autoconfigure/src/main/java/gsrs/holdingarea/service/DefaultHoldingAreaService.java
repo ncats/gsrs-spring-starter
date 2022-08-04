@@ -106,7 +106,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         ImportMetadata metadata = new ImportMetadata();
         metadata.setRecordId(recordId);
         metadata.setInstanceId(instanceId);
-        metadata.setEntityClassName(parameters.getEntityClass().getName());
+        metadata.setEntityClassName(parameters.getEntityClassName());
         metadata.setImportStatus(ImportMetadata.RecordImportStatus.staged);
         metadata.setProcessStatus(ImportMetadata.RecordProcessStatus.loaded);
         metadata.setValidationStatus(ImportMetadata.RecordValidationStatus.pending);
@@ -118,11 +118,11 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         metadata.setDataFormat(parameters.getFormatType());
         metadataRepository.saveAndFlush(metadata);
         EntityUtils.EntityWrapper<ImportMetadata> wrapper = EntityUtils.EntityWrapper.of(metadata);
-        try {
+        /*try {
             indexer.add(wrapper);
         } catch (IOException e) {
             log.error("Error indexing import metadata to index", e);
-        }
+        }*/
         //update processing status after every step
 
         if (parameters.getRawDataSource() != null) {
@@ -135,12 +135,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
         Object domainObject;
         try {
-            domainObject = deserializeObject(parameters.getEntityClass().getName(), parameters.getJsonData());
+            log.trace("going deserialize object of class {}", parameters.getEntityClassName());
+            log.trace(parameters.getJsonData());
+            domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
         } catch (JsonProcessingException e) {
             log.error("Error deserializing imported object.", e);
             return IMPORT_FAILURE;
         }
-        ValidationResponse response= _entityServiceRegistry.get(parameters.getEntityClass()).validate(domainObject);
+        ValidationResponse response= _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
         if( response!=null) {
             persistValidationInfo(response, 1, instanceId);
@@ -282,74 +284,13 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             keyValueMappingRepository.saveAndFlush(mapping);
             //index for searching
             EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
-            try {
+            /*try {
                 indexer.add(wrapper);
             } catch (IOException e) {
                 log.error("Error indexing import metadata to index", e);
-            }
+            }*/
         });
     }
-
-    /*private <T> List<T> getSearchList(SearchRequest sr, Class<T> cls) {
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<T> foundObjects = transactionSearch.execute(ts -> {
-            try {
-                SearchResult sresult = importMetadataLegacySearchService.search(sr.getQuery(), sr.getOptions());
-                List<T> first = sresult.getMatches();
-                log.trace("first size: {}", first.size());
-                if (!first.isEmpty()) {
-                    log.trace("first item:" + first.get(0).getClass().getName());
-                } else {
-                    log.trace("first empty");
-                }
-                return first.stream()
-                        //force fetching
-                        .peek(ss -> EntityUtils.EntityWrapper.of(ss).toInternalJson())
-                        .collect(Collectors.toList());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-
-            }
-        });
-        return foundObjects;
-    }*/
-
-
-    /*public byte[] calculateDefinitionalHash(Substance substance) {
-        DefHashCalcRequirements defHashCalcRequirements = new DefHashCalcRequirements(definitionalElementFactory, substanceSearchService, transactionManager);
-        DefinitionalElements definitionalElements = defHashCalcRequirements.getDefinitionalElementFactory().computeDefinitionalElementsFor(substance);
-        return definitionalElements.getDefinitionalHash();
-    }*/
-
-    /*private List<gsrs.holdingarea.model.MatchableKeyValueTupleExtractor<Substance>> getExtractors(Class T) {
-        List<gsrs.holdingarea.model.MatchableKeyValueTupleExtractor<Substance>> extractors = new ArrayList<>();
-        //todo: get from config
-        AllNamesMatchableExtractor<Substance> namesMatchableExtractor = new AllNamesMatchableExtractor<>();
-        extractors.add(namesMatchableExtractor);
-        ApprovalIdMatchableExtractor approvalIdMatchableExtractor = new ApprovalIdMatchableExtractor();
-        extractors.add(approvalIdMatchableExtractor);
-        CASNumberMatchableExtractor casNumberMatchableExtractor = new CASNumberMatchableExtractor();
-        extractors.add(casNumberMatchableExtractor);
-        SelectedCodesMatchableExtractor selectedCodesMatchableExtractor = new SelectedCodesMatchableExtractor();
-        extractors.add(selectedCodesMatchableExtractor);
-        UUIDMatchableExtractor uuidMatchableExtractor = new UUIDMatchableExtractor();
-        extractors.add(uuidMatchableExtractor);
-        return extractors;
-    }*/
-
-    /*
-    TODO: Make this validate in a generic way!
-     */
-    /*private <T> ValidationResponse<T> validateEntity(T newEntity) {
-        Objects.requireNonNull(substanceEntityService, "Must have a SubstanceEntityService!");
-        try {
-            ValidationResponse response = substanceEntityService.validateEntity(((Substance) newEntity).toFullJsonNode());
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }*/
 
     private <T> ValidatorCallback createCallbackFor(T entity, ValidationResponse<T> response) {
         return new ValidatorCallback() {
@@ -431,20 +372,26 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         return response;
     }
 
-    //for unit tests
+    @Override
     public void setIndexer(TextIndexer indexer) {
+        log.trace("setIndexer");
         this.indexer = indexer;
     }
 
     private Object deserializeObject(String entityClassName, String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(entityClassName);
-        Object domainObject = _entityServiceRegistry.get(entityClassName).parse(node);
-        return domainObject;
+        JsonNode node = mapper.readTree(json);
+        if(_entityServiceRegistry.containsKey(entityClassName)) {
+            Object domainObject = _entityServiceRegistry.get(entityClassName).parse(node);
+            return domainObject;
+        }
+        else {
+            log.error("No entity service for class {}", entityClassName);
+            return null;
+        }
     }
 
     private ValidationResponse  handleValidation(String entityClass, Object object) {
         return _entityServiceRegistry.get(entityClass).validate(object);
     }
-
 }
