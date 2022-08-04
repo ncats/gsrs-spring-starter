@@ -28,7 +28,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         iaf.setHoldingAreaService(c.getHoldingAreaServiceClass());
                         log.trace("c.getHoldingServiceClass(): {}", c.getHoldingAreaServiceClass()==null ? "null!!" : c.getHoldingAreaServiceClass().getName());
                         log.trace("entity services:");
-                        c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
+                        //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
                         //iaf.setEntityServices(c.getEntityServices());
                         iaf.setEntityServiceClass(c.getEntityServiceClass());
                         iaf = AutowireHelper.getInstance().autowireAndProxy(iaf);

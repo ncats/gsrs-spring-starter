@@ -184,16 +184,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
         HoldingAreaService service=AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService)o);
-        adaptFac.getEntityServices().forEach(s-> {
-            try {
-                Constructor entityServiceConstructor = s.getConstructor();
-                HoldingAreaEntityService entityService = (HoldingAreaEntityService) entityServiceConstructor.newInstance();
-                service.registerEntityService(entityService);
-            } catch (NoSuchMethodException | InvocationTargetException |InstantiationException |IllegalAccessException e ) {
-                log.error("Error creating a holding area entity service", e);
-            }
-        });
-
+        if( adaptFac.getEntityServiceClass() !=null) {
+            Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
+            HoldingAreaEntityService entityService = (HoldingAreaEntityService) entityServiceConstructor.newInstance();
+            service.registerEntityService(entityService);
+        }
+        else {
+            log.warn("No entity service found.  Import won't get far.");
+        }
         return service;
     }
 
