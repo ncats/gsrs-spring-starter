@@ -118,12 +118,12 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public Class getHoldingServiceClass() {
+    public Class getHoldingAreaServiceClass() {
         return this.holdingAreaServiceClass;
     }
 
     @Override
-    public void setHoldingServiceClass(Class clazz) {
+    public void setHoldingAreaServiceClass(Class clazz) {
         this.holdingAreaServiceClass = clazz;
     }
 }

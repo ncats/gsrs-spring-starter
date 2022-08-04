@@ -239,7 +239,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
         log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
         if( getImportAdapters().size()  > 0) {
-            getImportAdapters().forEach(a->log.trace("adapter with name: "+ a.getAdapterName()));
+            getImportAdapters().forEach(a->log.trace("adapter with name: {}", a.getAdapterName()));
         }
         return getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
     }
@@ -380,10 +380,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("executePreview.  id: " + id);
         Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if (obj.isPresent()) {
+            log.trace("retrieved ImportTaskMetaData");
             //TODO: make async and do other stuff:
             ImportTaskMetaData itmd = obj.get();
 
             long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            log.trace("limit: {}", limit);
 
             List<T> previewList = (List<T>) (execute(itmd)
                     .limit(limit)
