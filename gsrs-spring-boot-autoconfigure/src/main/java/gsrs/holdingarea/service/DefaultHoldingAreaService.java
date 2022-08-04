@@ -184,12 +184,10 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         importDataRepository.deleteById(UUID.fromString(recordId));
     }
 
-
-
+    @Override
     public <T> void registerEntityService(HoldingAreaEntityService<T> service){
         _entityServiceRegistry.put(service.getEntityClass().toString(), service);
     }
-
 
     @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
@@ -332,14 +330,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
         List<UUID> validationIds = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
-            gsrs.holdingarea.model.ImportValidation.ImportValidationType type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.info;
+            ImportValidation.ImportValidationType type = ImportValidation.ImportValidationType.info;
             if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR) {
-                type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.error;
+                type = ImportValidation.ImportValidationType.error;
             } else if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING) {
-                type = gsrs.holdingarea.model.ImportValidation.ImportValidationType.warning;
+                type = ImportValidation.ImportValidationType.warning;
             }
             UUID validationId = UUID.randomUUID();
-            gsrs.holdingarea.model.ImportValidation validation = gsrs.holdingarea.model.ImportValidation.builder()
+            ImportValidation validation = ImportValidation.builder()
                     .ValidationId(validationId)
                     .ValidationDate(new Date())
                     .ValidationType(type)

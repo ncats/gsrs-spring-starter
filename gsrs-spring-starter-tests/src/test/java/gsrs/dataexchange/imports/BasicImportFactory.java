@@ -20,6 +20,8 @@ import java.util.Map;
 public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData> {
     private String fileName;
     private Class holdingAreaService;
+    private List<Class> services;
+    private Class serviceClass;
 
     @Override
     public String getAdapterName() {
@@ -65,6 +67,16 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
+    public Class getHoldingAreaEntityService() {
+        return null;
+    }
+
+    @Override
+    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+
+    }
+
+    @Override
     public Class getHoldingAreaService(){
         return this.holdingAreaService;
     }
@@ -105,4 +117,23 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
         return actions;
     }
 
+    @Override
+    public List<Class> getEntityServices() {
+        return this.services;
+    }
+
+    @Override
+    public void setEntityServices(List<Class> services) {
+        this.services=services;
+    }
+
+    @Override
+    public Class getEntityServiceClass() {
+        return this.serviceClass;
+    }
+
+    @Override
+    public void setEntityServiceClass(Class newClass) {
+        this.serviceClass=newClass;
+    }
 }

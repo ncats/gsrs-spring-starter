@@ -5,6 +5,7 @@ import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 /*
 Creates a class that can process data from a file and convert it into domain objects
@@ -73,4 +74,13 @@ public interface ImportAdapterFactory<T> {
      */
     Class getHoldingAreaService();
     void setHoldingAreaService(Class holdingService);
+
+    Class getHoldingAreaEntityService();
+    void setHoldingAreaEntityService(Class holdingAreaEntityService);
+
+    List<Class> getEntityServices();
+    void setEntityServices(List<Class> services);
+
+    Class getEntityServiceClass();
+    void setEntityServiceClass(Class newClass);
 }

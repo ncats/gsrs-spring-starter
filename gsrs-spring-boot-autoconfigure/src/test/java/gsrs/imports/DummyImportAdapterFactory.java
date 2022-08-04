@@ -1,7 +1,6 @@
 package gsrs.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -11,6 +10,8 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
 
     private String fileName;
     private Class holdingAreaServiceClass;
+    private List<Class> services;
+    private Class serviceClass;
 
     public String ADAPTER_NAME="Dummy Import Adapter";
     @Override
@@ -59,4 +60,35 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     public void setHoldingAreaService(Class holdingAreaService){
         this.holdingAreaServiceClass = holdingAreaService;
     }
+
+    @Override
+    public Class getHoldingAreaEntityService() {
+        return null;
+    }
+
+    @Override
+    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+
+    }
+
+    @Override
+    public List<Class> getEntityServices() {
+        return this.services;
+    }
+
+    @Override
+    public Class getEntityServiceClass() {
+        return serviceClass;
+    }
+
+    @Override
+    public void setEntityServiceClass(Class newClass) {
+        serviceClass=newClass;
+    }
+
+    @Override
+    public void setEntityServices(List services) {
+        this.services=services;
+    }
+
 }

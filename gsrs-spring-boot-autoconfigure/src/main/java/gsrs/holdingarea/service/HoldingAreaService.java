@@ -28,4 +28,6 @@ public interface HoldingAreaService {
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
 
     void setIndexer(TextIndexer indexer);
+
+    <T> void registerEntityService(HoldingAreaEntityService<T> service);
 }

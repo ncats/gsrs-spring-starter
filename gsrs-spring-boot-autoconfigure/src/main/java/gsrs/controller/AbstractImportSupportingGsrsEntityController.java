@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.holdingarea.model.ImportRecordParameters;
+import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.holdingarea.service.HoldingAreaService;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.imports.ImportAdapterFactory;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -178,11 +180,21 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
         Class<T> c= adaptFac.getHoldingAreaService();
-        log.trace("in getHoldingAreaService, HoldingAreaService: {}", c.getName());
+        log.trace("in getHoldingAreaService, instantiating HoldingAreaService: {}", c.getName());
         Constructor constructor= c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
+        HoldingAreaService service=AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService)o);
+        adaptFac.getEntityServices().forEach(s-> {
+            try {
+                Constructor entityServiceConstructor = s.getConstructor();
+                HoldingAreaEntityService entityService = (HoldingAreaEntityService) entityServiceConstructor.newInstance();
+                service.registerEntityService(entityService);
+            } catch (NoSuchMethodException | InvocationTargetException |InstantiationException |IllegalAccessException e ) {
+                log.error("Error creating a holding area entity service", e);
+            }
+        });
 
-        return AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService)o);
+        return service;
     }
 
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
@@ -293,30 +305,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //save after we assign the fields we'll need later on
             }
             itmd = saveImportTask(itmd).get();
-            /*log.trace("going to create CreateRecordParameters");
-            String fileData =new String(file.getBytes());
-            ImportRecordParameters parameters = ImportRecordParameters.builder()
-                    .jsonData()
-                    .entityClassName("ix.ginas.models.v1.Substance")
-                    .formatType(file.getContentType())
-                    .rawData(file.getBytes())
-                    .source(file.getOriginalFilename())
-                    .build();
-            HoldingAreaService holdingAreaService= getHoldingAreaService(itmd);
-            log.trace("Created holdingAreaService of type {}. textIndexerFactory: {}", holdingAreaService.getClass().getName(),
-                    textIndexerFactory);
-            if(textIndexerFactory == null){
-                textIndexerFactory = new TextIndexerFactory();
-                textIndexerFactory= AutowireHelper.getInstance().autowireAndProxy(textIndexerFactory);
-                log.trace("forced autowiring");
-            }
-            holdingAreaService.setIndexer(textIndexerFactory.getDefaultInstance());
-            //holdingAreaService.setTextIndexerFactory(textIndexerFactory);
-            String recordId =holdingAreaService.createRecord(parameters);
-            log.trace("Created holding area record: " + recordId);
-            itmd.setHoldingAreaRecordId(recordId);
-
-             */
 
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString() );
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);

@@ -36,4 +36,10 @@ public interface ImportAdapterFactoryConfig {
 
     Class getHoldingAreaServiceClass();
     void setHoldingAreaServiceClass(Class holdingServiceClass);
+
+    List<Class> getEntityServices();
+    void setEntityServices(List<Class> entityServices);
+
+    Class getEntityServiceClass();
+    void setEntityServiceClass(Class newClass);
 }

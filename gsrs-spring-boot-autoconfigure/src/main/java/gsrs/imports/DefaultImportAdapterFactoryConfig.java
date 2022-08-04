@@ -25,6 +25,8 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private String adapterName;
     private Map<String, Object> parameters;
     private Class holdingAreaServiceClass;
+    private List<Class> entityServices;
+    private Class entityServiceClass;
 
     public DefaultImportAdapterFactoryConfig(String adapterName, Class importAdapterFactoryClass, List<String> extensions) {
         this.adapterName=adapterName;
@@ -55,8 +57,6 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
      * parameters to pass to the validator class similar to {@link #parameters}.
      * If both parameters and unknown parameters are both set then parameters takes
      * precedence.
-     * @param propertyKey
-     * @param value
      */
     @JsonAnySetter
     public void addUnknownParameter(String propertyKey, Object value){
@@ -125,5 +125,25 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     @Override
     public void setHoldingAreaServiceClass(Class clazz) {
         this.holdingAreaServiceClass = clazz;
+    }
+
+    @Override
+    public List<Class> getEntityServices() {
+        return this.entityServices;
+    }
+
+    @Override
+    public void setEntityServices(List<Class> entityServices) {
+        this.entityServices= entityServices;
+    }
+
+    @Override
+    public Class getEntityServiceClass() {
+        return entityServiceClass;
+    }
+
+    @Override
+    public void setEntityServiceClass(Class newClass) {
+        entityServiceClass= newClass;
     }
 }
