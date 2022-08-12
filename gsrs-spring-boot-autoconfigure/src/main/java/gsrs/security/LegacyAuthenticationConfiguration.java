@@ -27,7 +27,7 @@ ix.authentication.autoregister=true
 ix.authentication.autoregisteractive=true
      */
     private boolean trustheader=false;
-    private boolean autoregister=true;
+    private boolean autoregister=false;
     private boolean allownonauthenticated=true;
     private boolean autoregisteractive=false;
 
