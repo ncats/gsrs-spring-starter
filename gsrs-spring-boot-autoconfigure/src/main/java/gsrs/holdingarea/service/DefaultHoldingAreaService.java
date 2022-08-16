@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
@@ -100,6 +101,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         data.setRecordId(recordId);
         data.setVersion(1);
         data.setInstanceId(instanceId);
+        data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository,"importDataRepository is required");
         ImportData saved = importDataRepository.saveAndFlush(data);
 
@@ -142,6 +144,11 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             log.error("Error deserializing imported object.", e);
             return IMPORT_FAILURE;
         }
+        if(domainObject == null) {
+            log.warn("null domainObject!");
+            return recordId.toString();
+        }
+
         ValidationResponse response= _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
         if( response!=null) {
@@ -156,7 +163,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
         persistDefinitionalValues(definitionalValueTuples, instanceId);
-        metadataRepository.updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
+        updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
         //  validation, when done would trigger the next event
@@ -186,7 +193,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public <T> void registerEntityService(HoldingAreaEntityService<T> service){
-        _entityServiceRegistry.put(service.getEntityClass().toString(), service);
+        log.trace("registered entity service class {} for entity class {}", service.getClass().getName(),
+                service.getEntityClass().getName());
+        _entityServiceRegistry.put(service.getEntityClass().getName(), service);
     }
 
     @Override
@@ -256,7 +265,13 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     private <T> List<MatchableKeyValueTuple> getMatchables(T entity) {
-        return _entityServiceRegistry.get(entity.getClass().getName()).extractKVM(entity);
+        String lookupClass =entity.getClass().getName();
+        log.trace("getMatchables looking for extractor for class {}", lookupClass);
+        if( !_entityServiceRegistry.containsKey(lookupClass)) {
+            lookupClass = entity.getClass().getSuperclass().getName();
+            log.trace(" getMatchables using base class {}", lookupClass);
+        }
+        return _entityServiceRegistry.get(lookupClass).extractKVM(entity);
     }
 
 
@@ -355,7 +370,15 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
 
     private void updateImportValidationStatus(UUID instanceId, ImportMetadata.RecordValidationStatus status) {
-        metadataRepository.updateRecordValidationStatus(instanceId, status);
+        TransactionTemplate transactionUpdate= new TransactionTemplate(transactionManager);
+        transactionUpdate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionUpdate.executeWithoutResult(c-> metadataRepository.updateRecordValidationStatus(instanceId, status));
+    }
+
+    private void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(c->metadataRepository.updateRecordImportStatus(instanceId, status));
     }
 
     private ImportMetadata.RecordValidationStatus getOverallValidationStatus(ValidationResponse validationResponse) {
@@ -380,8 +403,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(json);
         if(_entityServiceRegistry.containsKey(entityClassName)) {
-            Object domainObject = _entityServiceRegistry.get(entityClassName).parse(node);
-            return domainObject;
+            return _entityServiceRegistry.get(entityClassName).parse(node);
         }
         else {
             log.error("No entity service for class {}", entityClassName);

@@ -187,7 +187,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if( adaptFac.getEntityServiceClass() !=null) {
             Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
             HoldingAreaEntityService entityService = (HoldingAreaEntityService) entityServiceConstructor.newInstance();
+            entityService=AutowireHelper.getInstance().autowireAndProxy(entityService);
             service.registerEntityService(entityService);
+            log.trace("called registerEntityService with {}", entityService.getClass().getName());
         }
         else {
             log.warn("No entity service found.  Import won't get far.");
