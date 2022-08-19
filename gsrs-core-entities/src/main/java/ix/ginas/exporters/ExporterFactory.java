@@ -3,7 +3,10 @@ package ix.ginas.exporters;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Factory interface for making an {@link Exporter}
@@ -28,6 +31,25 @@ public interface ExporterFactory<T> {
         }
 
         default boolean publicOnly(){ return false;}
+
+        /* new stuff 19 August*/
+        default RecordScrubber getScrubber() {
+            //not clear what's requested
+            return null;
+        }
+
+        default Set<String> getScrubberGroups() {
+            return new HashSet<>();
+        }
+
+        default Function getScrubberFunction() {
+            return new Function() {
+                @Override
+                public Object apply(Object o) {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
@@ -42,6 +64,7 @@ public interface ExporterFactory<T> {
     /**
      * Get all the {@link OutputFormat}s that this factory
      * can support.
+     * @return a Set of {@link OutputFormat}s; should never be null,
      * @return a Set of {@link OutputFormat}s; should never be null,
      * but could be empty.
      */

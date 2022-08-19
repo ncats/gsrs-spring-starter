@@ -4,6 +4,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.RecordScrubber;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,8 @@ public class GsrsExportConfiguration {
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
 
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
+
+    Map<String,Map<String, RecordScrubber>> scrubbers;
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
