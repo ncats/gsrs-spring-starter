@@ -172,6 +172,16 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         // the next step
         // will
         //todo: run duplicate check
+        try {
+            MatchedRecordSummary summary= findMatches(domainObject.getClass().getName(), definitionalValueTuples);
+            log.trace("Matches: ");
+            summary.getMatches().forEach(m->{
+                log.trace("One match:");
+                m.getMatchingRecords().forEach(r->log.trace("   source: {} record Id: {}", r.getSourceName(),r.getRecordId()));
+            });
+        } catch (ClassNotFoundException e) {
+            log.error("Error looking for matches", e);
+        }
 
         return saved.getRecordId().toString();
     }
@@ -200,6 +210,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
+        log.trace("in calculateMatchables");
         return _entityServiceRegistry.get(object.getClass().getName()).extractKVM(object);
     }
 
