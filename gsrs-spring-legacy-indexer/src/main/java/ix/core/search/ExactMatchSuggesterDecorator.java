@@ -1,21 +1,34 @@
 package ix.core.search;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by katzelda on 2/27/17.
@@ -141,11 +154,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         SearcherManager manager=null;
         try{
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num, SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
@@ -198,11 +211,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             TermQuery tq=new TermQuery(t);
 
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);

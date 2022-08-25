@@ -1,77 +1,43 @@
 package ix.core.search.text;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.util.concurrent.Striped;
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.functions.ThrowableFunction;
-import gov.nih.ncats.common.io.IOUtil;
-import gov.nih.ncats.common.stream.StreamUtil;
-import gov.nih.ncats.common.util.CachedSupplier;
-import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.cache.GsrsCache;
-import gsrs.indexer.IndexValueMakerFactory;
-import gsrs.legacy.GsrsSuggestResult;
-import gsrs.repository.GsrsRepository;
-import ix.core.EntityFetcher;
-import ix.core.FieldNameDecorator;
-import ix.core.models.*;
-import ix.core.search.*;
-import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
-import ix.core.search.SearchOptions.DrillAndPath;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityInfo;
-import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.EntityUtils.Key;
-import ix.core.util.LogUtil;
-import ix.core.utils.executor.ProcessListener;
-import ix.utils.Util;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.document.*;
-import org.apache.lucene.facet.*;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.LongRangeFacetCounts;
-import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.*;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.queries.ChainedFilter;
-import org.apache.lucene.queries.FilterClause;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.suggest.DocumentDictionary;
-import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
-import org.springframework.beans.factory.annotation.Autowired;
-import java.io.*;
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -85,8 +51,115 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.apache.lucene.document.Field.Store.NO;
-import static org.apache.lucene.document.Field.Store.YES;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.DrillSideways;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.facet.range.LongRange;
+import org.apache.lucene.facet.range.LongRangeFacetCounts;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.queries.TermsQuery;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocValuesRangeQuery;
+import org.apache.lucene.search.DocValuesTermsQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.suggest.DocumentDictionary;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.util.concurrent.Striped;
+
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.functions.ThrowableFunction;
+import gov.nih.ncats.common.io.IOUtil;
+import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.cache.GsrsCache;
+import gsrs.indexer.IndexValueMakerFactory;
+import gsrs.legacy.GsrsSuggestResult;
+import gsrs.repository.GsrsRepository;
+import ix.core.EntityFetcher;
+import ix.core.FieldNameDecorator;
+import ix.core.models.FV;
+import ix.core.models.Facet;
+import ix.core.models.FacetFilter;
+import ix.core.models.FieldedQueryFacet;
+import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
+import ix.core.search.ExactMatchSuggesterDecorator;
+import ix.core.search.LazyList;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchOptions.DrillAndPath;
+import ix.core.search.SearchResult;
+import ix.core.search.SuggestResult;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityInfo;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import ix.core.util.LogUtil;
+import ix.core.utils.executor.ProcessListener;
+import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Singleton class that responsible for all entity indexing
@@ -219,7 +292,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static class TermVectorField extends org.apache.lucene.document.Field {
         static final FieldType TermVectorFieldType = new FieldType();
         static {
-            TermVectorFieldType.setIndexed(true);
+            TermVectorFieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
             TermVectorFieldType.setTokenized(false);
             TermVectorFieldType.setStoreTermVectors(true);
             TermVectorFieldType.setStoreTermVectorPositions(false);
@@ -263,7 +336,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             }
             return count;
         }
-
+//todo: test this for boolean query
         public Predicate<Tuple<String, Integer>> getPredicate(Query q){
             String find = "";
             if(q instanceof PhraseQuery){
@@ -308,18 +381,20 @@ public class TextIndexer implements Closeable, ProcessListener {
                             .filter(f->f.startsWith(finalField))
                             .findAny().isPresent();
                   };
-            }else if(q instanceof BooleanQuery){
-                BooleanQuery bq = (BooleanQuery)q;
-                Set<Term> terms = new HashSet<Term>();
-                bq.extractTerms(terms);
-
-                List<String> findterms=terms.stream().map(t->t.text().toLowerCase()).collect(Collectors.toList());
-
-                return (t)->{
-                    return findterms.stream().allMatch(s->t.k().toLowerCase().contains(s));
-                };
-
-            }else{
+            }
+//            else if(q instanceof BooleanQuery){
+//                BooleanQuery bq = (BooleanQuery)q;
+//                Set<Term> terms = new HashSet<Term>();
+//                bq.extractTerms(terms);
+//
+//                List<String> findterms=terms.stream().map(t->t.text().toLowerCase()).collect(Collectors.toList());
+//
+//                return (t)->{
+//                    return findterms.stream().allMatch(s->t.k().toLowerCase().contains(s));
+//                };
+//
+//            }
+            else{
                 throw new IllegalStateException(q.getClass() + " not supported " + ":" + q.toString());
 
             }
@@ -418,7 +493,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
     }
 
-    static class TermVectorsCollector<T> extends Collector {
+    static class TermVectorsCollector<T> implements Collector {
         private int docBase;
         private IndexReader reader;
         private EntityInfo<T> entityMeta;
@@ -426,7 +501,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         private Map<String, Set<Object>> counts;
         private final Set<String> fieldSet;
 
-        private TermVectorsCollector (Class<T> kind, String originalField, IndexSearcher searcher, Filter extrafilter, Query q)
+        private TermVectorsCollector (Class<T> kind, String originalField, IndexSearcher searcher, Query extrafilter, Query q)
             throws IOException {
             String adaptedField = TERM_VEC_PREFIX + originalField;
 
@@ -444,17 +519,32 @@ public class TextIndexer implements Closeable, ProcessListener {
 
             this.reader = searcher.getIndexReader();
 
-            Filter filter = filterForKinds(kind);
+            Query filter = filterForKinds(kind);
 
             if(q==null){
                 q = new MatchAllDocsQuery();
             }
-
+                      
             if(extrafilter!=null){
-                filter=new ChainedFilter(new Filter[]{filter,extrafilter}, ChainedFilter.AND);
+            	BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+            	
+            	if(filter != null)
+            		filter = queryBuilder
+            					.add(filter, Occur.FILTER)
+            					.add(extrafilter,Occur.FILTER)
+            					.build();
+            	else
+            		filter = extrafilter;
             }
 
-            searcher.search(q, filter, this);
+            if(filter != null) {
+            	q = new BooleanQuery.Builder()
+            			.add(q, Occur.MUST)
+            			.add(filter, Occur.FILTER)
+            			.build();
+            }
+                        
+            searcher.search(q, this);
 
             Collections.sort(tvec.docs);
 
@@ -466,7 +556,9 @@ public class TextIndexer implements Closeable, ProcessListener {
             counts = null;
 
         }
-
+        
+        @Override
+        public boolean needsScores() {return false;}
 
         public void setScorer (Scorer scorer) {}
 
@@ -499,7 +591,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
                     List<String> terms = StreamUtil
-                          .from(docterms.iterator(null)) //Not sure what termsEnum is here
+                          .from(docterms.iterator()) //Not sure what termsEnum is here
                           .streamNullable(en->en.next())
                           .map(t->t.utf8ToString())
                           .peek(term->{
@@ -518,15 +610,21 @@ public class TextIndexer implements Closeable, ProcessListener {
             }
         }
 
-        public void setNextReader (AtomicReaderContext ctx) {
+        public void setNextReader (LeafReaderContext ctx) {
             docBase = ctx.docBase;
         }
 
         public TermVectors termVectors () { return tvec; }
 
-        public static <T> TermVectorsCollector<T> make(Class<T> kind, String originalField, IndexSearcher searcher, Filter filter, Query q) throws IOException{
+        public static <T> TermVectorsCollector<T> make(Class<T> kind, String originalField, IndexSearcher searcher, Query filter, Query q) throws IOException{
             return new TermVectorsCollector<T>(kind,originalField, searcher, filter,q);
         }
+
+		@Override
+		public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+			// TODO Auto-generated method stub
+			return null;
+		}
     }
 
 
@@ -798,8 +896,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 				throw new IllegalArgumentException("Not a directory: " + dir);
 
 
-			AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(LUCENE_VERSION,
-					new NIOFSDirectory(dir, NoLockFactory.getNoLockFactory()), indexerService.getIndexAnalyzer());
+			AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), 
+					indexerService.getIndexAnalyzer());
 
 
 			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester,()-> TextIndexer.getFieldValue(suggester, "searcherMgr"));
@@ -1125,7 +1223,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         searchManager = this.indexerService.createSearchManager();
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
-        taxonDir = new NIOFSDirectory(facetFileDir, NoLockFactory.getNoLockFactory());
+        taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
         facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
@@ -1209,7 +1307,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
     }
 
-    private Tuple<Query, Filter> extractFullFacetQueryAndFilter(String queryString, SearchOptions options, String facet) throws ParseException {
+    private Tuple<Query, Query> extractFullFacetQueryAndFilter(String queryString, SearchOptions options, String facet) throws ParseException {
         if(!options.isSideway() || options.getFacets().isEmpty()){
             return Tuple.of(extractFullQuery(queryString, options),null);
         }
@@ -1219,7 +1317,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 
-        List<Filter> nonStandardFacets = new ArrayList<>();
+        List<Query> nonStandardFacets = new ArrayList<>();
 
         DrillDownQuery ddq = new DrillDownQuery(facetsConfig, query);
         options.getDrillDownsMap().values()
@@ -1228,12 +1326,15 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .filter(dp->!dp.getDrill().equals(facet))
                 .filter(dp->{
                     if(dp.getDrill().startsWith("^")){
-                        nonStandardFacets.add(new TermsFilter(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])));
+                        BooleanQuery f = new BooleanQuery.Builder()
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.FILTER)
+                                .build();
+                        nonStandardFacets.add(f);                    	
                         return false;
-                    }else if(dp.getDrill().startsWith("!")){
-                        BooleanFilter f = new BooleanFilter();
-                        TermsFilter tf = new TermsFilter(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0]));
-                        f.add(new FilterClause(tf, BooleanClause.Occur.MUST_NOT));
+                    }else if(dp.getDrill().startsWith("!")){                       
+                        BooleanQuery f = new BooleanQuery.Builder()
+                        		.add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
+                        		.build();                                                                    
                         nonStandardFacets.add(f);
                         return false;
                     }
@@ -1242,11 +1343,14 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .forEach(dp->{
                     ddq.add(dp.getDrill(), dp.getPaths());
                 });
-        Filter filter = null;
+        Query filter = null;
 
-        if(!nonStandardFacets.isEmpty()){
-            filter = new ChainedFilter(nonStandardFacets.toArray(new Filter[0])
-                    , ChainedFilter.AND);
+        if(!nonStandardFacets.isEmpty()){        	
+        	BooleanQuery.Builder f = new BooleanQuery.Builder();            
+            for(Query qq: nonStandardFacets) {
+                f.add(qq, Occur.FILTER);
+            }
+            filter = f.build();
         }
         return Tuple.of(ddq,filter);
     }
@@ -1268,7 +1372,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		fields.put(FIELD_ID, new KeywordAnalyzer());
 		fields.put(FIELD_KIND, new KeywordAnalyzer());
 		//dkatzel 2017-08 no stop words
-		return new PerFieldAnalyzerWrapper(new StandardAnalyzer(LUCENE_VERSION, CharArraySet.EMPTY_SET), fields);
+		return new PerFieldAnalyzerWrapper(new StandardAnalyzer(CharArraySet.EMPTY_SET), fields);
 	}
 
 	/**
@@ -1492,12 +1596,12 @@ public class TextIndexer implements Closeable, ProcessListener {
     		}
     		return query;
 		};
-		Supplier<Filter> fs = ()->{
-			Filter f = null;
+		Supplier<Query> fs = ()->{
+			Query f = null;
 			if (subset != null) {
 				List<Term> terms = getTerms(subset);
 				if (!terms.isEmpty()){
-					f = new TermsFilter(terms);
+					f = getTermsQuery(terms);
 				}
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
@@ -1512,26 +1616,28 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    if(f==null) {
 			        f = createKindArrayFromOptions(options);
 			    }else {
-			        BooleanFilter bf = new BooleanFilter();
-			        bf.add(f,Occur.MUST);
-			        bf.add(createKindArrayFromOptions(options),Occur.MUST);
-			        f=bf;
+//			        BooleanFilter bf = new BooleanFilter();
+			    	BooleanQuery.Builder bqb = new BooleanQuery.Builder();
+			    	bqb.add(f,Occur.MUST);
+			    	bqb.add(createKindArrayFromOptions(options),Occur.MUST);
+			        f=new ConstantScoreQuery(bqb.build());
 			    }
 			} else{
 			    //TODO: Unclear if this works as intended
 			    if(f==null) {
-			        f = new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false");
+			        f = new TermQuery(new Term(ANALYZER_MARKER_FIELD, "false"));
 			    }else {
-			        BooleanFilter bf = new BooleanFilter();
-                    bf.add(f,Occur.MUST);
-                    bf.add(new FieldCacheTermsFilter(ANALYZER_MARKER_FIELD, "false"),Occur.MUST);
-                    f=bf;
+			    	
+			        BooleanQuery.Builder bqb = new BooleanQuery.Builder();
+			        bqb.add(f,Occur.MUST);
+			        bqb.add(new TermQuery(new Term(ANALYZER_MARKER_FIELD, "false")),Occur.MUST);
+                    f=bqb.build();
 			    }
 			}
 			return f;
 		};
 		Query q=qs.get();
-		Filter f=fs.get();
+		Query f=fs.get();
 
 		try{
 		    search(gsrsRepository, searchResult, q, f);
@@ -1543,6 +1649,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return searchResult;
 	}	
 
+	private static Query getTermsQuery(List<Term> terms) {
+		
+	    BooleanQuery.Builder qb = new BooleanQuery.Builder();	    
+	    for(Term t: terms) {
+	        qb.add(new TermQuery(t), Occur.SHOULD);
+	    }
+	    return qb.build();
+	}
+	
     private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
 	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
 	
@@ -1580,22 +1695,41 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    return processedQtext.replace(QUOTE_TMP_REPLACE,"\\\"");
 	}
 	
-	private static FieldCacheTermsFilter filterForKinds(Class<?> cls){
+	private static Query filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
         return filterForKinds(einfo);
     }
-	private static FieldCacheTermsFilter filterForKinds(EntityInfo<?> einfo){
+	
+	//todo:  test empty opts
+	private static Query filterForKinds(EntityInfo<?> einfo){
 	    String[] opts= einfo.getTypeAndSubTypes()
                             .stream()
                             .map(s->s.getName())
                             .collect(Collectors.toList())
                             .toArray(new String[0]);
-	    return new FieldCacheTermsFilter(FIELD_KIND, opts);
+	    
+	    if(opts.length == 0)
+	    	return null;
+	   
+//		    Query q = new TermQuery(FIELD_KIND, opts[0]);
+	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
+	   
+	    for (String kind : opts){	        
+	        Query q = new DocValuesTermsQuery(FIELD_KIND, kind);
+//		        q.
+//		        if(true)return q;
+	        qb.add(q, BooleanClause.Occur.SHOULD);
+//		        if(true)return;
+	    }
+	    qb.setMinimumNumberShouldMatch(1);
+//		    );
+//		    if(true)return new TermQuery(new Term("text", "*"));
+	    return new ConstantScoreQuery(qb.build());		
 	}
 
 
 
-	private FieldCacheTermsFilter createKindArrayFromOptions(SearchOptions options) {
+	private Query createKindArrayFromOptions(SearchOptions options) {
 		return filterForKinds(options.getKindInfo());
 	}
 
@@ -1618,12 +1752,12 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .collect(Collectors.toList());
     }
 
-	protected TermsFilter getTermsFilter(Collection<?> subset) {
-		return new TermsFilter(getTerms(subset));
+	protected TermsQuery getTermsFilter(Collection<?> subset) {
+		return new TermsQuery(getTerms(subset));
 	}
 
-	protected TermsFilter getTermKeysFilter(Collection<Key> keyset) {
-        return new TermsFilter(getTermsFromKeys(keyset));
+	protected TermsQuery getTermKeysFilter(Collection<Key> keyset) {
+        return new TermsQuery(getTermsFromKeys(keyset));
     }
 
 
@@ -1636,21 +1770,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return search(gsrsRepository, new SearchResult(options), query, null);
 	}
 
-	protected SearchResult filter(GsrsRepository gsrsRepository, SearchOptions options, Filter filter) throws Exception {
+	protected SearchResult filter(GsrsRepository gsrsRepository, SearchOptions options, Query filter) throws Exception {
 		return search(gsrsRepository, new SearchResult(options), new MatchAllDocsQuery(), filter);
 	}
 
-	protected SearchResult search(GsrsRepository gsrsRepository, SearchResult searchResult, Query query, Filter filter) throws Exception {
+	protected SearchResult search(GsrsRepository gsrsRepository, SearchResult searchResult, Query query, Query filter) throws Exception {
 		return withSearcher(searcher -> search(gsrsRepository, searcher, searchResult, query, filter));
 	}
 
-	public Map<String,List<Filter>> createAndRemoveRangeFiltersFromOptions(SearchOptions options) {
-		Map<String, List<Filter>> filters = new HashMap<String,List<Filter>>();
+	public Map<String,List<Query>> createAndRemoveRangeFiltersFromOptions(SearchOptions options) {
+		Map<String, List<Query>> filters = new HashMap<String,List<Query>>();
 		if(options !=null) {
             options.removeAndConsumeRangeFilters((f, r) -> {
                 filters
-                        .computeIfAbsent(f, k -> new ArrayList<Filter>())
-                        .add(FieldCacheRangeFilter.newLongRange(f, r[0], r[1], true, false));
+                        .computeIfAbsent(f, k -> new ArrayList<Query>())
+                        .add(DocValuesRangeQuery.newLongRange(f, r[0], r[1], true, false));
             });
         }
 		return filters;
@@ -1796,11 +1930,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 	}
-
+	
+	
 
 	public class BasicLuceneSearchProvider implements LuceneSearchProvider{
 	    private Sort sorter;
-	    private Filter filter;
+	    private Query filter;
 	    private int max;
 	    private boolean includeFacets = true;
 
@@ -1809,7 +1944,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 //			this.filter=filter;
 //			this.max=max;
 //		}
-        public BasicLuceneSearchProvider(Sort sorter,Filter filter, int max, boolean includeFacets){
+        public BasicLuceneSearchProvider(Sort sorter,Query filter, int max, boolean includeFacets){
             this.sorter=sorter;
             this.filter=filter;
             this.max=max;
@@ -1823,10 +1958,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			//FacetsCollector.
 			//with sorter
 			if (sorter != null) {
-			    hits = (FacetsCollector.search(searcher, query, filter, max, sorter, facetCollector));
+			    hits = (FacetsCollector.search(searcher, addQueryAndFilter(query, filter), max, sorter, facetCollector));
 			//without sorter
 			}else {
-			    hits = (FacetsCollector.search(searcher, query, filter, max, facetCollector));
+			    hits = (FacetsCollector.search(searcher, addQueryAndFilter(query, filter), max, facetCollector));
 			}
 			if(includeFacets) {
 			    facets = new FastTaxonomyFacetCounts(taxon, facetsConfig, facetCollector);
@@ -1839,10 +1974,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 		private TopDocs hits=null;
 		private Facets facets=null;
 		private Sort sorter;
-		private Filter filter;
+		private Query filter;
 		private SearchOptions options;
 
-		public DrillSidewaysLuceneSearchProvider(Sort sorter, Filter filter, SearchOptions options){
+		public DrillSidewaysLuceneSearchProvider(Sort sorter, Query filter, SearchOptions options){
 			this.sorter=sorter;
 			this.filter=filter;
 			this.options=options;
@@ -1868,7 +2003,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			 *
 			 */
 			if (options.getIncludeFacets() && !options.getLongRangeFacets().isEmpty()){
-				FacetsCollector.search(searcher, ddq, filter, options.max(), facetCollector);
+				FacetsCollector.search(searcher,  addQueryAndFilter(ddq, filter), options.max(), facetCollector);
 			}
 
 			if(options.getIncludeFacets()) {
@@ -1879,9 +2014,20 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 	}
+	
+	private static Query addQueryAndFilter(Query q, Query f) {
+	    if(f==null && q!=null)return q;
+	    if(q==null && f!=null)return f;
+	    Query qq= new BooleanQuery.Builder()
+	            .add(q, Occur.MUST)
+	            .add(f, Occur.FILTER)
+	            .build();
+	    
+	    return qq;
+	}
 
 	// This is the most important method, everything goes here
-	protected SearchResult search(GsrsRepository gsrsRepository,  IndexSearcher searcher, SearchResult searchResult, Query query, Filter filter)
+	protected SearchResult search(GsrsRepository gsrsRepository,  IndexSearcher searcher, SearchResult searchResult, Query query, Query filter)
 			throws IOException {
 		final TopDocs hits;
 
@@ -1930,7 +2076,7 @@ public class TextIndexer implements Closeable, ProcessListener {
      * @return
      * @throws IOException
      */
-    public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query
+    public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Query ifilter, Query query
             
             ) throws IOException{
         return firstPassLuceneSearch(searcher, taxon, searchResult,ifilter,query, null);
@@ -1949,7 +2095,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * @return
 	 * @throws IOException
 	 */
-	public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query,
+	public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Query ifilter, Query query,
 	        
 	        GsrsRepository gsrsRepository) throws IOException{
 		final TopDocs hits;
@@ -1957,7 +2103,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		FacetsCollector facetCollector = new FacetsCollector();
 		LuceneSearchProvider lsp;
 
-		Filter filter = ifilter;
+		Query filter = ifilter;
 
 		// You may wonder why some of these options parsing
 		// elements are directly accessible from SearchOptions
@@ -1974,15 +2120,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 		Sort sorter = createSorterFromOptions(options);
 
 
-		List<Filter> filtersFromOptions = createAndRemoveRangeFiltersFromOptions(options)
+		List<Query> filtersFromOptions = createAndRemoveRangeFiltersFromOptions(options)
 				.values()
 				.stream()
-				.map(val->new ChainedFilter(val.toArray(new Filter[0]), ChainedFilter.OR))
+				.map(val->combineLikeChainFilter(val, Occur.SHOULD))
 				.collect(Collectors.toList());
 
 		options.getTermFilters()
 		    .stream()
-			.map(k-> new TermsFilter(new Term(k.getField(), k.getTerm())))
+			.map(k-> new TermQuery(new Term(k.getField(), k.getTerm())))
 			.forEach(f->filtersFromOptions.add(f));
 
 
@@ -1994,9 +2140,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		//by "AND" to the other groups
 		if(!filtersFromOptions.isEmpty()){
 			filtersFromOptions.add(ifilter);
-			filter = new ChainedFilter(filtersFromOptions.stream()
-										.collect(Collectors.toList())
-										.toArray(new Filter[0]), ChainedFilter.AND);
+			filter = combineLikeChainFilter(filtersFromOptions.stream()
+							.collect(Collectors.toList()), Occur.FILTER);
 			filtersFromOptions.remove(filtersFromOptions.size()-1);
 		}
 
@@ -2005,20 +2150,24 @@ public class TextIndexer implements Closeable, ProcessListener {
 			lsp = new BasicLuceneSearchProvider(sorter, filter, options.max(), options.getIncludeFacets());
 		} else {
 			DrillDownQuery ddq = new DrillDownQuery(facetsConfig, query);
-			List<Filter> nonStandardFacets = new ArrayList<Filter>();
+			List<Query> nonStandardFacets = new ArrayList<Query>();
 
 			options.getDrillDownsMapExcludingRanges()
 			    .entrySet()
 			    .stream()
 			    .flatMap(e->e.getValue().stream())
 			    .filter(dp->{
+			    	String dn=dp.getDrill();
 			    	if(dp.getDrill().startsWith("^")){
-			    		nonStandardFacets.add(new TermsFilter(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0])));
+			    		BooleanQuery f = new BooleanQuery.Builder()
+                                .add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.FILTER)
+                                .build();
+                        nonStandardFacets.add(f);
 			    		return false;
-			    	}else if(dp.getDrill().startsWith("!")){
-			    		BooleanFilter f = new BooleanFilter();
-			    		TermsFilter tf = new TermsFilter(new Term(TextIndexer.TERM_VEC_PREFIX + dp.getDrill().substring(1), dp.getPaths()[0]));
-			    		f.add(new FilterClause(tf, BooleanClause.Occur.MUST_NOT));
+			    	}else if(dp.getDrill().startsWith("!")){		    		
+			    		BooleanQuery f = new BooleanQuery.Builder()
+			    				.add(new TermQuery(new Term(TextIndexer.TERM_VEC_PREFIX + dn.substring(1), dp.getPaths()[0])), Occur.MUST_NOT)
+			    				.build();
 			    		nonStandardFacets.add(f);
 			    		return false;
 			    	}
@@ -2031,8 +2180,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			if(!nonStandardFacets.isEmpty()){
 				nonStandardFacets.add(filter);
-				filter = new ChainedFilter(nonStandardFacets.toArray(new Filter[0])
-						                  , ChainedFilter.AND);
+				filter = combineLikeChainFilter(nonStandardFacets, Occur.FILTER);
 			}
 
 
@@ -2201,7 +2349,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			getQueryBreakDownFor(query).stream().forEach(oq->{
 				try{
 					FacetsCollector facetCollector2 = new FacetsCollector();
-					Filter f=null;
+					Query f=null;
 					if(options.getKind()!=null){
 						EntityUtils.getEntityInfoFor(options.getKind());
 						List<String> analyzers = entityMeta.getTypeAndSubTypes()
@@ -2210,7 +2358,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 									.map(n->ANALYZER_VAL_PREFIX + n)
 									.collect(Collectors.toList());
 
-						f = new FieldCacheTermsFilter(FIELD_KIND, analyzers.toArray(new String[0]));
+						f = combineLikeFieldTermFilter(FIELD_KIND, analyzers);
 					}
 					LuceneSearchProvider lsp2 = new BasicLuceneSearchProvider(null, f, options.max(),true);
 					LuceneSearchProviderResult res=lsp2.search(searcher, taxon,oq.k(),facetCollector2);
@@ -2240,6 +2388,22 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return hits;
 	}
 
+	private static Query combineLikeChainFilter(List<Query> qs, Occur oc) {
+	    BooleanQuery.Builder qb =new BooleanQuery.Builder();
+	    
+	    for(Query qq : qs) {
+	        qb.add(qq, oc);
+	    }
+	    return qb.build();
+	}
+	private static Query combineLikeFieldTermFilter(String field, List<String> analyzers) {
+	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
+	    for(String a: analyzers) {
+	        qb.add(new TermQuery(new Term(field, a)), Occur.SHOULD);
+	    }
+	    return qb.build();
+	}
+	
 	public IxQueryParser getQueryParser(String def){
 		return new IxQueryParser(def, indexerService.getIndexAnalyzer());
 	}
@@ -2317,20 +2481,20 @@ public class TextIndexer implements Closeable, ProcessListener {
 		List<Tuple<Query,MATCH_TYPE>> suggestedQueries = new ArrayList<Tuple<Query,MATCH_TYPE>>();
 
 		Function<Stream<Term>, PhraseQuery> exactQueryMaker = lterms->{
-			PhraseQuery exactQuery = new PhraseQuery();
-			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
+			PhraseQuery.Builder exactQueryBuilder = new PhraseQuery.Builder();
+			exactQueryBuilder.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 			lterms.forEach(tq->{
-				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
+				exactQueryBuilder.add(new Term(FULL_TEXT_FIELD,tq.text()));
 			});
-			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
-			return exactQuery;
+			exactQueryBuilder.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
+			return exactQueryBuilder.build();
 		};
 		Function<Stream<Term>, PhraseQuery> phraseQueryMaker = lterms->{
-			PhraseQuery exactQuery = new PhraseQuery();
+			PhraseQuery.Builder exactQueryBuilder = new PhraseQuery.Builder();
 			lterms.forEach(tq->{
-				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
+				exactQueryBuilder.add(new Term(FULL_TEXT_FIELD,tq.text()));
 			});
-			return exactQuery;
+			return exactQueryBuilder.build();
 		};
 		Function<Stream<Term>, WildcardQuery> wildcardQueryMaker = lterms->{
 		    
@@ -2347,10 +2511,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if(q instanceof TermQuery){
 			Term tq=((TermQuery)q).getTerm();
 			if(isGeneric.test(tq)){
-				PhraseQuery exactQuery = new PhraseQuery();
-				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
-				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
-				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
+//				PhraseQuery exactQuery = new PhraseQuery();
+//				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
+//				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
+//				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
 				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exactQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
 				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(new TermQuery(new Term(FULL_TEXT_FIELD,tq.text())),MATCH_TYPE.WORD));
 			}
@@ -2459,7 +2623,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private static List<BooleanClause> flattenToLinkedOr(BooleanQuery bq){
 		List<BooleanClause> bqs= new ArrayList<BooleanClause>();
-		for(BooleanClause bcl: bq.getClauses()){
+		for(BooleanClause bcl: bq.clauses()){
 			if(bcl.getOccur() != Occur.SHOULD) return null;
 			if(bcl.getQuery() instanceof BooleanQuery){
 				List<BooleanClause> sublist = flattenToLinkedOr((BooleanQuery) bcl.getQuery());
@@ -2569,9 +2733,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			ObjectNode n = mapper.createObjectNode();
 			IndexableFieldType type = f.fieldType();
-			if (type.docValueType() != null)
-				n.put("docValueType", type.docValueType().toString());
-			n.put("indexed", type.indexed());
+			if (type.docValuesType() != null)
+				n.put("docValueType", type.docValuesType().toString());
+//			n.put("indexed", type.indexed());
 			n.put("indexOptions", type.indexOptions().toString());
 			n.put("omitNorms", type.omitNorms());
 			n.put("stored", type.stored());
@@ -2581,13 +2745,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 			n.put("storeTermVectors", type.storeTermVectors());
 			n.put("tokenized", type.tokenized());
 
-			node.put("options", n);
+			node.set("options", n);
 			fields.add(node);
 		}
 
 		ObjectNode doc = mapper.createObjectNode();
 		doc.put("num_fields", _fields.size());
-		doc.put("fields", fields);
+		doc.set("fields", fields);
 		return doc;
 	}
 
@@ -2805,17 +2969,20 @@ public class TextIndexer implements Closeable, ProcessListener {
             log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
             //}
 
-            BooleanQuery q = new BooleanQuery();
-            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
-
+            BooleanQuery.Builder qb = new BooleanQuery.Builder();
+            qb.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+            qb.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            
+            BooleanQuery q = qb.build();
+            
             indexerService.deleteDocuments(q);
             notifyListenersDeleteDocuments(q);
 
             if (textIndexerConfig.isFieldsuggest()) { //eliminate
-                BooleanQuery qa = new BooleanQuery();
-                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+            	BooleanQuery.Builder qab = new BooleanQuery.Builder();
+                qab.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+                qab.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                BooleanQuery qa = qab.build();
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
@@ -2859,7 +3026,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public void remove(String text) throws Exception {
 		try {
-			QueryParser parser = new QueryParser(LUCENE_VERSION, FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
+			QueryParser parser = new QueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
 			Query query = parser.parse(text);
 			log.debug("## removing documents: " + query);
             indexerService.deleteDocuments(query);
@@ -2923,14 +3090,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static void setFieldType(FieldType ftype) {
-		ftype.setIndexed(true);
+//		ftype.setIndexOptions(true);
 		ftype.setTokenized(true);
 		ftype.setStoreTermVectors(true);
 		ftype.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
 	}
 
 
-	static FacetsConfig getFacetsConfig(JsonNode node) {
+	static FacetsConfig getFacetsConfig(JsonNode node) throws java.text.ParseException {
 		if (!node.isContainerNode())
 			throw new IllegalArgumentException("Not a valid json node for FacetsConfig!");
 
@@ -3237,7 +3404,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	public TermVectors getTermVectors (Class kind, String field) throws Exception{
-	    return getTermVectors(kind,field, (Filter)null, null);
+	    return getTermVectors(kind,field, (Query)null, null);
 	}
 
 	public TermVectors getTermVectors(Class kind, String field, List<Object> subset, Query q) throws Exception{
@@ -3256,7 +3423,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 
-	public TermVectors getTermVectors (Class kind, String field, Filter luceneFilter, Query query)
+	public TermVectors getTermVectors (Class kind, String field, Query luceneFilter, Query query)
 	                throws Exception {
 
 	    return withSearcher(searcher -> {
