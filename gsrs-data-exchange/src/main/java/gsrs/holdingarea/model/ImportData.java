@@ -13,8 +13,8 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Backup
-@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_entity_class_name", columnList = "entityClassName"),
-        @Index(name="idx_ix_import_data_version", columnList = "version"), @Index(name="idx_ix_import_data_record_id", columnList = "recordId")})
+@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_entity_class_name", columnList = "entity_Class_Name"),
+        @Index(name="idx_ix_import_data_version", columnList = "version"), @Index(name="idx_ix_import_data_record_id", columnList = "record_Id")})
 @Slf4j
 @Data
 @Entity
@@ -25,7 +25,7 @@ public class ImportData {
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true, name = "recordId")
+    @Column(length =40, updatable = false, unique = true)
     @Indexable(name="RecordId")
     private UUID recordId;
 
@@ -45,6 +45,6 @@ public class ImportData {
     private String data;
 
     @Indexable
-    @Column(length = 255, name = "entityClassName")
+    @Column(length = 255)
     private String entityClassName;
 }

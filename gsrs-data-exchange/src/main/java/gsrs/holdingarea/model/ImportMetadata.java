@@ -24,7 +24,7 @@ import java.util.UUID;
 
 @Backup
 @Entity
-@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entityClassName")})
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_Class_Name")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -72,14 +72,14 @@ public class ImportMetadata implements Serializable {
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true, name = "instanceId")
+    @Column(length =40, updatable = false, unique = true)
     private UUID instanceId; //always unique!  changes when data change
 
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true, name = "groupId")
+    @Column(length =40, updatable = false, unique = true)
     //@OneToOne
     private UUID recordId; //stays the same for a given record
 
@@ -108,7 +108,7 @@ public class ImportMetadata implements Serializable {
     private RecordProcessStatus processStatus;
 
     @Indexable
-    @Column(length = 255, name="entityClassName")
+    @Column(length = 255)
     private String entityClassName;
 
     /*
@@ -120,7 +120,7 @@ public class ImportMetadata implements Serializable {
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instanceId")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
@@ -131,7 +131,7 @@ public class ImportMetadata implements Serializable {
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instanceId")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
     })
     public List<gsrs.holdingarea.model.ImportValidation> validations = new ArrayList<>();
 

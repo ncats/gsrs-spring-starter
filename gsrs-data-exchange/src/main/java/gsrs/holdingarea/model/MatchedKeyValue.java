@@ -24,6 +24,7 @@ public class MatchedKeyValue {
     public static class MatchingRecordReference{
         private EntityUtils.Key recordId;
         private String sourceName;
+        private String matchedKey;
 
         @Override
         public String toString() {

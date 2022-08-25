@@ -14,9 +14,9 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "ix_import_validation", indexes = {@Index(name="idx_ix_import_validation_entity_class_name", columnList = "entityClassName"),
+@Table(name = "ix_import_validation", indexes = {@Index(name="idx_ix_import_validation_entity_class_name", columnList = "entity_Class_Name"),
         @Index(name="idx_ix_import_validation_version", columnList = "version"),
-        @Index(name="idx_ix_import_validation_instance_id", columnList = "instanceId")})
+        @Index(name="idx_ix_import_validation_instance_id", columnList = "instance_Id")})
 /*,
         @Index(name="idx_ix_import_validation_type", columnList = "ValidationType")*/
 @Slf4j
@@ -66,6 +66,6 @@ public class ImportValidation {
     private Date ValidationDate;
 
     @Indexable
-    @Column(length = 255, name="entityClassName")
+    @Column(length = 255)
     private String entityClassName;
 }

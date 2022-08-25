@@ -177,7 +177,8 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             log.trace("Matches: ");
             summary.getMatches().forEach(m->{
                 log.trace("One match:");
-                m.getMatchingRecords().forEach(r->log.trace("   source: {} record Id: {}", r.getSourceName(),r.getRecordId()));
+                m.getMatchingRecords().forEach(r->log.trace("   location: {} record Id: {}; key that matched: {}", r.getSourceName(), r.getRecordId(),
+                        r.getMatchedKey()));
             });
         } catch (ClassNotFoundException e) {
             log.error("Error looking for matches", e);
@@ -256,6 +257,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
                     .map(ma-> MatchedKeyValue.MatchingRecordReference.builder()
                             .recordId(EntityUtils.Key.of(objectClass, ma.getInstanceId() ))
                             .sourceName(CURRENT_SOURCE)
+                            .matchedKey(m.getKey())
                             .build())
                     .collect(Collectors.toList());
             MatchedKeyValue match = MatchedKeyValue.builder()

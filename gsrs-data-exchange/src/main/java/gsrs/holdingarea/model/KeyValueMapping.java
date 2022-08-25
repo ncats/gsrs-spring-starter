@@ -13,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "key"),
         @Index(name="idx_ix_import_mapping_value", columnList = "value"),
-        @Index(name="idx_ix_import_mapping_instance_id", columnList = "instanceId")})
+        @Index(name="idx_ix_import_mapping_instance_id", columnList = "instance_Id")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -28,7 +28,7 @@ public class KeyValueMapping {
     private UUID mappingId;
 
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false, name="instanceId")
+    @Column(length =40, updatable = false, unique = false)
     private UUID instanceId;
 
     @Indexable(name = "Key", suggest = true)
