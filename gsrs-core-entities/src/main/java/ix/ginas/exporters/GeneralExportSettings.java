@@ -2,6 +2,8 @@ package ix.ginas.exporters;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class GeneralExportSettings {
 
@@ -23,5 +25,6 @@ public class GeneralExportSettings {
         //for example, the components of a mixture
 
     private ExportExpansion referentialExpansion = ExportExpansion.None; //include object referenced by the selected object within relationships, etc.
+    private List<String> codeSystemsForReferences;
 }
 

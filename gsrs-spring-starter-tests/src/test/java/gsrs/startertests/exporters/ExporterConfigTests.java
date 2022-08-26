@@ -32,11 +32,15 @@ public class ExporterConfigTests {
         generalExportSettings.setCopyApprovalIdToCode(true);
         generalExportSettings.setRemoveUuids(false);
         generalExportSettings.setGenerateNewUuids(false);
+        generalExportSettings.setChangeAllRecordStatuses(false);
+        generalExportSettings.setReferentialExpansion(GeneralExportSettings.ExportExpansion.OneGeneration);
+        generalExportSettings.setCodeSystemsForReferences(Arrays.asList("FDA UNII", "ChemSpider"));
         config.setGeneralSettings(generalExportSettings);
 
         ScrubberExportSettings scrubberExportSettings = new ScrubberExportSettings();
         scrubberExportSettings.setOnlyPublic(false);
         scrubberExportSettings.setProhibitedGroups(Arrays.asList("top-secret"));
+        scrubberExportSettings.setRelationshipTypesToRemove(Arrays.asList("manufacturing impurity"));
         config.setScrubberSettings(scrubberExportSettings);
         config.getSupportedFileExtensions();
 

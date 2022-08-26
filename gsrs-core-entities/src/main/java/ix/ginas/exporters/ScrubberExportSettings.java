@@ -10,4 +10,7 @@ public class ScrubberExportSettings {
     private List<String> allowedGroups = new ArrayList<>();
     private List<String> prohibitedGroups = new ArrayList<>();
     private boolean onlyPublic;
+    private boolean removeDates;
+    private List<String> nameTypesToRemove = new ArrayList<>();
+    private List<String> relationshipTypesToRemove = new ArrayList<>();
 }
