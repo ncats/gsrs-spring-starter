@@ -843,15 +843,15 @@ public class SequenceIndexer {
 	            Query fullQ=tq;
             	
             	if(!tags.isEmpty()){
-            		BooleanQuery bq=new BooleanQuery();
-            		bq.setMinimumNumberShouldMatch(1);
+            		BooleanQuery.Builder bqb=new BooleanQuery.Builder();
+            		bqb.setMinimumNumberShouldMatch(1);
             		for(String tag: tags){
-                		bq.add(new TermQuery (new Term (FIELD_TAGS, tag)),Occur.SHOULD);
+                		bqb.add(new TermQuery (new Term (FIELD_TAGS, tag)),Occur.SHOULD);
                 	}
-            		BooleanQuery fq=new BooleanQuery();
-            		fq.add(fullQ,Occur.MUST);
-            		fq.add(bq,Occur.MUST);
-            		fullQ=fq;
+            		BooleanQuery.Builder fqb=new BooleanQuery.Builder();
+            		fqb.add(fullQ,Occur.MUST);
+            		fqb.add(bqb.build(),Occur.MUST);
+            		fullQ=fqb.build();
             	}
 	            
 	            TopDocs docs = kmerSearcher.search(fullQ, ndocs);
@@ -1186,16 +1186,16 @@ public class SequenceIndexer {
                                 	Query fullQ=q;
                                 	
                                 	if(!mustHaveAtLeastOneTag.isEmpty()){
-                                		BooleanQuery bq=new BooleanQuery();
-                                		bq.setMinimumNumberShouldMatch(1);
+                                		BooleanQuery.Builder bqb=new BooleanQuery.Builder();
+                                		bqb.setMinimumNumberShouldMatch(1);
                                 		for(String tag: mustHaveAtLeastOneTag){
                                     		TermQuery tq = new TermQuery (new Term (FIELD_TAGS, tag));
-                                    		bq.add(tq,Occur.SHOULD);
+                                    		bqb.add(tq,Occur.SHOULD);
                                     	}
-                                		BooleanQuery fq=new BooleanQuery();
-                                		fq.add(fullQ,Occur.MUST);
-                                		fq.add(bq,Occur.MUST);
-                                		fullQ=fq;
+                                		BooleanQuery.Builder fqb=new BooleanQuery.Builder();
+                                		fqb.add(fullQ,Occur.MUST);
+                                		fqb.add(bqb.build(),Occur.MUST);
+                                		fullQ=fqb.build();
                                 	}
                                 	
                                     TopDocs docs = searcher.search
