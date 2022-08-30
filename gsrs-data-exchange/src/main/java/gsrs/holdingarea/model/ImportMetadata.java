@@ -1,11 +1,12 @@
 package gsrs.holdingarea.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.EntityMapperOptions;
-import ix.core.models.Backup;
-import ix.core.models.BeanViews;
-import ix.core.models.Indexable;
-import ix.core.models.IndexableRoot;
+import ix.core.models.*;
+import ix.ginas.converters.GinasAccessConverter;
+import ix.ginas.models.GinasAccessContainer;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,10 +18,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Backup
 @Entity
@@ -31,7 +29,42 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ImportMetadata implements Serializable {
+public class ImportMetadata implements Serializable, GinasAccessControlled {
+
+    //OLD WAY
+    @JsonIgnore
+    @Basic(fetch = FetchType.LAZY)
+//    @Lob
+//    @OneToOne(cascade=CascadeType.ALL)
+    @Convert(converter = GinasAccessConverter.class)
+    private GinasAccessContainer recordAccess;
+
+    @Override
+    public Set<Group> getAccess() {
+        GinasAccessContainer gac = getRecordAccess();
+        if (gac != null) {
+            return gac.getAccess();
+        }
+        return new LinkedHashSet<Group>();
+    }
+
+    @Override
+    public void setAccess(Set<Group> access) {
+        this.recordAccess = new GinasAccessContainer(this);
+        if (recordAccess != null) {
+            this.recordAccess.setAccess(recordAccess.getAccess());
+        }
+    }
+
+    @Override
+    public void addRestrictGroup(Group p) {
+        GinasAccessContainer gac = this.getRecordAccess();
+        if (gac == null) {
+            gac = new GinasAccessContainer(this);
+        }
+        gac.add(p);
+        this.setRecordAccess(gac);
+    }
 
     public enum RecordImportStatus {
         staged, //first status
@@ -138,4 +171,8 @@ public class ImportMetadata implements Serializable {
     @Indexable
     private String dataFormat;
 
+    @JsonIgnore
+    public GinasAccessContainer getRecordAccess() {
+        return recordAccess;
+    }
 }

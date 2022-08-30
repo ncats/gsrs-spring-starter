@@ -2,6 +2,7 @@ package gsrs.holdingarea.service;
 
 import gsrs.holdingarea.model.ImportRecordParameters;
 import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.model.MatchedRecordSummary;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -30,4 +31,6 @@ public interface HoldingAreaService {
     void setIndexer(TextIndexer indexer);
 
     <T> void registerEntityService(HoldingAreaEntityService<T> service);
+
+    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
 }

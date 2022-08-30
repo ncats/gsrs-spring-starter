@@ -14,6 +14,7 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.validator.*;
 import ix.ginas.utils.validation.ValidatorFactory;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,9 +177,15 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             MatchedRecordSummary summary= findMatches(domainObject.getClass().getName(), definitionalValueTuples);
             log.trace("Matches: ");
             summary.getMatches().forEach(m->{
-                log.trace("One match:");
-                m.getMatchingRecords().forEach(r->log.trace("   location: {} record Id: {}; key that matched: {}", r.getSourceName(), r.getRecordId(),
-                        r.getMatchedKey()));
+                log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
+                if(m.getMatchingRecords().size()==0){
+                    log.trace(" 0 matching records");
+
+                } else {
+                    m.getMatchingRecords().forEach(r->log.trace("   location: {} record Id: {}; key that matched: {}", r.getSourceName(), r.getRecordId(),
+                            r.getMatchedKey()));
+                }
+
             });
         } catch (ClassNotFoundException e) {
             log.error("Error looking for matches", e);
@@ -267,6 +274,28 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             summary.getMatches().add(match);
         });
         return summary;
+    }
+
+    @SneakyThrows
+    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson) {
+        Object domainObject = null;
+        try {
+            log.trace("going deserialize object of class {}", qualifiedEntityType);
+            log.trace(entityJson);
+            domainObject = deserializeObject(qualifiedEntityType, entityJson);
+        } catch (JsonProcessingException e) {
+            log.error("Error deserializing imported object.", e);
+            return new MatchedRecordSummary();
+        }
+        if(domainObject == null) {
+            log.warn("null domainObject!");
+            return new MatchedRecordSummary();
+        }
+
+        //TODO: extend this to other types of objects
+        List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
+        MatchedRecordSummary matches= findMatches(qualifiedEntityType, definitionalValueTuples);
+        return matches;
     }
 
     public String getContext() {

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.holdingarea.model.ImportRecordParameters;
+import gsrs.holdingarea.model.MatchableKeyValueTuple;
+import gsrs.holdingarea.model.MatchedKeyValue;
+import gsrs.holdingarea.model.MatchedRecordSummary;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.holdingarea.service.HoldingAreaService;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
@@ -173,11 +176,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (task.adapter == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
+        return getHoldingAreaService(task.getAdapter());
+    }
+
+    private HoldingAreaService getHoldingAreaService(String adapterName) throws Exception {
         ImportAdapterFactory<T> adaptFac =
-                getImportAdapterFactory(task.adapter)
+                getImportAdapterFactory(adapterName)
                         .orElse(null);
         if (adaptFac == null) {
-            throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
+            throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapterName + "\"");
         }
         Class<T> c= adaptFac.getHoldingAreaService();
         log.trace("in getHoldingAreaService, instantiating HoldingAreaService: {}", c.getName());
@@ -196,7 +203,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         return service;
     }
-
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
         log.trace("in predictSettings, task for file: {}  with payload: {}", task.getFilename(),task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
@@ -398,6 +404,25 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
+
+    //STEP 3: Configure / Update
+    @hasAdminRole
+    @PostGsrsRestApiMapping(value = {"/import/matches"})
+    public ResponseEntity<Object> findMatches(@RequestBody JsonNode entityJson,
+                                               @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in findMatches");
+        ObjectMapper om = new ObjectMapper();
+        String entityType = queryParameters.get("entityType");
+        String adapterName = queryParameters.get("adapter");
+        log.trace("adapterName: " + adapterName);
+        log.trace("entityType: " + entityType);
+        log.trace("entityJson.toString(): " + entityJson.toString());
+        HoldingAreaService service = getHoldingAreaService(adapterName);
+        log.trace("retrieved service");
+        //findMatches
+        MatchedRecordSummary summary = service.findMatchesForJson(entityType, entityJson.toString());
+         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(summary, queryParameters), HttpStatus.OK);
+    }
 
     private String saveHoldingAreaRecord(HoldingAreaService service, String json, ImportTaskMetaData importTaskMetaData) {
         ImportRecordParameters parameters = ImportRecordParameters.builder()
