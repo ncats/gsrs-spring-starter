@@ -135,6 +135,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.google.common.util.concurrent.Striped;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.io.IOUtil;
@@ -151,6 +152,8 @@ import ix.core.models.FV;
 import ix.core.models.Facet;
 import ix.core.models.FacetFilter;
 import ix.core.models.FieldedQueryFacet;
+import ix.core.search.*;
+
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.ExactMatchSuggesterDecorator;
 import ix.core.search.LazyList;
@@ -167,6 +170,62 @@ import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.document.*;
+import org.apache.lucene.facet.*;
+import org.apache.lucene.facet.range.LongRange;
+import org.apache.lucene.facet.range.LongRangeFacetCounts;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.queries.BooleanFilter;
+import org.apache.lucene.queries.ChainedFilter;
+import org.apache.lucene.queries.FilterClause;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.suggest.DocumentDictionary;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.io.*;
+import java.nio.file.Files;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
+
+
 /**
  * Singleton class that responsible for all entity indexing
  */
@@ -178,6 +237,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
     private TextIndexerConfig textIndexerConfig;
+
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -199,15 +259,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final char SORT_ASCENDING_CHAR = '^';
 	private static final int EXTRA_PADDING = 2;
 	private static final String FULL_TEXT_FIELD = "text";
+	public static final String FULL_IDENTIFIER_FIELD = "identifiers";
 	private static final String SORT_PREFIX = "SORT_";
 	protected static final String STOP_WORD = " THE_STOP";
 	protected static final String START_WORD = "THE_START ";
 	public static final String GIVEN_STOP_WORD = "$";
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
-	static final String ENTITY_PREFIX = "entity";
-	
-	private List<IndexListener> listeners = new ArrayList<>();
+	static final String ENTITY_PREFIX = "entity";	
+	private static final String SPACE_WORD = "_XSPCX_";
+
+    private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
+
+    private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
 
@@ -1148,6 +1212,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     private ConcurrentMap<String, SuggestLookup> lookups;
 	private ConcurrentMap<String, SortField.Type> sorters;
 
+	private Striped<Lock> stripedLock = Striped.lazyWeakLock(200);
 
 	private AtomicLong lastModified = new AtomicLong();
 
@@ -1187,7 +1252,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
     private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
-        
+
         // empty instance should only be used for
 		// facet subsearching so we only need to have
 		// a single thread...
@@ -1224,6 +1289,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
     
     private void initialSetup() throws IOException {
+
         searchManager = this.indexerService.createSearchManager();
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
@@ -1460,8 +1526,12 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .compile("(\\b(?!" + ROOT + "|" + ENTITY_PREFIX +")[^ :]*_[^ :]*[:])");
         
       
+        //The version and mechanisms we use for lucene have difficulty with quotes around
+        //a single term, since that isn't considered a valid phrase query. This is part of a pre-process
+        //step to turn quoted "words" into unquoted words. This isn't a perfect solution and should
+        //be replaced with something more robust.
         private static final Pattern QUOTES_AROUND_WORD_REMOVER = Pattern
-                .compile("\"([^\" .-]*)\"");
+                .compile("\"([^\" .=-]*)\"");
 
         public IxQueryParser(String def) {
             super(def, createIndexAnalyzer());
@@ -1591,9 +1661,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     			query = new MatchAllDocsQuery();
     		} else {
     			try {
-    				QueryParser parser = new IxQueryParser(FULL_TEXT_FIELD, indexerService.getIndexAnalyzer());
-    				query = parser.parse(qtext);
-                    /*System.out.println("query class: " + query.getClass().getName());*/
+    			    String defField = Optional.ofNullable(options.getDefaultField()).orElse(FULL_TEXT_FIELD);
+    				QueryParser parser = new IxQueryParser(defField, indexerService.getIndexAnalyzer());     				
+    				String processedQtext = preProcessQueryText(qtext);    				
+    				query = parser.parse(processedQtext);
     			} catch (ParseException ex) {
     				log.warn("Can't parse query expression: " + qtext, ex);
     				throw new IllegalStateException(ex);
@@ -1651,8 +1722,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		return searchResult;
-	}
+	}	
 
+<<<<<<< lucene_upgrade
 	private static Query getTermsQuery(List<Term> terms) {
 	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
 	    
@@ -1662,6 +1734,44 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    return qb.build();
 	}
 	
+    private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
+	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
+	
+	//replace special characters ComplexPhraseQueryParser does not like with space
+	public static String preProcessQueryText(String qtext) {
+	    String processedQtext = qtext.trim();
+
+	    //This extra processing is only required if there's at least a * AND a quote,
+	    //otherwise it won't do anything
+	    if( !processedQtext.contains("*") || !processedQtext.contains("\"") ) {
+	        return processedQtext;
+	    }
+
+	    //If there's an explicit escaped quote, replace it with a temporary term
+	    //that will be used to recover the old quote character later
+	    if(processedQtext.contains("\\\"")) {
+	        processedQtext=processedQtext.replace("\\\"", QUOTE_TMP_REPLACE);
+	    }
+	    StringBuilder qtextSB = new StringBuilder();
+	    Matcher multiPhraseMatcher = phraseQueryWithFieldNamePattern.matcher(processedQtext);           
+	    int endPos = 0;
+	    while(multiPhraseMatcher.find()) {              
+	        endPos = multiPhraseMatcher.end();             
+	        qtextSB.append(multiPhraseMatcher.group(2));
+	        String currentString = multiPhraseMatcher.group(3);
+	        if(currentString.contains("*"))
+	            qtextSB.append(replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(currentString)));
+	        else
+	            qtextSB.append(currentString);
+	    }
+	    if(endPos>0) {
+	        qtextSB.append(processedQtext.substring(endPos));           
+	        processedQtext = qtextSB.toString();
+	    }
+	    return processedQtext.replace(QUOTE_TMP_REPLACE,"\\\"");
+	}
+	
+
 	private static Query filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
         return filterForKinds(einfo);
@@ -2179,6 +2289,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		//Promote special matches
 		if(searchResult.getOptions().getPromoteSpecialMatches() && searchResult.getOptions().getKindInfo() !=null && gsrsRepository !=null){
+		    
+		   
 		    //TODO katzelda October 2020 : don't support sponsored fields yet that's a Substance only thing
 		    //Special "promoted" match types
 			Set<String> specialExactMatchFields =  searchResult.getOptions()
@@ -2186,54 +2298,66 @@ public class TextIndexer implements Closeable, ProcessListener {
 			                                           .getSpecialFields();
 
 			if (searchResult.getQuery() != null ) {
-				try {
-				    // Look through each of the special fields and see if there's an exact match for one of them,
-				    // if there IS, promote it
-				    for (String sp : specialExactMatchFields) {
-						String theQuery = "\"" + toExactMatchQueryString(
-								TextIndexer.replaceSpecialCharsForExactMatch(searchResult.getQuery().trim().replace("\"", ""))).toLowerCase() + "\"";
-						//Set the default query field to the special field
-						QueryParser parser = new IxQueryParser(sp, indexerService.getIndexAnalyzer());
-						
-						Query tq = parser.parse(theQuery);
-						if(lsp instanceof DrillSidewaysLuceneSearchProvider){
-							DrillDownQuery ddq2 = new DrillDownQuery(facetsConfig, tq);
-								options.getDrillDownsMapExcludingRanges()
-								    .entrySet()
-								    .stream()
-								    .flatMap(e->e.getValue().stream())
-								    .filter(dp->{
-								        String drill = dp.getDrill();
-									    return !drill.startsWith("^") && ! drill.startsWith("!");
-								    })
-								    .forEach((dp)->{
-									ddq2.add(dp.getDrill(), dp.getPaths());
-								    });
-							tq=ddq2;
-						}
-						LuceneSearchProviderResult lspResult = lsp.search(searcher, taxon, tq,new FacetsCollector()); //special q
-						TopDocs td = lspResult.getTopDocs();
-						for (int j = 0; j < td.scoreDocs.length; j++) {
-							Document doc = searcher.doc(td.scoreDocs[j].doc);
-							//TODO katzelda October 2020 : don't do sponsored yet
-							try {
-								Key k = LuceneSearchResultPopulator.keyOf(doc);
-								
-								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
-							} catch (Exception e) {
-								log.error("error adding special match callable", e);
-							}
-						}
+			    String tqq = searchResult.getQuery().trim().replace("\"", "");
+			    
+			    //Hacky way of avoiding exact match searches if the query looks complex
+			    //TODO: real parsing and analysis
+                if(tqq.contains("*")||COMPLEX_QUERY_REGEX.matcher(tqq).find()||tqq.contains(" AND ")||tqq.contains(" OR ")) {
 
-					}
-				} catch (Exception ex) {
-				    log.warn("Error performing lucene search", ex);
-				}
+                } else {
+			    
+    				try {
+    				    
+    				    
+    				    // Look through each of the special fields and see if there's an exact match for one of them,
+    				    // if there IS, promote it
+    				    for (String sp : specialExactMatchFields) {
+    						String theQuery = "\"" + toExactMatchQueryString(
+    								TextIndexer.replaceSpecialCharsForExactMatch(tqq)).toLowerCase() + "\"";
+    						//Set the default query field to the special field
+    						QueryParser parser = new IxQueryParser(sp, indexerService.getIndexAnalyzer());
+    						
+    						Query tq = parser.parse(theQuery);
+    						if(lsp instanceof DrillSidewaysLuceneSearchProvider){
+    							DrillDownQuery ddq2 = new DrillDownQuery(facetsConfig, tq);
+    								options.getDrillDownsMapExcludingRanges()
+    								    .entrySet()
+    								    .stream()
+    								    .flatMap(e->e.getValue().stream())
+    								    .filter(dp->{
+    								        String drill = dp.getDrill();
+    									    return !drill.startsWith("^") && ! drill.startsWith("!");
+    								    })
+    								    .forEach((dp)->{
+    									ddq2.add(dp.getDrill(), dp.getPaths());
+    								    });
+    							tq=ddq2;
+    						}
+    						LuceneSearchProviderResult lspResult = lsp.search(searcher, taxon, tq,new FacetsCollector()); //special q
+    						TopDocs td = lspResult.getTopDocs();
+    						for (int j = 0; j < td.scoreDocs.length; j++) {
+    							Document doc = searcher.doc(td.scoreDocs[j].doc);
+    							//TODO katzelda October 2020 : don't do sponsored yet
+    							try {
+    								Key k = LuceneSearchResultPopulator.keyOf(doc);
+    								
+    								searchResult.addSponsoredNamedCallable(new EntityFetcher(k));
+    							} catch (Exception e) {
+    								log.error("error adding special match callable", e);
+    							}
+    						}
+    
+    					}
+    				} catch (Exception ex) {
+    				    log.warn("Error performing lucene search", ex);
+    				}
+                } // end if else
 			}
 		}
 
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon, qactual,facetCollector);
+
 		hits=lspResult.getTopDocs();
 
 		if(options.getIncludeFacets()) {
@@ -2272,8 +2396,46 @@ public class TextIndexer implements Closeable, ProcessListener {
                     //swallow
                 }
             }
-            FieldNameDecorator fnd=fndt;
 
+            // For Application Module
+            if ("gov.hhs.gsrs.application.application.models.Application".equals(entityMeta.getName())) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.application.application.ApplicationFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            // For Product Module
+            if ("gov.hhs.gsrs.products.productall.models.ProductMainAll".equals(entityMeta.getName())) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.products.productall.ProductFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            // For Adverse Event PT, DME, and CVM Modules
+            if (("gov.hhs.gsrs.adverseevents.adverseeventpt.models.AdverseEventPt".equals(entityMeta.getName()))
+                    || ("gov.hhs.gsrs.adverseevents.adverseeventdme.models.AdverseEventDme".equals(entityMeta.getName()))
+                    || ("gov.hhs.gsrs.adverseevents.adverseeventcvm.models.AdverseEventCvm".equals(entityMeta.getName()))) {
+                try {
+                    fndt = (FieldNameDecorator) EntityUtils
+                            .getEntityInfoFor(
+                                    "gov.hhs.gsrs.adverseevents.AdverseEventFieldNameDecorator")
+                            .getInstance();
+                }catch(Exception e) {
+                    //swallow
+                }
+            }
+
+            FieldNameDecorator fnd=fndt;
 
 			getQueryBreakDownFor(query).stream().forEach(oq->{
 				try{
@@ -2408,7 +2570,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static List<Tuple<Query,MATCH_TYPE>> getQueryBreakDownFor(Query q){
 		List<Tuple<Query,MATCH_TYPE>> suggestedQueries = new ArrayList<Tuple<Query,MATCH_TYPE>>();
 
-		Function<Stream<Term>, PhraseQuery> exatctQueryMaker = lterms->{
+		Function<Stream<Term>, PhraseQuery> exactQueryMaker = lterms->{
 			PhraseQuery exactQuery = new PhraseQuery();
 			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 			lterms.forEach(tq->{
@@ -2424,22 +2586,32 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 			return exactQueryB.build();
 		};
-		Predicate<Term> isGeneric = (t->t.field().equals(FULL_TEXT_FIELD));
+		Function<Stream<Term>, WildcardQuery> wildcardQueryMaker = lterms->{
+		    
+		    WildcardQuery qq= lterms
+		            .map(tq->new WildcardQuery(new Term(FULL_TEXT_FIELD,tq.text())))
+		            .reduce((a,b)->b)
+		            .orElse(null);
+		    return qq;
+            
+        };
+		Predicate<Term> isGeneric = (t->t.field().equals(FULL_TEXT_FIELD) || t.field().equals(FULL_IDENTIFIER_FIELD));
 
-		//First, we explicity allow TermQueries
+		//First, we explicitly allow TermQueries
 		if(q instanceof TermQuery){
 			Term tq=((TermQuery)q).getTerm();
-			if(tq.field().equals(FULL_TEXT_FIELD)){
+			if(isGeneric.test(tq)){
 				PhraseQuery exactQuery = new PhraseQuery();
 				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
 				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
-				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exatctQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
-				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(q,MATCH_TYPE.WORD));
+				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exactQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
+				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(new TermQuery(new Term(FULL_TEXT_FIELD,tq.text())),MATCH_TYPE.WORD));
 			}
 		}else if(q instanceof PhraseQuery){
 			PhraseQuery pq =(PhraseQuery)q;
 			Term[] terms=pq.getTerms();
+			
 			if(Arrays.stream(terms).allMatch(isGeneric)){
 				boolean starts=terms[0].text().equalsIgnoreCase(TextIndexer.START_WORD.trim());
 				boolean ends=terms[terms.length-1].text().equalsIgnoreCase(TextIndexer.STOP_WORD.trim());
@@ -2448,7 +2620,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					//was exact
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									q,
+							        exactQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.FULL)
 								);
 				}else if(starts){
@@ -2458,13 +2630,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}else{
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									exatctQueryMaker.apply(Arrays.stream(terms)),
+									exactQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.FULL)
 								);
 
 					suggestedQueries.add(
 							new Tuple<Query, MATCH_TYPE>(
-									q,
+							        phraseQueryMaker.apply(Arrays.stream(terms)),
 									MATCH_TYPE.WORD)
 								);
 				}
@@ -2484,7 +2656,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					if(terms.stream().allMatch(isGeneric)){
 						suggestedQueries.add(
 								new Tuple<Query, MATCH_TYPE>(
-										exatctQueryMaker.apply(terms.stream()),
+										exactQueryMaker.apply(terms.stream()),
 										MATCH_TYPE.FULL)
 									);
 
@@ -2496,7 +2668,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 						suggestedQueries.add(
 								new Tuple<Query, MATCH_TYPE>(
-										q,
+								        phraseQueryMaker.apply(terms.stream()),
 										MATCH_TYPE.WORD)
 									);
 
@@ -2518,7 +2690,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(isGeneric.test(wq.getTerm())){
 				suggestedQueries.add(
 						new Tuple<Query, MATCH_TYPE>(
-								q,
+						        wildcardQueryMaker.apply(Stream.of(wq.getTerm())),
 								MATCH_TYPE.CONTAINS)
 							);
 			}else{
@@ -2529,7 +2701,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(isGeneric.test(pq.getPrefix())){
 				suggestedQueries.add(
 						new Tuple<Query, MATCH_TYPE>(
-								q,
+								new PrefixQuery(new Term(FULL_TEXT_FIELD, pq.getPrefix().text())),
 								MATCH_TYPE.WORD_STARTS_WITH)
 							);
 			}else{
@@ -2674,8 +2846,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void update(EntityWrapper ew) throws Exception{
-	    remove(ew);
-	    add(ew, true);
+	    Lock l = stripedLock.get(ew.getKey());
+	    l.lock();
+	    try {
+            remove(ew);
+            add(ew, true);
+        }finally{
+	        l.unlock();
+        }
 
     }
     public void add(EntityWrapper ew) throws IOException {
@@ -2690,6 +2868,21 @@ public class TextIndexer implements Closeable, ProcessListener {
         add(ew,!shouldNotAdd);
         
     }
+    
+    private boolean shouldIndexAsIdentifier(EntityInfo ei, String field) {
+        // Identifiers are fields considered worth matching exactly, as opposed to a general text field.
+        // Allows for searches to have an easy way to search identifier-level things (e.g. names, codes, uuids, inchis)
+        Set<String> ikeys = ei.getSpecialFields();
+        if (ikeys != null) {
+
+            if (ikeys.contains(field)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
 	/**
 	 * recursively index any object annotated with Entity
 	 */
@@ -2703,7 +2896,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		    return;
 		}
 
-
+        Lock l = stripedLock.get(ew.getKey());
+        l.lock();
         try{
             ew.toInternalJson();
 			HashMap<String,List<TextField>> fullText = new HashMap<>();
@@ -2726,11 +2920,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Consumer<IndexableField> fieldCollector = f->{
 
 					if(f instanceof TextField || f instanceof StringField){
+					    String fname=f.name();
 						String text = f.stringValue();
 						if (text != null) {
                             if(textIndexerConfig.isShouldLog()){
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
+// This is where you can see how things get indexed.
 //						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
@@ -2738,9 +2934,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 							TextField tf=new TextField(FULL_TEXT_FIELD, text, NO);
 							//tf.set
 							doc.add(tf);
-							if(textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && f.name().startsWith(ROOT +"_")){
+							if(textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && fname.startsWith(ROOT +"_")){
 								fullText.computeIfAbsent(f.name(),k->new ArrayList<TextField>())
 									.add(tf);
+							}
+							if(shouldIndexAsIdentifier(ew.getRootEntityInfo(),fname)) {
+							    TextField tff=new TextField(FULL_IDENTIFIER_FIELD, text, NO);
+	                            doc.add(tff);							    
 							}
 						}
 						if(f.name().equals(FIELD_KIND)) {
@@ -2835,7 +3035,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 //            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
-		}
+		}finally{
+            l.unlock();
+        }
 	}
 
 	//One more thing:
@@ -2886,26 +3088,32 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void remove(Key key) throws Exception {
-				Tuple<String,String> docKey=key.asLuceneIdTuple();
-				//if (DEBUG(2)){
-					log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
-				//}
+        Lock l = stripedLock.get(key);
+        l.lock();
+        try {
+            Tuple<String, String> docKey = key.asLuceneIdTuple();
+            //if (DEBUG(2)){
+            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+            //}
 
-				BooleanQuery q = new BooleanQuery();
-				q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-				q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            BooleanQuery q = new BooleanQuery();
+            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
 
-				indexerService.deleteDocuments(q);
-                notifyListenersDeleteDocuments(q);
+            indexerService.deleteDocuments(q);
+            notifyListenersDeleteDocuments(q);
 
-				if(textIndexerConfig.isFieldsuggest()){ //eliminate
-					BooleanQuery qa = new BooleanQuery();
-					qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX+docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-					qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
-                    indexerService.deleteDocuments(qa);
-                    notifyListenersDeleteDocuments(qa);
-				}
-				markChange();
+            if (textIndexerConfig.isFieldsuggest()) { //eliminate
+                BooleanQuery qa = new BooleanQuery();
+                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                indexerService.deleteDocuments(qa);
+                notifyListenersDeleteDocuments(qa);
+            }
+            markChange();
+        }finally{
+            l.unlock();
+        }
 	}
 	
 
@@ -3275,7 +3483,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
-					throw new RuntimeException(e);
+//					throw new RuntimeException(e);
 				}
 			}
 
@@ -3368,8 +3576,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public void createDynamicField(Consumer<IndexableField> fieldTaker, IndexableValue iv) {
 		facetsConfig.setMultiValued(iv.name(), true);
 		facetsConfig.setRequireDimCount(iv.name(), true);
-		fieldTaker.accept(new FacetField(iv.name(), iv.value().toString()));
-		fieldTaker.accept(new TextField(iv.path(), TextIndexer.START_WORD + iv.value().toString() + TextIndexer.STOP_WORD, NO));
+		String val= iv.value().toString();
+		fieldTaker.accept(new FacetField(iv.name(), val));
+		
+		fieldTaker.accept(new TextField(iv.path(), toExactMatchString(val), NO));
+                fieldTaker.accept(new TextField(iv.path(), toExactMatchStringContinuous(val), NO));
 
 		if(iv.suggest()){
 			addSuggestedField(iv.name(),iv.value().toString(),iv.suggestWeight());
@@ -3523,11 +3734,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 
 			String exactMatchStr = toExactMatchString(text);
+			String exactMatchStrContinuous = toExactMatchStringContinuous(text);
 
 			if (!(value instanceof Number)) {
 				if (!name.equals(full)){
 					// Added exact match
 					fields.accept(new TextField(full,exactMatchStr, NO));
+					fields.accept(new TextField(full,exactMatchStrContinuous , NO));
 				}
 			}
 
@@ -3542,6 +3755,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 			// Added exact match
 			fields.accept(new TextField(name, exactMatchStr , store));
+			fields.accept(new TextField(name, exactMatchStrContinuous , store));
 		}
 	}
 	
@@ -3549,18 +3763,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static String toExactMatchString(String in){
 		return TextIndexer.START_WORD + replaceSpecialCharsForExactMatch(in) + TextIndexer.STOP_WORD;
 	}
+
+	public static String toExactMatchStringContinuous(String in){
+		return TextIndexer.START_WORD + replaceTokenSplitCharsWithString(replaceSpecialCharsForExactMatch(in)) + TextIndexer.STOP_WORD;
+	}
+
+	public static String replaceTokenSplitCharsWithString(String in){			
+		return in.replaceAll("[&\\-\\s\\.]", SPACE_WORD);			 
+	}
 	
 	public static String toExactMatchQueryString(String in){
         return toExactMatchString(in).replace("*", "").replace("?", ""); //remove wildcards
     }
 
 	private static String replaceSpecialCharsForExactMatch(String in) {
-
-		String tmp = LEVO_PATTERN.matcher(in).replaceAll(LEVO_WORD);
-		tmp = DEXTRO_PATTERN.matcher(tmp).replaceAll(DEXTRO_WORD);
-        tmp = RACEMIC_PATTERN.matcher(tmp).replaceAll(RACEMIC_WORD);
-		return tmp;
-
+        // This is called when indexing or in cases where just field value in the input parameter value.
+        String tmp = in;
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encode(tmp);
+        return tmp;
 	}
 
 	/*
@@ -3571,29 +3792,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 	//TODO: this is a fairly hacky way to try to recreate simple character sequence-level
 	//functionality within lucene, and there needs to be a better way
 	private static String transformQueryForExactMatch(String in){
-
+        // This is called when doing searches and maybe other cases
 		String tmp =  START_PATTERN.matcher(in).replaceAll(TextIndexer.START_WORD);
 		tmp =  STOP_PATTERN.matcher(tmp).replaceAll(TextIndexer.STOP_WORD);
-		
-		
-		tmp =  LEVO_PATTERN.matcher(tmp).replaceAll(TextIndexer.LEVO_WORD);
-		tmp =  DEXTRO_PATTERN.matcher(tmp).replaceAll(TextIndexer.DEXTRO_WORD);
-        tmp =  RACEMIC_PATTERN.matcher(tmp).replaceAll(TextIndexer.RACEMIC_WORD);
 
-		return tmp;
+        // The method getEncoder() returns a combined encoder.
+        tmp = DefaultIndexedTextEncoderFactory.getInstance().getEncoder().encodeQuery(tmp);
+        return tmp;
 	}
 
 	private static final Pattern START_PATTERN = Pattern.compile(TextIndexer.GIVEN_START_WORD,Pattern.LITERAL );
 	private static final Pattern STOP_PATTERN = Pattern.compile(TextIndexer.GIVEN_STOP_WORD,Pattern.LITERAL );
-
-	private static final Pattern LEVO_PATTERN = Pattern.compile(Pattern.quote("(-)"));
-	private static final Pattern DEXTRO_PATTERN = Pattern.compile(Pattern.quote("(+)"));
-    private static final Pattern RACEMIC_PATTERN = Pattern.compile(Pattern.quote("(+/-)"));
-
-	private static final String LEVO_WORD = "LEVOROTATION";
-    private static final String RACEMIC_WORD = "RACEMICROTATION";
-	private static final String DEXTRO_WORD = "DEXTROROTATION";
-
 
 	/**
 	 * Add the specified field and value pair to the suggests
