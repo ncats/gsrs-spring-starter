@@ -1,29 +1,38 @@
 package gsrs;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.entityProcessor.EntityProcessorConfig;
-import gsrs.validator.ValidatorConfig;
-import gsrs.validator.ValidatorConfigList;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gsrs.entityProcessor.EntityProcessorConfig;
+import gsrs.validator.ValidatorConfig;
+import lombok.Data;
 @Component
 @ConfigurationProperties("gsrs")
 @Data
 public class GsrsFactoryConfiguration {
 
     private Map<String, List<Map<String,Object>>> validators;
+    
+    private Map<String, Map<String,Object>> search;
+        
     private List<EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers= false;
 
+    public Optional<Map<String,Object>> getSearchSettingsFor(String context){
+        if(search==null)return Optional.empty();
+        return Optional.ofNullable(search.get(context));
+    }
+    
     public List<EntityProcessorConfig> getEntityProcessors(){
         if(entityProcessors ==null){
             //nothing set

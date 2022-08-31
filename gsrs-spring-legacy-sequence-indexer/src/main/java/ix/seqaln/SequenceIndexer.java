@@ -39,12 +39,15 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
+/**
+ * A lucene based index of genomic sequences
+ * with methods to add/remove and perform alignments.
+ */
 @Slf4j
 public class SequenceIndexer {
     static final String CACHE_NAME = SequenceIndexer.class.getName()+".Cache";
@@ -63,7 +66,7 @@ public class SequenceIndexer {
     });
 
     public static enum CutoffType{
-        LOCAL,
+//        LOCAL,
         GLOBAL,
         SUB;
 
@@ -77,34 +80,6 @@ public class SequenceIndexer {
         }
     }
 
-    static class HSP implements Comparable<HSP> {
-        public String kmer;
-        public int i, j;
-
-        HSP (String kmer, int i, int j) {
-            this.kmer = kmer;
-            this.i = i;
-            this.j = j;
-        }
-        public int gap () { return Math.abs(i - j); }
-        public String toString () { return kmer+"["+i+","+j+"]"; }
-        public int compareTo (HSP hsp) {
-            int d = hsp.kmer.length() - kmer.length();
-            if (d == 0) {
-                d = gap () - hsp.gap();
-            }
-            if (d == 0) {
-                d = i - hsp.i;
-            }
-            if (d == 0) {
-                d = j - hsp.j;
-            }
-            if (d == 0) {
-                d = kmer.compareTo(hsp.kmer);
-            }
-            return d;
-        }
-    }
 
     public static class SEG implements Comparable<SEG>, Serializable {
         /**
@@ -281,8 +256,19 @@ public class SequenceIndexer {
         public final List<Alignment> alignments = new ArrayList<Alignment>();
         public double score;
         public CutoffType scoreType;
-        
 
+        /**
+         * Create a new Result object with the same
+         * fields except a new id.
+         * @param newId
+         * @return
+         */
+        public Result copyWithNewId(String newId){
+            Result resultCopy=new Result(newId,query,target);
+            resultCopy.alignments.addAll(alignments);
+            resultCopy.setScore(score, scoreType);
+            return resultCopy;
+        }
         Result () {
             query = null;
             id = null;
@@ -876,6 +862,7 @@ public class SequenceIndexer {
 	            for (int i = 0; i < docs.totalHits; ++i) {
 	                Document doc = kmerSearcher.doc(docs.scoreDocs[i].doc);
 	                final String id = doc.get(FIELD_ID);
+
 	                StringAndDouble sd = StringAndDouble.from(id, 0);
 		                seqMap.computeIfAbsent(sd, k->getSeq(k.s));
 		            }
@@ -920,9 +907,8 @@ public class SequenceIndexer {
                                           log.warn("trouble performing alignment for sequence", e);
                                           return r;
                                       }
-                                      long start=System.nanoTime();
                                       PairwiseSequenceAlignment alignment = alignmentHelper.align(querySeq, targetSeq, gap, rt);
-                                      long end=System.nanoTime();
+
                                       
                                       r.setScore(alignment.getPercentIdentity(), rt);
 
@@ -1041,10 +1027,8 @@ public class SequenceIndexer {
                       //we have to make a copy with the  correct ID of the substance we are aligning
                   //but we can re-use the alignments
 
-                          Result resultCopy=new Result(entry.getKey().s,cachedResult.query,cachedResult.target);
-	              		resultCopy.alignments.addAll(cachedResult.alignments);
-	              		resultCopy.setScore(cachedResult.score,cachedResult.scoreType);
-	              		return resultCopy;
+
+	              		return cachedResult.copyWithNewId(entry.getKey().s);
 
                       }
 

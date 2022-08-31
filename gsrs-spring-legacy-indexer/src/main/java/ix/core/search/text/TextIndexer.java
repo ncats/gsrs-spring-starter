@@ -180,9 +180,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -1766,7 +1764,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    return processedQtext.replace(QUOTE_TMP_REPLACE,"\\\"");
 	}
 	
-
 	
 	private static Query filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
@@ -2351,7 +2348,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 		}
 
-		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon, qactual,facetCollector);
+		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
 
 		if(options.getIncludeFacets()) {

@@ -3,9 +3,11 @@ package gsrs.legacy.structureIndexer;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 
 import javax.persistence.EntityManager;
 
+import com.google.common.util.concurrent.Striped;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
@@ -34,6 +36,8 @@ public class StructureIndexerEventListener {
     private EntityManager em;
     
     private boolean useExplicitEM =false;
+
+    private Striped<Lock> stripedLock = Striped.lazyWeakLock(8);
 
     private AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     @Autowired
@@ -104,13 +108,19 @@ public class StructureIndexerEventListener {
     }
 
     private void addToIndex(EntityUtils.EntityWrapper<?> ew, EntityUtils.Key k) {
-        ew.streamStructureFieldAndValues(d->true).map(p->p.v()).filter(s->s instanceof String).forEach(str-> {
-            try {
-                indexer.add(k.getIdString(), str.toString());
-            } catch (Throwable e) {
-                log.warn("Trouble adding structure to index:" + k.toString(), e);
-            }
-        });
+        Lock l = stripedLock.get(k);
+        l.lock();
+        try {
+            ew.streamStructureFieldAndValues(d -> true).map(p -> p.v()).filter(s -> s instanceof String).forEach(str -> {
+                try {
+                    indexer.add(k.getIdString(), str.toString());
+                } catch (Throwable e) {
+                    log.warn("Trouble adding structure to index:" + k.toString(), e);
+                }
+            });
+        }finally{
+            l.unlock();
+        }
     }
     
     @Async
@@ -135,16 +145,27 @@ public class StructureIndexerEventListener {
         EntityUtils.EntityWrapper ew = (useExplicitEM)?k.fetch(em).get():k.fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
-            removeFromIndex(ew, key);
-            addToIndex(ew, key);
+            Lock l = stripedLock.get(k);
+            l.lock();
+            try {
+                removeFromIndex(ew, key);
+                addToIndex(ew, key);
+            }finally{
+                l.unlock();
+            }
         }
     }
 
     private void removeFromIndex(EntityUtils.EntityWrapper ew, EntityUtils.Key key) {
-
-        ew.getEntityInfo().getStructureFieldInfo().stream().findAny().ifPresent(s -> {
-            GsrsSpringUtils.tryTaskAtMost(() -> indexer.remove(key.getIdString()), t -> t.printStackTrace(), 2);
-        });
+        Lock l = stripedLock.get(key);
+        l.lock();
+        try {
+            ew.getEntityInfo().getStructureFieldInfo().stream().findAny().ifPresent(s -> {
+                GsrsSpringUtils.tryTaskAtMost(() -> indexer.remove(key.getIdString()), t -> t.printStackTrace(), 2);
+            });
+        }finally{
+            l.unlock();
+        }
     }
 
 

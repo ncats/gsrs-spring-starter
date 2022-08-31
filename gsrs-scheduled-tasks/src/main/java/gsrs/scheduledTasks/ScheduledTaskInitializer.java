@@ -3,8 +3,12 @@ package gsrs.scheduledTasks;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
+/**
+ * Abstract Class to create ScheduledTasks.
+ *
+ */
 @Data
 public abstract class ScheduledTaskInitializer {
     @JsonProperty("autorun")
@@ -21,11 +25,11 @@ public abstract class ScheduledTaskInitializer {
             .build();
 
 
-    public Consumer<SchedulerPlugin.TaskListener> getRunner(){
+    public BiConsumer<gsrs.scheduledTasks.SchedulerPlugin.JobStats, SchedulerPlugin.TaskListener> getRunner(){
         return this::run;
     }
 
-    public abstract void run(SchedulerPlugin.TaskListener l);
+    public abstract void run(gsrs.scheduledTasks.SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l);
 
     public abstract String getDescription();
 

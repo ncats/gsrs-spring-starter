@@ -1,7 +1,6 @@
 package gsrs.security;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
+    SessionConfiguration sessionConfiguration;
+
+    @Autowired
     private LegacyAuthenticationConfiguration authenticationConfiguration;
     @Autowired
     private UserProfileRepository repository;
@@ -51,13 +52,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private GsrsCache gsrsCache;
 
-
-    @Value("${gsrs.sessionKey}")
-    private String sessionCookieName;
-
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
-    
+
     private void logHeaders(HttpServletRequest req){
         if(log.isDebugEnabled()) {
             log.debug("HEADERS ON REQUEST ===================");
@@ -68,19 +65,19 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             log.debug(allheaders.toString());
         }
     }
-    
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         if(authenticationConfiguration.isLogheaders()) {
             logHeaders(request);
         }
-        
+
         Authentication auth = null;
         Cookie[] allCookies = request.getCookies();
         if (allCookies != null) {
             Cookie sessionCookie =
-                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionCookieName))
+                    Arrays.stream(allCookies).filter(x -> x.getName().equals(sessionConfiguration.getSessionCookieName()))
                             .findFirst().orElse(null);
             if(sessionCookie !=null){
                 String id = sessionCookie.getValue();
@@ -88,16 +85,16 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     cachedSessionIdt = UUID.fromString(id);
                 }catch(Exception e) {
-                    
+
                 }
 //                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
                 if(cachedSessionIdt !=null) {
                     UUID cachedSessionId = cachedSessionIdt;
-                    
+
                     TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
                     auth = transactionTemplate.execute(status ->{
                         Session session = sessionRepository.findById(cachedSessionId).orElse(null);
-                        if(session !=null && !session.expired){
+                        if(session !=null && !sessionConfiguration.isExpired(session)){
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());
@@ -114,7 +111,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         if(authenticationConfiguration.isLogheaders()) {
             log.debug("After cookie authentication, auth is:" + auth);
         }
-        
+
         // TODO: TP changed below, but needs feedback
         // why != null? that doesn't sound right ...
         // changing to ==null
@@ -124,21 +121,21 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String username = Optional.ofNullable(authenticationConfiguration.getUsernameheader())
-                                      .map(e->request.getHeader(e))
-                                      .orElse(null);
+                    .map(e->request.getHeader(e))
+                    .orElse(null);
             String email =    Optional.ofNullable(authenticationConfiguration.getUseremailheader())
-                                      .map(e->request.getHeader(e))
-                                      .orElse(null);
+                    .map(e->request.getHeader(e))
+                    .orElse(null);
             List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
                     .map(e->request.getHeader(e))
                     .map(v->Arrays.stream(v.split(";"))
-                                  .map(r->r.trim())
-                                  .map(r->Role.valueOf(r))
-                                  .collect(Collectors.toList())
-                        )
+                            .map(r->r.trim())
+                            .map(r->Role.valueOf(r))
+                            .collect(Collectors.toList())
+                    )
                     .orElse(null);
-            
-                    
+
+
             if(username !=null){
                 if(authenticationConfiguration.isLogheaders()) {
                     log.debug("Trust USER IS:" + username);
@@ -153,7 +150,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
                 if(up !=null && up.active){
                     auth = new UserProfilePasswordAuthentication(up);
-                    
+
                 }
             }
         }
@@ -165,10 +162,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             String username = request.getHeader("auth-username");
             String pass = request.getHeader("auth-password");
             if (username != null && pass != null) {
-                UserProfile up = 
+                UserProfile up =
                         Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(username))
-                        .map(oo->oo.standardize())
-                        .orElse(null);
+                                .map(oo->oo.standardize())
+                                .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()) {
                     up = autoregisterNewUser(username);
 
@@ -240,7 +237,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         if(auth !=null) {
             //add a new Session each time !?
-            
+
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
             SecurityContextHolder.getContext().setAuthentication(auth);

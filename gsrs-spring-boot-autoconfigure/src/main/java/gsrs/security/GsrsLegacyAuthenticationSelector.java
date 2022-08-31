@@ -17,7 +17,9 @@ public class GsrsLegacyAuthenticationSelector implements ImportSelector {
                 LoginAndLogoutEventListener.class.getName(),
                 GsrsLogoutHandler.class.getName(),
 //                LegacyGsrsAutheneticationProcessingFilter.class.getName(),
-                LegacyGsrsAuthenticationSuccessHandler.class.getName()
+                LegacyGsrsAuthenticationSuccessHandler.class.getName(),
+                SessionConfiguration.class.getName(),
+                TokenConfiguration.class.getName(),
         };
     }
 }

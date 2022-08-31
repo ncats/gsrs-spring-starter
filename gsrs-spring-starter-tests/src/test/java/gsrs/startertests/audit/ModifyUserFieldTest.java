@@ -1,6 +1,7 @@
 package gsrs.startertests.audit;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.AuditConfig;
 import gsrs.EntityProcessorFactory;
 import gsrs.junit.TimeTraveller;
 import gsrs.model.AbstractGsrsEntity;
@@ -39,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@GsrsJpaTest(classes = GsrsSpringApplication.class, dirtyMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@GsrsJpaTest(classes = GsrsSpringApplication.class, dirtyMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
@@ -100,6 +101,9 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     private PrincipalService principalService;
 
+    @Autowired
+    private AuditConfig auditConfig;
+
     private Long id;
     @BeforeEach
     public void addUserToRepo(){
@@ -137,6 +141,24 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals("different", sut.getFoo());
         assertThat(sut.getCreatedBy().username).isEqualToIgnoringCase("myUser");
         assertThat(sut.getLastModifiedBy().username).isEqualToIgnoringCase("otherUser");
+
+    }
+
+    @Test
+    @WithMockUser(username = "otherUser")
+    public void noAuditUpdateShouldNotUpdateLastModified(){
+
+        MyEntity sut = entityManager.find(MyEntity.class, id);
+
+        timeTraveller.jumpAhead(1, TimeUnit.DAYS);
+
+        sut.setFoo("different");
+        auditConfig.disableAuditingFor(()->entityManager.persistAndFlush(sut));
+
+        assertEquals(id, sut.getId());
+        assertEquals("different", sut.getFoo());
+        assertThat(sut.getCreatedBy().username).isEqualToIgnoringCase("myUser");
+        assertThat(sut.getLastModifiedBy().username).isEqualToIgnoringCase("myUser");
 
     }
 

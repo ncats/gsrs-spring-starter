@@ -23,6 +23,14 @@ public @interface GsrsApiAction {
      */
     String value();
 
+    /**
+     * Should the JSON serialized object be just the url as a String or
+     * if the object should be an Object that contains
+     * both the url field and also
+     *  the HTTP verb type.
+     * @return {@code true} if only the url should be serialized;
+     * {@code false} if the url and verb should be
+     */
     boolean serializeUrlOnly() default false;
     /**
      * The HTTP verb Type; defaults to GET
@@ -40,4 +48,11 @@ public @interface GsrsApiAction {
         HEAD,
         PATCH
     }
+
+    /**
+     * What view classes this Action should be visible for. This should be the same
+     * classes that would normally be put in {@link com.fasterxml.jackson.annotation.JsonView}.
+     * @return an array of Classes, if not set then empty array.
+     */
+    Class<?>[] view() default {};
 }
