@@ -134,7 +134,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import com.google.common.util.concurrent.Striped;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
@@ -148,10 +147,7 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
-import ix.core.models.FV;
-import ix.core.models.Facet;
-import ix.core.models.FacetFilter;
-import ix.core.models.FieldedQueryFacet;
+import ix.core.models.*;
 import ix.core.search.*;
 
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
@@ -1723,8 +1719,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		return searchResult;
 	}	
-
-<<<<<<< lucene_upgrade
+  
 	private static Query getTermsQuery(List<Term> terms) {
 	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
 	    
@@ -1734,7 +1729,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    return qb.build();
 	}
 	
-    private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
+  private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
 	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
 	
 	//replace special characters ComplexPhraseQueryParser does not like with space
@@ -1772,6 +1767,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 	
 
+	
 	private static Query filterForKinds(Class<?> cls){
 	    EntityInfo einfo = EntityUtils.getEntityInfoFor(cls);
         return filterForKinds(einfo);
@@ -2355,9 +2351,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 		}
 
-
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon, qactual,facetCollector);
-
 		hits=lspResult.getTopDocs();
 
 		if(options.getIncludeFacets()) {
@@ -2952,6 +2946,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 						    doc.add(new StoredField(f.name(), new BytesRef(val)));
 						    return;
 //						    SortedDocValuesField
+
 						}
 					}else if(f instanceof FacetField){
 					    String key = ((FacetField)f).dim;
