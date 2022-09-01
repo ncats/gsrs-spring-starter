@@ -32,6 +32,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     //TODO: DISCUSS with team whether this is the best way to go.
     public static String IMPORT_FAILURE ="ERROR";
+
+    public static String HOLDING_AREA_LOCATION= "Staging Area";
+
     @Autowired
     ImportMetadataRepository metadataRepository;
 
@@ -102,6 +105,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         data.setRecordId(recordId);
         data.setVersion(1);
         data.setInstanceId(instanceId);
+        data.setSaveDate(new Date());
         data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository,"importDataRepository is required");
         ImportData saved = importDataRepository.saveAndFlush(data);
@@ -151,10 +155,22 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         }
 
         ValidationResponse response= _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
+        domainObject = response.getNewObject();
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
         if( response!=null) {
-            persistValidationInfo(response, 1, instanceId);
+            List<UUID>savedResult= persistValidationInfo(response, 1, instanceId);
             overallStatus = getOverallValidationStatus(response);
+        }
+        //save the updated object
+        try {
+            log.trace("going to save updated domain object post-validation");
+            data.setData(serializeObject(domainObject));
+            data.setVersion(data.getVersion()+1);
+            data.setInstanceId(UUID.randomUUID());
+            data.setSaveDate(new Date());
+            importDataRepository.save(data);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         }
 
         log.trace("overallStatus: " + overallStatus);
@@ -163,7 +179,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         //TODO: extend this to other types of objects
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-        persistDefinitionalValues(definitionalValueTuples, instanceId);
+        persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
         updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
@@ -207,6 +223,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     @Override
     public void deleteRecord(String recordId, int version) {
         importDataRepository.deleteById(UUID.fromString(recordId));
+        //todo: delete related records or set up db to cascade
     }
 
     @Override
@@ -223,7 +240,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public ValidationResponse validateRecord(String entityClass, String json) {
+    public <T> ValidationResponse<T> validateRecord(String entityClass, String json) {
 
         try {
             Object object = deserializeObject (entityClass, json);
@@ -260,10 +277,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         recordMatchables.forEach(m -> {
             List<KeyValueMapping> mappings = keyValueMappingRepository.findMappingsByKeyAndValue(m.getKey(), m.getValue());
             log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
+            if(m.getValue()==null || m.getValue().length()==0){
+                log.trace("skipping matchable without value");
+                return;
+            }
             List<MatchedKeyValue.MatchingRecordReference> matches=mappings.stream()
                     .map(ma-> MatchedKeyValue.MatchingRecordReference.builder()
                             .recordId(EntityUtils.Key.of(objectClass, ma.getInstanceId() ))
-                            .sourceName(CURRENT_SOURCE)
+                            .sourceName(ma.getDataLocation())
                             .matchedKey(m.getKey())
                             .build())
                     .collect(Collectors.toList());
@@ -329,13 +350,16 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     /*
     question: does this method need to return something?
      */
-    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId) {
+    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId) {
 
         definitionalValues.forEach(kv -> {
             KeyValueMapping mapping = new KeyValueMapping();
             mapping.setKey(kv.getKey());
             mapping.setValue(kv.getValue());
             mapping.setInstanceId(instanceId);
+            mapping.setRecordId(recordId);
+            mapping.setEntityClass(context);
+            mapping.setDataLocation(HOLDING_AREA_LOCATION);
             keyValueMappingRepository.saveAndFlush(mapping);
             //index for searching
             EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
@@ -453,7 +477,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         }
     }
 
-    private ValidationResponse  handleValidation(String entityClass, Object object) {
-        return _entityServiceRegistry.get(entityClass).validate(object);
+    private String serializeObject(Object object) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(object);
     }
+
 }

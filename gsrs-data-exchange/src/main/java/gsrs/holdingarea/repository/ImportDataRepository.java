@@ -14,4 +14,5 @@ public interface ImportDataRepository extends GsrsVersionedRepository<ImportData
 
     @Query("select d.data from ImportData d where d.recordId = ?1 and d.version = ?2")
     public String retrieveByIDAndVersion(UUID id, int version);
+
 }

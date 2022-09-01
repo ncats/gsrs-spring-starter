@@ -20,9 +20,9 @@ public interface HoldingAreaService {
 
     void deleteRecord(String recordId, int version);
 
-    public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls);
+    <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls);
 
-    ValidationResponse validateRecord(String entityClass, String json);
+    <T> ValidationResponse<T> validateRecord(String entityClass, String json);
 
     <T> List<gsrs.holdingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 

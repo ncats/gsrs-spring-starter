@@ -30,20 +30,24 @@ public class MatchedRecordSummary {
                                    get all entity.keys that map, given a set of matchableKeys (fields)
                                     which have a matchable key found in a set of field names.
      */
-    private List<gsrs.holdingarea.model.MatchableKeyValueTuple> query = new ArrayList<>();
+    private List<MatchableKeyValueTuple> query = new ArrayList<>();
     private List<MatchedKeyValue> matches = new ArrayList<>();
 
     public List<String> getMultiplyMatchedKeys(){
-
+        System.out.println("in getMultiplyMatchedKeys");
         return query.stream()
-                .map(gsrs.holdingarea.model.MatchableKeyValueTuple::getKey)
-                .filter(k->matches.stream(). anyMatch(ma->ma.getTupleUsedInMatching().getKey().equals(k)))
+                .map(MatchableKeyValueTuple::getKey)
+                .filter(k->matches.stream().anyMatch(ma->ma.getTupleUsedInMatching().getKey().equals(k)))
+                .peek(x-> System.out.println("x: " + x))
                 .map(i->{
                     long count= matches.size();
+                    log.trace("in lambda, count: {}", count);
+                    System.out.println("in lambda, count: " + count);
                     return Tuple.of(i, count);
                 })
                 .filter(t->t.v()>1)
                 .map(Tuple::k)
+                .distinct()
                 .collect(Collectors.toList());
 
     }

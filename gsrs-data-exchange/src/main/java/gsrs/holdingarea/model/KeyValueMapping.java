@@ -31,10 +31,15 @@ public class KeyValueMapping {
     @Column(length =40, updatable = false, unique = false)
     private UUID instanceId;
 
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = false)
+    private UUID recordId;
+
     @Indexable(name = "Key", suggest = true)
     private String key;
 
     @Indexable(name = "Value", suggest = true)
+    @Column(length = 512)
     private String value;
 
     @Indexable(name = "Qualifier", suggest = true)
