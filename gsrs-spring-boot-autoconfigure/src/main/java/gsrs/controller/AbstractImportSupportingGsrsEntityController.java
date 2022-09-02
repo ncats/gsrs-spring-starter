@@ -23,6 +23,7 @@ import ix.core.search.text.TextIndexerFactory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -405,7 +406,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
 
-    //STEP 3: Configure / Update
+    //search for records that have the same values for key fields
     @hasAdminRole
     @PostGsrsRestApiMapping(value = {"/import/matches"})
     public ResponseEntity<Object> findMatches(@RequestBody JsonNode entityJson,
@@ -421,7 +422,32 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("retrieved service");
         //findMatches
         MatchedRecordSummary summary = service.findMatchesForJson(entityType, entityJson.toString());
-         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(summary, queryParameters), HttpStatus.OK);
+        Object returned;
+        if( queryParameters.containsKey("view") && "full".equalsIgnoreCase(queryParameters.get("view"))){
+            returned = summary;
+        } else {
+            returned=summary.getMatches();
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returned, queryParameters), HttpStatus.OK);
+    }
+
+    //search for records that have the same values for key fields
+    @hasAdminRole
+    @DeleteGsrsRestApiMapping( value = {"/import({id})/@delete", "/import/{id}/@delete"} )
+    public ResponseEntity<Object> deleteRecord(@PathVariable("id") String id,
+                                              @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in deleteRecord");
+
+        String adapterName = queryParameters.get("adapter");
+        log.trace("adapterName: " + adapterName);
+        if( adapterName== null || adapterName.length()==0) {
+            return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
+        }
+        HoldingAreaService service = getHoldingAreaService(adapterName);
+        log.trace("retrieved service");
+        int version=0;//todo: retrieve from parameters
+        service.deleteRecord(id, version);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     private String saveHoldingAreaRecord(HoldingAreaService service, String json, ImportTaskMetaData importTaskMetaData) {

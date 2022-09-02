@@ -5,6 +5,7 @@ import gsrs.repository.GsrsVersionedRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -32,5 +33,10 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
 
     @Query("select d from ImportMetadata d where d.recordId = ?1 and d.version = ?2")
     public ImportMetadata retrieveByIDAndVersion(UUID id, int version);
+
+    @Modifying
+    @Transactional
+    @Query("delete from ImportMetadata i where i.recordId = ?1")
+    void deleteByRecordId(UUID recordId);
 
 }
