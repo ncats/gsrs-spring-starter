@@ -12,7 +12,7 @@
     <artifactId>gsrs-spring-legacy-indexer</artifactId>
 
     <properties>
-        <lucene.version>4.10.0</lucene.version>
+        <lucene.version>5.5.0</lucene.version>
     </properties>
     <dependencies>
     <dependency>
