@@ -1,15 +1,13 @@
 package gsrs.holdingarea.service;
 
-import gsrs.holdingarea.model.ImportRecordParameters;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.model.MatchedRecordSummary;
+import gsrs.holdingarea.model.*;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface HoldingAreaService {
     String createRecord(ImportRecordParameters parameters);
@@ -17,6 +15,12 @@ public interface HoldingAreaService {
     String updateRecord(String recordId, String jsonData);
 
     ImportMetadata retrieveRecord(String recordId, int version);
+
+    List<UUID> getInstancesForRecord(String recordId);
+
+    List<ImportData> getDataForRecord(String recordId);
+
+    String getInstanceData(String instanceId);
 
     void deleteRecord(String recordId, int version);
 

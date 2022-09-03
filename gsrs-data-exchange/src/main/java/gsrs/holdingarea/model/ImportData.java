@@ -3,7 +3,10 @@ package gsrs.holdingarea.model;
 import ix.core.models.Backup;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -20,6 +23,9 @@ import java.util.UUID;
 @Data
 @Entity
 @IndexableRoot
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class ImportData {
 
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")

@@ -19,6 +19,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -213,7 +214,23 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public String updateRecord(String recordId, String jsonData) {
-        return null;
+        //locate the latest record
+        List<ImportData> importData= importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
+        if(importData==null || importData.isEmpty()){
+            return "No data found";
+        }
+        ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
+        log.trace("located object with latest version {}", latestExisting.getVersion());
+        ImportData newVersion = latestExisting.toBuilder()
+                .instanceId(UUID.randomUUID())
+                .version(latestExisting.getVersion()+1)
+                .data(jsonData)
+                .build();
+        log.trace("cloned");
+        TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
+        transactionDelete.executeWithoutResult(r -> importDataRepository.save(newVersion));
+
+        return String.format("updated data object");
     }
 
     @Override
@@ -236,8 +253,15 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             log.trace("completed metadataRepository.deleteById");
             rawImportDataRepository.deleteByRecordId(id);
             log.trace("completed rawImportDataRepository.deleteByRecordId");
-            keyValueMappingRepository.deleteByRecordId(id);
-            log.trace("completed keyValueMappingRepository.deleteByRecordId");
+            if( keyValueMappingRepository.findRecordsByRecordId(id) != null
+                    && !keyValueMappingRepository.findRecordsByRecordId(id).isEmpty()) {
+                keyValueMappingRepository.deleteByRecordId(id);
+                log.trace("completed keyValueMappingRepository.deleteByRecordId");
+            }
+            else {
+                log.trace("no keyValueMappingRepository records to delete");
+            }
+
 
             instanceIds.forEach(i -> {
                 log.trace("going to call importValidationRepository.deleteByInstanceId with id {}", i);
@@ -315,6 +339,21 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             summary.getMatches().add(match);
         });
         return summary;
+    }
+
+    @Override
+    public List<UUID> getInstancesForRecord(String recordId) {
+        return importDataRepository.findInstancesForRecord(UUID.fromString(recordId));
+    }
+
+    @Override
+    public List<ImportData> getDataForRecord(String recordId) {
+        return  importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
+    }
+
+    @Override
+    public String getInstanceData(String instanceId) {
+        return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
     }
 
     @SneakyThrows
