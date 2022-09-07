@@ -34,14 +34,13 @@ public class MatchedRecordSummary {
     private List<MatchedKeyValue> matches = new ArrayList<>();
 
     public List<String> getMultiplyMatchedKeys(){
-        System.out.println("in getMultiplyMatchedKeys");
+        log.trace("in getMultiplyMatchedKeys");
         return query.stream()
                 .map(MatchableKeyValueTuple::getKey)
                 .filter(k->matches.stream().anyMatch(ma->ma.getTupleUsedInMatching().getKey().equals(k)))
-                .peek(x-> System.out.println("x: " + x))
                 .map(i->{
-                    long count= matches.size();
-                    log.trace("in lambda, count: {}", count);
+                    long count= matches.stream().filter(mi->mi.getTupleUsedInMatching().getKey().equals(i)).count();
+                    log.trace("in lambda, count: {} (log)", count);
                     System.out.println("in lambda, count: " + count);
                     return Tuple.of(i, count);
                 })
@@ -65,7 +64,7 @@ public class MatchedRecordSummary {
         List<EntityUtils.Key> entityKeys = new ArrayList<>();
         matches.forEach(m->{
             if( searchKeys.contains( m.getTupleUsedInMatching().getKey())) {
-                m.getMatchingRecords().stream().forEach(k->entityKeys.add( k.getRecordId()));
+                m.getMatchingRecords().forEach(k->entityKeys.add( k.getRecordId()));
             }
         });
         return entityKeys;

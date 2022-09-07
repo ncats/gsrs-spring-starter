@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/*
+a  key/value pair that has located one or more records in a Staging Area or permanent GSRS database
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
