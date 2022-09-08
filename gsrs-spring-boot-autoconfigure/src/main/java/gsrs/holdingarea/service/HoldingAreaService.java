@@ -36,5 +36,7 @@ public interface HoldingAreaService {
 
     <T> void registerEntityService(HoldingAreaEntityService<T> service);
 
-    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
+    MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
+
+    <T> String persistEntity(String instanceId);
 }

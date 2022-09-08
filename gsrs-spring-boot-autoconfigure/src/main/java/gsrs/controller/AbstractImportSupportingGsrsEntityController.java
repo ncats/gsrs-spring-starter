@@ -329,6 +329,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @GetGsrsRestApiMapping(value = {"/import({id})", "/import/{id}"})
     public ResponseEntity<Object> getImport(@PathVariable("id") String id,
                                             @RequestParam Map<String, String> queryParameters) throws IOException {
+        log.trace("starting getImport");
         Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if (obj.isPresent()) {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters), HttpStatus.OK);
@@ -341,6 +342,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @GetGsrsRestApiMapping(value = {"/import({id})/@predict", "/import/{id}/@predict"})
     public ResponseEntity<Object> getImportPredict(@PathVariable("id") String id,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting getImportPredict");
         Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
         if (obj.isPresent()) {
             String adapterName = queryParameters.get("adapter");
@@ -353,7 +355,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    //STEP 3: Configure / Update
+    //STEP 3: Configure / Update the parsing data (ImportTaskMetaData)
     @hasAdminRole
     @PutGsrsRestApiMapping(value = {"/import"})
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
@@ -541,27 +543,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
 
-    //STEP 4: Execute import
-    //!!!!NEEDS MORE WORK
+    //STEP 4: Execute import -- persist the domain entity
+    //May need more work
     @hasAdminRole
     @PostGsrsRestApiMapping(value = {"/import({id})/@execute", "/import/{id}/@execute"})
     public ResponseEntity<Object> executeImport(@PathVariable("id") String id,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
-        Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
-        if (obj.isPresent()) {
-            //TODO: make async and do other stuff:
-            ImportTaskMetaData itmd = obj.get();
-
-            execute(itmd)
-                    .forEach(t -> {
-                        //TODO do something with this, likely put into some other area as a large JSON dump
-                        //which will have further processing
-                        System.out.println(t);
-                    });
-
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
-        }
-        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+        log.trace("starting executeImport");
+        String adapterName = queryParameters.get("adapter");
+        HoldingAreaService  holdingAreaService = getHoldingAreaService(adapterName);
+        String resultPersist = holdingAreaService.persistEntity(id);
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("Result of object creation", resultPersist);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(node, queryParameters), HttpStatus.OK);
     }
 
 }

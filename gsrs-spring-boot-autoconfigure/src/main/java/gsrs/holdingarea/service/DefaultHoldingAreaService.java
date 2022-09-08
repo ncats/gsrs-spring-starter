@@ -14,6 +14,7 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
+import ix.ginas.models.GinasCommonData;
 import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -354,6 +355,31 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     @Override
     public String getInstanceData(String instanceId) {
         return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
+    }
+
+    @Override
+    public <T>  String persistEntity(String instanceId){
+        Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
+        if( data.isPresent()) {
+            String entityJson = data.get().getData();
+            String entityType = data.get().getEntityClassName();
+            try {
+                Object domainObject = deserializeObject(entityType, entityJson);
+                ValidationResponse<T> response = validateRecord(entityType, entityJson);
+                List<ValidationMessage> messages = response.getValidationMessages();
+                if (messages.stream().noneMatch(m -> m.isError())) {
+                    Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
+                    if (savedObject instanceof GinasCommonData) {
+                        return ((GinasCommonData) savedObject).uuid.toString();
+                    }
+                    return "Object saved!";
+                }
+                return "One or more errors exist. Please validate and take action!";
+            } catch (JsonProcessingException e) {
+                log.error("Error in persistEntity", e);
+            }
+        }
+        return "";
     }
 
     @SneakyThrows

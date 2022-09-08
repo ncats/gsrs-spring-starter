@@ -17,4 +17,5 @@ public interface HoldingAreaEntityService<T> {
 
     IndexValueMaker<T> createIVM(T t);
 
+    T persistEntity(T t);
 }
