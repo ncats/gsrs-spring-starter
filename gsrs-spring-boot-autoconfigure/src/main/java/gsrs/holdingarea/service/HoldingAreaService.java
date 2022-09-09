@@ -28,6 +28,8 @@ public interface HoldingAreaService {
 
     <T> ValidationResponse<T> validateRecord(String entityClass, String json);
 
+    <T> ValidationResponse<T> validateInstance(String instanceId);
+
     <T> List<gsrs.holdingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;

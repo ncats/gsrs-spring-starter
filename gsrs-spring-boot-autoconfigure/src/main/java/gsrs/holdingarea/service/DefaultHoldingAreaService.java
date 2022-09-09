@@ -20,11 +20,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -65,6 +67,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     @Autowired
     private ImportMetadataLegacySearchService importMetadataLegacySearchService;
 
+    @Value("${ix.home:ginas.ix}")
+    private String textIndexerFactorDefaultDir;
+
     private ValidatorFactory validatorFactory;
 
     private TextIndexer indexer;
@@ -80,15 +85,25 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     public DefaultHoldingAreaService(String context) {
 
         this.context = Objects.requireNonNull(context, "context can not be null");
+
+    }
+
+    @PostConstruct
+    public void setupIndexer() {
+        log.trace("starting setupIndexer");
         if (tif != null) {
-            indexer = tif.getDefaultInstance();
+            //indexer = tif.getDefaultInstance();
+            indexer =tif.getInstance(new File("imports"));
             log.trace("got indexer from tif.getDefaultInstance()");
         } else {
             try {
                 log.trace("going to create indexerFactory");
                 TextIndexerFactory indexerFactory = new TextIndexerFactory();
+
                 AutowireHelper.getInstance().autowireAndProxy(indexerFactory);
-                indexer = indexerFactory.getDefaultInstance();
+                //indexer = indexerFactory.getDefaultInstance();
+                log.trace("textIndexerFactorDefaultDir: {}", textIndexerFactorDefaultDir);
+                indexer =indexerFactory.getInstance(new File(textIndexerFactorDefaultDir +"/imports"));
                 log.trace("got indexer from indexerFactory.getDefaultInstance(): " + indexer);
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -100,6 +115,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public String createRecord(ImportRecordParameters parameters) {
+        if( indexer==null) setupIndexer();
         Objects.requireNonNull(indexer, "need a text indexer!");
         ImportData data = new ImportData();
         data.setData(parameters.getJsonData());
@@ -128,11 +144,13 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         metadata.setDataFormat(parameters.getFormatType());
         metadataRepository.saveAndFlush(metadata);
         EntityUtils.EntityWrapper<ImportMetadata> wrapper = EntityUtils.EntityWrapper.of(metadata);
-        /*try {
+        try {
             indexer.add(wrapper);
+            log.trace("indexer.add called");
         } catch (IOException e) {
             log.error("Error indexing import metadata to index", e);
-        }*/
+        }
+        //log.trace("indexer.add skippedindexer.add skipped");
         //update processing status after every step
 
         if (parameters.getRawDataSource() != null) {
@@ -359,8 +377,10 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public <T>  String persistEntity(String instanceId){
+        log.trace("in persistEntity, instanceId: {}", instanceId);
         Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
         if( data.isPresent()) {
+            log.trace("found data");
             String entityJson = data.get().getData();
             String entityType = data.get().getEntityClassName();
             try {
@@ -370,6 +390,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
                 if (messages.stream().noneMatch(m -> m.isError())) {
                     Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
                     if (savedObject instanceof GinasCommonData) {
+                        metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
                         return ((GinasCommonData) savedObject).uuid.toString();
                     }
                     return "Object saved!";
@@ -380,6 +401,19 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             }
         }
         return "";
+    }
+
+    @Override
+    public <T> ValidationResponse<T> validateInstance(String instanceId) {
+        log.trace("in validateInstance, instanceId: {}", instanceId);
+        Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
+        if( data.isPresent()) {
+            log.trace("found data");
+            String entityJson = data.get().getData();
+            String entityType = data.get().getEntityClassName();
+            return validateRecord(entityType, entityJson);
+        }
+        return null;
     }
 
     @SneakyThrows
