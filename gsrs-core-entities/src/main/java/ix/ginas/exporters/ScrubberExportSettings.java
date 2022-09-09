@@ -11,6 +11,7 @@ public class ScrubberExportSettings {
     private List<String> prohibitedGroups = new ArrayList<>();
     private boolean onlyPublic;
     private boolean removeDates;
+    private boolean removeAuditorInfo;
     private List<String> nameTypesToRemove = new ArrayList<>();
     private List<String> relationshipTypesToRemove = new ArrayList<>();
 }
