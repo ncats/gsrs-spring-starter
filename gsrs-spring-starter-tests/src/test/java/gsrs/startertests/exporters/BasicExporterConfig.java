@@ -5,14 +5,15 @@ import ix.ginas.models.GinasCommonData;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class BasicExporterConfig implements ExporterFactoryConfig<GinasCommonData> {
 
     private String exporterName="BasicExporter";
     private List<String> extensions = Arrays.asList("txt");
     private String fileName;
-    private Class<RecordScrubber> scrubber;
-    private ExporterFactory factory;
+    private Set<Class<RecordScrubber<GinasCommonData>>> scrubbers;
+    private ExporterFactory<GinasCommonData> factory;
     private GeneralExportSettings generalExportSettings;
     private ScrubberExportSettings scrubberExportSettings;
     private ExporterSpecificExportSettings specificExportSettings;
@@ -28,6 +29,11 @@ public class BasicExporterConfig implements ExporterFactoryConfig<GinasCommonDat
     }
 
     @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+        this.extensions=extensions;
+    }
+
+    @Override
     public void setFileName(String fileName) {
         this.fileName= fileName;
     }
@@ -38,17 +44,17 @@ public class BasicExporterConfig implements ExporterFactoryConfig<GinasCommonDat
     }
 
     @Override
-    public void setRecordScrubber(Class<RecordScrubber> scrubber) {
-        this.scrubber=scrubber;
+    public void setRecordScrubbers(Set<Class<RecordScrubber<GinasCommonData>>> scrubbers) {
+        this.scrubbers=scrubbers;
     }
 
     @Override
-    public Class<RecordScrubber> getRecordScrubber() {
-        return this.scrubber;
+    public Set<Class<RecordScrubber<GinasCommonData>>> getRecordScrubbers() {
+        return this.scrubbers;
     }
 
     @Override
-    public void setExportFactory(ExporterFactory exporterFactory) {
+    public void setExportFactory(ExporterFactory<GinasCommonData> exporterFactory) {
         factory=exporterFactory;
     }
 

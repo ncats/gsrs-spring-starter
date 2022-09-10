@@ -2,10 +2,7 @@ package gsrs.startertests.exporters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ix.ginas.exporters.ExporterFactoryConfig;
-import ix.ginas.exporters.ExporterSpecificExportSettings;
-import ix.ginas.exporters.GeneralExportSettings;
-import ix.ginas.exporters.ScrubberExportSettings;
+import ix.ginas.exporters.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +13,10 @@ public class ExporterConfigTests {
     @Test
     public void testBasicConfig1() throws JsonProcessingException {
         ExporterFactoryConfig config = new BasicExporterConfig();
-        config.setRecordScrubber( BasicScrubber.class);
+        Set<Class<BasicScrubber>> scrubbers = new HashSet<>();
+        scrubbers.add(BasicScrubber.class);
+        config.setRecordScrubbers(scrubbers);
+
         config.setFileName("d:\\temp\\basic.sdf");
         ExporterSpecificExportSettings exportSettings = new ExporterSpecificExportSettings();
         List<String> columns = Arrays.asList("PT","UUID", "SMILES");
