@@ -209,6 +209,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         return new ResponseEntity<>(list, HttpStatus.OK);
     }
     
+    @DeleteGsrsRestApiMapping(value="/identifiers")
+    public ResponseEntity<String> deleteQueryList(@RequestParam String id){    	
+    	textService.deleteText(id); 	    	
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    
     @GetGsrsRestApiMapping(value="/search/bulk")
     public ResponseEntity searchByIdentiferListId(@RequestParam String id){
     	List<String> queryList = Arrays.asList("1", "2"); 

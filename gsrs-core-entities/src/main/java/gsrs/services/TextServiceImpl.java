@@ -20,6 +20,7 @@ public class TextServiceImpl implements TextService {
     private TextRepository textRepository;
     private static Logger log = LoggerFactory.getLogger(TextServiceImpl.class);
     
+    @Override
     public Long saveTextList(String label, List<String> textList) {
     	Text text = new Text();
     	text.label = label;
@@ -39,6 +40,7 @@ public class TextServiceImpl implements TextService {
     	return saved.id;
     }
     
+    @Override
     public Long saveTextString(String label, String textJsonString) {
     	Text text = new Text();
     	text.label = label;
@@ -47,6 +49,7 @@ public class TextServiceImpl implements TextService {
     	return saved.id;
     }
     
+    @Override
     public String getText(String id){
     	Long recordId = Long.parseLong(id);
     	Text text = textRepository.findById(recordId).orElse(null);
@@ -57,4 +60,10 @@ public class TextServiceImpl implements TextService {
     		return "";
     	
     }
+    
+    @Override
+    public void deleteText(String id) {
+    	Long recordId = Long.parseLong(id);
+    	textRepository.deleteById(recordId);
+    }	
 }
