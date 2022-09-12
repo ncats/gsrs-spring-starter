@@ -23,4 +23,8 @@ public class Text extends Value {
 
     @Override
     public String getValue () { return text; }
+
+    public void setValue(String newValue){
+        text=newValue;
+    }
 }
