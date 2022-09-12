@@ -79,6 +79,12 @@ public class GsrsEntitiesConfiguration {
     }
     @Bean
     @ConditionalOnMissingBean
+    public TextServiceImpl textService(){
+        return new TextServiceImpl();
+    }
+    
+    @Bean
+    @ConditionalOnMissingBean
     public UserProfileService userProfileService(GroupService groupService, UserProfileRepository userProfileRepository,
                                                  GroupRepository groupRepository, @Qualifier(DefaultDataSourceConfig.NAME_ENTITY_MANAGER) EntityManager entityManager){
         return new UserProfileService( userProfileRepository, groupService, groupRepository, entityManager);

@@ -4,6 +4,7 @@ import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.security.hasAdminRole;
+import gsrs.services.TextService;
 import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.search.GsrsLegacySearchController;
@@ -22,6 +23,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +48,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    }
     @Autowired
     private PlatformTransactionManager transactionManager;
+    
+    @Autowired
+    private TextService textService;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -189,7 +194,28 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
         return ret;
     }
+    
+    @PostGsrsRestApiMapping(value="/identifiers")
+    public ResponseEntity<Map<String, String>> saveQueryList(@RequestBody List<String> queryIdentifierList){
+    	Long id = textService.saveTextList("bulkSearch", queryIdentifierList);
+    	Map<String, String> record = new HashMap<>();
+    	record.put("id", Long.toString(id));
+        return new ResponseEntity<>(record, HttpStatus.OK);
+    }
 
+    @GetGsrsRestApiMapping(value="/identifiers")
+    public ResponseEntity<String> getQueryList(@RequestParam String id){    	
+    	String list = textService.getText(id); 	    	
+        return new ResponseEntity<>(list, HttpStatus.OK);
+    }
+    
+    @GetGsrsRestApiMapping(value="/search/bulk")
+    public ResponseEntity searchByIdentiferListId(@RequestParam String id){
+    	List<String> queryList = Arrays.asList("1", "2"); 
+        return new ResponseEntity<>(queryList, HttpStatus.OK);
+    }
+    
+    
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
 
 

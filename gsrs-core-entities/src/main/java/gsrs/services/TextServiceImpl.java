@@ -1,0 +1,60 @@
+package gsrs.services;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gsrs.repository.TextRepository;
+import ix.core.models.Text;
+
+@Service
+public class TextServiceImpl implements TextService {
+		
+    @Autowired
+    private TextRepository textRepository;
+    private static Logger log = LoggerFactory.getLogger(TextServiceImpl.class);
+    
+    public Long saveTextList(String label, List<String> textList) {
+    	Text text = new Text();
+    	text.label = label;
+    	
+    	ObjectMapper mapper = new ObjectMapper();        
+        String jsonArray;
+        
+		try {
+			jsonArray = mapper.writeValueAsString(textList);
+			text.text = jsonArray.toString();  
+		} catch (JsonProcessingException e) {			
+			e.printStackTrace();
+			log.error("Error in TextService writing to jsonarray string!");
+		}    	 	
+    	
+    	Text saved = textRepository.saveAndFlush(text);
+    	return saved.id;
+    }
+    
+    public Long saveTextString(String label, String textJsonString) {
+    	Text text = new Text();
+    	text.label = label;
+    	text.text = textJsonString;    	
+    	Text saved = textRepository.saveAndFlush(text);
+    	return saved.id;
+    }
+    
+    public String getText(String id){
+    	Long recordId = Long.parseLong(id);
+    	Text text = textRepository.findById(recordId).orElse(null);
+    	if(text!=null) {    		
+    		return text.text;
+    		}
+    	else 
+    		return "";
+    	
+    }
+}
