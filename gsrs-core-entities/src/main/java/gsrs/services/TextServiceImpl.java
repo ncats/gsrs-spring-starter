@@ -24,7 +24,7 @@ public class TextServiceImpl implements TextService {
     public Long saveTextList(String label, List<String> textList) {
     	Text text = new Text();
     	text.label = label;
-    	
+    	    	
     	ObjectMapper mapper = new ObjectMapper();        
         String jsonArray;
         

@@ -145,6 +145,7 @@ import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.*;
@@ -232,6 +233,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
     private TextIndexerConfig textIndexerConfig;
 
+    @Autowired
+    private TextService textService;
+  
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -1646,6 +1650,57 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public SearchResult search(GsrsRepository gsrsRepository, SearchOptions options, String text) throws IOException {
 		return search(gsrsRepository, options, text, null);
 	}
+	public SearchResult bulkSearch(GsrsRepository gsrsRepository, SearchOptions options, String queryText, String text) throws IOException {
+		/*1.search result needs some form of statistics and it needs to honor qtop, qskip. Show counts for each query and hits count.
+		 *2.we need to use setMatchingContext. find getMatchingContextByContextID, maybe searchresult.key
+		 *3. cache: ixcache getOrElse(). cache (bulkID, statistics results)
+		 *4. optimize matching element to make it faster, specifically for identifiers   
+		 *5. convention to specify identifier vs complex bulk queries
+		 *6. explore making endpoints async, structure indexer.  
+		*/
+		SearchOptions optionsCopy = new SearchOptions();
+		optionsCopy.parse(options.asQueryParams());
+		optionsCopy.setSimpleSearchOnly(true);
+		optionsCopy.setTop(100);		
+		optionsCopy.setSkip(0);
+		optionsCopy.setFetchAll();
+		
+		//todo: ixcache getOrElse()		
+		List<String> queries = Arrays.asList(queryText.split(","));
+		queries = queries.stream().map(q->q.trim()).collect(Collectors.toList());
+		Map<Key, List<String>> matchContexts = new ConcurrentHashMap<>(); 
+		List<Tuple<String,List<Key>>> statistics = queries.stream().map(q->{
+			Tuple<String,List<Key>> keys = Tuple.of(q, new ArrayList<>());
+			SearchResult r;			
+			try {			
+				//todo: we can optimize based on identifiers or complex searches
+				r = search(gsrsRepository, optionsCopy, q);
+				r.copyKeysTo(keys.v(), 0, 100, true);
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}			
+			return keys;
+		}).collect(Collectors.toList());
+		
+		List<Key> subset = statistics.stream()
+		          .flatMap(t->t.v().stream().map(v->Tuple.of(t.k(), v)))
+                  .peek(t->{matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>()).add(t.k());})
+                  .map(t->t.v())
+		          .distinct()
+		          .collect(Collectors.toList());
+		// todo: look into matchContexts to set up cache
+		
+//		EntityUtils.Key key = new Key(subset.get(0).getEntityInfo(), bulkID); 
+//		Map<String,Object> map = new HashMap<>();
+//		map.put(bulkID, statistics);
+//		gsrscache.setMatchingContext("bulkSearch" + bulkID, null, map);
+//		
+		return search(gsrsRepository, options, text, subset);
+	}
+
+	
 	public SearchResult search(GsrsRepository gsrsRepository,  SearchOptions options, String qtext, Collection<?> subset) throws IOException {
 		SearchResult searchResult = new SearchResult(options, qtext);
 
@@ -2766,6 +2821,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if (entity == null)
 			return null;
 
+		if(entity instanceof Key) {
+			return getTerm((Key)entity);
+		}
+		
 		return EntityWrapper.of(entity)
 		           .getOptionalKey()
                    .map(key->getTerm(key))

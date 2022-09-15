@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gsrs.repository.GsrsRepository;
 import gsrs.security.hasAdminRole;
+import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
@@ -33,6 +34,9 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
 
     @Autowired
     private TextIndexerFactory textIndexerFactory;
+    
+    @Autowired
+    private TextService textService;
 
     private final GsrsRepository gsrsRepository;
     private final Class<T> entityClass;
@@ -77,6 +81,10 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @Override
     public SearchResult search(String query, SearchOptions options) throws IOException {
         return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query);
+    }
+    
+    public SearchResult bulkSearch(String bulkQuery, String query, SearchOptions options) throws IOException {
+    	return textIndexerFactory.getDefaultInstance().bulkSearch(gsrsRepository, options, bulkQuery, query);
     }
 
     @Override

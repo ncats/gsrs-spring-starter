@@ -728,6 +728,12 @@ public class SearchOptions implements RequestOptions {
 		queryParams.resetCache();
 		return top;
 	}
+	
+	public int setSkip(int skip) {
+		this.skip = skip;
+		queryParams.resetCache();
+		return skip;
+	}
 
 	public boolean isWait() {
 		return wait;
