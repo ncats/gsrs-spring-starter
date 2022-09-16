@@ -20,7 +20,7 @@ public class ExportConfigTest {
 
         ObjectMapper objectMapper = new ObjectMapper();
         ExporterSpecificExportSettings exporterSpecificExportSettings = ExporterSpecificExportSettings.builder()
-                .columnNames(Arrays.asList("SMILES", "PT", "UNII", "UUID"))
+                .columnNames(Arrays.asList("PT", "UNII", "UUID"))
                 .includeRepeatingDataOnEveryRow(false)
                 .build();
         JsonNode exporterSettings = objectMapper.valueToTree(exporterSpecificExportSettings);
@@ -33,7 +33,7 @@ public class ExportConfigTest {
                 .build();
         JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
         DefaultExporterFactoryConfig config =  DefaultExporterFactoryConfig.builder()
-                .exporterKey("SDF Exporter")
+                .exporterKey("SDF")
                 .exporterSettings(exporterSettings)
                 .generalSettings(generalSettings)
                 .configurationKey("Basic SDFiles")

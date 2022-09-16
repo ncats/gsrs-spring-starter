@@ -18,11 +18,13 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
+import ix.core.models.Text;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.*;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.repository.core.EntityMetadata;
@@ -49,6 +51,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
@@ -97,7 +100,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/               ix.core.controllers.
 GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.controllers.v1.RouteFactory.createExport(context: String, etagId: String, format: String, publicOnly: Boolean ?=true)
 
      */
-    @GetGsrsRestApiMapping("/export")
+    @GetGsrsRestApiMapping("/export") //inventory -- lists what's available.  Eventually, provide more info...
     public Object exportFormats(@RequestParam Map<String, String> parameters) throws Exception {
         return gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext());
     }
@@ -126,59 +129,64 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         private String extension;
         private GsrsUnwrappedEntityModel.RestUrlLink link;
     }
-    
 
-    
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
     public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
                                                @PathVariable("format") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
                                                @RequestParam(value ="filename", required= false) String fileName,
+                                               @RequestParam(value="exportConfigId", required = false) Long exportConfigId,
                                                Principal prof,
                                                @RequestParam Map<String, String> parameters,
                                                HttpServletRequest request
-                                               
+
             ) throws Exception {
+        log.warn("Starting in createExport");
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
+
+        Optional<DefaultExporterFactoryConfig> exportConfig;
+        if( exportConfigId == null){
+            //stopgap
+            DefaultExporterFactoryConfig config=  new DefaultExporterFactoryConfig();
+            config.setEntityClass("ix.ginas.models.v1.Substance");
+            exportConfig=Optional.of(config);
+        } else {
+            exportConfig= getConfigById(exportConfigId);
+        }
+
+        //instantiate all settings and scrubber...
+        RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
+        log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
+        RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
+        log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
             return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
         }
-
-
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
-
-
-        
         //Not ideal, but gets around user problem
         Stream<T> mstream = new EtagExportGenerator<T>(entityManager, transactionManager, HttpRequestHolder.fromRequest(request))
                 .generateExportFrom(getEntityService().getContext(), etagObj.get())
                 .get();
 
-        //GSRS-699 REALLY filter out anything that isn't public unless we are looking at private data
-//        if(publicOnly){
-//            mstream = mstream.filter(s-> s.getAccess().isEmpty());
-//        }
-
-
-        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters);
-
+        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters)
+                .map(t->  scrubber.scrub(t))
+                .filter(o->o.isPresent())
+                .flatMap(t->expander.expandRecord(t.get()))
+                .map(t->  scrubber.scrub(t))
+                .filter(o->o.isPresent())
+                .map(o->o.get());
 
         if(fileName!=null){
             emd.setDisplayFilename(fileName);
         }
-
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
-
         p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
-
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
-
-
     }
 
     protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters){

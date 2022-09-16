@@ -1,7 +1,11 @@
 package gsrs.startertests.exporters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ix.ginas.exporters.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,10 +41,19 @@ public class ExporterConfigTests {
         generalExportSettings.setCodeSystemsForReferences(Arrays.asList("FDA UNII", "ChemSpider"));
         config.setGeneralSettings(generalExportSettings);
 
-        ScrubberExportSettings scrubberExportSettings = new ScrubberExportSettings();
-        scrubberExportSettings.setOnlyPublic(false);
+        ObjectNode scrubberSettingsNode=JsonNodeFactory.instance.objectNode();
+        scrubberSettingsNode.put("publicOnly", false);
+        ArrayNode prohibitedGroups = JsonNodeFactory.instance.arrayNode();
+        prohibitedGroups.add("top-secret");
+        scrubberSettingsNode.set("prohibitedGroups",prohibitedGroups);
+        ArrayNode relationshipTypes = JsonNodeFactory.instance.arrayNode();
+        relationshipTypes.add("manufacturing impurity");
+        scrubberSettingsNode.set("relationshipTypesToRemove", relationshipTypes);
+
+        ScrubberExportSettings scrubberExportSettings = new JsonNodeScrubberExportSetting(scrubberSettingsNode);
+        /*scrubberExportSettings.setOnlyPublic(false);
         scrubberExportSettings.setProhibitedGroups(Arrays.asList("top-secret"));
-        scrubberExportSettings.setRelationshipTypesToRemove(Arrays.asList("manufacturing impurity"));
+        scrubberExportSettings.setRelationshipTypesToRemove(Arrays.asList("manufacturing impurity"));*/
         config.setScrubberSettings(scrubberExportSettings);
         config.getSupportedFileExtensions();
 

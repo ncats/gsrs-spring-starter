@@ -7,5 +7,5 @@ Take a record and return a set of related record
  */
 public interface RecordExpander<T> {
 
-    Stream<T> expandRecord(T record, GeneralExportSettings.ExportExpansion expansion);
+    Stream<T> expandRecord(T record);
 }
