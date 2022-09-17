@@ -285,6 +285,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         try {
             result = getlegacyGsrsSearchService().bulkSearch(textService.getText(queryListID), searchRequest.getQuery(), searchRequest.getOptions() );
         } catch (Exception e) {
+        	e.printStackTrace();
+        	System.out.println("Exception here!");
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
         }
         

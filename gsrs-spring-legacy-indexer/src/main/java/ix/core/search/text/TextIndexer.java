@@ -1689,6 +1689,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                   .peek(t->{matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>()).add(t.k());})
                   .map(t->t.v())
 		          .distinct()
+		          .peek(System.out::println)
 		          .collect(Collectors.toList());
 		// todo: look into matchContexts to set up cache
 		
@@ -1702,6 +1703,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	
 	public SearchResult search(GsrsRepository gsrsRepository,  SearchOptions options, String qtext, Collection<?> subset) throws IOException {
+				
 		SearchResult searchResult = new SearchResult(options, qtext);
 
 		Supplier<Query> qs = ()->{
@@ -1725,13 +1727,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 			Query f = null;
 			if (subset != null) {
 				List<Term> terms = getTerms(subset);
+				terms.forEach(System.out::println);
 				if (!terms.isEmpty()){
 					f = getTermsQuery(terms);
 				}
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
 					Stream<Key> ids = subset.stream()
-											.map(o-> EntityWrapper.of(o).getKey());
+											.map(o-> {
+												if(o instanceof Key) {
+													return (Key)o;
+												}else { 
+													return EntityWrapper.of(o).getKey();
+												}
+												});
+					
 					Comparator<Key> comp= Util.comparator(ids);
 
 					searchResult.setRank(comp);
@@ -2827,7 +2837,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		
 		return EntityWrapper.of(entity)
 		           .getOptionalKey()
-                   .map(key->getTerm(key))
+                   .map(key->getTerm(key.toRootKey()))
                    .orElseGet(()->{
                        log.warn("Entity " + entity + "[" + entity.getClass() + "] has no Id field!");
                        return null;
@@ -2994,10 +3004,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 							}
 						}
 						if(f.name().equals(FIELD_KIND)) {
-						    String val = f.stringValue();
-						    if(val.contains("ubstance")) {
-						        System.out.println("T");
-						    }
+						    String val = f.stringValue();						   
 						    doc.add(new SortedDocValuesField(f.name(),new BytesRef(val)));
 						    doc.add(new StoredField(f.name(), new BytesRef(val)));
 						    return;
@@ -3035,7 +3042,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 			
 			if(textIndexerConfig.isFieldsuggest()  && deepKindFunction.apply(ew) && ew.hasKey()){
-				Key key =ew.getKey();
+				Key key =ew.getKey().toRootKey();
 				if(!key.getIdString().equals("")){  //probably not needed
 					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + ew.getKind(),YES);
 					StringField analyzeMarker=new StringField(ANALYZER_MARKER_FIELD, "true",YES);
@@ -3138,7 +3145,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 	}
 
-	public void remove(Key key) throws Exception {
+	public void remove(Key tkey) throws Exception {
+		Key key = tkey.toRootKey();
         Lock l = stripedLock.get(key);
         l.lock();
         try {
