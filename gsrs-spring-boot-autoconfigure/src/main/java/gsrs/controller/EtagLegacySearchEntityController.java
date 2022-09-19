@@ -3,6 +3,7 @@ package gsrs.controller;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
@@ -48,6 +49,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,7 +82,6 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
-
 
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
@@ -136,7 +137,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                                                @PathVariable("format") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
                                                @RequestParam(value ="filename", required= false) String fileName,
-                                               @RequestParam(value="exportConfigId", required = false) Long exportConfigId,
+                                               @RequestParam(value="exportConfigId", required = false) String exportConfigId,
                                                Principal prof,
                                                @RequestParam Map<String, String> parameters,
                                                HttpServletRequest request
@@ -145,16 +146,19 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         log.warn("Starting in createExport");
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
-        Optional<DefaultExporterFactoryConfig> exportConfig;
+        Optional<DefaultExporterFactoryConfig> exportConfig=Optional.empty();
         if( exportConfigId == null){
-            //stopgap
-            DefaultExporterFactoryConfig config=  new DefaultExporterFactoryConfig();
-            config.setEntityClass("ix.ginas.models.v1.Substance");
-            exportConfig=Optional.of(config);
+            exportConfig=Optional.of(createDefaultConfig());
         } else {
-            exportConfig= getConfigById(exportConfigId);
+            if(isInteger(exportConfigId)) {
+                Long itemId=Long.getLong(exportConfigId);
+                exportConfig = getConfigById(itemId);
+            }
         }
 
+        if(!exportConfig.isPresent()) {
+            exportConfig=Optional.of(createDefaultConfig());
+        }
         //instantiate all settings and scrubber...
         RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
@@ -281,4 +285,24 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
         return etag;
     }
+
+    private boolean isInteger(String testValue) {
+        if( testValue == null || testValue.trim().length()==0){
+            return false;
+        }
+        String testString = testValue.trim();
+        Pattern integerPattern = Pattern.compile("\\d+");
+        return integerPattern.matcher(testString).matches();
+    }
+
+    private DefaultExporterFactoryConfig createDefaultConfig(){
+        DefaultExporterFactoryConfig config=  new DefaultExporterFactoryConfig();
+        log.trace("Setting entity class to {}", getEntityService().getEntityClass().getName());
+        config.setEntityClass(getEntityService().getEntityClass().getName());
+        return config;
+    }
+
+    /*private CachedSupplier<List<ExporterFactoryConfig<T>>> importAdapterFactories
+            = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
+            this.getEntityService().getEntityClass()));*/
 }
