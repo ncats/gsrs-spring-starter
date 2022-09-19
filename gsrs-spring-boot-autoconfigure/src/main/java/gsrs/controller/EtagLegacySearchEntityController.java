@@ -1,6 +1,7 @@
 package gsrs.controller;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -153,6 +154,20 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             if(isInteger(exportConfigId)) {
                 Long itemId=Long.getLong(exportConfigId);
                 exportConfig = getConfigById(itemId);
+            } else {
+                Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedExporterFormats(getEntityService().getContext()).stream()
+                        .filter(e->e.getExtension().equalsIgnoreCase(exportConfigId))
+                        .collect(Collectors.toSet());
+                if(formats.size()>0){
+                     //
+                }
+                else {
+                    ObjectMapper mapper= new ObjectMapper();
+                    DefaultExporterFactoryConfig config = mapper.readValue(exportConfigId, DefaultExporterFactoryConfig.class);
+                    if( config !=null) {
+                        exportConfig=Optional.of(config);
+                    }
+                }
             }
         }
 
@@ -286,7 +301,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         return etag;
     }
 
-    private boolean isInteger(String testValue) {
+    public boolean isInteger(String testValue) {
         if( testValue == null || testValue.trim().length()==0){
             return false;
         }

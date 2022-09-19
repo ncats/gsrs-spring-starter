@@ -1,11 +1,13 @@
 package gsrs.autoconfigure;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
 import ix.ginas.exporters.RecordScrubber;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -16,18 +18,22 @@ import java.util.*;
 @Configuration
 @ConfigurationProperties("ix.ginas.export")
 @Data
+@Slf4j
 public class GsrsExportConfiguration {
 
     private File path = new File("./exports");
     private File tmpDir=null;
 
     private Map<String, List<Class>> factories;
+    private Map<String, List<ExporterFactoryConf>> exporterFactories;
 
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
 
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
+    private Map<String, List<ExporterFactory>> exportersNew = new HashMap<>();
 
     Map<String,Map<String, RecordScrubber>> scrubbers;
+
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
@@ -47,6 +53,34 @@ public class GsrsExportConfiguration {
                 }
             }
             exporters.put(context, list);
+        }
+    });
+
+    CachedSupplier initializerNew = CachedSupplier.ofInitializer( ()->{
+        ObjectMapper mapper = new ObjectMapper();
+
+        for(Map.Entry<String, List<ExporterFactoryConf>> entryFull : exporterFactories.entrySet()){
+            String context = entryFull.getKey();//this is the type
+
+            List<ExporterFactory> expList = exporters.computeIfAbsent(context, k-> new ArrayList<>());
+            entryFull.getValue().forEach(exConf->{
+
+                ExporterFactory exporterFac =null;
+                if(exConf.getParameters() !=null){
+                    exporterFac= (ExporterFactory) mapper.convertValue(exConf.getParameters(), exConf.getExporterClass());
+                }else{
+                    try {
+                        exporterFac= (ExporterFactory) exConf.getExporterClass().newInstance();
+                    } catch (Exception e) {
+                        throw new IllegalStateException("error creating exporter for " + exConf, e);
+                    }
+                }
+                if(exporterFac!=null) {
+                    exporterFac = AutowireHelper.getInstance().autowireAndProxy(exporterFac);
+                    expList.add(exporterFac);
+                }
+            });
+            exportersNew.put(context, expList);
         }
     });
 
@@ -92,6 +126,40 @@ public class GsrsExportConfiguration {
         return new LinkedHashSet<>(resortList);
     }
 
+    public Set<OutputFormat> getAllSupportedExporterFormats(String context){
+
+        initializerNew.get();
+
+        //This mess with reverse iterating and then reversing again
+        //is because we want the exporters listed first in the config file
+        //to have priority over later listed exporters.  So if an earlier
+        //exporter has the same extension as a later exporter, the earlier one should
+        //have priority.
+        //
+        //So we go through the list backwards so earlier exporter's extensions
+        //overwrite later exporters
+        //
+        //But then we have to reverse the list again so
+        //the final display order matches the input list order.
+
+        List<OutputFormat> list = getAllOutputsAsList(exportersNew.get(context));
+        //go in reverse order to prefer the factories listed first
+        ListIterator<OutputFormat> iterator = list.listIterator(list.size());
+        Set<OutputFormat> set = new LinkedHashSet<>();
+        while(iterator.hasPrevious()){
+            set.add(iterator.previous());
+        }
+        //reverse it again
+        List<OutputFormat> resortList = new ArrayList<>(set.size());
+
+        for(OutputFormat f : set){
+            resortList.add(f);
+        }
+        Collections.reverse(resortList);
+
+        return new LinkedHashSet<>(resortList);
+    }
+
     private List<OutputFormat> getAllOutputsAsList(List<ExporterFactory> exporters) {
 
         List<OutputFormat> list = new ArrayList<>();
@@ -124,5 +192,6 @@ public class GsrsExportConfiguration {
         }
         return null;
     }
+
 
 }
