@@ -7,131 +7,124 @@
   "properties": {
     "removeDate": {
       "description": "When true, remove all date fields from output",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove Date"
     },
     "deidentifyAuditUser": {
       "description": "When true, remove users listed as creator or modifier of records and subrecords",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Deidentify Audit User"
     },
     "deidentifiedReferencePatterns": {
       "description": "References to replace (pattern applies to document type)",
-      "type": "string"
+      "type": "string",
+      "title": "Deidentified Reference Patterns"
     },
     "accessGroupsToInclude": {
       "description": "names of access groups to that will NOT be removed ",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 0,
-      "uniqueItems": true
+      "type": "string",
+      "title": "Access Groups to Include"
     },
     "accessGroupsToRemove": {
       "description": "names of access groups to that WILL be removed ",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 0,
-      "uniqueItems": true
+      "type": "string",
+      "title": "Access Groups to Remove"
     },
       "removeAllLocked": {
       "description": "When true, remove any data element that is marked as non-public",
+      "title": "Remove all Locked",
       "type": "boolean"
     },
     "removeCodesBySystem": {
       "description": "When true, remove any Codes whose CodeSystem is on the list",
+      "title": "Remove Codes by System",
       "type": "boolean"
     },
     "codeSystemsToRemove": {
       "description": "Code Systems to remove",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minimum": 1
-      },
-      "uniqueItems": true
+      "type": "string",
+      "title": "Code Systems to Remove"
     },
     "codeSystemsToKeep": {
       "description": "Code Systems to keep",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minimum": 0
-      },
-      "uniqueItems": true
+      "type": "string",
+      "title": "Code Systems to Keep"
     },
     "removeReferencesByCriteria": {
       "description": "When true, remove any References that meet specified criteria",
+      "title": "Remove References by Criteria",
       "type": "boolean"
     },
     "referenceTypesToRemove": {
       "description": "Document Types to look at.  When a Reference is of that document type, remove it",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minimum": 0
-      },
-      "uniqueItems": true
+      "type": "string",
+      "title": "Reference Types to Remove"
     },
     "citationPatternsToRemove": {
       "description": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minimum": 0
-      },
-      "uniqueItems": true
+      "type": "string",
+      "title": "Citation Patterns to Remove"
     },
     "excludeReferenceByPattern": {
       "description": "Remove References by looking at citationPatternsToRemove",
+      "title": "Exclude Reference by Pattern",
       "type": "boolean"
     },
     "substanceReferenceCleanup": {
       "description": "When true, next criteria are used to process substance references",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Substance Reference Cleanup"
     },
     "removeReferencesToFilteredSubstances": {
       "description": "When true, when a substance is removed, remove any references to it",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove References to Filtered Substances"
     },
     "removeReferencesToSubstancesNonExportedDefinitions": {
       "description": "When true, when a substance's definition is removed, remove any references to it",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove References to Substances Non-Exported Definitions"
     },
     "removeNotes": {
       "description": "When true, remove all Notes",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove Notes"
     },
     "removeChangeReason": {
       "description": "When true, delete the 'Change Reason' field",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove Change Reason"
     },
     "removeApprovalId": {
       "description": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Remove Approval Id"
     },
     "approvalIdCodeSystem": {
       "description": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
-      "type": "string"
+      "type": "string",
+      "title": "Remove Approval Id"
     },
     "regenerateUUIDs": {
       "description": "When true, all UUIDs in the object being exported will be given a newly-generated value",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Regenerate UUIDs"
     },
     "changeAllStatuses": {
       "description": "When true, all status value in the object being exported will be given a value",
-      "type": "boolean"
+      "type": "boolean",
+      "title": "Change All Statuses"
     },
     "newStatusValue": {
       "description": "new string value to assign to all individual status fields throughout the object",
-      "type": "string"
+      "type": "string",
+      "title": "New Status Value"
     },
     "newAuditorValue": {
       "description": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
+      "title" : "New Auditor Value",
       "type": "string"
     }
-
   },
   "required": []
 }

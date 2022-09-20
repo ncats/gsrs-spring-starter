@@ -2,7 +2,6 @@ package ix.ginas.exporters;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -11,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 
 /**
@@ -51,6 +49,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public class ScrubberParameterSchema {
 
     /**
+     * Remove Date
+     * <p>
      * When true, remove all date fields from output
      *
      */
@@ -58,6 +58,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove all date fields from output")
     private Boolean removeDate;
     /**
+     * Deidentify Audit User
+     * <p>
      * When true, remove users listed as creator or modifier of records and subrecords
      *
      */
@@ -65,6 +67,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove users listed as creator or modifier of records and subrecords")
     private Boolean deidentifyAuditUser;
     /**
+     * Deidentified Reference Patterns
+     * <p>
      * References to replace (pattern applies to document type)
      *
      */
@@ -72,22 +76,26 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("References to replace (pattern applies to document type)")
     private String deidentifiedReferencePatterns;
     /**
+     * Access Groups to Include
+     * <p>
      * names of access groups to that will NOT be removed
      *
      */
     @JsonProperty("accessGroupsToInclude")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("names of access groups to that will NOT be removed ")
-    private Set<String> accessGroupsToInclude = null;
+    private String accessGroupsToInclude;
     /**
+     * Access Groups to Remove
+     * <p>
      * names of access groups to that WILL be removed
      *
      */
     @JsonProperty("accessGroupsToRemove")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("names of access groups to that WILL be removed ")
-    private Set<String> accessGroupsToRemove = null;
+    private String accessGroupsToRemove;
     /**
+     * Remove all Locked
+     * <p>
      * When true, remove any data element that is marked as non-public
      *
      */
@@ -95,6 +103,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove any data element that is marked as non-public")
     private Boolean removeAllLocked;
     /**
+     * Remove Codes by System
+     * <p>
      * When true, remove any Codes whose CodeSystem is on the list
      *
      */
@@ -102,22 +112,26 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove any Codes whose CodeSystem is on the list")
     private Boolean removeCodesBySystem;
     /**
+     * Code Systems to Remove
+     * <p>
      * Code Systems to remove
      *
      */
     @JsonProperty("codeSystemsToRemove")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("Code Systems to remove")
-    private Set<String> codeSystemsToRemove = null;
+    private String codeSystemsToRemove;
     /**
+     * Code Systems to Keep
+     * <p>
      * Code Systems to keep
      *
      */
     @JsonProperty("codeSystemsToKeep")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("Code Systems to keep")
-    private Set<String> codeSystemsToKeep = null;
+    private String codeSystemsToKeep;
     /**
+     * Remove References by Criteria
+     * <p>
      * When true, remove any References that meet specified criteria
      *
      */
@@ -125,22 +139,26 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove any References that meet specified criteria")
     private Boolean removeReferencesByCriteria;
     /**
+     * Reference Types to Remove
+     * <p>
      * Document Types to look at. When a Reference is of that document type, remove it
      *
      */
     @JsonProperty("referenceTypesToRemove")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("Document Types to look at. When a Reference is of that document type, remove it")
-    private Set<String> referenceTypesToRemove = null;
+    private String referenceTypesToRemove;
     /**
+     * Citation Patterns to Remove
+     * <p>
      * Patterns (RegExes) to apply to Reference citation. When a citation matches, remove the Reference
      *
      */
     @JsonProperty("citationPatternsToRemove")
-    @JsonDeserialize(as = java.util.LinkedHashSet.class)
     @JsonPropertyDescription("Patterns (RegExes) to apply to Reference citation. When a citation matches, remove the Reference")
-    private Set<String> citationPatternsToRemove = null;
+    private String citationPatternsToRemove;
     /**
+     * Exclude Reference by Pattern
+     * <p>
      * Remove References by looking at citationPatternsToRemove
      *
      */
@@ -148,6 +166,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("Remove References by looking at citationPatternsToRemove")
     private Boolean excludeReferenceByPattern;
     /**
+     * Substance Reference Cleanup
+     * <p>
      * When true, next criteria are used to process substance references
      *
      */
@@ -155,6 +175,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, next criteria are used to process substance references")
     private Boolean substanceReferenceCleanup;
     /**
+     * Remove References to Filtered Substances
+     * <p>
      * When true, when a substance is removed, remove any references to it
      *
      */
@@ -162,6 +184,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, when a substance is removed, remove any references to it")
     private Boolean removeReferencesToFilteredSubstances;
     /**
+     * Remove References to Substances Non-Exported Definitions
+     * <p>
      * When true, when a substance's definition is removed, remove any references to it
      *
      */
@@ -169,6 +193,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, when a substance's definition is removed, remove any references to it")
     private Boolean removeReferencesToSubstancesNonExportedDefinitions;
     /**
+     * Remove Notes
+     * <p>
      * When true, remove all Notes
      *
      */
@@ -176,6 +202,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, remove all Notes")
     private Boolean removeNotes;
     /**
+     * Remove Change Reason
+     * <p>
      * When true, delete the 'Change Reason' field
      *
      */
@@ -183,6 +211,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, delete the 'Change Reason' field")
     private Boolean removeChangeReason;
     /**
+     * Remove Approval Id
+     * <p>
      * When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed
      *
      */
@@ -190,6 +220,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed")
     private Boolean removeApprovalId;
     /**
+     * Remove Approval Id
+     * <p>
      * When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system
      *
      */
@@ -197,6 +229,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system")
     private String approvalIdCodeSystem;
     /**
+     * Regenerate UUIDs
+     * <p>
      * When true, all UUIDs in the object being exported will be given a newly-generated value
      *
      */
@@ -204,6 +238,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, all UUIDs in the object being exported will be given a newly-generated value")
     private Boolean regenerateUUIDs;
     /**
+     * Change All Statuses
+     * <p>
      * When true, all status value in the object being exported will be given a value
      *
      */
@@ -211,6 +247,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("When true, all status value in the object being exported will be given a value")
     private Boolean changeAllStatuses;
     /**
+     * New Status Value
+     * <p>
      * new string value to assign to all individual status fields throughout the object
      *
      */
@@ -218,6 +256,8 @@ public class ScrubberParameterSchema {
     @JsonPropertyDescription("new string value to assign to all individual status fields throughout the object")
     private String newStatusValue;
     /**
+     * New Auditor Value
+     * <p>
      * new string value to assign to all auditor (creator/modifier) fields throughout the object
      *
      */
@@ -228,6 +268,8 @@ public class ScrubberParameterSchema {
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     /**
+     * Remove Date
+     * <p>
      * When true, remove all date fields from output
      *
      */
@@ -237,6 +279,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Date
+     * <p>
      * When true, remove all date fields from output
      *
      */
@@ -246,6 +290,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Deidentify Audit User
+     * <p>
      * When true, remove users listed as creator or modifier of records and subrecords
      *
      */
@@ -255,6 +301,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Deidentify Audit User
+     * <p>
      * When true, remove users listed as creator or modifier of records and subrecords
      *
      */
@@ -264,6 +312,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Deidentified Reference Patterns
+     * <p>
      * References to replace (pattern applies to document type)
      *
      */
@@ -273,6 +323,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Deidentified Reference Patterns
+     * <p>
      * References to replace (pattern applies to document type)
      *
      */
@@ -282,42 +334,52 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Access Groups to Include
+     * <p>
      * names of access groups to that will NOT be removed
      *
      */
     @JsonProperty("accessGroupsToInclude")
-    public Set<String> getAccessGroupsToInclude() {
+    public String getAccessGroupsToInclude() {
         return accessGroupsToInclude;
     }
 
     /**
+     * Access Groups to Include
+     * <p>
      * names of access groups to that will NOT be removed
      *
      */
     @JsonProperty("accessGroupsToInclude")
-    public void setAccessGroupsToInclude(Set<String> accessGroupsToInclude) {
+    public void setAccessGroupsToInclude(String accessGroupsToInclude) {
         this.accessGroupsToInclude = accessGroupsToInclude;
     }
 
     /**
+     * Access Groups to Remove
+     * <p>
      * names of access groups to that WILL be removed
      *
      */
     @JsonProperty("accessGroupsToRemove")
-    public Set<String> getAccessGroupsToRemove() {
+    public String getAccessGroupsToRemove() {
         return accessGroupsToRemove;
     }
 
     /**
+     * Access Groups to Remove
+     * <p>
      * names of access groups to that WILL be removed
      *
      */
     @JsonProperty("accessGroupsToRemove")
-    public void setAccessGroupsToRemove(Set<String> accessGroupsToRemove) {
+    public void setAccessGroupsToRemove(String accessGroupsToRemove) {
         this.accessGroupsToRemove = accessGroupsToRemove;
     }
 
     /**
+     * Remove all Locked
+     * <p>
      * When true, remove any data element that is marked as non-public
      *
      */
@@ -327,6 +389,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove all Locked
+     * <p>
      * When true, remove any data element that is marked as non-public
      *
      */
@@ -336,6 +400,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Codes by System
+     * <p>
      * When true, remove any Codes whose CodeSystem is on the list
      *
      */
@@ -345,6 +411,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Codes by System
+     * <p>
      * When true, remove any Codes whose CodeSystem is on the list
      *
      */
@@ -354,42 +422,52 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Code Systems to Remove
+     * <p>
      * Code Systems to remove
      *
      */
     @JsonProperty("codeSystemsToRemove")
-    public Set<String> getCodeSystemsToRemove() {
+    public String getCodeSystemsToRemove() {
         return codeSystemsToRemove;
     }
 
     /**
+     * Code Systems to Remove
+     * <p>
      * Code Systems to remove
      *
      */
     @JsonProperty("codeSystemsToRemove")
-    public void setCodeSystemsToRemove(Set<String> codeSystemsToRemove) {
+    public void setCodeSystemsToRemove(String codeSystemsToRemove) {
         this.codeSystemsToRemove = codeSystemsToRemove;
     }
 
     /**
+     * Code Systems to Keep
+     * <p>
      * Code Systems to keep
      *
      */
     @JsonProperty("codeSystemsToKeep")
-    public Set<String> getCodeSystemsToKeep() {
+    public String getCodeSystemsToKeep() {
         return codeSystemsToKeep;
     }
 
     /**
+     * Code Systems to Keep
+     * <p>
      * Code Systems to keep
      *
      */
     @JsonProperty("codeSystemsToKeep")
-    public void setCodeSystemsToKeep(Set<String> codeSystemsToKeep) {
+    public void setCodeSystemsToKeep(String codeSystemsToKeep) {
         this.codeSystemsToKeep = codeSystemsToKeep;
     }
 
     /**
+     * Remove References by Criteria
+     * <p>
      * When true, remove any References that meet specified criteria
      *
      */
@@ -399,6 +477,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove References by Criteria
+     * <p>
      * When true, remove any References that meet specified criteria
      *
      */
@@ -408,42 +488,52 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Reference Types to Remove
+     * <p>
      * Document Types to look at. When a Reference is of that document type, remove it
      *
      */
     @JsonProperty("referenceTypesToRemove")
-    public Set<String> getReferenceTypesToRemove() {
+    public String getReferenceTypesToRemove() {
         return referenceTypesToRemove;
     }
 
     /**
+     * Reference Types to Remove
+     * <p>
      * Document Types to look at. When a Reference is of that document type, remove it
      *
      */
     @JsonProperty("referenceTypesToRemove")
-    public void setReferenceTypesToRemove(Set<String> referenceTypesToRemove) {
+    public void setReferenceTypesToRemove(String referenceTypesToRemove) {
         this.referenceTypesToRemove = referenceTypesToRemove;
     }
 
     /**
+     * Citation Patterns to Remove
+     * <p>
      * Patterns (RegExes) to apply to Reference citation. When a citation matches, remove the Reference
      *
      */
     @JsonProperty("citationPatternsToRemove")
-    public Set<String> getCitationPatternsToRemove() {
+    public String getCitationPatternsToRemove() {
         return citationPatternsToRemove;
     }
 
     /**
+     * Citation Patterns to Remove
+     * <p>
      * Patterns (RegExes) to apply to Reference citation. When a citation matches, remove the Reference
      *
      */
     @JsonProperty("citationPatternsToRemove")
-    public void setCitationPatternsToRemove(Set<String> citationPatternsToRemove) {
+    public void setCitationPatternsToRemove(String citationPatternsToRemove) {
         this.citationPatternsToRemove = citationPatternsToRemove;
     }
 
     /**
+     * Exclude Reference by Pattern
+     * <p>
      * Remove References by looking at citationPatternsToRemove
      *
      */
@@ -453,6 +543,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Exclude Reference by Pattern
+     * <p>
      * Remove References by looking at citationPatternsToRemove
      *
      */
@@ -462,6 +554,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Substance Reference Cleanup
+     * <p>
      * When true, next criteria are used to process substance references
      *
      */
@@ -471,6 +565,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Substance Reference Cleanup
+     * <p>
      * When true, next criteria are used to process substance references
      *
      */
@@ -480,6 +576,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove References to Filtered Substances
+     * <p>
      * When true, when a substance is removed, remove any references to it
      *
      */
@@ -489,6 +587,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove References to Filtered Substances
+     * <p>
      * When true, when a substance is removed, remove any references to it
      *
      */
@@ -498,6 +598,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove References to Substances Non-Exported Definitions
+     * <p>
      * When true, when a substance's definition is removed, remove any references to it
      *
      */
@@ -507,6 +609,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove References to Substances Non-Exported Definitions
+     * <p>
      * When true, when a substance's definition is removed, remove any references to it
      *
      */
@@ -516,6 +620,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Notes
+     * <p>
      * When true, remove all Notes
      *
      */
@@ -525,6 +631,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Notes
+     * <p>
      * When true, remove all Notes
      *
      */
@@ -534,6 +642,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Change Reason
+     * <p>
      * When true, delete the 'Change Reason' field
      *
      */
@@ -543,6 +653,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Change Reason
+     * <p>
      * When true, delete the 'Change Reason' field
      *
      */
@@ -552,6 +664,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Approval Id
+     * <p>
      * When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed
      *
      */
@@ -561,6 +675,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Approval Id
+     * <p>
      * When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed
      *
      */
@@ -570,6 +686,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Approval Id
+     * <p>
      * When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system
      *
      */
@@ -579,6 +697,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Remove Approval Id
+     * <p>
      * When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system
      *
      */
@@ -588,6 +708,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Regenerate UUIDs
+     * <p>
      * When true, all UUIDs in the object being exported will be given a newly-generated value
      *
      */
@@ -597,6 +719,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Regenerate UUIDs
+     * <p>
      * When true, all UUIDs in the object being exported will be given a newly-generated value
      *
      */
@@ -606,6 +730,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Change All Statuses
+     * <p>
      * When true, all status value in the object being exported will be given a value
      *
      */
@@ -615,6 +741,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * Change All Statuses
+     * <p>
      * When true, all status value in the object being exported will be given a value
      *
      */
@@ -624,6 +752,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * New Status Value
+     * <p>
      * new string value to assign to all individual status fields throughout the object
      *
      */
@@ -633,6 +763,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * New Status Value
+     * <p>
      * new string value to assign to all individual status fields throughout the object
      *
      */
@@ -642,6 +774,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * New Auditor Value
+     * <p>
      * new string value to assign to all auditor (creator/modifier) fields throughout the object
      *
      */
@@ -651,6 +785,8 @@ public class ScrubberParameterSchema {
     }
 
     /**
+     * New Auditor Value
+     * <p>
      * new string value to assign to all auditor (creator/modifier) fields throughout the object
      *
      */
