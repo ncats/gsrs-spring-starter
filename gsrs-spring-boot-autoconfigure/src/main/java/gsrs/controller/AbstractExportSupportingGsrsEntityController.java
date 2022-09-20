@@ -9,14 +9,19 @@ import ix.core.models.Text;
 import ix.ginas.exporters.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import ix.ginas.exporters.ScrubberParameterSchema;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -187,6 +192,36 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             status=HttpStatus.BAD_REQUEST;
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), status);
+    }
+
+    @GetGsrsRestApiMapping("/export/scrubber/@schema")
+    public ResponseEntity<Object> handleExportScrubberSchema(
+            @RequestParam Map<String, String> queryParameters) throws IOException {
+        log.trace("starting in handleExportScrubberSchema");
+
+        ObjectMapper mapper= new ObjectMapper();
+        Object JsonSchema ="";
+        try {
+            ClassPathResource fileResource = new ClassPathResource("schemas/scrubberSchema.json");
+            log.trace("about to call fileResource.exists()");
+            if( fileResource.exists()) {
+                log.trace("about to read binaryData");
+                byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
+                log.trace("about to convert binaryData");
+                String schemaString =new String(binaryData, StandardCharsets.UTF_8);
+                log.trace("converted schemaString");
+                ScrubberParameterSchema schema = mapper.readValue(schemaString, ScrubberParameterSchema.class);
+                JsonSchema = schema;
+            }else {
+                JsonSchema="scrubberSchema.json not found";
+            }
+        }
+        catch(Exception ex) {
+            log.error("Error reading schema file!", ex);
+        }
+
+        log.trace("about to return JsonSchema of type {}", JsonSchema.getClass().getName());
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(JsonSchema, queryParameters), HttpStatus.OK);
     }
 
     boolean doesConfigurationKeyExist(String configurationKey) {

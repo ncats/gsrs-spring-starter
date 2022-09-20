@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsrs.ncats.nih.gov/#/export.scrubber.schema.json",
+  "title": "Scrubber Parameters",
+  "description": "Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared",
+  "type": "object",
+  "properties": {
+    "removeDate": {
+      "description": "When true, remove all date fields from output",
+      "type": "boolean"
+    },
+    "deidentifyAuditUser": {
+      "description": "When true, remove users listed as creator or modifier of records and subrecords",
+      "type": "boolean"
+    },
+    "excludedReferencePatterns": {
+      "description": "References to omit (pattern applies to document type)",
+      "type": "string"
+    },
+    "deidentifiedReferencePatterns": {
+      "description": "References to replace (pattern applies to document type)",
+      "type": "string"
+    },
+    "accessGroupsToInclude": {
+      "description": "names of access groups to that will NOT be removed ",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    }
+  },
+  "required": []
+}

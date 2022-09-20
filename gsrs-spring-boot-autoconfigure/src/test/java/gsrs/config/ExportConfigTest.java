@@ -3,6 +3,8 @@ package gsrs.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ix.ginas.exporters.DefaultExporterFactoryConfig;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
@@ -45,5 +47,19 @@ public class ExportConfigTest {
         System.out.println(configString);
 
         Assertions.assertTrue(configString.length()>0);
+    }
+
+    @Test
+    public void testScrubberConfig() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode scrubberSettings = JsonNodeFactory.instance.objectNode();
+        scrubberSettings.put("removeAllDates", true);
+        scrubberSettings.put("removeAllAuditUser", false);
+        scrubberSettings.put("auditUserName", "Smith");
+        scrubberSettings.put("excludeReferencePattern", ".*IND*.");
+
+        String scrubberConfig = scrubberSettings.toPrettyString();
+        System.out.println(scrubberConfig);
+        Assertions.assertTrue(scrubberConfig.length()>10);
     }
 }
