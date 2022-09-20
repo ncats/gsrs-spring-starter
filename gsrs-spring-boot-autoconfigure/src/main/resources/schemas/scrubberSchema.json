@@ -13,10 +13,6 @@
       "description": "When true, remove users listed as creator or modifier of records and subrecords",
       "type": "boolean"
     },
-    "excludedReferencePatterns": {
-      "description": "References to omit (pattern applies to document type)",
-      "type": "string"
-    },
     "deidentifiedReferencePatterns": {
       "description": "References to replace (pattern applies to document type)",
       "type": "string"
@@ -29,7 +25,113 @@
       },
       "minItems": 0,
       "uniqueItems": true
+    },
+    "accessGroupsToRemove": {
+      "description": "names of access groups to that WILL be removed ",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+      "removeAllLocked": {
+      "description": "When true, remove any data element that is marked as non-public",
+      "type": "boolean"
+    },
+    "removeCodesBySystem": {
+      "description": "When true, remove any Codes whose CodeSystem is on the list",
+      "type": "boolean"
+    },
+    "codeSystemsToRemove": {
+      "description": "Code Systems to remove",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minimum": 1
+      },
+      "uniqueItems": true
+    },
+    "codeSystemsToKeep": {
+      "description": "Code Systems to keep",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minimum": 0
+      },
+      "uniqueItems": true
+    },
+    "removeReferencesByCriteria": {
+      "description": "When true, remove any References that meet specified criteria",
+      "type": "boolean"
+    },
+    "referenceTypesToRemove": {
+      "description": "Document Types to look at.  When a Reference is of that document type, remove it",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minimum": 0
+      },
+      "uniqueItems": true
+    },
+    "citationPatternsToRemove": {
+      "description": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minimum": 0
+      },
+      "uniqueItems": true
+    },
+    "excludeReferenceByPattern": {
+      "description": "Remove References by looking at citationPatternsToRemove",
+      "type": "boolean"
+    },
+    "substanceReferenceCleanup": {
+      "description": "When true, next criteria are used to process substance references",
+      "type": "boolean"
+    },
+    "removeReferencesToFilteredSubstances": {
+      "description": "When true, when a substance is removed, remove any references to it",
+      "type": "boolean"
+    },
+    "removeReferencesToSubstancesNonExportedDefinitions": {
+      "description": "When true, when a substance's definition is removed, remove any references to it",
+      "type": "boolean"
+    },
+    "removeNotes": {
+      "description": "When true, remove all Notes",
+      "type": "boolean"
+    },
+    "removeChangeReason": {
+      "description": "When true, delete the 'Change Reason' field",
+      "type": "boolean"
+    },
+    "removeApprovalId": {
+      "description": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
+      "type": "boolean"
+    },
+    "approvalIdCodeSystem": {
+      "description": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
+      "type": "string"
+    },
+    "regenerateUUIDs": {
+      "description": "When true, all UUIDs in the object being exported will be given a newly-generated value",
+      "type": "boolean"
+    },
+    "changeAllStatuses": {
+      "description": "When true, all status value in the object being exported will be given a value",
+      "type": "boolean"
+    },
+    "newStatusValue": {
+      "description": "new string value to assign to all individual status fields throughout the object",
+      "type": "string"
+    },
+    "newAuditorValue": {
+      "description": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
+      "type": "string"
     }
+
   },
   "required": []
 }
