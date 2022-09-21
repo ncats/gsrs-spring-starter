@@ -5,125 +5,260 @@
   "description": "Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared",
   "type": "object",
   "properties": {
-    "removeDate": {
-      "description": "When true, remove all date fields from output",
+    "removeDates": {
+      "comments": "When true, remove all date fields from output",
       "type": "boolean",
       "title": "Remove Date"
     },
     "deidentifyAuditUser": {
-      "description": "When true, remove users listed as creator or modifier of records and subrecords",
+      "comments": "When true, remove users listed as creator or modifier of records and subrecords",
       "type": "boolean",
       "title": "Deidentify Audit User"
     },
     "deidentifiedReferencePatterns": {
-      "description": "References to replace (pattern applies to document type)",
+      "comments": "References to replace (pattern applies to document type)",
       "type": "string",
       "title": "Deidentified Reference Patterns"
     },
     "accessGroupsToInclude": {
-      "description": "names of access groups to that will NOT be removed ",
+      "comments": "names of access groups to that will NOT be removed ",
       "type": "string",
-      "title": "Access Groups to Include"
+      "title": "Access Groups to Include",
+      "visibleIf": {
+        "removeAllLocked": [
+          true
+        ]
+      }
     },
     "accessGroupsToRemove": {
-      "description": "names of access groups to that WILL be removed ",
+      "comments": "names of access groups to that WILL be removed ",
       "type": "string",
-      "title": "Access Groups to Remove"
+      "title": "Access Groups to Remove",
+      "visibleIf": {
+        "removeAllLocked": [
+          true
+        ]
+      }
     },
-      "removeAllLocked": {
-      "description": "When true, remove any data element that is marked as non-public",
+    "removeElementsIfNoExportablePublicRef": {
+      "comments": "elements to remove when they have no public references",
+      "type": "string",
+      "title": "Remove Elements if no exportable selected public domain reference",
+      "visibleIf": {
+        "removeAllLocked": [
+          true
+        ]
+      }
+    },
+    "removeAllLocked": {
+      "comments": "When true, remove any data element that is marked as non-public",
       "title": "Remove all Locked",
       "type": "boolean"
     },
     "removeCodesBySystem": {
-      "description": "When true, remove any Codes whose CodeSystem is on the list",
+      "comments": "When true, remove any Codes whose CodeSystem is on the list",
       "title": "Remove Codes by System",
       "type": "boolean"
     },
     "codeSystemsToRemove": {
-      "description": "Code Systems to remove",
+      "comments": "Code Systems to remove",
       "type": "string",
-      "title": "Code Systems to Remove"
+      "title": "Code Systems to Remove",
+      "visibleIf": {
+        "removeCodesBySystem": [
+          true
+        ]
+      }
     },
     "codeSystemsToKeep": {
-      "description": "Code Systems to keep",
+      "comments": "Code Systems to keep",
       "type": "string",
-      "title": "Code Systems to Keep"
+      "title": "Code Systems to Keep",
+      "visibleIf": {
+        "removeCodesBySystem": [
+          true
+        ]
+      }
     },
     "removeReferencesByCriteria": {
-      "description": "When true, remove any References that meet specified criteria",
+      "comments": "When true, remove any References that meet specified criteria",
       "title": "Remove References by Criteria",
       "type": "boolean"
     },
     "referenceTypesToRemove": {
-      "description": "Document Types to look at.  When a Reference is of that document type, remove it",
+      "comments": "Document Types to look at.  When a Reference is of that document type, remove it",
       "type": "string",
-      "title": "Reference Types to Remove"
+      "title": "Reference Types to Remove",
+      "visibleIf": {
+        "removeReferencesByCriteria": [
+          true
+        ]
+      }
     },
     "citationPatternsToRemove": {
-      "description": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
+      "comments": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
       "type": "string",
-      "title": "Citation Patterns to Remove"
+      "title": "Citation Patterns to Remove",
+      "visibleIf": {
+        "removeReferencesByCriteria": [
+          true
+        ]
+      }
     },
     "excludeReferenceByPattern": {
-      "description": "Remove References by looking at citationPatternsToRemove",
+      "comments": "Remove References by looking at citationPatternsToRemove",
       "title": "Exclude Reference by Pattern",
-      "type": "boolean"
+      "type": "boolean",
+      "visibleIf": {
+        "removeReferencesByCriteria": [
+          true
+        ]
+      }
     },
     "substanceReferenceCleanup": {
-      "description": "When true, next criteria are used to process substance references",
+      "comments": "When true, next criteria are used to process substance references",
       "type": "boolean",
       "title": "Substance Reference Cleanup"
     },
     "removeReferencesToFilteredSubstances": {
-      "description": "When true, when a substance is removed, remove any references to it",
+      "comments": "When true, when a substance is removed, remove any references to it",
       "type": "boolean",
-      "title": "Remove References to Filtered Substances"
+      "title": "Remove References to Filtered Substances",
+      "visibleIf": {
+        "substanceReferenceCleanup": [
+          true
+        ]
+      }
     },
     "removeReferencesToSubstancesNonExportedDefinitions": {
-      "description": "When true, when a substance's definition is removed, remove any references to it",
+      "comments": "When true, when a substance's definition is removed, remove any references to it",
       "type": "boolean",
-      "title": "Remove References to Substances Non-Exported Definitions"
+      "title": "Remove References to Substances Non-Exported Definitions",
+      "visibleIf": {
+        "usbstanceReferenceCleanup": [
+          true
+        ]
+      }
     },
     "removeNotes": {
-      "description": "When true, remove all Notes",
+      "comments": "When true, remove all Notes",
       "type": "boolean",
       "title": "Remove Notes"
     },
     "removeChangeReason": {
-      "description": "When true, delete the 'Change Reason' field",
+      "comments": "When true, delete the 'Change Reason' field",
       "type": "boolean",
       "title": "Remove Change Reason"
     },
-    "removeApprovalId": {
-      "description": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
+    "approvalIdCleanup": {
+      "comments": "When true, apply additional criteria to the approvalID field",
       "type": "boolean",
-      "title": "Remove Approval Id"
+      "title": "Approval Id clean-up"
+    },
+    "removeApprovalId": {
+      "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
+      "type": "boolean",
+      "title": "Remove Approval Id",
+      "visibleIf": {
+        "approvalIdCleanup": [
+          true
+        ]
+      }
     },
     "approvalIdCodeSystem": {
-      "description": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
+      "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
-      "title": "Remove Approval Id"
+      "title": "Remove Approval Id",
+      "visibleIf": {
+        "approvalIdCleanup": [
+          true
+        ]
+      }
     },
     "regenerateUUIDs": {
-      "description": "When true, all UUIDs in the object being exported will be given a newly-generated value",
+      "comments": "When true, all UUIDs in the object being exported will be given a newly-generated value",
       "type": "boolean",
       "title": "Regenerate UUIDs"
     },
     "changeAllStatuses": {
-      "description": "When true, all status value in the object being exported will be given a value",
+      "comments": "When true, all status value in the object being exported will be given a value",
       "type": "boolean",
       "title": "Change All Statuses"
     },
     "newStatusValue": {
-      "description": "new string value to assign to all individual status fields throughout the object",
+      "comments": "new string value to assign to all individual status fields throughout the object",
       "type": "string",
       "title": "New Status Value"
     },
+    "AuditInformationCleanup": {
+      "comments": "When true, apply succeeding criteria to audit fields",
+      "type": "boolean",
+      "title": "Audit Information clean-up"
+    },
     "newAuditorValue": {
-      "description": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
-      "title" : "New Auditor Value",
-      "type": "string"
+      "comments": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
+      "title": "New Auditor Value",
+      "type": "string",
+      "visibleIf": {
+        "AuditInformationCleanup": [
+          true
+        ]
+      }
+    },
+    "removeAllEntryTimestamps": {
+      "comments": "remove created and modified date fields",
+      "title": "Remove all entry timestamps",
+      "type": "boolean",
+      "visibleIf": {
+        "AuditInformationCleanup": [
+          true
+        ]
+      }
+    },
+    "scrubbedDefinitionHandling": {
+      "comments": "apply some additional scrubbing to definitions that had parts removed",
+      "title": "Scrubbed Definition Handling",
+      "type": "boolean"
+    },
+    "removeScrubbedDefinitionalElementsEntirely": {
+      "comments": "When a defining element has been modified, remove it entirely",
+      "title": "Remove partially/fully scrubbed definitional records entirely",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ]
+      }
+    },
+    "setScrubbedDefinitionalElementsIncomplete": {
+      "comments": "When a defining element has been modified, set definitional level to \"Incomplete\"",
+      "title": "Set partially/fully scrubbed definitional records to definitional level \"Incomplete\"",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ]
+      }
+    },
+    "convertScrubbedDefinitionsToConcepts": {
+      "comments": "When a substance's defining element has been modified, convert the substance type to \"Concept\"",
+      "title": "Convert partially/fully scrubbed definitional records to \"Concepts\"",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ]
+      }
+    },
+    "addNoteToScrubbedDefinitions": {
+      "comments": "When a substance's defining element has been modified, add a Note",
+      "title": "add a note to partially/fully scrubbed definitional records",
+      "type": "string",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ]
+      }
     }
   },
   "required": []
