@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "removeChangeReason",
         "approvalIdCleanup",
         "removeApprovalId",
+        "copyApprovalIdToCode",
         "approvalIdCodeSystem",
         "regenerateUUIDs",
         "changeAllStatuses",
@@ -224,6 +225,14 @@ public class ScrubberParameterSchema {
      */
     @JsonProperty("removeApprovalId")
     private Boolean removeApprovalId;
+    /**
+     * Copy Approval Id to code if code not already present
+     * <p>
+     *
+     *
+     */
+    @JsonProperty("copyApprovalIdToCode")
+    private Boolean copyApprovalIdToCode;
     /**
      * Remove Approval Id
      * <p>
@@ -783,6 +792,28 @@ public class ScrubberParameterSchema {
     @JsonProperty("removeApprovalId")
     public void setRemoveApprovalId(Boolean removeApprovalId) {
         this.removeApprovalId = removeApprovalId;
+    }
+
+    /**
+     * Copy Approval Id to code if code not already present
+     * <p>
+     *
+     *
+     */
+    @JsonProperty("copyApprovalIdToCode")
+    public Boolean getCopyApprovalIdToCode() {
+        return copyApprovalIdToCode;
+    }
+
+    /**
+     * Copy Approval Id to code if code not already present
+     * <p>
+     *
+     *
+     */
+    @JsonProperty("copyApprovalIdToCode")
+    public void setCopyApprovalIdToCode(Boolean copyApprovalIdToCode) {
+        this.copyApprovalIdToCode = copyApprovalIdToCode;
     }
 
     /**

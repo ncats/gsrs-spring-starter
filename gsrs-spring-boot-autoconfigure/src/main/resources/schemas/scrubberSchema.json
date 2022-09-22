@@ -165,6 +165,16 @@
         ]
       }
     },
+    "copyApprovalIdToCode": {
+      "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
+      "type": "boolean",
+      "title": "Copy Approval Id to code if code not already present",
+      "visibleIf": {
+        "approvalIdCleanup": [
+          true
+        ]
+      }
+    },
     "approvalIdCodeSystem": {
       "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
