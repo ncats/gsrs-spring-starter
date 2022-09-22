@@ -83,8 +83,8 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query);
     }
     
-    public SearchResult bulkSearch(String bulkQuery, String query, SearchOptions options) throws IOException {
-    	return textIndexerFactory.getDefaultInstance().bulkSearch(gsrsRepository, options, bulkQuery, query);
+    public SearchResult bulkSearch(String queryID, String bulkQuery, String query, SearchOptions options) throws IOException {
+    	return textIndexerFactory.getDefaultInstance().bulkSearch(gsrsRepository, queryID, options, bulkQuery, query);
     }
 
     @Override

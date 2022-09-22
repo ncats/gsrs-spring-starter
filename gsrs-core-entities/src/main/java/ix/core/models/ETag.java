@@ -151,10 +151,15 @@ public class ETag extends IxModel {
 
 		return id.toString();
 	}
+	
+	@Transient
+	@JsonIgnore
+	private transient Object summary = null;
 
 	@Transient
 	@JsonIgnore
 	private transient Object content = null;
+	
 	@Transient
 	@JsonIgnore
 	private transient Object sponsoredResults = null;
@@ -308,6 +313,10 @@ public class ETag extends IxModel {
 	public void setFieldFacets(List<FieldedQueryFacet> fieldFacets) {
 		this.fieldFacets = fieldFacets;
 	}
+	
+	public void setSummary(Object summary) {
+		this.summary = summary;
+	}
 
 	public void setContent(Object cont) {
 		this.content = cont;
@@ -335,6 +344,11 @@ public class ETag extends IxModel {
 	public Object getContent() {
 		return this.content;
 	}
+	@JsonProperty("summary")
+	// Maybe make this a link unless full bean view?
+	public Object getSummary() {
+		return this.summary;
+	}	
 	@JsonProperty("facets")
 	// Maybe make this a link unless full bean view?
 	public List<Facet> getFacets() {

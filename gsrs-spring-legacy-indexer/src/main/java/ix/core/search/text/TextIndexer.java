@@ -1650,7 +1650,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public SearchResult search(GsrsRepository gsrsRepository, SearchOptions options, String text) throws IOException {
 		return search(gsrsRepository, options, text, null);
 	}
-	public SearchResult bulkSearch(GsrsRepository gsrsRepository, SearchOptions options, String queryText, String text) throws IOException {
+	public SearchResult bulkSearch(GsrsRepository gsrsRepository, String queryID, SearchOptions options, String queryText, String text) throws IOException {
 		/*1.search result needs some form of statistics and it needs to honor qtop, qskip. Show counts for each query and hits count.
 		 *2.we need to use setMatchingContext. find getMatchingContextByContextID, maybe searchresult.key
 		 *3. cache: ixcache getOrElse(). cache (bulkID, statistics results)
@@ -1666,39 +1666,45 @@ public class TextIndexer implements Closeable, ProcessListener {
 		optionsCopy.setFetchAll();
 		
 		//todo: ixcache getOrElse()		
-		List<String> queries = Arrays.asList(queryText.split(","));
-		queries = queries.stream().map(q->q.trim()).collect(Collectors.toList());
-		Map<Key, List<String>> matchContexts = new ConcurrentHashMap<>(); 
+		List<String> queries = Arrays.asList(queryText.split("\\s*,\\s*"));	
+		queries = queries.stream().distinct().collect(Collectors.toList());
+		Map<Key, List<String>> matchContexts = new ConcurrentHashMap<>();		
 		List<Tuple<String,List<Key>>> statistics = queries.stream().map(q->{
-			Tuple<String,List<Key>> keys = Tuple.of(q, new ArrayList<>());
+			Tuple<String,List<Key>> keys = Tuple.of(q, new ArrayList<>());			
 			SearchResult r;			
 			try {			
 				//todo: we can optimize based on identifiers or complex searches
 				r = search(gsrsRepository, optionsCopy, q);
-				r.copyKeysTo(keys.v(), 0, 100, true);
-				
+				r.copyKeysTo(keys.v(), 0, 100, true);				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}			
 			return keys;
 		}).collect(Collectors.toList());
-		
+				
 		List<Key> subset = statistics.stream()
 		          .flatMap(t->t.v().stream().map(v->Tuple.of(t.k(), v)))
-                  .peek(t->{matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>()).add(t.k());})
+                  .peek(t->{
+                	  matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>());
+                	  List<String> values = matchContexts.get(t.v());
+                	  if(!values.contains(t.k()))
+                		  values.add(t.k());})
                   .map(t->t.v())
 		          .distinct()
 		          .peek(System.out::println)
 		          .collect(Collectors.toList());
 		// todo: look into matchContexts to set up cache
+				
+		matchContexts.forEach((k,v)->{
+			Map<String,Object> map = new HashMap<>();
+			map.put("queries", v);
+			gsrscache.setMatchingContext("matchBulkSearchQueries" + queryID, k, map);});
+						
+		gsrscache.setRaw("matchBulkSearchStatistics" + queryID, statistics);
+				
+		return search(gsrsRepository, options, text, subset);		
 		
-//		EntityUtils.Key key = new Key(subset.get(0).getEntityInfo(), bulkID); 
-//		Map<String,Object> map = new HashMap<>();
-//		map.put(bulkID, statistics);
-//		gsrscache.setMatchingContext("bulkSearch" + bulkID, null, map);
-//		
-		return search(gsrsRepository, options, text, subset);
 	}
 
 	
@@ -3082,7 +3088,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			      });
 			  }
 			});
-			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
+			fieldCollector.accept(new StringField(FIELD_KIND, ew.getEntityInfo().getName(), YES));
 			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 
 			// now index

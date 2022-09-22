@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.nih.ncats.common.Tuple;
+import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
@@ -37,9 +39,14 @@ import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.SearchResultSummaryRecord;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
+import ix.ginas.models.GinasCommonData;
 import ix.utils.Util;
+
 
 /**
  * Extension to AbstractGsrsEntityController that adds support for the legacy TextIndexer
@@ -61,6 +68,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @Autowired
     private TextService textService;
+    
+    @Autowired    
+	GsrsCache gsrscache;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -219,16 +229,16 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    	
     	List<String> queries = Arrays.asList(query.split("\\r?\\n|\\r"));
   	  
-    	List<String> list = queries.stream()
-    			.filter(q->q.length()>0)
+    	List<String> list = queries.stream()    			
     			.map(q->q.trim())
+    			.filter(q->q.length()>0)
     			.distinct()
     			.collect(Collectors.toList());    	
     	
     	String queryStringToSave = list.toString();
     	Long id = textService.saveTextString("bulkSearch", queryStringToSave.substring(1, queryStringToSave.length()-1));
     	    	
-    	String returnJsonSrting = createJson(id, qTop, qSkip, list, request.getRequestURL().toString());    	
+    	String returnJsonSrting = createJson(id, qTop, qSkip, list, request.getRequestURL().toString()+"?"+request.getQueryString());    	
  
         return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
     }
@@ -245,12 +255,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		qTop = top.get();
     	if(skip.isPresent()) 
     		qSkip = top.get();
-    	List<String> queries = Arrays.asList(queryString.split(","));
+    	List<String> queries = Arrays.asList(queryString.split("\\s*,\\s*"));
     	List<String> list = queries.stream()
     								.map(p->p.trim())
-    								.collect(Collectors.toList());
+    								.collect(Collectors.toList());    	
     	
-    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, request.getRequestURL().toString());
+    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, request.getRequestURL().toString()+"?"+request.getQueryString());
         return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
     
@@ -281,12 +291,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
         this.instrumentSearchRequest(searchRequest);
         
-        SearchResult result = null;
+        SearchResult result = null;        
         try {
-            result = getlegacyGsrsSearchService().bulkSearch(textService.getText(queryListID), searchRequest.getQuery(), searchRequest.getOptions() );
+            result = getlegacyGsrsSearchService().bulkSearch(queryListID, textService.getText(queryListID), searchRequest.getQuery(), searchRequest.getOptions() );
         } catch (Exception e) {
-        	e.printStackTrace();
-        	System.out.println("Exception here!");
+        	e.printStackTrace();        	
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
         }
         
@@ -319,6 +328,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
             }
         });
 
+        List<GinasCommonData> matches = new ArrayList<>();
+        result.copyTo(matches, 0, result.size(), true); 
+        matches.forEach(data -> {    
+        	Key key = EntityUtils.EntityWrapper.of(data).getKey().toRootKey();
+        	Map<String,Object> queryMap = gsrscache.getMatchingContextByContextID("matchBulkSearchQueries"+ queryListID, key);
+        	if(queryMap!=null && !queryMap.isEmpty())
+        		data.setMatchContextProperty(queryMap);
+        });
+        
+        
+        List<SearchResultSummaryRecord> summary = getSummary("matchBulkSearchStatistics" + queryListID);
+        result.setSummary(summary);
         
         //even if list is empty we want to return an empty list not a 404
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
@@ -340,11 +361,22 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	baseNode.put("count", sublist.size());
     	baseNode.put("top", top);
     	baseNode.put("skip", skip);    	
-    	ArrayNode listNode = baseNode.putArray("query");
+    	ArrayNode listNode = baseNode.putArray("queries");
     	sublist.forEach(listNode::add);    	   	
     	baseNode.put("_self", uri);
     	
     	return baseNode.toPrettyString();
+    }
+    
+    private List<SearchResultSummaryRecord> getSummary(String key) {
+    	
+    	List<Tuple<String,List<Key>>> statistics = (List<Tuple<String,List<Key>>>)gsrscache.getRaw(key);
+    	List<SearchResultSummaryRecord> summary = statistics.stream().map(q->{
+    			SearchResultSummaryRecord record = new SearchResultSummaryRecord(q.k());
+    			record.getRecordUNIIs().addAll(q.v());    		
+    			return record;})
+    			.collect(Collectors.toList());
+    	return summary;
     }
     
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);

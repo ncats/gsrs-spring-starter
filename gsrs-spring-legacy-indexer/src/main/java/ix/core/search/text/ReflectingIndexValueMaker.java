@@ -54,7 +54,10 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 //						long value = (Long)o;
 //						toAdd.accept(new IndexableValueDirect(new LongPoint(internalIdField, value)));
 //						toAdd.accept(new IndexableValueDirect(new StoredField(internalIdField, value)));
-					} else {						
+					} else {
+						if(ew.getKind().contains("ubstance")){
+							System.out.println("KIND:" + ew.getKind() + "; ID_FIELD:" + internalIdField + "; ID:" + t.v());			
+							}
 						toAdd.accept(new IndexableValueDirect(new StringField(internalIdField, t.v(), YES)));  //Only Special case
 					}
 					toAdd.accept(new IndexableValueDirect(new StringField(t.k(), o.toString(), NO)));

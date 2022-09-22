@@ -44,7 +44,8 @@ public class SearchResult {
 	
 	private List<?> result; // final result when there are no more updates
 	                        // (largely unnecessary now)
-
+	List<SearchResultSummaryRecord> summary;
+	
 	private int count;
 	private SearchOptions options;
 	final long timestamp = TimeUtil.getCurrentTimeMillis();
@@ -451,6 +452,13 @@ public class SearchResult {
 		}
 	}
 
+	public void setSummary(List<SearchResultSummaryRecord> inputSummary) {
+		summary = inputSummary;
+	}
+	
+	public List<SearchResultSummaryRecord> getSummary(){
+		return summary;
+	}
 
 	@JsonIgnore
 	public String getFacetURI(String facetName) throws Exception{
