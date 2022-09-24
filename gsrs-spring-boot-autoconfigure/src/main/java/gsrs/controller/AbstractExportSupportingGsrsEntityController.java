@@ -224,6 +224,36 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(JsonSchema, queryParameters), HttpStatus.OK);
     }
 
+    @GetGsrsRestApiMapping("/export/expander/@schema")
+    public ResponseEntity<Object> handleExportExpanderSchema(
+            @RequestParam Map<String, String> queryParameters) throws IOException {
+        log.trace("starting in handleExportScrubberSchema");
+
+        ObjectMapper mapper= new ObjectMapper();
+        Object JsonSchema ="";
+        try {
+            ClassPathResource fileResource = new ClassPathResource("schemas/expanderSchema.json");
+            log.trace("about to call fileResource.exists()");
+            if( fileResource.exists()) {
+                log.trace("about to read binaryData");
+                byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
+                log.trace("about to convert binaryData");
+                String schemaString =new String(binaryData, StandardCharsets.UTF_8);
+                log.trace("converted schemaString");
+                ExpanderParameterSchema schema = mapper.readValue(schemaString, ExpanderParameterSchema.class);
+                JsonSchema = schema;
+            }else {
+                JsonSchema="expanderSchema.json not found";
+            }
+        }
+        catch(Exception ex) {
+            log.error("Error reading schema file!", ex);
+        }
+
+        log.trace("about to return JsonSchema of type {}", JsonSchema.getClass().getName());
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(JsonSchema, queryParameters), HttpStatus.OK);
+    }
+
     boolean doesConfigurationKeyExist(String configurationKey) {
         Class entityClass = getEntityService().getEntityClass();
         Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
