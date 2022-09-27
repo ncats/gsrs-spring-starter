@@ -9,12 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -29,24 +34,29 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.security.hasAdminRole;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.models.BaseModel;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultSummaryRecord;
+import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.models.GinasCommonData;
+import ix.utils.CallableUtil;
 import ix.utils.Util;
-
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Extension to AbstractGsrsEntityController that adds support for the legacy TextIndexer
@@ -55,6 +65,7 @@ import ix.utils.Util;
  * @param <T>
  * @param <I>
  */
+@Slf4j
 public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends AbstractLegacyTextSearchGsrsEntityController, T, I> extends AbstractGsrsEntityController<C, T,I> implements GsrsLegacySearchController {
 
 //    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
@@ -69,8 +80,14 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @Autowired
     private TextService textService;
     
+    @Autowired
+    private BulkSearchService bulkSearchService;
+    
     @Autowired    
-	GsrsCache gsrscache;
+	protected GsrsCache gsrscache;
+    
+    @Autowired
+    private EntityLinks entityLinks;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -288,62 +305,51 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
-
-        this.instrumentSearchRequest(searchRequest);
+       
+        BulkSearchService.SanitizedBulkSearchRequest sanitizedRequest = new BulkSearchService.SanitizedBulkSearchRequest();
         
-        SearchResult result = null;        
-        try {
-            result = getlegacyGsrsSearchService().bulkSearch(queryListID, textService.getText(queryListID), searchRequest.getQuery(), searchRequest.getOptions() );
-        } catch (Exception e) {
-        	e.printStackTrace();        	
-            return getGsrsControllerConfiguration().handleError(e, queryParameters);
+        String queryString = textService.getText(queryListID);
+        if(queryString.isEmpty()) {
+        	return new ResponseEntity<>("Did not find the query list!", HttpStatus.NOT_FOUND);        	
         }
         
-        SearchResult fresult=result;
+        List<String> queries = Arrays.asList(queryString.split("\\s*,\\s*"));
+        sanitizedRequest.setQueries(queries);
         
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.setReadOnly(true);        
-        List results = (List) transactionTemplate.execute(stauts -> {
-            //the top and skip settings  look wrong, because we're not skipping
-            //anything, but it's actually right,
-            //because the original request did the skipping.
-            //This mechanism should probably be worked out
-            //better, as it's not consistent.
+        SearchOptions searchOptions = searchRequest.getOptions();
+        
+        SearchResultContext resultContext;
+		try {
+			resultContext = bulkSearchService.search(sanitizedRequest, searchOptions);
+			updateSearchContextGenerator(resultContext, queryParameters);
 
-            //Note that the SearchResult uses a LazyList,
-            //but this is copying to a real list, this will
-            //trigger direct fetches from the lazylist.
-            //With proper caching there should be no further
-            //triggered fetching after this.
-
-            String viewType=queryParameters.get("view");
-            if("key".equals(viewType)){
-                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
-                fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
-                return klist;
-            }else{
-                List tlist = new ArrayList<>(top.orElse(10));
-                fresult.copyTo(tlist, 0, top.orElse(10), true);
-                return tlist;
-            }
-        });
-
-        List<GinasCommonData> matches = new ArrayList<>();
-        result.copyTo(matches, 0, result.size(), true); 
-        matches.forEach(data -> {    
-        	Key key = EntityUtils.EntityWrapper.of(data).getKey().toRootKey();
-        	Map<String,Object> queryMap = gsrscache.getMatchingContextByContextID("matchBulkSearchQueries"+ queryListID, key);
-        	if(queryMap!=null && !queryMap.isEmpty())
-        		data.setMatchContextProperty(queryMap);
-        });
+	        //TODO move to service
+		//TODO: need to add support for qText in the "focused" version of
+		// all structure searches. This may require some deeper changes.
+	        SearchResultContext focused = resultContext.getFocused(searchOptions.getTop(), searchOptions.getSkip(), searchOptions.getFdim(), "");
+	        return entityFactoryDetailedSearch(focused, false);
+	              
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<>("Error during search!", HttpStatus.INTERNAL_SERVER_ERROR); 
+		}
+      
+//        List<GinasCommonData> matches = new ArrayList<>();
+//        result.copyTo(matches, 0, result.size(), true); 
+//        matches.forEach(data -> {    
+//        	Key key = EntityUtils.EntityWrapper.of(data).getKey().toRootKey();
+//        	Map<String,Object> queryMap = gsrscache.getMatchingContextByContextID("matchBulkSearchQueries"+ queryListID, key);
+//        	if(queryMap!=null && !queryMap.isEmpty())
+//        		data.setMatchContextProperty(queryMap);
+//        });
         
-        
-        List<SearchResultSummaryRecord> summary = getSummary("matchBulkSearchStatistics" + queryListID);
-        result.setSummary(summary);
-        
+//        
+//        List<SearchResultSummaryRecord> summary = getSummary("matchBulkSearchStatistics" + queryListID);
+//        result.setSummary(summary);
+//        
         //even if list is empty we want to return an empty list not a 404
-        ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
-        return ret;
+
     }
     
     
@@ -381,6 +387,119 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
 
+    static String getOrderedKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
+    }
+    static String getKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
+    }
+    
+    public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
+            throws IOException, Exception{
 
+        final String key = (preserveOrder)? getOrderedKey(ctx,req):getKey (ctx, req);
+
+        CallableUtil.TypedCallable<SearchResult> tc = CallableUtil.TypedCallable.of(() -> {
+            Collection results = ctx.getResults();
+            SearchRequest request = new SearchRequest.Builder()
+                    .subset(results)
+                    .options(req.getOptions())
+                    .skip(0)
+                    .top(results.size())
+                    .query(req.getQuery())
+                    .build();
+            request=instrumentSearchRequest(request);
+
+            SearchResult searchResult =null;
+
+            if (results.isEmpty()) {
+                searchResult= SearchResult.createEmptyBuilder(req.getOptions())
+                        .build();
+            }else{
+                //katzelda : run it through the text indexer for the facets?
+//                searchResult = SearchFactory.search (request);
+                searchResult = getlegacyGsrsSearchService().search(request.getQuery(), request.getOptions(), request.getSubset());
+                log.debug("Cache misses: "
+                        +key+" size="+results.size()
+                        +" class="+searchResult);
+            }
+
+            // make an alias for the context.id to this search
+            // result
+            searchResult.setKey(ctx.getId());
+            return searchResult;
+        }, SearchResult.class);
+
+        if(ctx.isDetermined()) {
+            return gsrscache.getOrElse(key, tc);
+        }else {
+            return tc.call();
+        }
+    }
+
+    public ResponseEntity<Object> entityFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
+        context.setAdapter((srequest, ctx) -> {
+            try {
+                // TODO: technically this shouldn't be needed,
+                // but something is getting lost in translation between 2.X and 3.0
+                // and it's leading to some results coming back which are not substances.
+                // This is particularly strange since there is an explicit subset which IS
+                // all substances given.
+            	
+                srequest.getOptions().setKind(this.getEntityService().getEntityClass());
+                SearchResult sr = getResultFor(ctx, srequest,true);
+
+                List<T> rlist = new ArrayList<>();
+
+                sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
+                for (T s : rlist) {
+ //TODO:                	
+//                    s.setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
+                	if(s instanceof BaseModel) {
+                		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
+                	}
+                }
+                return sr;
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new IllegalStateException("Error fetching search result", e);
+            }
+        });
+
+
+        if (sync) {
+            try {
+                context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
+                HttpHeaders headers = new HttpHeaders();
+
+                //TODO this should actually forward to "status(<key>)/results", but it's currently status/<key>/results
+                headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("results").withSelfRel())
+                        .toUri().toString() );
+                return new ResponseEntity<>(headers,HttpStatus.FOUND);
+            } catch (TimeoutException e) {
+                log.warn("Structure search timed out!", e);
+            }
+        }
+        return new ResponseEntity<>(context, HttpStatus.OK);
+    }
+
+    protected void updateSearchContextGenerator(SearchResultContext resultContext, Map<String,String> queryParameters) {
+        String oldURL = resultContext.getGeneratingUrl();
+        if(oldURL!=null && !oldURL.contains("?")) {
+            //we have to manually set the actual request uri here as it's the only place we know it!!
+            //for some reason the spring boot methods to get the current quest  URI don't include the parameters
+            //so we have to append them manually here from our controller
+            StringBuilder queryParamBuilder = new StringBuilder();
+            queryParameters.forEach((k,v)->{
+                if(queryParamBuilder.length()==0){
+                    queryParamBuilder.append("?");
+                }else{
+                    queryParamBuilder.append("&");
+                }
+                queryParamBuilder.append(k).append("=").append(v);
+            });
+            resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
+        }
+    }
 
 }
