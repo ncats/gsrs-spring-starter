@@ -135,7 +135,7 @@
       "type": "boolean",
       "title": "Remove References to Substances Non-Exported Definitions",
       "visibleIf": {
-        "usbstanceReferenceCleanup": [
+        "substanceReferenceCleanup": [
           true
         ]
       }
