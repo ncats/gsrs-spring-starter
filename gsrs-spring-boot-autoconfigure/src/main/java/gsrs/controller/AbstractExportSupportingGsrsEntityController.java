@@ -223,7 +223,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             } catch (JsonProcessingException e) {
                 log.error("Error");
             }
-            return config.getConfigurationKey().equalsIgnoreCase(configurationKey);
+            return config.getConfigurationKey()!= null && config.getConfigurationKey().equalsIgnoreCase(configurationKey);
         });
     }
 
