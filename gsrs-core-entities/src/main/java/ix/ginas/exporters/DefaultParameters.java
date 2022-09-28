@@ -1,5 +1,6 @@
 package ix.ginas.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import ix.core.models.Group;
 
 import java.util.HashSet;
@@ -11,9 +12,7 @@ public class DefaultParameters implements ExporterFactory.Parameters {
 
         private final boolean publicOnly;
 
-        private RecordScrubber recordScrubber;
-
-        private Set<String> scrubberGroups = new HashSet<>();
+        private JsonNode detailedParameters=null;
 
         public DefaultParameters(OutputFormat format, boolean publicOnly) {
             Objects.requireNonNull(format);
@@ -21,12 +20,11 @@ public class DefaultParameters implements ExporterFactory.Parameters {
             this.publicOnly = publicOnly;
         }
 
-    public DefaultParameters(OutputFormat format, boolean publicOnly, RecordScrubber scrubber, Set<String> scrubberGroups) {
+    public DefaultParameters(OutputFormat format, boolean publicOnly, JsonNode detailedParameters) {
         Objects.requireNonNull(format);
         this.format = format;
         this.publicOnly = publicOnly;
-        this.recordScrubber=scrubber;
-        this.scrubberGroups=scrubberGroups;
+        this.detailedParameters=detailedParameters;
     }
 
     @Override
@@ -40,21 +38,7 @@ public class DefaultParameters implements ExporterFactory.Parameters {
         }
 
         @Override
-        public RecordScrubber getScrubber() {
-            return recordScrubber;
-        }
-
-        @Override
-        public Set<String> getScrubberGroups(){
-            return scrubberGroups;
-        }
-
-
-        public void setRecordScrubber(RecordScrubber recordScrubber) {
-            this.recordScrubber = recordScrubber;
-        }
-
-        public void setScrubberGroups(Set<String> scrubberGroups) {
-            this.scrubberGroups = scrubberGroups;
+        public JsonNode detailedParameters() {
+            return detailedParameters;
         }
 }

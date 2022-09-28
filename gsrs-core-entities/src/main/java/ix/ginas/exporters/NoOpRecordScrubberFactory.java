@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Optional;
 
-public class DefaultSubstanceScrubberFactory<T>  implements RecordScrubberFactory<T> {
+public class NoOpRecordScrubberFactory<T>  implements RecordScrubberFactory<T> {
 
     @Override
     public RecordScrubber<T> createScrubber(JsonNode settings) {

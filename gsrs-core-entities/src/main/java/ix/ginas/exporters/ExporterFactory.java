@@ -1,6 +1,10 @@
 package ix.ginas.exporters;
 
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
@@ -32,24 +36,17 @@ public interface ExporterFactory<T> {
 
         default boolean publicOnly(){ return false;}
 
+        default JsonNode detailedParameters() {
+            return JsonNodeFactory.instance.objectNode();
+        }
         /* new stuff 19 August*/
+/*
         default RecordScrubber getScrubber() {
             //not clear what's requested
             return null;
         }
+*/
 
-        default Set<String> getScrubberGroups() {
-            return new HashSet<>();
-        }
-
-        default Function getScrubberFunction() {
-            return new Function() {
-                @Override
-                public Object apply(Object o) {
-                    return null;
-                }
-            };
-        }
     }
 
     /**

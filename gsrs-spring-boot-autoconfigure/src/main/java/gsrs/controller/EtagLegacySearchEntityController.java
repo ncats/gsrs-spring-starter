@@ -1,51 +1,37 @@
 package gsrs.controller;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.stream.StreamUtil;
-import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.HttpRequestHolder;
-import gsrs.model.GsrsUrlLink;
 import gsrs.repository.ETagRepository;
 import gsrs.service.EtagExportGenerator;
-import gsrs.service.ExportGenerator;
 import gsrs.service.ExportService;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
-import ix.core.models.Text;
 import ix.core.search.SearchResult;
-import ix.core.util.EntityUtils;
 import ix.ginas.exporters.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.data.repository.core.EntityMetadata;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
-import javax.websocket.server.PathParam;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -174,6 +160,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         if(!exportConfig.isPresent()) {
             exportConfig=Optional.of(createDefaultConfig());
         }
+        Optional<DefaultExporterFactoryConfig> finalExportConfig=exportConfig;
         //instantiate all settings and scrubber...
         RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
@@ -204,14 +191,15 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
-        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
+        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings())));
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
     }
 
-    protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters){
+    protected ExporterFactory.Parameters createParameters(String extension, boolean publicOnly, Map<String, String> parameters,
+                                                          JsonNode detailedParameters){
         for(OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())){
             if(extension.equals(f.getExtension())){
-                return new DefaultParameters(f, publicOnly);
+                return new DefaultParameters(f, publicOnly, detailedParameters);
             }
         }
         throw new IllegalArgumentException("could not find supported exporter for extension '"+ extension +"'");
@@ -220,10 +208,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
 
-    private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters)
+    private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters,
+                                       JsonNode detailedParameters)
             throws IOException {
 
-        ExporterFactory.Parameters params = createParamters(extension, publicOnly, parameters);
+        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters);
 
         ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
         if (factory == null) {

@@ -18,7 +18,6 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import ix.ginas.exporters.ScrubberParameterSchema;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -197,61 +196,19 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @GetGsrsRestApiMapping("/export/scrubber/@schema")
     public ResponseEntity<Object> handleExportScrubberSchema(
             @RequestParam Map<String, String> queryParameters) throws IOException {
-        log.trace("starting in handleExportScrubberSchema");
+        log.trace("starting in handleExportScrubberSchema.  Using scrubber factory {}",
+                getScrubberFactory().getClass().getName());
 
-        ObjectMapper mapper= new ObjectMapper();
-        Object JsonSchema ="";
-        try {
-            ClassPathResource fileResource = new ClassPathResource("schemas/scrubberSchema.json");
-            log.trace("about to call fileResource.exists()");
-            if( fileResource.exists()) {
-                log.trace("about to read binaryData");
-                byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
-                log.trace("about to convert binaryData");
-                String schemaString =new String(binaryData, StandardCharsets.UTF_8);
-                log.trace("converted schemaString");
-                ScrubberParameterSchema schema = mapper.readValue(schemaString, ScrubberParameterSchema.class);
-                JsonSchema = schema;
-            }else {
-                JsonSchema="scrubberSchema.json not found";
-            }
-        }
-        catch(Exception ex) {
-            log.error("Error reading schema file!", ex);
-        }
-
-        log.trace("about to return JsonSchema of type {}", JsonSchema.getClass().getName());
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(JsonSchema, queryParameters), HttpStatus.OK);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getScrubberFactory().getSettingsSchema(),
+                queryParameters), HttpStatus.OK);
     }
 
     @GetGsrsRestApiMapping("/export/expander/@schema")
     public ResponseEntity<Object> handleExportExpanderSchema(
             @RequestParam Map<String, String> queryParameters) throws IOException {
-        log.trace("starting in handleExportScrubberSchema");
+        log.trace("starting in handleExportExpanderSchema. expander factory: {}", getExpanderFactory().getClass().getName());
 
-        ObjectMapper mapper= new ObjectMapper();
-        Object JsonSchema ="";
-        try {
-            ClassPathResource fileResource = new ClassPathResource("schemas/expanderSchema.json");
-            log.trace("about to call fileResource.exists()");
-            if( fileResource.exists()) {
-                log.trace("about to read binaryData");
-                byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
-                log.trace("about to convert binaryData");
-                String schemaString =new String(binaryData, StandardCharsets.UTF_8);
-                log.trace("converted schemaString");
-                ExpanderParameterSchema schema = mapper.readValue(schemaString, ExpanderParameterSchema.class);
-                JsonSchema = schema;
-            }else {
-                JsonSchema="expanderSchema.json not found";
-            }
-        }
-        catch(Exception ex) {
-            log.error("Error reading schema file!", ex);
-        }
-
-        log.trace("about to return JsonSchema of type {}", JsonSchema.getClass().getName());
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(JsonSchema, queryParameters), HttpStatus.OK);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getExpanderFactory().getSettingsSchema(), queryParameters), HttpStatus.OK);
     }
 
     boolean doesConfigurationKeyExist(String configurationKey) {
@@ -271,7 +228,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     }
 
     public RecordScrubberFactory<T> getScrubberFactory(){
-        return new DefaultSubstanceScrubberFactory<T>();
+        return new NoOpRecordScrubberFactory<T>();
     }
 
     public RecordExpanderFactory<T> getExpanderFactory(){
