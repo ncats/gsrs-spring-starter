@@ -29,6 +29,7 @@ public interface ValidationMessage extends Comparable<ValidationMessage>{
 	default boolean isError(){
 	    return this.getMessageType()== MESSAGE_TYPE.ERROR;
 	}
+	String getMessageId();
 	String getMessage();
 	 ValidationMessage.MESSAGE_TYPE getMessageType();
 	
