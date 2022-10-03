@@ -172,6 +172,7 @@ public class GinasProcessingMessage implements ValidationMessage {
 
 	public static String makeMessageId(MESSAGE_TYPE mtype, String msg) {
 		String callerClassName = new Throwable().getStackTrace()[2].getClassName();
+		callerClassName = callerClassName.substring(callerClassName.lastIndexOf('.') + 1);
 		return mtype.toString().substring(0,1) + String.valueOf(callerClassName.hashCode()).substring(1,4) + String.valueOf(msg.hashCode()).substring(1,4);
 	}
 
