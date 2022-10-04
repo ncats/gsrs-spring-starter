@@ -3,12 +3,17 @@ package ix.core.search.bulk;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,132 +21,42 @@ import org.springframework.stereotype.Service;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.GsrsRepository;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.util.SanitizerUtil;
+import ix.core.models.BaseModel;
 import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.Util;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
-@Data
+
 @Slf4j
+@Service
 public class BulkSearchService {
-		
-    @Autowired
-    private TextIndexerFactory textIndexerFactory;
-	
-	private final GsrsRepository gsrsRepository;
-	
-	private TextIndexer textIndexer;
+	    
 	
 	@Autowired
-	private GsrsCache ixCache;
-	
+	private GsrsCache ixCache;	
+		
 	private final int MAX_BULK_SUB_QUERY_COUNT = 1000;
 	private ExecutorService threadPool;
+    
+
+	public BulkSearchService() {		
+		this(ForkJoinPool.commonPool());		
+	}	
 	
-	public BulkSearchService(GsrsRepository gsrsRepository) {		
-		this(gsrsRepository, ForkJoinPool.commonPool());
+	public BulkSearchService(ExecutorService tp) {		
+		threadPool = tp;		
 	}
-	
-	public BulkSearchService(GsrsRepository gsrsRepository, ExecutorService tp) {
-		this.gsrsRepository = gsrsRepository;
-		textIndexer = textIndexerFactory.getDefaultInstance();
-		threadPool = tp;
-	}
-	
-	
-//	SearchResultContext bulkSearch(String queryID, SearchOptions options, String queryText) {
-//				
-//		SearchOptions optionsCopy = new SearchOptions();
-//		optionsCopy.parse(options.asQueryParams());
-//		optionsCopy.setSimpleSearchOnly(true);
-//		optionsCopy.setTop(100);		
-//		optionsCopy.setSkip(0);
-//		optionsCopy.setFetchAll();
-//		
-//		//todo: ixcache getOrElse()		
-//		List<String> queries = Arrays.asList(queryText.split("\\s*,\\s*"));	
-//		queries = queries.stream().distinct().collect(Collectors.toList());
-//		Map<Key, List<String>> matchContexts = new ConcurrentHashMap<>();		
-//		List<Tuple<String,List<Key>>> statistics = queries.stream().map(q->{
-//			Tuple<String,List<Key>> keys = Tuple.of(q, new ArrayList<>());			
-//			SearchResult r;			
-//			try {			
-//				//todo: we can optimize based on identifiers or complex searches
-//				r = textIndexerFactory.getDefaultInstance().search(gsrsRepository, optionsCopy, q);
-//				r.copyKeysTo(keys.v(), 0, 100, true);				
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}			
-//			return keys;
-//		}).collect(Collectors.toList());
-//				
-//		List<Key> subset = statistics.stream()
-//		          .flatMap(t->t.v().stream().map(v->Tuple.of(t.k(), v)))
-//                  .peek(t->{
-//                	  matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>());
-//                	  List<String> values = matchContexts.get(t.v());
-//                	  if(!values.contains(t.k()))
-//                		  values.add(t.k());})
-//                  .map(t->t.v())
-//		          .distinct()
-//		          .peek(System.out::println)
-//		          .collect(Collectors.toList());
-//		// todo: look into matchContexts to set up cache
-//				
-//		matchContexts.forEach((k,v)->{
-//			Map<String,Object> map = new HashMap<>();
-//			map.put("queries", v);
-//			ixCache.setMatchingContext("matchBulkSearchQueries" + queryID, k, map);});
-//						
-//		ixCache.setRaw("matchBulkSearchStatistics" + queryID, statistics);
-//		
-//		return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, null, subset);	
-//		
-//	}	
-	
-	
-//	public ResultEnumeration search (String query, SearchOptions optionsCopy) {
-//		
-//		if (query == null || query.length() == 0) {
-//            return new ResultEnumeration(null);
-//        }
-//        final BlockingQueue<BulkSearchResult> out = new LinkedBlockingQueue<>();
-//        threadPool.submit(()->{
-//            //TODO katzelda turn off stopwatch for now
-////            ix.core.util.StopWatch.timeElapsed(()->{
-//                try {
-//                    search (out, query, identity, gap, rt, seqType);
-//                }catch (Exception ex) {
-//
-//                    log.warn("trouble searching sequence", ex);
-//                }finally{
-//                    try {
-//                        out.put(POISON_RESULT);// finish
-//                    }catch (InterruptedException e) {
-//                        log.error(e.getMessage(), e);
-//                    } 
-//                }
-////            });
-//
-//        });
-//
-//        return new ResultEnumeration (out);
-//		
-//		SearchResult = textIndexer.search(gsrsRepository, optionsCopy, query);
-//		
-//	}
-	
-	
-	public SearchResultContext search(SanitizedBulkSearchRequest request, SearchOptions options) throws IOException {
+		
+	public SearchResultContext search(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
+			SearchOptions options, TextIndexer textIndexer, MatchViewGenerator generator) throws IOException {
 		
 		String hashKey = request.computeKey();		
 		
@@ -159,7 +74,7 @@ public class BulkSearchService {
         		BulkSearchResultProcessor processor = new BulkSearchResultProcessor(ixCache);              
         		processor = AutowireHelper.getInstance().autowireAndProxy(processor);
             	
-        		processor.setResults(1, rawSearch(request, optionsCopy));        			
+        		processor.setResults(1, rawSearch(gsrsRepository, request, optionsCopy, textIndexer, generator));        			
         		SearchResultContext ctx = processor.getContext();
                 ctx.setKey(hashKey);
 
@@ -168,49 +83,61 @@ public class BulkSearchService {
                 
         } catch (Exception e) {
             throw new IOException("error performing search ", e);
-        } 
-        
-      
-	}
+        }      
+	}	
 	
-	
-	private ResultEnumeration rawSearch(SanitizedBulkSearchRequest request, SearchOptions optionsCopy) {
-		BlockingQueue<BulkSearchResult> bq = new LinkedBlockingQueue<BulkSearchResult>();
+	private ResultEnumeration rawSearch(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
+			SearchOptions optionsCopy, TextIndexer textIndexer, MatchViewGenerator generator) {
+		BlockingQueue<BulkSearchResult> bq = new LinkedBlockingQueue<BulkSearchResult>();		
+		List<SearchResultSummaryRecord> summary = new ArrayList<>();
 		
-		threadPool.submit(()->{
-			
+		threadPool.submit(() -> {
+
 			try {
-				request.getQueries().forEach(q->{
-			
-				List<Key> keys = new ArrayList<>();
-				SearchResult result;
-				try {
-					result = textIndexer.search(gsrsRepository, optionsCopy, q);
-					result.copyKeysTo(keys, 0, MAX_BULK_SUB_QUERY_COUNT, true);	     			
+				request.getQueries().forEach(q -> {
+
+					List<Key> keys = new ArrayList<>();					
 					
-					keys.forEach((k)->{
-						BulkSearchResult bsr = new BulkSearchResult();
-						bsr.setQuery(q);
-						bsr.setKey(k);
-						bq.add(bsr);
-					});
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}			
-				 
-	        });
-			}catch(Throwable e) {
+					SearchResult result;
+					try {
+						result = textIndexer.search(gsrsRepository, optionsCopy, q);
+						result.copyKeysTo(keys, 0, MAX_BULK_SUB_QUERY_COUNT, true);
+																		
+						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q);
+						List<MatchView> list = new ArrayList<>();						
+						
+						
+						keys.forEach((k) -> {
+							BulkSearchResult bsr = new BulkSearchResult();
+							bsr.setQuery(q);
+							bsr.setKey(k);
+							bq.add(bsr);
+							MatchView mv = generator.generate(bsr);
+							list.add(mv);
+						});
+						singleQuerySummary.setRecords(list);
+						summary.add(singleQuerySummary);						
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				});
+				
+
+			} catch (Throwable e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}finally {
+			} finally {
 				bq.add(POISON_RESULT);
-			}
-			
+			}			
+
 		});
 		
-		return new ResultEnumeration(bq);
+		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(), summary);		
 		
+		return new ResultEnumeration(bq);
+
 	}
 	
 	

@@ -169,8 +169,6 @@ import ix.core.util.LogUtil;
 import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import ix.core.search.bulk.BulkSearchService.ResultEnumeration;
-import ix.core.search.bulk.BulkSearchResult;
 
 
 /**
@@ -1601,64 +1599,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 	public SearchResult search(GsrsRepository gsrsRepository, SearchOptions options, String text) throws IOException {
 		return search(gsrsRepository, options, text, null);
-	}
-	public SearchResult bulkSearch(GsrsRepository gsrsRepository, String queryID, SearchOptions options, String queryText, String text) throws IOException {
-		/*1.search result needs some form of statistics and it needs to honor qtop, qskip. Show counts for each query and hits count.
-		 *2.we need to use setMatchingContext. find getMatchingContextByContextID, maybe searchresult.key
-		 *3. cache: ixcache getOrElse(). cache (bulkID, statistics results)
-		 *4. optimize matching element to make it faster, specifically for identifiers   
-		 *5. convention to specify identifier vs complex bulk queries
-		 *6. explore making endpoints async, structure indexer.  
-		*/
-		SearchOptions optionsCopy = new SearchOptions();
-		optionsCopy.parse(options.asQueryParams());
-		optionsCopy.setSimpleSearchOnly(true);
-		optionsCopy.setTop(100);		
-		optionsCopy.setSkip(0);
-		optionsCopy.setFetchAll();
-		
-		//todo: ixcache getOrElse()		
-		List<String> queries = Arrays.asList(queryText.split("\\s*,\\s*"));	
-		queries = queries.stream().distinct().collect(Collectors.toList());
-		Map<Key, List<String>> matchContexts = new ConcurrentHashMap<>();		
-		List<Tuple<String,List<Key>>> statistics = queries.stream().map(q->{
-			Tuple<String,List<Key>> keys = Tuple.of(q, new ArrayList<>());			
-			SearchResult r;			
-			try {			
-				//todo: we can optimize based on identifiers or complex searches
-				r = search(gsrsRepository, optionsCopy, q);
-				r.copyKeysTo(keys.v(), 0, 100, true);				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}			
-			return keys;
-		}).collect(Collectors.toList());
-				
-		List<Key> subset = statistics.stream()
-		          .flatMap(t->t.v().stream().map(v->Tuple.of(t.k(), v)))
-                  .peek(t->{
-                	  matchContexts.computeIfAbsent(t.v(),(k)->new ArrayList<>());
-                	  List<String> values = matchContexts.get(t.v());
-                	  if(!values.contains(t.k()))
-                		  values.add(t.k());})
-                  .map(t->t.v())
-		          .distinct()
-		          .peek(System.out::println)
-		          .collect(Collectors.toList());
-		// todo: look into matchContexts to set up cache
-				
-		matchContexts.forEach((k,v)->{
-			Map<String,Object> map = new HashMap<>();
-			map.put("queries", v);
-			gsrscache.setMatchingContext("matchBulkSearchQueries" + queryID, k, map);});
-						
-		gsrscache.setRaw("matchBulkSearchStatistics" + queryID, statistics);
-				
-		return search(gsrsRepository, options, text, subset);		
-		
-	}
-
+	}	
 	
 	public SearchResult search(GsrsRepository gsrsRepository,  SearchOptions options, String qtext, Collection<?> subset) throws IOException {
 				
@@ -2163,51 +2104,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		return searchResult;
 	}
-	
-	
-	static final BulkSearchResult POISON_RESULT = new BulkSearchResult ();
-	public ResultEnumeration bulkSearch (GsrsRepository gsrsRepository, final String query, SearchOptions options)  {
-	        if (query == null || query.length() == 0) {
-	            return new ResultEnumeration(null);
-	        }
-	        final BlockingQueue<BulkSearchResult> out = new LinkedBlockingQueue<>();
-	        threadPool.submit(()->{
-	            //TODO katzelda turn off stopwatch for now
-//	            ix.core.util.StopWatch.timeElapsed(()->{
-	                try {
-	                	bulkSearch(gsrsRepository, query, options, out);
-	                }catch (Exception ex) {
-
-	                    log.warn("trouble searching sequence", ex);
-	                }finally{
-	                    try {
-	                        out.put(POISON_RESULT);// finish
-	                    }catch (InterruptedException e) {
-	                        log.error(e.getMessage(), e);
-	                    } 
-	                }
-//	            });
-
-	        });
-
-	        return new ResultEnumeration (out);
-	    }
-	
-	
-	protected SearchResult bulkSearch(GsrsRepository gsrsRepository, String query, SearchOptions options, BlockingQueue<BulkSearchResult> out) {
 		
-		try {
-			SearchResult result = search(gsrsRepository, options, query);
-		/*	result.getMatches().*/
-				out.add(   );
-			
-			return result;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
-	}
-	
 	/**
      * Performs a basic Lucene query using the provided Filter and Query, and any other
      * refining information from the SearchResult options. Facet results are placed in

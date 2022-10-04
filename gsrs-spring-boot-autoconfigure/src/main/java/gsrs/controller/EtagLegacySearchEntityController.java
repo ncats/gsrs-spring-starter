@@ -275,7 +275,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
-        etag.setSummary(result.getSummary());
+//        etag.setSummary(result.getSummary());
 
         return etag;
     }

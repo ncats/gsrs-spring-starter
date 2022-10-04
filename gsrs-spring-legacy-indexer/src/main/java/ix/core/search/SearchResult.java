@@ -1,36 +1,39 @@
 package ix.core.search;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.util.TimeUtil;
-
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.model.GsrsApiAction;
-import gsrs.springUtils.StaticContextAccessor;
-import ix.core.models.FieldedQueryFacet;
-import ix.core.search.LazyList.NamedCallable;
-import ix.core.models.Facet;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.EntityUtils.Key;
-import ix.utils.Util;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkBuilder;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
-
-
 import java.lang.ref.SoftReference;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import ix.core.models.Facet;
+import ix.core.models.FieldedQueryFacet;
+import ix.core.search.LazyList.NamedCallable;
+import ix.core.search.bulk.SearchResultSummaryRecord;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import ix.utils.Util;
 //TODO katzelda October 2020 : ignore caching for now
 //@CacheStrategy(evictable = false)
 public class SearchResult {

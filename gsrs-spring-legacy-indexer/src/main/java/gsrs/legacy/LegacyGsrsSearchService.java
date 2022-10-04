@@ -19,10 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gsrs.repository.GsrsRepository;
 import gsrs.security.hasAdminRole;
-import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.BulkSearchService;
+import ix.core.search.bulk.BulkSearchService.SanitizedBulkSearchRequest;
+import ix.core.search.bulk.MatchViewGenerator;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
@@ -33,19 +36,28 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
 
     @Autowired
-    private TextIndexerFactory textIndexerFactory;
-    
-    @Autowired
-    private TextService textService;
-
+    private TextIndexerFactory textIndexerFactory;        
+   
     private final GsrsRepository gsrsRepository;
-    private final Class<T> entityClass;
+    
+    private final Class<T> entityClass;    
+   
+    @Autowired
+    private BulkSearchService bulkSearchService;
+    
+    private MatchViewGenerator matchViewGenerator;
 
     private AtomicBoolean reindexing = new AtomicBoolean(false);
 
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
+        this(entityClass, repository, new MatchViewGenerator() {});  
+    }
+    
+    protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository, MatchViewGenerator generator){
         gsrsRepository= repository;
         this.entityClass = entityClass;
+        matchViewGenerator = generator;
+        bulkSearchService = new BulkSearchService();
 
     }
 
@@ -81,15 +93,15 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @Override
     public SearchResult search(String query, SearchOptions options) throws IOException {
         return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query);
-    }
-    
-    public SearchResult bulkSearch(String queryID, String bulkQuery, String query, SearchOptions options) throws IOException {
-    	return textIndexerFactory.getDefaultInstance().bulkSearch(gsrsRepository, queryID, options, bulkQuery, query);
-    }
+    }  
 
     @Override
     public SearchResult search(String query, SearchOptions options, Collection<?> subset) throws IOException {
         return textIndexerFactory.getDefaultInstance().search(gsrsRepository, options, query, subset);
+    }
+    
+    public SearchResultContext bulkSearch(SanitizedBulkSearchRequest request, SearchOptions options) throws IOException {    		
+    	return bulkSearchService.search(gsrsRepository, request, options, textIndexerFactory.getDefaultInstance(), matchViewGenerator);
     }
 
     @Override

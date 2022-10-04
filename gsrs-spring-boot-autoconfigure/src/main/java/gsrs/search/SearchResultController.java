@@ -133,10 +133,7 @@ public class SearchResultController {
             results.copyTo(resultSet, so.getSkip(), so.getTop(), true);
         }
 
-
-
         int count = resultSet.size();
-
 
         Object ret= EntityUtils.EntityWrapper.of(resultSet)
                 .at(pp)
@@ -156,6 +153,7 @@ public class SearchResultController {
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
         etag.setFieldFacets(results.getFieldFacets());
+        etag.setSummary(results.getSummary());
         //TODO Filters and things
 
         return new ResponseEntity<>(etag, HttpStatus.OK);
