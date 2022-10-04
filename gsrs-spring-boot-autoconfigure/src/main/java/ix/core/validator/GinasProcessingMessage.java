@@ -67,19 +67,19 @@ public class GinasProcessingMessage implements ValidationMessage {
 		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
 	}
 	public static GinasProcessingMessage WARNING_MESSAGE(String msg){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
 		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
 	}
 	public static GinasProcessingMessage NOTICE_MESSAGE(String msg){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
 		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
 	}
 	public static GinasProcessingMessage INFO_MESSAGE(String msg){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
 		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
 	}
 	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
 		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
 	}
 	public static GinasProcessingMessage ERROR_MESSAGE(String msg, Object... args){
@@ -88,22 +88,22 @@ public class GinasProcessingMessage implements ValidationMessage {
 		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
 	}
 	public static GinasProcessingMessage WARNING_MESSAGE(String msg, Object... args){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
 		msg = String.format(msg, args);
 		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
 	}
 	public static GinasProcessingMessage NOTICE_MESSAGE(String msg, Object... args){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
 		msg = String.format(msg, args);
 		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
 	}
 	public static GinasProcessingMessage INFO_MESSAGE(String msg, Object... args){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
 		msg = String.format(msg, args);
 		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
 	}
 	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg, Object... args){
-		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
 		msg = String.format(msg, args);
 		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
 	}
