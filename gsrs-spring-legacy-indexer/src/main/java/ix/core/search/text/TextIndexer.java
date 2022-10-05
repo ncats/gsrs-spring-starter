@@ -1625,8 +1625,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		Supplier<Query> fs = ()->{
 			Query f = null;
 			if (subset != null) {
-				List<Term> terms = getTerms(subset);
-				terms.forEach(System.out::println);
+				List<Term> terms = getTerms(subset);		
 				if (!terms.isEmpty()){
 					f = getTermsQuery(terms);
 				}

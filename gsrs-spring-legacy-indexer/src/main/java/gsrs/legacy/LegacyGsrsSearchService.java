@@ -57,8 +57,6 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         gsrsRepository= repository;
         this.entityClass = entityClass;
         matchViewGenerator = generator;
-        bulkSearchService = new BulkSearchService();
-
     }
 
     @Override

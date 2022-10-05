@@ -67,8 +67,8 @@ public class BulkSearchService {
             	SearchOptions optionsCopy = new SearchOptions();
         		optionsCopy.parse(options.asQueryParams());
         		optionsCopy.setSimpleSearchOnly(true);
-        		optionsCopy.setTop(100);		
-        		optionsCopy.setSkip(0);
+        		optionsCopy.setTop(options.getTop());		
+        		optionsCopy.setSkip(options.getSkip());
         		optionsCopy.setFetchAll();       		
         		       		
         		BulkSearchResultProcessor processor = new BulkSearchResultProcessor(ixCache);              

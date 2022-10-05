@@ -95,7 +95,6 @@ class LuceneSearchResultPopulator {
 //			String kind = iff.stringValue();
 			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind).getInherittedRootEntityInfo();
 			String eiField = ei.getInternalIdField();
-			System.out.println("eifield: " + eiField + " kind: "  +kind);
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
 					Long id = doc.getField(eiField).numericValue().longValue();

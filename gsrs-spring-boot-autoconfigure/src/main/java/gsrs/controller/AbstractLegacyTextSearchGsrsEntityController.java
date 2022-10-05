@@ -291,10 +291,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
 		top.ifPresent(t -> builder.top(t));
 		skip.ifPresent(t -> builder.skip(t));
-		fdim.ifPresent(t -> builder.fdim(t));
-
+		fdim.ifPresent(t -> builder.fdim(t));		
+		
 		SearchRequest searchRequest = builder.withParameters(request.getParameterMap()).build();
-
 		searchRequest = this.instrumentSearchRequest(searchRequest);
 
 		BulkSearchService.SanitizedBulkSearchRequest sanitizedRequest = new BulkSearchService.SanitizedBulkSearchRequest();
@@ -304,11 +303,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 			queries = gsrscache.getOrElse("/BulkID/" + queryListID, () -> {
 
 				String queryString = textService.getText(queryListID);
-
 				if (queryString.isEmpty()) {
 					throw new RuntimeException("Cannot find bulk query ID. ");
 				}
-
 				return Arrays.asList(queryString.split("\n"));
 
 			});
@@ -319,9 +316,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		}
 
 		sanitizedRequest.setQueries(queries);
-
 		SearchOptions searchOptions = searchRequest.getOptions();
-
 		SearchResultContext resultContext;
 		try {
 			resultContext = getlegacyGsrsSearchService().bulkSearch(sanitizedRequest, searchOptions);
@@ -329,7 +324,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
 			// TODO: need to add support for qText in the "focused" version of
 			// all structure searches. This may require some deeper changes.
-			SearchResultContext focused = resultContext.getFocused(searchOptions.getTop(), searchOptions.getSkip(),
+			SearchResultContext focused = resultContext.getFocused(SearchOptions.DEFAULT_TOP, 0,
 					searchOptions.getFdim(), "");
 			if(resultContext.getKey() != null)
 				focused.setKey(resultContext.getKey());
@@ -338,7 +333,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return new ResponseEntity<>("Error during search!", HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>("Error during bulk search!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
     
@@ -396,7 +391,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                         .build();
             }else{
                 //katzelda : run it through the text indexer for the facets?
-//                searchResult = SearchFactory.search (request);
+//                searchResult = SearchFactory.search (request);            	
                 searchResult = getlegacyGsrsSearchService().search(request.getQuery(), request.getOptions(), request.getSubset());
                 log.debug("Cache misses: "
                         +key+" size="+results.size()
@@ -437,9 +432,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 List<T> rlist = new ArrayList<>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
-                for (T s : rlist) {
- //TODO:                	
-//                    s.setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
+                for (T s : rlist) { 
                 	if(s instanceof BaseModel) {
                 		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
                 	}
