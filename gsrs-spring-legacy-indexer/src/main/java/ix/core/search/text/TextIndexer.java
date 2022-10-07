@@ -91,6 +91,7 @@ import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
+import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -2836,7 +2837,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return doc;
 	}
 
-	public void update(EntityWrapper ew) throws Exception{
+	public void update(EntityWrapper ew) throws Exception{		
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {
@@ -2918,7 +2919,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                                 log.debug("[LOG_INDEX] .." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
                             }
 // This is where you can see how things get indexed.
-//						    System.out.println(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							if (DEBUG(2)){
 //								log.debug(".." + f.name() + ":" + text + " [" + f.getClass().getName() + "]");
 //							}
@@ -2936,9 +2936,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 						}
 						if(f.name().equals(FIELD_KIND)) {
 						    String val = f.stringValue();
-						    if(val.contains("ubstance")) {
-						        System.out.println("T");
-						    }
+//						    if(val.contains("ubstance")) {
+//						        System.out.println("T");
+//						    }
 						    doc.add(new SortedDocValuesField(f.name(),new BytesRef(val)));
 						    doc.add(new StoredField(f.name(), new BytesRef(val)));
 						    return;
@@ -3019,7 +3019,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
 			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 
-			// now index
+			// now index		
 			addDoc(doc);
 
 //			if (DEBUG(2)) {
@@ -3069,7 +3069,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 
-	public void remove(EntityWrapper ew) throws Exception {
+	public void remove(EntityWrapper ew) throws Exception {		
 		if (ew.shouldIndex()) {
 			if (ew.hasKey()) {
 				remove(ew.getKey());
@@ -3079,26 +3079,30 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 	}
 
-	public void remove(Key key) throws Exception {
+	public void remove(Key k2) throws Exception {
+		Key key=k2.toRootKey();
         Lock l = stripedLock.get(key);
         l.lock();
         try {
             Tuple<String, String> docKey = key.asLuceneIdTuple();
             //if (DEBUG(2)){
-            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+//            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
+            System.out.println("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + k2.getKind());
             //}
 
-            BooleanQuery q = new BooleanQuery();
-            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            BooleanQuery q = new BooleanQuery.Builder()
+            		.add(new TermQuery(new Term(docKey.k(), docKey.v())), Occur.MUST)
+            		.add(new TermQuery(new Term(FIELD_KIND, k2.getKind())), Occur.MUST)
+            		.build();
 
             indexerService.deleteDocuments(q);
             notifyListenersDeleteDocuments(q);
 
             if (textIndexerConfig.isFieldsuggest()) { //eliminate
-                BooleanQuery qa = new BooleanQuery();
-                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                BooleanQuery qa = new BooleanQuery.Builder()
+                		.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), Occur.MUST)
+                		.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), Occur.MUST)
+                		.build();
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
