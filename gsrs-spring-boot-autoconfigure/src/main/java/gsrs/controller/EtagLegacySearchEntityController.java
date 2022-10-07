@@ -130,7 +130,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                                                HttpServletRequest request
 
             ) throws Exception {
-        log.warn("Starting in createExport");
+        log.warn("Starting in createExport. exportConfigId: {}", exportConfigId);
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
         Optional<DefaultExporterFactoryConfig> exportConfig=Optional.empty();
@@ -138,7 +138,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             exportConfig=Optional.of(createDefaultConfig());
         } else {
             if(isInteger(exportConfigId)) {
-                Long itemId=Long.getLong(exportConfigId);
+                Long itemId=Long.parseLong(exportConfigId);
+                log.trace("converted configid to {}", itemId);
                 exportConfig = getConfigById(itemId);
             } else {
                 Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedExporterFormats(getEntityService().getContext()).stream()
