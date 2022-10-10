@@ -141,6 +141,11 @@ public class GinasProcessingMessage implements ValidationMessage {
 		return messageId;
 	}
 
+	public GinasProcessingMessage setMessageId(String s) {
+		this.messageId = s;
+		return this;
+	}
+
 	@Override
 	public String getMessage() {
 		return message;
