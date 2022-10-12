@@ -2902,12 +2902,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 							}
 						}
 						if(f.name().equals(FIELD_KIND)) {
-						    String val = f.stringValue();						   
+						    String val = f.stringValue();	
+//						    log.error("add field "+ val);
 						    doc.add(new SortedDocValuesField(f.name(),new BytesRef(val)));
 						    doc.add(new StoredField(f.name(), new BytesRef(val)));
-						    return;
-//						    SortedDocValuesField
-
 						}
 					}else if(f instanceof FacetField){
 					    String key = ((FacetField)f).dim;
@@ -2942,7 +2940,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(textIndexerConfig.isFieldsuggest()  && deepKindFunction.apply(ew) && ew.hasKey()){
 				Key key =ew.getKey().toRootKey();
 				if(!key.getIdString().equals("")){  //probably not needed
-					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + ew.getKind(),YES);
+					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind(),YES);
 					StringField analyzeMarker=new StringField(ANALYZER_MARKER_FIELD, "true",YES);
 
 
@@ -2980,7 +2978,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			      });
 			  }
 			});
-			fieldCollector.accept(new StringField(FIELD_KIND, ew.getEntityInfo().getName(), YES));
+			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKey().toRootKey().getKind(), YES));			
 			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 
 			// now index
@@ -3050,20 +3048,22 @@ public class TextIndexer implements Closeable, ProcessListener {
         try {
             Tuple<String, String> docKey = key.asLuceneIdTuple();
             //if (DEBUG(2)){
-            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
             //}
 
-            BooleanQuery q = new BooleanQuery();
-            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            BooleanQuery q = new BooleanQuery.Builder()
+            		.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST)
+            		.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST)
+            		.build();
 
             indexerService.deleteDocuments(q);
             notifyListenersDeleteDocuments(q);
 
             if (textIndexerConfig.isFieldsuggest()) { //eliminate
-                BooleanQuery qa = new BooleanQuery();
-                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                BooleanQuery qa = new BooleanQuery.Builder()
+                	.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST)
+                	.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST)
+                	.build();
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
