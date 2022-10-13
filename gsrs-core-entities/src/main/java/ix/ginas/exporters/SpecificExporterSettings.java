@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class DefaultExporterFactoryConfig {
+public class SpecificExporterSettings {
 
     private String configurationId;
     private String configurationKey;
@@ -34,8 +34,8 @@ public class DefaultExporterFactoryConfig {
         return txt;
     }
 
-    public static DefaultExporterFactoryConfig fromText(Text text) throws JsonProcessingException {
-        DefaultExporterFactoryConfig conf = (new ObjectMapper()).readValue(text.getValue(), DefaultExporterFactoryConfig.class);
+    public static SpecificExporterSettings fromText(Text text) throws JsonProcessingException {
+        SpecificExporterSettings conf = (new ObjectMapper()).readValue(text.getValue(), SpecificExporterSettings.class);
         conf.setConfigurationId(text.id.toString());
         return conf;
     }

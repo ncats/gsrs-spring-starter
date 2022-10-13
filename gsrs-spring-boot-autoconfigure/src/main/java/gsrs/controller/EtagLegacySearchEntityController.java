@@ -133,7 +133,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         log.warn("Starting in createExport. exportConfigId: {}", exportConfigId);
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
-        Optional<DefaultExporterFactoryConfig> exportConfig=Optional.empty();
+        Optional<SpecificExporterSettings> exportConfig=Optional.empty();
         if( exportConfigId == null){
             exportConfig=Optional.of(createDefaultConfig());
         } else {
@@ -142,7 +142,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 log.trace("converted configid to {}", itemId);
                 exportConfig = getConfigById(itemId);
             } else {
-                Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedExporterFormats(getEntityService().getContext()).stream()
+                Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext()).stream()
                         .filter(e->e.getExtension().equalsIgnoreCase(exportConfigId))
                         .collect(Collectors.toSet());
                 if(formats.size()>0){
@@ -150,7 +150,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 }
                 else {
                     ObjectMapper mapper= new ObjectMapper();
-                    DefaultExporterFactoryConfig config = mapper.readValue(exportConfigId, DefaultExporterFactoryConfig.class);
+                    SpecificExporterSettings config = mapper.readValue(exportConfigId, SpecificExporterSettings.class);
                     if( config !=null) {
                         exportConfig=Optional.of(config);
                     }
@@ -161,11 +161,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         if(!exportConfig.isPresent()) {
             exportConfig=Optional.of(createDefaultConfig());
         }
-        Optional<DefaultExporterFactoryConfig> finalExportConfig=exportConfig;
+        Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
         //instantiate all settings and scrubber...
         RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
-        RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
+        RecordExpander<T> expander = getExpanderFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
@@ -183,9 +183,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 .map(t->  scrubber.scrub(t))
                 .filter(o->o.isPresent())
                 .flatMap(t->expander.expandRecord(t.get()))
+                .distinct()
                 .map(t->  scrubber.scrub(t))
                 .filter(o->o.isPresent())
                 .map(o->o.get());
+        log.trace("computed effectivelyFinalStream using distinct");
 
         if(fileName!=null){
             emd.setDisplayFilename(fileName);
@@ -300,8 +302,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         return integerPattern.matcher(testString).matches();
     }
 
-    private DefaultExporterFactoryConfig createDefaultConfig(){
-        DefaultExporterFactoryConfig config=  new DefaultExporterFactoryConfig();
+    private SpecificExporterSettings createDefaultConfig(){
+        SpecificExporterSettings config=  new SpecificExporterSettings();
         log.trace("Setting entity class to {}", getEntityService().getEntityClass().getName());
         config.setEntityClass(getEntityService().getEntityClass().getName());
         return config;

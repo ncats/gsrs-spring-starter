@@ -24,65 +24,79 @@ public class GsrsExportConfiguration {
     private File path = new File("./exports");
     private File tmpDir=null;
 
-    private Map<String, List<Class>> factories;
-    private Map<String, List<ExporterFactoryConf>> exporterFactories;
+    private Map<String, List<Class>> factories;//legacy as of 3.0.3+
+    private Map<String, List<ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
+    private Map<String,ExpanderFactoryConfig> expanderFactory;
 
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
 
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
-    private Map<String, List<ExporterFactory>> exportersNew = new HashMap<>();
+    //private Map<String, List<ExporterFactory>> exportersNew = new HashMap<>();
 
     Map<String,Map<String, RecordScrubber>> scrubbers;
 
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
+        log.trace("inside initializer");
+        //normally, classes are autowired by the calling class but we think this was put here to work around an
+        //  issue.  May remove this in the future.
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
-        if(factories ==null){
-            return;
-        }
-        for(Map.Entry<String, List<Class>> entry : factories.entrySet()){
-            String context = entry.getKey();
-            List<ExporterFactory> list = new ArrayList<>();
-            for(Class c : entry.getValue()){
-                try {
-                    ExporterFactory factory = (ExporterFactory)c.newInstance();
-
-                    list.add(AutowireHelper.getInstance().autowireAndProxy(factory));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            exporters.put(context, list);
-        }
-    });
-
-    CachedSupplier initializerNew = CachedSupplier.ofInitializer( ()->{
-        ObjectMapper mapper = new ObjectMapper();
-
-        for(Map.Entry<String, List<ExporterFactoryConf>> entryFull : exporterFactories.entrySet()){
-            String context = entryFull.getKey();//this is the type
-
-            List<ExporterFactory> expList = exporters.computeIfAbsent(context, k-> new ArrayList<>());
-            entryFull.getValue().forEach(exConf->{
-
-                ExporterFactory exporterFac =null;
-                if(exConf.getParameters() !=null){
-                    exporterFac= (ExporterFactory) mapper.convertValue(exConf.getParameters(), exConf.getExporterClass());
-                }else{
+        if(factories !=null) {
+            //legacy stuff
+            for (Map.Entry<String, List<Class>> entry : factories.entrySet()) {
+                String context = entry.getKey();
+                List<ExporterFactory> list = new ArrayList<>();
+                for (Class c : entry.getValue()) {
                     try {
-                        exporterFac= (ExporterFactory) exConf.getExporterClass().newInstance();
+                        log.trace("going to instantiate {}", c.getName());
+                        ExporterFactory factory = (ExporterFactory) c.getConstructor().newInstance();
+
+                        list.add(AutowireHelper.getInstance().autowireAndProxy(factory));
                     } catch (Exception e) {
-                        throw new IllegalStateException("error creating exporter for " + exConf, e);
+                        //todo: log the exception
+                        log.error("Error parsing export configuration", e);
                     }
                 }
-                if(exporterFac!=null) {
-                    exporterFac = AutowireHelper.getInstance().autowireAndProxy(exporterFac);
-                    expList.add(exporterFac);
-                }
-            });
-            exportersNew.put(context, expList);
+                exporters.put(context, list);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+
+        if( exporterFactories!=null) {
+            log.trace("handling exporterFactories");
+            for (Map.Entry<String, List<ExporterFactoryConfig>> entryFull : exporterFactories.entrySet()) {
+                String context = entryFull.getKey();//this is the type
+                log.trace("context: {}", context);
+
+                List<ExporterFactory> expList = exporters.computeIfAbsent(context, k -> new ArrayList<>());
+                entryFull.getValue().forEach(exConf -> {
+                    log.trace("exConf.getExporterFactoryClass(): {}", exConf.getExporterFactoryClass().getName());
+                    ExporterFactory exporterFac = null;
+                    if (exConf.getParameters() != null) {
+                        exporterFac = (ExporterFactory) mapper.convertValue(exConf.getParameters(), exConf.getExporterFactoryClass());
+                    } else {
+                        try {
+                            exporterFac = (ExporterFactory) exConf.getExporterFactoryClass().getConstructor().newInstance();
+                        } catch (Exception e) {
+                            throw new IllegalStateException("error creating exporter for " + exConf, e);
+                        }
+                    }
+                    if (exporterFac != null) {
+
+                        log.trace("exporter factory instantiated fine");
+                        exporterFac = AutowireHelper.getInstance().autowireAndProxy(exporterFac);
+                        expList.add(exporterFac);
+                    } else {
+                        log.warn("exporter factory null!");
+                    }
+                });
+                //exporters.put(context, expList);
+            }
+        } else {
+            log.warn("exporterFactories null");
         }
     });
+
 
     /**
      * Get all the Supported {@link OutputFormat}s
@@ -122,40 +136,6 @@ public class GsrsExportConfiguration {
         }
         Collections.reverse(resortList);
 
-
-        return new LinkedHashSet<>(resortList);
-    }
-
-    public Set<OutputFormat> getAllSupportedExporterFormats(String context){
-
-        initializerNew.get();
-
-        //This mess with reverse iterating and then reversing again
-        //is because we want the exporters listed first in the config file
-        //to have priority over later listed exporters.  So if an earlier
-        //exporter has the same extension as a later exporter, the earlier one should
-        //have priority.
-        //
-        //So we go through the list backwards so earlier exporter's extensions
-        //overwrite later exporters
-        //
-        //But then we have to reverse the list again so
-        //the final display order matches the input list order.
-
-        List<OutputFormat> list = getAllOutputsAsList(exportersNew.get(context));
-        //go in reverse order to prefer the factories listed first
-        ListIterator<OutputFormat> iterator = list.listIterator(list.size());
-        Set<OutputFormat> set = new LinkedHashSet<>();
-        while(iterator.hasPrevious()){
-            set.add(iterator.previous());
-        }
-        //reverse it again
-        List<OutputFormat> resortList = new ArrayList<>(set.size());
-
-        for(OutputFormat f : set){
-            resortList.add(f);
-        }
-        Collections.reverse(resortList);
 
         return new LinkedHashSet<>(resortList);
     }

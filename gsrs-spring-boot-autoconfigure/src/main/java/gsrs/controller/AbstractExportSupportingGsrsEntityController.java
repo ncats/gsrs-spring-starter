@@ -4,23 +4,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gsrs.autoconfigure.ExpanderFactoryConfig;
 import gsrs.repository.TextRepository;
 import ix.core.models.Text;
 import ix.ginas.exporters.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +46,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         Object returnObject;
         HttpStatus status;
         if (configurationHolder.isPresent()) {
-            DefaultExporterFactoryConfig config =DefaultExporterFactoryConfig.fromText(configurationHolder.get());
+            SpecificExporterSettings config = SpecificExporterSettings.fromText(configurationHolder.get());
             returnObject=config;
             status = HttpStatus.OK;
         } else {
@@ -59,11 +58,11 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returnObject, queryParameters), status);
     }
 
-    protected Optional<DefaultExporterFactoryConfig> getConfigById(Long id){
+    protected Optional<SpecificExporterSettings> getConfigById(Long id){
         Optional<Text> configurationHolder = textRepository.findById(id);
         return configurationHolder.map(t->{
             try {
-                return DefaultExporterFactoryConfig.fromText(t);
+                return SpecificExporterSettings.fromText(t);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -74,11 +73,11 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> handleExportConfigsFetch(
             @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigsFetch");
-        String label = DefaultExporterFactoryConfig.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
+        String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
         List<Text> configs = textRepository.findByLabel(label);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t-> {
                     try {
-                        return DefaultExporterFactoryConfig.fromText(t);
+                        return SpecificExporterSettings.fromText(t);
                     } catch (JsonProcessingException e) {
                         log.error("Error converting configuration value", e);
                     }
@@ -107,7 +106,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
                                                          @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
         log.trace("starting in handleExportConfigSave");
         ObjectMapper mapper = new ObjectMapper();
-        DefaultExporterFactoryConfig conf = mapper.readValue(exportConfigJson, DefaultExporterFactoryConfig.class);
+        SpecificExporterSettings conf = mapper.readValue(exportConfigJson, SpecificExporterSettings.class);
         if(doesConfigurationKeyExist(conf.getConfigurationKey())) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("Error in provided configuration",String.format("An Export configuration with key %s already exists in the database!",
@@ -214,12 +213,12 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     boolean doesConfigurationKeyExist(String configurationKey) {
         Class entityClass = getEntityService().getEntityClass();
         Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
-        String label = DefaultExporterFactoryConfig.getEntityKeyFromClass(entityClass.getName());
+        String label = SpecificExporterSettings.getEntityKeyFromClass(entityClass.getName());
         List<Text> configs = textRepository.findByLabel(label);
         return configs.stream().anyMatch(c->{
-            DefaultExporterFactoryConfig config = null;
+            SpecificExporterSettings config = null;
             try {
-                config = DefaultExporterFactoryConfig.fromText(c);
+                config = SpecificExporterSettings.fromText(c);
             } catch (JsonProcessingException e) {
                 log.error("Error");
             }
@@ -233,5 +232,10 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     public RecordExpanderFactory<T> getExpanderFactory(){
         return new DefaultRecordExpanderFactory<>();
+    }
+
+    public RecordExpanderFactory<T> getExpanderFactory(ExpanderFactoryConfig config) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("Going to create an expander factory.  type: {}", config.getExpanderFactory().getName());
+        return (RecordExpanderFactory<T>) config.getExpanderFactory().getConstructor().newInstance();
     }
 }

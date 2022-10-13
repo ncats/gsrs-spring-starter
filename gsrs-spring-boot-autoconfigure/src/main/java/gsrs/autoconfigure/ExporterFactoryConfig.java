@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class ExporterFactoryConf {
-    private Class exporterClass;
+public class ExporterFactoryConfig {
+    private Class exporterFactoryClass;
     private Map<String, Object> parameters;
 }

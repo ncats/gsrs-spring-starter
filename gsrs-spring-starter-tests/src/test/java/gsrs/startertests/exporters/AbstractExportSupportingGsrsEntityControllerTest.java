@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
-import gsrs.controller.EditEntityService;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
@@ -12,14 +11,14 @@ import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
-import ix.ginas.exporters.DefaultExporterFactoryConfig;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,7 +84,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 .setAllAuditorsToAbstractUser(true)
                 .build();
         JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
-        DefaultExporterFactoryConfig config =  DefaultExporterFactoryConfig.builder()
+        SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)
                 .generalSettings(generalSettings)
