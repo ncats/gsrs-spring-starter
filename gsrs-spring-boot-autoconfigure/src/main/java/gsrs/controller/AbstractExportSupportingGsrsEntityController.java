@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.autoconfigure.ExpanderFactoryConfig;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.repository.TextRepository;
 import ix.core.models.Text;
 import ix.ginas.exporters.*;
@@ -235,7 +236,12 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     }
 
     public RecordExpanderFactory<T> getExpanderFactory(ExpanderFactoryConfig config) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        log.trace("Going to create an expander factory.  type: {}", config.getExpanderFactory().getName());
+        log.trace("Going to create an expander factory of type: {}", config.getExpanderFactory().getName());
         return (RecordExpanderFactory<T>) config.getExpanderFactory().getConstructor().newInstance();
+    }
+
+    public RecordScrubberFactory<T> getScrubberFactory(ScrubberFactoryConfig config) throws  NoSuchMethodException,
+            InvocationTargetException, InstantiationException, IllegalAccessException {
+        return (RecordScrubberFactory<T>) config.getScrubberFactoryClass().getConstructor().newInstance();
     }
 }

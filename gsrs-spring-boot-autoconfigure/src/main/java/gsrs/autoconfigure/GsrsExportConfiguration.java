@@ -33,8 +33,8 @@ public class GsrsExportConfiguration {
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
     //private Map<String, List<ExporterFactory>> exportersNew = new HashMap<>();
 
-    Map<String,Map<String, RecordScrubber>> scrubbers;
-
+    private Map<String,Map<String, RecordScrubber>> scrubbers;
+    private Map<String, ScrubberFactoryConfig> scrubberFactory;
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         log.trace("inside initializer");
