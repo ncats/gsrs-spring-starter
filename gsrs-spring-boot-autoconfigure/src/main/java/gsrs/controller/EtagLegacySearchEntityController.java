@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.HttpRequestHolder;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -96,6 +98,12 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     @GetGsrsRestApiMapping("/export/{etagId}")
     public Object exportLinks(@PathVariable("etagId") String etagId,
                               @RequestParam Map<String, String> parameters) throws Exception {
+        //the parameter called 'etagid' might be a file extension...
+        ExporterFactory matchingFactory = getFirstMatchingExporterFactory(etagId);
+        if( matchingFactory!=null ){
+            log.trace("found matching factory in exportLinks");
+            return matchingFactory.getSchema();
+        }
         List<ExportLink> links = new ArrayList<>();
          for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
             links.add(ExportLink.builder()
@@ -110,12 +118,29 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
          return links;
     }
+
     @Data
     @Builder
     public static class ExportLink{
         private String displayname;
         private String extension;
         private GsrsUnwrappedEntityModel.RestUrlLink link;
+    }
+
+    private ExporterFactory getFirstMatchingExporterFactory(String extension) throws IOException {
+        if(gsrsExportConfiguration.getExporters() == null || gsrsExportConfiguration.getExporters().size()==0) {
+            log.debug("no exporters in getFirstMatchingExporterFactory");
+            return null;
+        }
+        for(ExporterFactory factory : gsrsExportConfiguration.getExporters().get(getEntityService().getContext())){
+            Set<OutputFormat> formats =factory.getSupportedFormats();
+            for(OutputFormat format: formats) {
+                if(format.getExtension().equalsIgnoreCase(extension) || format.getDisplayName().equalsIgnoreCase(extension)) {
+                   return factory;
+                }
+            }
+        }
+        return null;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -163,7 +188,17 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
         //instantiate all settings and scrubber...
-        RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
+        Map<String, ScrubberFactoryConfig> factoryMap= gsrsExportConfiguration.getScrubberFactory();
+        if(factoryMap== null){
+            log.trace("factoryMap null");
+        }else{
+            factoryMap.keySet().forEach(k->{
+                log.trace("key: {}; scrubber: {}", k, factoryMap.get(k).getScrubberFactoryClass().getName());
+            });
+        }
+
+        RecordScrubber<T> scrubber= getScrubberFactory(gsrsExportConfiguration.getScrubberFactory().get(getEntityService().getContext())).createScrubber(exportConfig.get().getScrubberSettings());
+        //exportConfig.get().getScrubberSettings()
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
         RecordExpander<T> expander = getExpanderFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());

@@ -83,5 +83,8 @@ public interface ExporterFactory<T> {
      */
     Exporter<T> createNewExporter(OutputStream out, Parameters params) throws IOException;
 
+    default JsonNode getSchema(){
+        return JsonNodeFactory.instance.objectNode();
+    }
 
 }

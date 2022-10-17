@@ -31,7 +31,6 @@ public class GsrsExportConfiguration {
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
 
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
-    //private Map<String, List<ExporterFactory>> exportersNew = new HashMap<>();
 
     private Map<String,Map<String, RecordScrubber>> scrubbers;
     private Map<String, ScrubberFactoryConfig> scrubberFactory;
@@ -90,7 +89,6 @@ public class GsrsExportConfiguration {
                         log.warn("exporter factory null!");
                     }
                 });
-                //exporters.put(context, expList);
             }
         } else {
             log.warn("exporterFactories null");
