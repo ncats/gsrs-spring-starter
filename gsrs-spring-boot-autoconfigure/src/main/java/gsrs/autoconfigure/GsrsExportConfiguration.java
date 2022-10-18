@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.*;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Component
 @Configuration
@@ -143,7 +144,10 @@ public class GsrsExportConfiguration {
         List<OutputFormat> list = new ArrayList<>();
         if(exporters !=null) {
             for (ExporterFactory factory : exporters) {
-                list.addAll(factory.getSupportedFormats());
+                Set<OutputFormat> supportedFormats= factory.getSupportedFormats();
+                log.trace("enhancing output formats");
+                supportedFormats.forEach(f->f.setParameterSchema(factory.getSchema()));
+                list.addAll(supportedFormats);
             }
         }
         return list;
