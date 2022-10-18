@@ -11,6 +11,7 @@ import java.util.Objects;
 public class OutputFormat {
     private final String extension;
     private final String displayname;
+    private JsonNode parameterSchema;
 
     public JsonNode getParameterSchema() {
         return parameterSchema;
@@ -19,8 +20,6 @@ public class OutputFormat {
     public void setParameterSchema(JsonNode parameterSchema) {
         this.parameterSchema = parameterSchema;
     }
-
-    private JsonNode parameterSchema;
 
     public OutputFormat(String extension, String displayname) {
         Objects.requireNonNull(extension);
