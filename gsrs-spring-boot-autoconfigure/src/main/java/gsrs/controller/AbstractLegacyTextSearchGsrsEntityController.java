@@ -22,6 +22,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
@@ -59,6 +60,27 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+    
+//    @hasAdminRole
+    @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
+    public ResponseEntity bulkReindex(@RequestBody String ids){
+        System.out.println(ids);
+        return new ResponseEntity<>("result" + ids, HttpStatus.OK);
+    }
+    
+//    @hasAdminRole
+    @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
+    public ResponseEntity reindex(@PathVariable("id") String id){
+        
+        return new ResponseEntity<>(id, HttpStatus.OK);
+    }
+    
+    @GetGsrsRestApiMapping(value="({id})/@index", apiVersions = 1)
+    public ResponseEntity getIndexData(@PathVariable("id") String id){
+        
+        return new ResponseEntity<>("result" + id, HttpStatus.OK);
+    }
+    
     @GetGsrsRestApiMapping(value = "/search/@facets", apiVersions = 1)
     public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
                                                  @RequestParam("field") Optional<String> field,

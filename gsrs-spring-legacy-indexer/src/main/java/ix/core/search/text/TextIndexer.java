@@ -2847,6 +2847,19 @@ public class TextIndexer implements Closeable, ProcessListener {
         }
 
     }
+	
+	public void reindex(EntityWrapper ew) throws Exception{
+	    Lock l = stripedLock.get(ew.getKey());
+	    l.lock();
+	    try {
+            remove(ew);
+            add(ew, true);
+        }finally{
+	        l.unlock();
+        }
+
+    }
+	
     public void add(EntityWrapper ew) throws IOException {
         //Don't index if any of the following:
         // 1. The entity doesn't have an Indexable annotation OR

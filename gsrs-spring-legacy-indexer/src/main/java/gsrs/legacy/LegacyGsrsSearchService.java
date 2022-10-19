@@ -1,12 +1,14 @@
 package gsrs.legacy;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Filter;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.hasAdminRole;
 import ix.core.EntityFetcher;
@@ -26,6 +29,8 @@ import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,6 +38,9 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
 
     @Autowired
     private TextIndexerFactory textIndexerFactory;
+    
+    @Autowired
+    private IndexerEntityListener indexerEntityListener;
 
     private final GsrsRepository gsrsRepository;
     private final Class<T> entityClass;
@@ -160,4 +168,47 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
             }
         }
     }
+    
+    public boolean reindex(String id){
+    	
+    	
+    }
+    
+    public List<Object> getIndexData(String id) throws IOException {
+    	SearchOptions options = new SearchOptions();
+    	options.setTop(1);
+    	TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+    	SearchResult result = indexer.search(gsrsRepository, options, id);
+    	if(result.getCount()<=0) {
+    		return new ArrayList<>();
+    	}
+    	return result.getMatches();      	    	
+    }
+        
+    
+    @Getter
+    @Setter
+    class IndexData {
+    	List<IndexedField> indexedFiledList;
+    	List<IndexedFacet> indexedFacetList; 
+    	IndexData() {
+    		indexedFiledList = new ArrayList<>();
+    		indexedFacetList = new ArrayList<>();
+    	}
+    }
+    
+    @Getter
+    @Setter
+    class IndexedField{
+    	String fieldName;
+    	String fieldValue;
+    	String type;
+	}
+    
+    @Getter
+    @Setter
+	class IndexedFacet{
+		String facetName;
+		String facetValue;
+	}
 }
