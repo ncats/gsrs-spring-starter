@@ -170,10 +170,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext()).stream()
                         .filter(e->e.getExtension().equalsIgnoreCase(exportConfigId))
                         .collect(Collectors.toSet());
-                if(formats.size()>0){
-                     //
-                }
-                else {
+
+                if(formats.isEmpty()) {
                     ObjectMapper mapper= new ObjectMapper();
                     SpecificExporterSettings config = mapper.readValue(exportConfigId, SpecificExporterSettings.class);
                     if( config !=null) {

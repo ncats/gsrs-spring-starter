@@ -108,7 +108,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         log.trace("starting in handleExportConfigSave");
         ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings conf = mapper.readValue(exportConfigJson, SpecificExporterSettings.class);
-        if(doesConfigurationKeyExist(conf.getConfigurationKey())) {
+        if(doesConfigurationKeyExist(conf.getExporterKey())) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("Error in provided configuration",String.format("An Export configuration with key %s already exists in the database!",
                     conf.getExporterKey()));

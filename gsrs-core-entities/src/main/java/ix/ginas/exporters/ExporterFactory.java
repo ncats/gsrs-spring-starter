@@ -86,6 +86,7 @@ public interface ExporterFactory<T> {
     }
 
     default JsonNode generateSchemaNode(String exporterName, ObjectNode schemaNode) {
+        //build a complex node that will serialize into perfect JSON schema
         ObjectNode outputNode = JsonNodeFactory.instance.objectNode();
         outputNode.put("$schema",  "https://json-schema.org/draft/2020-12/schema");
         outputNode.put("$id", "https://gsrs.ncats.nih.gov/#/export.scrubber.schema.json");

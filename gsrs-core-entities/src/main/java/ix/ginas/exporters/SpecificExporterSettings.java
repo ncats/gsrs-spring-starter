@@ -21,7 +21,7 @@ public class SpecificExporterSettings {
     private String exporterKey;
     private JsonNode scrubberSettings;
     private JsonNode exporterSettings;
-    private JsonNode generalSettings;
+    private JsonNode generalSettings;//we may not need this item
     private JsonNode expanderSettings;
     private String entityClass;
 
