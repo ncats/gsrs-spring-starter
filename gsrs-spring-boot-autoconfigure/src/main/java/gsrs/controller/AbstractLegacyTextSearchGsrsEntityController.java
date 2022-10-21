@@ -47,6 +47,7 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.search.bulk.BulkSearchService;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
@@ -82,6 +83,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @Autowired
     private EntityLinks entityLinks;
+    
+    private final int BULK_SEARCH_DEFAULT_TOP = 100;
+    
+    private final int BULK_SEARCH_DEFAULT_SKIP = 0;
 
     /**
      * Force a reindex of all entities of this entity type.
@@ -284,15 +289,22 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 	@GetGsrsRestApiMapping(value = "/bulkSearch", apiVersions = 1)
 	public ResponseEntity<Object> bulkSearch(@RequestParam("bulkQID") String queryListID,
 			@RequestParam("q") Optional<String> query, @RequestParam("top") Optional<Integer> top,
-			@RequestParam("skip") Optional<Integer> skip, @RequestParam("fdim") Optional<Integer> fdim,
+			@RequestParam("skip") Optional<Integer> skip, @RequestParam("qTop") Optional<Integer> qTop,
+			@RequestParam("qSkip") Optional<Integer> qSkip,@RequestParam("fdim") Optional<Integer> fdim,
+			@RequestParam("searchOnIdentifiers") Optional<Boolean> searchOnIdentifiers,
 			HttpServletRequest request, @RequestParam Map<String, String> queryParameters) {
 		SearchRequest.Builder builder = new SearchRequest.Builder().query(query.orElse(null))
 				.kind(getEntityService().getEntityClass());
 
 		top.ifPresent(t -> builder.top(t));
 		skip.ifPresent(t -> builder.skip(t));
-		fdim.ifPresent(t -> builder.fdim(t));		
+		fdim.ifPresent(t -> builder.fdim(t));
+		qTop.ifPresent(t -> builder.qTop(t));
+		qSkip.ifPresent(t -> builder.qSkip(t));
 		
+		System.out.println("searchOnIdentifiers " + searchOnIdentifiers);
+		searchOnIdentifiers.ifPresent(t -> builder.bulkSearchOnIdentifiers(t.booleanValue()));
+				
 		SearchRequest searchRequest = builder.withParameters(request.getParameterMap()).build();
 		searchRequest = this.instrumentSearchRequest(searchRequest);
 
@@ -424,9 +436,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 SearchResult sr = getResultFor(ctx, srequest,true);
                 
                 if(ctx.getKey() != null) {                	
-                	List<SearchResultSummaryRecord> summary = (List<SearchResultSummaryRecord>)gsrscache.getRaw("BulkSearchSummary/"+ctx.getKey());
+                	BulkQuerySummary summary = (BulkQuerySummary)gsrscache.getRaw("BulkSearchSummary/"+ctx.getKey());
                 	if(summary!= null)
-                		sr.setSummary(summary);
+                		sr.setSummary(summary);                	
                 }
 
                 List<T> rlist = new ArrayList<>();
@@ -476,7 +488,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 }
                 queryParamBuilder.append(k).append("=").append(v);
             });
-            resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
+            resultContext.setGeneratingUrl(oldURL + queryParamBuilder);            
         }
     }
 

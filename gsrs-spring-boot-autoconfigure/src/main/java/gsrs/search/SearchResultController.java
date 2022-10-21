@@ -30,6 +30,8 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.SearchResultSummaryRecord;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
@@ -152,14 +154,40 @@ public class SearchResultController {
 
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
-        etag.setFieldFacets(results.getFieldFacets());
-        etag.setSummary(results.getSummary());
+        etag.setFieldFacets(results.getFieldFacets());        
+		etag.setSummary(getPagedSummary(results.getSummary()));
+        
         //TODO Filters and things
 
         return new ResponseEntity<>(etag, HttpStatus.OK);
 
     }
 
+    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary) {
+    	
+    	int qTop = savedSummary.getQTop();
+		int qSkip = savedSummary.getQSkip();
+		
+		BulkQuerySummary.BulkQuerySummaryBuilder builder = BulkQuerySummary.builder();
+		builder.qTotal(savedSummary.getQTotal())
+			   .qTop(qTop)
+			   .qSkip(qSkip)
+			   .qMatchTotal(savedSummary.getQTotal() - savedSummary.getQUnMatchTotal())
+			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
+			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers())
+			   .build();
+		
+		List<SearchResultSummaryRecord> queiesList = savedSummary.getQueries();
+		
+		if(qSkip > queiesList.size()-1) {
+			builder.queries(new ArrayList<SearchResultSummaryRecord>());
+		}else {        
+			builder.queries(queiesList.subList(qSkip, Math.min(qSkip+qTop,queiesList.size())));
+		}
+    	
+    	return builder.build();
+    }
+    
     private SearchResultContext.SearchResultContextOrSerialized getContextForKey(String key){
     	SearchResultContext context=null;
     	SearchResultContext.SerailizedSearchResultContext serial=null;

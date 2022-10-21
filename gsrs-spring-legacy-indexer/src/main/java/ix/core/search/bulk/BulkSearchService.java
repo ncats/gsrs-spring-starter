@@ -12,6 +12,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
 import gsrs.cache.GsrsCache;
 import gsrs.repository.GsrsRepository;
@@ -22,6 +25,7 @@ import ix.core.search.SearchResultContext;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.Util;
+import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +37,9 @@ public class BulkSearchService {
 	
 	@Autowired
 	private GsrsCache ixCache;	
+	
+	@Autowired
+	protected PlatformTransactionManager transactionManager;
 		
 	private final int MAX_BULK_SUB_QUERY_COUNT = 1000;
 	private ExecutorService threadPool;
@@ -45,11 +52,16 @@ public class BulkSearchService {
 	public BulkSearchService(ExecutorService tp) {		
 		threadPool = tp;		
 	}
+	
+	public void setTransactionManager(PlatformTransactionManager transactionManager) {
+		this.transactionManager = transactionManager;
+	}
 		
 	public SearchResultContext search(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
 			SearchOptions options, TextIndexer textIndexer, MatchViewGenerator generator) throws IOException {
 		
 		String hashKey = request.computeKey();		
+		
 		
         try {
         	     	
@@ -60,6 +72,9 @@ public class BulkSearchService {
         		optionsCopy.setSimpleSearchOnly(true);
         		optionsCopy.setTop(options.getTop());		
         		optionsCopy.setSkip(options.getSkip());
+        		optionsCopy.setQTop(options.getQTop());		
+        		optionsCopy.setQSkip(options.getQSkip());  
+        		optionsCopy.setBulkSearchOnIdentifiers(options.getBulkSearchOnIdentifiers());
         		optionsCopy.setFetchAll();       		
         		       		
         		BulkSearchResultProcessor processor = new BulkSearchResultProcessor(ixCache);              
@@ -80,24 +95,37 @@ public class BulkSearchService {
 	private ResultEnumeration rawSearch(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
 			SearchOptions optionsCopy, TextIndexer textIndexer, MatchViewGenerator generator) {
 		BlockingQueue<BulkSearchResult> bq = new LinkedBlockingQueue<BulkSearchResult>();		
-		List<SearchResultSummaryRecord> summary = new ArrayList<>();
-		
+		List<SearchResultSummaryRecord> summaryList = new ArrayList<>();
+				
+		BulkQuerySummary querySummary = new BulkQuerySummary.BulkQuerySummaryBuilder()
+				.qUnMatchTotal(0)
+				.qTop(optionsCopy.getQTop())
+				.qSkip(optionsCopy.getQSkip())
+				.searchOnIdentifiers(optionsCopy.getBulkSearchOnIdentifiers())
+				.build();
+				
+		boolean searchOnIdentifiers = optionsCopy.getBulkSearchOnIdentifiers();
 		threadPool.submit(() -> {
 
 			try {
 				request.getQueries().forEach(q -> {
-
+					
+					String query = preProcessQuery(q, searchOnIdentifiers);
+					System.out.println("query before : " + q + " query after: " + query);
 					List<Key> keys = new ArrayList<>();					
 					
 					SearchResult result;
 					try {
-						result = textIndexer.search(gsrsRepository, optionsCopy, q);
+						result = textIndexer.search(gsrsRepository, optionsCopy, query);
 						result.copyKeysTo(keys, 0, MAX_BULK_SUB_QUERY_COUNT, true);
-																		
+															
+						if(keys.size()==0)
+							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
+						
+						
 						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q);
-						List<MatchView> list = new ArrayList<>();						
-						
-						
+						List<MatchView> list = new ArrayList<>();				
+												
 						keys.forEach((k) -> {
 							BulkSearchResult bsr = new BulkSearchResult();
 							bsr.setQuery(q);
@@ -107,7 +135,7 @@ public class BulkSearchService {
 							list.add(mv);
 						});
 						singleQuerySummary.setRecords(list);
-						summary.add(singleQuerySummary);						
+						summaryList.add(singleQuerySummary);						
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -125,12 +153,48 @@ public class BulkSearchService {
 
 		});
 		
-		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(), summary);		
+		int total = request.getQueries().size();		
+		querySummary.setQTotal(total);		
+		querySummary.setQueries(summaryList);				
+		
+		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(), querySummary);		
 		
 		return new ResultEnumeration(bq);
 
 	}
 	
+	
+	private String preProcessQuery(String query, boolean identifiers) {
+
+		query = query.trim();
+
+		// 1. check to see that no field specified
+		if (query.matches("^[A-Z0-9a-z_][:]")) { // looks for things like root_names_name: or text:
+			return query; // don't try to change any part that has an explicit field. Assume user meant it
+							// as-is
+		}
+		// 2. remove existing quotes
+		if (query.startsWith("\"")) {
+			query = query.substring(1);
+		}
+		if (query.endsWith("\"")) {
+			query = query.substring(0, query.length() - 1);
+		}
+
+		// 3. remove any explicit signifiers if present
+		if (query.startsWith("^")) {
+			query = query.substring(1);
+		}
+		if (query.endsWith("$")) {
+			query = query.substring(0, query.length() - 1);
+		}
+		// 4. add ( or add back) the exact signifier
+		
+		if(identifiers)
+			return "\"^" + query + "$\"";
+		else
+			return "\"" + query + "\"";
+	}
 	
 	@Data
 	public static class SanitizedBulkSearchRequest{
@@ -195,5 +259,21 @@ public class BulkSearchService {
             next ();            
             return current;
         }
-    }	
+    }
+	
+	@Data
+	@Builder
+	@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE, fieldVisibility = JsonAutoDetect.Visibility.ANY)
+	public static class BulkQuerySummary{
+		int qTotal;
+		int qTop;
+		int qSkip;
+		int qMatchTotal;
+		int qUnMatchTotal;
+		boolean searchOnIdentifiers;
+		List<SearchResultSummaryRecord> queries;
+		
+		public static BulkQuerySummaryBuilder builder() {return new BulkQuerySummaryBuilder();}
+		
+	}
 }

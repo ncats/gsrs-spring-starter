@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class MatchView {
 	
+	private String idName;
 	private String id;
 	private String displayName;
 	private String displayCode;

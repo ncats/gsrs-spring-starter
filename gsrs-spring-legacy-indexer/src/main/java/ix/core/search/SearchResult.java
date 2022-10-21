@@ -30,6 +30,7 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import ix.core.models.Facet;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
@@ -47,7 +48,7 @@ public class SearchResult {
 	
 	private List<?> result; // final result when there are no more updates
 	                        // (largely unnecessary now)
-	List<SearchResultSummaryRecord> summary;
+	private BulkQuerySummary summary;
 	
 	private int count;
 	private SearchOptions options;
@@ -455,11 +456,11 @@ public class SearchResult {
 		}
 	}
 
-	public void setSummary(List<SearchResultSummaryRecord> inputSummary) {
-		summary = inputSummary;
+	public void setSummary(BulkQuerySummary inputSummary) {		
+		this.summary = inputSummary;
 	}
 	
-	public List<SearchResultSummaryRecord> getSummary(){
+	public BulkQuerySummary getSummary(){
 		return summary;
 	}
 
