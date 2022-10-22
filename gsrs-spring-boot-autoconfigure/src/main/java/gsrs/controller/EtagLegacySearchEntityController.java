@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -196,7 +195,6 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
 
         RecordScrubber<T> scrubber= getScrubberFactory(gsrsExportConfiguration.getScrubberFactory().get(getEntityService().getContext())).createScrubber(exportConfig.get().getScrubberSettings());
-        //exportConfig.get().getScrubberSettings()
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
         RecordExpander<T> expander = getExpanderFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
@@ -342,7 +340,4 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         return config;
     }
 
-    /*private CachedSupplier<List<ExporterFactoryConfig<T>>> importAdapterFactories
-            = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
-            this.getEntityService().getEntityClass()));*/
 }

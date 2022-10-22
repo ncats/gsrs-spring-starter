@@ -95,24 +95,8 @@ public interface ExporterFactory<T> {
         outputNode.put("type", "object");
 
         ObjectNode propertiesNode = JsonNodeFactory.instance.objectNode();
-        List<String> fieldNames = new ArrayList<>();
         schemaNode.fieldNames().forEachRemaining(fn->{
-            ObjectNode singlePropertyNode = JsonNodeFactory.instance.objectNode();
-            String rawType = schemaNode.get(fn).toString();
-            if(rawType.endsWith("\"")) rawType= rawType.substring(0, rawType.length()-1);
-            if(rawType.startsWith("\"")) rawType= rawType.substring(1);
-            //System.out.println("rawType: "+ rawType);
-            if( rawType.toUpperCase(Locale.ROOT).contains("STRING") && rawType.contains("[")){
-
-                rawType="array";
-                ObjectNode arrayTypeNode = JsonNodeFactory.instance.objectNode();
-                arrayTypeNode.put("type", "string");
-                singlePropertyNode.set("items", arrayTypeNode);
-            } else if(rawType.contains("Integer")) {
-                rawType="integer";
-            }
-            singlePropertyNode.put("type", rawType);
-            propertiesNode.set(fn, singlePropertyNode);
+            propertiesNode.set(fn, schemaNode.get(fn));
         });
         outputNode.set("properties", propertiesNode);
 
