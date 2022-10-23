@@ -172,6 +172,8 @@ public class SearchOptions implements RequestOptions {
 		     	}),
 		     	ofInteger("top", a->setTop(a), ()->getTop()),
 		     	ofInteger("skip", a->skip=a, ()->skip),
+		     	ofInteger("qTop", a->setQTop(a), ()->getQTop()),
+		     	ofInteger("qSkip", a->qSkip=a, ()->qSkip),
 		     	ofInteger("fskip", a->fskip=a, ()->fskip),
 		     	ofInteger("fdim", a->setFdim(a), ()->getFdim()),
 		     	ofInteger("fetch", a->setFetch(a), ()->getFetch()),
@@ -776,13 +778,13 @@ public class SearchOptions implements RequestOptions {
 	
 	public int setQTop(int qTop) {
 		this.qTop = qTop;
-//		queryParams.resetCache();
+		queryParams.resetCache();
 		return top;
 	}
 	
 	public int setQSkip(int qSkip) {
 		this.qSkip = qSkip;
-//		queryParams.resetCache();
+		queryParams.resetCache();
 		return skip;
 	}
 	
