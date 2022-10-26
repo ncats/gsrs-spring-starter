@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Filter;
@@ -18,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
@@ -29,8 +30,8 @@ import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
-import lombok.Getter;
-import lombok.Setter;
+import ix.core.util.EntityUtils.Key;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -39,7 +40,6 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     @Autowired
     private TextIndexerFactory textIndexerFactory;
     
-    @Autowired
     private IndexerEntityListener indexerEntityListener;
 
     private final GsrsRepository gsrsRepository;
@@ -48,9 +48,9 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     private AtomicBoolean reindexing = new AtomicBoolean(false);
 
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
-        gsrsRepository= repository;
-        this.entityClass = entityClass;
-
+    	        gsrsRepository= repository;
+        this.entityClass = entityClass;        
+        indexerEntityListener = new IndexerEntityListener();        
     }
 
     @Override
@@ -169,25 +169,61 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
     
-    public boolean reindex(String id){
+    public void reindex(Object entity, boolean deleteFirst){
+    	//this ensures that the reindexing is done recursively
+    	//TODO: technically this will not handle the cases where 
+    	// a child element which is indexed at root had been deleted via the database
+    	// and a reindexing is triggered. For example, a name of a substance is deleted
+    	// in the database and the substance is marked for reindexing. While the reindexing
+    	// of the substance fields will work, the reindexing of the NAME will not delete
+    	// the now orphaned index. To do this, we would need to add some field to the name
+    	// which specifies its parent substance and have another step to delete all such elements
+    	// 
+    	// In practice this case is rare, but it may become more common. This must be addressed
+    	// eventually
     	
+    	EntityWrapper wrapper =EntityWrapper.of(entity);
+    	wrapper.traverse().execute((p, child) -> {
+            EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+            //this should speed up indexing so that we only index
+            //things that are roots.  the actual indexing process of the root should handle any
+            //child objects of that root.
+            boolean isEntity = wrapped.isEntity();
+            boolean isRootIndexed = wrapped.isRootIndex();
+
+            if (isEntity && isRootIndexed) {
+                try {
+                    indexerEntityListener.reindexEntity(wrapped.getRawValue(), deleteFirst);
+                } catch (Throwable t) {
+                    log.warn("indexing error handling:" + wrapped, t);
+                }
+            }
+
+        });
+    
     	
     }
     
-    public List<Object> getIndexData(String id) throws IOException {
-    	SearchOptions options = new SearchOptions();
-    	options.setTop(1);
+    
+    public Key toKey(String id) {
+    	return Key.ofStringId(entityClass, id);
+    }
+    
+    
+    public TextIndexer.IndexRecord getIndexData(Key k) throws IOException {
     	TextIndexer indexer = textIndexerFactory.getDefaultInstance();
-    	SearchResult result = indexer.search(gsrsRepository, options, id);
-    	if(result.getCount()<=0) {
-    		return new ArrayList<>();
-    	}
-    	return result.getMatches();      	    	
+    	
+    	try {
+			return indexer.getIndexRecord(k);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return null;
     }
         
     
-    @Getter
-    @Setter
+    @Data
     class IndexData {
     	List<IndexedField> indexedFiledList;
     	List<IndexedFacet> indexedFacetList; 
@@ -197,16 +233,14 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     	}
     }
     
-    @Getter
-    @Setter
+    @Data
     class IndexedField{
     	String fieldName;
     	String fieldValue;
     	String type;
 	}
     
-    @Getter
-    @Setter
+    @Data
 	class IndexedFacet{
 		String facetName;
 		String facetValue;

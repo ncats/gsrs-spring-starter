@@ -78,8 +78,12 @@ public class SequenceIndexerEventListener {
         EntityUtils.Key entityKey = event.getEntityKey();
         try {
             EntityUtils.EntityWrapper<?> ew = event.getOptionalFetchedEntityToReindex().get();
-            addSequenceFieldDataToIndex(ew, entityKey,null);
+            if(event.isRequiresDelete()) {
+            	removeFromIndex(ew, entityKey);
+        	}
+        	addSequenceFieldDataToIndex(ew, entityKey,null);
             addSequenceFileDataToIndex(entityKey, CachedSupplier.of(()->Optional.of(ew) ));
+            
         }catch(Exception e) {
            log.warn("Trouble sequence indexing:" + entityKey, e);
             
@@ -263,6 +267,7 @@ public class SequenceIndexerEventListener {
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
+        //TODO: this is potentially inefficient, could use cached fetcher
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
@@ -282,6 +287,7 @@ public class SequenceIndexerEventListener {
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
+        //TODO: this is potentially inefficient, could use cached fetcher
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();

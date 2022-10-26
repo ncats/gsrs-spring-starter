@@ -1,10 +1,37 @@
 package gsrs.controller;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.security.hasAdminRole;
-import gsrs.springUtils.GsrsSpringUtils;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
@@ -13,22 +40,9 @@ import ix.core.search.SearchResult;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
 import ix.utils.Util;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Pattern;
+import lombok.Data;
 
 /**
  * Extension to AbstractGsrsEntityController that adds support for the legacy TextIndexer
@@ -48,6 +62,41 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    private final static ExecutorService executor = Executors.newFixedThreadPool(1);
+    
+    @Data
+    private class ReindexStatus{
+    	private UUID statusID;
+    	private String status;
+    	private int total;
+    	private int indexed;
+    	private int failed;
+    	private boolean done;
+    	private long start;
+    	private long finshed;
+    	private List<String> ids;
+    	//TODO need self
+    }
+    
+    @Data
+    private class ReindexStatusTasks{
+
+    	public int getRunningCount() {
+    		return (int) tasks.stream().filter(s->!s.isDone()).count();
+    	}
+    	public int getTotalCount() {
+    		return (int) tasks.stream().filter(s->s.isDone()).count();
+    	}
+    	private List<ReindexStatus> tasks;
+    	
+    }
+    
+    //should maybe use cache
+    //TODO: empty sometimes somehow
+    private Map<String, ReindexStatus> reindexing = new ConcurrentHashMap<>();
+
+
+    
     /**
      * Force a reindex of all entities of this entity type.
      * @param wipeIndex should the whole index be deleted before re-index begins;
@@ -61,26 +110,117 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
+    @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
+    public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
+    	
+    	return Optional.ofNullable(reindexing.get(id)).map(o->{
+    		return new ResponseEntity<>(o, HttpStatus.OK);	
+    	})
+    	.map(oo->(ResponseEntity)oo)
+    	.orElseGet(()->{
+    		return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    	});
+    }
 //    @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
-    public ResponseEntity bulkReindex(@RequestBody String ids){
-        System.out.println(ids);
-        return new ResponseEntity<>("result" + ids, HttpStatus.OK);
+    public ResponseEntity bulkReindex(@RequestBody String ids, @RequestParam Map<String, String> queryParameters){
+    	List<String> queries = Arrays.asList(ids.split("\n"));
+    	  
+    	List<String> list = queries.stream()    			
+    			.map(q->q.trim())
+    			.peek(s->System.out.println(s))
+    			.filter(q->q.length()>0)
+    			.distinct()
+    			.collect(Collectors.toList());  
+    	ReindexStatus stat = new ReindexStatus();
+    	stat.statusID = UUID.randomUUID();
+    	stat.done=false;
+    	stat.status="initializing";
+    	stat.ids=list;
+    	stat.start = TimeUtil.getCurrentTimeMillis();
+    	stat.total=list.size();
+    	reindexing.put(stat.statusID.toString(), stat);
+    	
+    	executor.execute(()->{
+    		int[] r = new int[] {0};
+    		stat.ids.forEach(i->{
+    			r[0]++;
+    			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
+    			//TODO: Should change how this works probably to not use REST endpoint
+    			try {
+    				Optional<T> obj = getEntityService().getEntityBySomeIdentifier(i);
+    				getlegacyGsrsSearchService().reindex(obj.get(), true);
+    				stat.indexed++;
+    			}catch(Exception e) {
+    				stat.failed++;
+    			}   
+    			
+    		});
+    		stat.setStatus("finished");
+    		stat.done=true;
+    		stat.finshed = TimeUtil.getCurrentTimeMillis();
+    	});
+    	
+    	
+        return new ResponseEntity<>(stat, HttpStatus.OK);
     }
+    
+    @GetGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
+    public ResponseEntity bulkReindex(@RequestParam Map<String, String> queryParameters){
+    	ReindexStatusTasks tasks = new ReindexStatusTasks();
+    	tasks.tasks=reindexing.values().stream().collect(Collectors.toList());
+        return new ResponseEntity<>(tasks, HttpStatus.OK);
+    }
+    @GetGsrsRestApiMapping(value="/@reindexBulk/clear", apiVersions = 1)
+    public ResponseEntity bulkReindexClear(@RequestParam Map<String, String> queryParameters){
+    	reindexing.entrySet().stream()
+	    	.filter(e->e.getValue().isDone())
+	    	.map(e->e.getKey())
+	    	.collect(Collectors.toList())
+	    	.forEach(k->reindexing.remove(k));
+    	
+    	ReindexStatusTasks tasks = new ReindexStatusTasks();
+    	tasks.tasks=reindexing.values().stream().collect(Collectors.toList());
+        return new ResponseEntity<>(tasks, HttpStatus.OK);
+    }
+    
+    
     
 //    @hasAdminRole
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
-    public ResponseEntity reindex(@PathVariable("id") String id){
-        
-        return new ResponseEntity<>(id, HttpStatus.OK);
+    public ResponseEntity reindex(@PathVariable("id") String id,
+    		    		  		  @RequestParam(value = "fromBackup",defaultValue="true") boolean fromBackup,
+                                  @RequestParam Map<String, String> queryParameters){
+        //this needs to trigger a reindex
+
+        Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
+        if(obj.isPresent()){
+            Key k = EntityWrapper.of(obj.get()).getKey();
+            //delete first
+            getlegacyGsrsSearchService().reindex(obj.get(), true);
+            //TODO: invent response
+            
+            return new ResponseEntity<>(id, HttpStatus.OK);
+        }    	
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
     
     @GetGsrsRestApiMapping(value="({id})/@index", apiVersions = 1)
-    public ResponseEntity getIndexData(@PathVariable("id") String id){
-        
-        return new ResponseEntity<>("result" + id, HttpStatus.OK);
-    }
-    
+	public ResponseEntity getIndexData(@PathVariable("id") String id,
+									   @RequestParam Map<String, String> queryParameters) {
+		Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
+		if (obj.isPresent()) {
+			Key k = EntityWrapper.of(obj.get()).getKey();
+			try {
+				TextIndexer.IndexRecord rec = getlegacyGsrsSearchService().getIndexData(k);
+				return new ResponseEntity<>(rec, HttpStatus.OK);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return gsrsControllerConfiguration.handleNotFound(queryParameters);
+	}
+
     @GetGsrsRestApiMapping(value = "/search/@facets", apiVersions = 1)
     public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
                                                  @RequestParam("field") Optional<String> field,

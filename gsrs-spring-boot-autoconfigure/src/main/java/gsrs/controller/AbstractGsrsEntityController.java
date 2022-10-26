@@ -58,7 +58,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     private static Pattern VERSIONED_ROUTE = Pattern.compile("^v/(\\d+)$");
     @Autowired
-    private GsrsControllerConfiguration gsrsControllerConfiguration;
+	protected GsrsControllerConfiguration gsrsControllerConfiguration;
 
 
     @Autowired

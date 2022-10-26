@@ -8,7 +8,11 @@ import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
@@ -30,6 +34,7 @@ import java.util.Optional;
  * Hibernate Entity listener that will update our legacy {@link TextIndexer}.
  */
 @Component
+@Slf4j
 @Transactional(readOnly = true)
 public class TextIndexerEntityListener {
 
@@ -54,7 +59,7 @@ public class TextIndexerEntityListener {
             if(indexer !=null) {
                 
                 //refetch from db
-                Optional<EntityUtils.EntityWrapper<?>> opt = event.getSource().fetch();
+                Optional<EntityUtils.EntityWrapper> opt = EntityFetcher.of(event.getSource()).getIfPossible().map(m->EntityWrapper.of(m));
                 if(opt.isPresent()) {
                     EntityUtils.EntityWrapper ew = opt.get();
 
@@ -75,7 +80,12 @@ public class TextIndexerEntityListener {
         Optional<EntityUtils.EntityWrapper<?>> opt = event.getOptionalFetchedEntityToReindex();
         
         if(opt.isPresent()){
-            textIndexerFactory.getDefaultInstance().add(opt.get());
+        	if(event.isRequiresDelete()) {
+        		textIndexerFactory.getDefaultInstance().update(opt.get());
+        	}else {
+        		textIndexerFactory.getDefaultInstance().add(opt.get());	
+        	}
+            
         }
     }
     @EventListener
@@ -89,6 +99,7 @@ public class TextIndexerEntityListener {
             textIndexerFactory.getDefaultInstance().doneProcess();
         }
     }
+    
 
     @Async
     @TransactionalEventListener
@@ -97,10 +108,10 @@ public class TextIndexerEntityListener {
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
             try {
-                EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
+                EntityUtils.EntityWrapper ew = EntityWrapper.of(EntityFetcher.of(event.getSource()).call());
                 indexer.update(ew);
             }catch(Throwable t){
-                t.printStackTrace();
+                log.warn("trouble updating index for:" + event.getSource().toString(), t);
             }
         }
     }

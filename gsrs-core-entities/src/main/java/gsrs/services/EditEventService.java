@@ -111,7 +111,7 @@ public class EditEventService {
                         editRepository.saveAndFlush(oldEdit);
                     }
                 }else {
-                    editRepository.saveAndFlush(newEdit);
+//                    editRepository.saveAndFlush(newEdit);
                 }
             }
         }catch(Exception e) {

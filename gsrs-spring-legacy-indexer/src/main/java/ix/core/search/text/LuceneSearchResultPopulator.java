@@ -72,6 +72,7 @@ class LuceneSearchResultPopulator {
 				//because the document id integer may not always remain the same between loads
 				//and that can cause a problem
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
+				//doc.
 				try {
 					Key k = keyOf(doc).toRootKey();
 					result.addNamedCallable(new EntityFetcher(k));
@@ -95,8 +96,14 @@ class LuceneSearchResultPopulator {
 			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
-					Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
-					return new Key(ei, id);
+					String ss=ei.getInternalIdField();
+					try {
+						Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
+						return new Key(ei, id);
+					}catch(Exception e) {
+						throw new RuntimeException(e);
+					}
+					
 				} else {
 					String id = doc.getField(ei.getInternalIdField()).stringValue();
 					return new Key(ei, ei.formatIdToNative(id));

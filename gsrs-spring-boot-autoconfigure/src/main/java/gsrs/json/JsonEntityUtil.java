@@ -38,29 +38,38 @@ public final class JsonEntityUtil {
     private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
         boolean found=false;
         for(Method m: aClass.getDeclaredMethods()){
-            m.setAccessible(true);
-            if(m.getAnnotation(ParentReference.class) != null){
-                try{
-                    m.invoke(obj, owner);
-                } catch (Throwable e) {
-                    Sneak.sneakyThrow(e);
-                }
-                found=true;
-            }
+        	try {
+	            m.setAccessible(true);
+	            
+	            if(m.getAnnotation(ParentReference.class) != null){
+	                try{
+	                    m.invoke(obj, owner);
+	                } catch (Throwable e) {
+	                    Sneak.sneakyThrow(e);
+	                }
+	                found=true;
+	            }
+        	}catch(Exception e) {
+        		
+        	}
         }
         if(!found) {
             for (Field f : aClass.getDeclaredFields()) {
-                f.setAccessible(true);
-                if (f.getAnnotation(ParentReference.class) != null) {
-                    try {
-                        if (force || f.get(obj) == null) {
-                            f.set(obj, owner);
-                        }
-                    } catch (IllegalAccessException e) {
-                        Sneak.sneakyThrow(e);
-                    }
-                    break;
-                }
+            	try {
+	                f.setAccessible(true);
+	                if (f.getAnnotation(ParentReference.class) != null) {
+	                    try {
+	                        if (force || f.get(obj) == null) {
+	                            f.set(obj, owner);
+	                        }
+	                    } catch (IllegalAccessException e) {
+	                        Sneak.sneakyThrow(e);
+	                    }
+	                    break;
+	                }
+            	}catch(Exception e) {
+            		
+            	}
             }
         }
     }

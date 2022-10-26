@@ -197,6 +197,8 @@ public class EntityUtils {
 			Objects.requireNonNull(bean, "wrapped object is null");
 			if (bean instanceof EntityWrapper) {
 				return (EntityWrapper) bean;
+			}else if(bean instanceof Optional) {
+				return (EntityWrapper) of(((Optional)bean).get());
 			}
 			return new EntityWrapper<T>(bean);
 		}
@@ -1630,6 +1632,10 @@ public class EntityUtils {
 			return findermap.computeIfAbsent(datasource,(k)->new Model.Finder(k, idType, this.cls));
 		}*/
 
+		public Key keyFromIDString(String id) {
+			return Key.of(this,formatIdToNative(id));
+		}
+		
 		public Object formatIdToNative(String id) {
 			if (Long.class.isAssignableFrom(this.idType)) {
 				return Long.parseLong(id);
@@ -2997,6 +3003,14 @@ public class EntityUtils {
 		public static Key of(EntityInfo<?> meta, Object id) {
 			return new Key(meta, id);
 		}
+		
+		public static Key ofStringId(EntityInfo<?> meta, String id) {
+			return meta.keyFromIDString(id);
+		}
+		public static <T> Key ofStringId(Class<T> class1, String id) {
+	        EntityInfo<T> emeta= EntityUtils.getEntityInfoFor(class1);
+	        return ofStringId(emeta,id);
+	    }
 
 
 
