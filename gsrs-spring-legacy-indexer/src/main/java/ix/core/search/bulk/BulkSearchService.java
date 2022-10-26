@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -61,7 +60,7 @@ public class BulkSearchService {
 	public SearchResultContext search(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
 			SearchOptions options, TextIndexer textIndexer, MatchViewGenerator generator) throws IOException {
 		
-		String hashKey = request.computeKey(options.getQTop(), options.getQSkip(),options.getBulkSearchOnIdentifiers());		
+		String hashKey = request.computeKey(options.getBulkSearchOnIdentifiers());		
 		
 		
         try {
@@ -100,8 +99,6 @@ public class BulkSearchService {
 				
 		BulkQuerySummary querySummary = new BulkQuerySummary.BulkQuerySummaryBuilder()
 				.qUnMatchTotal(0)
-				.qTop(optionsCopy.getQTop())
-				.qSkip(optionsCopy.getQSkip())
 				.searchOnIdentifiers(optionsCopy.getBulkSearchOnIdentifiers())
 				.build();
 				
@@ -158,8 +155,7 @@ public class BulkSearchService {
 		querySummary.setQTotal(total);		
 		querySummary.setQueries(summaryList);				
 		
-		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getQTop(),optionsCopy.getQSkip(),
-				optionsCopy.getBulkSearchOnIdentifiers()), querySummary);		
+		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getBulkSearchOnIdentifiers()), querySummary);		
 		
 		return new ResultEnumeration(bq);
 
@@ -204,25 +200,24 @@ public class BulkSearchService {
 		private String hash; 
 		private List<String> queries;
 		
-		private String computeHash(int qTop, int qSkip, boolean identifers) {
+		private String computeHash(boolean identifers) {
 			if(hash != null) {
 				return hash;
 			}else {
-				// maybe come back later
-				int hashInt;
-				Optional<Integer> hashOpt = queries.stream().sorted()
+				// maybe come back later	
+				String flag = (identifers==true?"1":"0");
+				hash = queries.stream().sorted()
 						.map(q->q.hashCode())
-						.reduce((a,b)->a^b);
-				if(hashOpt.isPresent())
-					hashInt = hashOpt.get()^qTop^qSkip+(identifers==true?1:0);
-				else
-					hashInt = qTop^qSkip+(identifers==true?1:0);
-				return hashInt + "";				
+						.reduce((a,b)->a^b)
+						.map(r->r+flag)
+						.orElse("Empty");	
+			
+				return hash;				
 			}
 		}
 		
-		public String computeKey(int qTop, int qSkip, boolean identifers){
-	            return Util.sha1("bulk/" + computeHash(qTop, qSkip, identifers));
+		public String computeKey(boolean identifers){
+	            return Util.sha1("bulk/" + computeHash(identifers));
 	        }
 	}
 	

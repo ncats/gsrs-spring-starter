@@ -241,23 +241,72 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(top.isPresent()) 
     		qTop = top.get();
     	if(skip.isPresent()) 
-    		qSkip = top.get();
+    		qSkip = skip.get();
     	    	
     	List<String> queries = Arrays.asList(query.split("\\r?\\n|\\r"));
   	  
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
     			.filter(q->q.length()>0)
-    			.distinct()
+//    			.distinct()                            No need to be distinct
     			.collect(Collectors.toList());    	
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));
     	Long id = textService.saveTextString("bulkSearch", queryStringToSave);
+    	
+    	String uri = request.getRequestURL().toString(); 
+    	if(request.getQueryString()!=null)
+    		uri = uri + "?"+request.getQueryString();
+    	else
+    		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
-    	String returnJsonSrting = createJson(id, qTop, qSkip, list, request.getRequestURL().toString()+"?"+request.getQueryString());    	
+    	String returnJsonSrting = createJson(id, qTop, qSkip, list, uri);    	
  
         return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
     }
+    
+    
+    @PutGsrsRestApiMapping(value="/@bulkQuery")
+    public ResponseEntity<String> updateQueryList(@RequestBody String query,
+    									@RequestParam("id") String queryId,
+    									@RequestParam("top") Optional<Integer> top,
+  										@RequestParam("skip") Optional<Integer> skip,
+  										HttpServletRequest request){
+    	
+    	Long id = Long.parseLong(queryId);
+    	if(id < 0) {
+    		return new ResponseEntity<>("Invalid ID " + id, HttpStatus.BAD_REQUEST);    		
+    	}
+    	
+    	int qTop = 100, qSkip = 0;
+    	if(top.isPresent()) 
+    		qTop = top.get();
+    	if(skip.isPresent()) 
+    		qSkip = skip.get();
+    	    	
+    	List<String> queries = Arrays.asList(query.split("\\r?\\n|\\r"));
+  	  
+    	List<String> list = queries.stream()    			
+    			.map(q->q.trim())
+    			.filter(q->q.length()>0)
+//    			.distinct()                            No need to be distinct
+    			.collect(Collectors.toList());    	
+    	
+    	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));    	
+    	
+    	Long returnId = textService.updateTextString("bulkSearch", id, queryStringToSave);
+    	
+    	String uri = request.getRequestURL().toString(); 
+    	if(request.getQueryString()!=null)
+    		uri = uri + "?"+request.getQueryString();
+    	else
+    		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
+    	    	
+    	String returnJsonSrting = createJson(returnId, qTop, qSkip, list, uri);    	
+ 
+        return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
+    }
+
 
     @GetGsrsRestApiMapping(value="/@bulkQuery")
     public ResponseEntity<String> getQueryList(@RequestParam String id,
@@ -270,13 +319,19 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(top.isPresent()) 
     		qTop = top.get();
     	if(skip.isPresent()) 
-    		qSkip = top.get();
+    		qSkip = skip.get();
     	List<String> queries = Arrays.asList(queryString.split("\n"));
     	List<String> list = queries.stream()
     								.map(p->p.trim())
-    								.collect(Collectors.toList());    	
+    								.collect(Collectors.toList());  
     	
-    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, request.getRequestURL().toString()+"?"+request.getQueryString());
+    	String uri = request.getRequestURL().toString(); 
+    	if(request.getQueryString()!=null)
+    		uri = uri + "?" + request.getQueryString();
+    	else
+    		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
+    	
+    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, uri);
         return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
     

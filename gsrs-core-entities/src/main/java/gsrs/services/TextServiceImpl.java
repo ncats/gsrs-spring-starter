@@ -41,10 +41,18 @@ public class TextServiceImpl implements TextService {
     }
     
     @Override
-    public Long saveTextString(String label, String textJsonString) {
+    public Long updateTextString(String label, long id, String textString){
+    	Text text = textRepository.findById(id).orElse(null);
+    	text.setText(textString);
+    	Text saved = textRepository.saveAndFlush(text);
+    	return saved.id;
+    }
+    
+    @Override
+    public Long saveTextString(String label, String textString) {
     	Text text = new Text();
     	text.label = label;
-    	text.text = textJsonString;    	
+    	text.text = textString;    	
     	Text saved = textRepository.saveAndFlush(text);
     	return saved.id;
     }

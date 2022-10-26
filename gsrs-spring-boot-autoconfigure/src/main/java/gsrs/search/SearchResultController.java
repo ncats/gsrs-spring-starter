@@ -1,8 +1,8 @@
 package gsrs.search;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,8 +30,8 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
+import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
@@ -76,12 +76,17 @@ public class SearchResultController {
     @GetGsrsRestApiMapping(value = {"({key})/results","/{key}/results"})
     public ResponseEntity<Object> getSearchResultContextResult(@PathVariable("key") String key,
                                                         @RequestParam(required = false, defaultValue = "10") int top,
-                                                        @RequestParam(required = false, defaultValue = "0") int skip,
+                                                        @RequestParam(required = false, defaultValue = "0") int skip,                                                        
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
                                                         @RequestParam(required = false) String query,
                                                         @RequestParam MultiValueMap<String, String> queryParameters,
                                                                HttpServletRequest request) throws URISyntaxException {
+    	
+    	//default qTop 100
+    	
+    	int qTop = Integer.parseInt(queryParameters.getOrDefault("qTop", Arrays.asList("100")).get(0));
+    	int qSkip = Integer.parseInt(queryParameters.getOrDefault("qSkip", Arrays.asList("0")).get(0));
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
@@ -154,8 +159,10 @@ public class SearchResultController {
 
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
-        etag.setFieldFacets(results.getFieldFacets());        
-		etag.setSummary(getPagedSummary(results.getSummary()));
+        etag.setFieldFacets(results.getFieldFacets()); 
+  
+        if(results.getSummary()!= null)
+        	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip));
         
         //TODO Filters and things
 
@@ -163,11 +170,8 @@ public class SearchResultController {
 
     }
 
-    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary) {
-    	
-    	int qTop = savedSummary.getQTop();
-		int qSkip = savedSummary.getQSkip();
-		
+    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary, int qTop, int qSkip) {
+	
 		BulkQuerySummary.BulkQuerySummaryBuilder builder = BulkQuerySummary.builder();
 		builder.qTotal(savedSummary.getQTotal())
 			   .qTop(qTop)
