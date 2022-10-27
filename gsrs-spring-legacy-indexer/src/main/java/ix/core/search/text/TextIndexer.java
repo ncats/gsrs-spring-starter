@@ -4033,16 +4033,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 		    		.type(IndexedFieldType.DOUBLE)
 					.fieldName("D_" +full)
 					.fieldValue(dval.doubleValue()+"")
-					.sortable(indexableValue.sortable())
 					.build());
+			
 			if (indexableValue.sortable()) {
 				sorterAdded = true;
-			}
-			
-			if (!name.equals(full)) {
-//				fields.accept(new DoubleField("D_" +full, dval.doubleValue(), NO));
 				record.fields.add(IndexedField.builder()
-			    		.type(IndexedFieldType.DOUBLE)
+						.type(IndexedFieldType.DOUBLE)
+						.fieldName(full)
+						.fieldValue(dval.doubleValue()+"")
+						.sortable(true)
+						.build());
+			}
+
+			if (!name.equals(full)) {
+				record.fields.add(IndexedField.builder()
+						.type(IndexedFieldType.DOUBLE)
 						.fieldName("D_" +name)
 						.fieldValue(dval.doubleValue()+"")
 						.build());

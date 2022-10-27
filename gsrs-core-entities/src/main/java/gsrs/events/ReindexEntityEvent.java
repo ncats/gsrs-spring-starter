@@ -12,25 +12,28 @@ import lombok.Getter;
 @Getter
 public class ReindexEntityEvent implements ReindexEvent {
 
-    private UUID reindexId;
-    private EntityUtils.Key entityKey;
-    private boolean requiresDelete=false;
-    private Optional<EntityWrapper<?>> optionalEntityWrapper = Optional.empty();
-    
-    
-    public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean b) {
-    	this.reindexId=reindexId;
-        this.entityKey=entityKey;
-        this.optionalEntityWrapper=of;
-        this.requiresDelete=b;
+	private UUID reindexId;
+	private EntityUtils.Key entityKey;
+	private boolean requiresDelete=false;
+	private Optional<EntityWrapper<?>> optionalEntityWrapper = Optional.empty();
+
+
+	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean b) {
+		this.reindexId=reindexId;
+		this.entityKey=entityKey;
+		this.optionalEntityWrapper=of;
+		this.requiresDelete=b;
+	}
+	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of) {
+		this(reindexId,entityKey,of,false);
 	}
 
 
 
 	public Optional<EntityWrapper<?>> getOptionalFetchedEntityToReindex(){
-        if(optionalEntityWrapper.isPresent())return optionalEntityWrapper;
-        return entityKey.fetch();
-        
-    }
-    
+		if(optionalEntityWrapper.isPresent())return optionalEntityWrapper;
+		return entityKey.fetch();
+
+	}
+
 }
