@@ -84,7 +84,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @Autowired
     private EntityLinks entityLinks;
     
-    private final int BULK_SEARCH_DEFAULT_TOP = 100;
+    private final int BULK_SEARCH_DEFAULT_TOP = 1000;
     
     private final int BULK_SEARCH_DEFAULT_SKIP = 0;
 
@@ -237,7 +237,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
   										@RequestParam("skip") Optional<Integer> skip,
   										HttpServletRequest request){
     	
-    	int qTop = 100, qSkip = 0;
+    	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
     	if(skip.isPresent()) 
@@ -278,7 +278,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>("Invalid ID " + id, HttpStatus.BAD_REQUEST);    		
     	}
     	
-    	int qTop = 100, qSkip = 0;
+    	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
     	if(skip.isPresent()) 
@@ -315,7 +315,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     										   HttpServletRequest request){    	
     	
     	String queryString = textService.getText(id); 
-    	int qTop = 100, qSkip = 0;
+    	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
     	if(skip.isPresent()) 
