@@ -21,10 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -76,6 +73,12 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         log.trace("starting in handleExportConfigsFetch");
         String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
         List<Text> configs = textRepository.findByLabel(label);
+        try {
+            configs.addAll(getHardcodedConfigs());
+        } catch (JsonProcessingException ex) {
+            log.error("Error creating hard-coded exporter settings", ex);
+        }
+
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t-> {
                     try {
                         return SpecificExporterSettings.fromText(t);
@@ -243,5 +246,12 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     public RecordScrubberFactory<T> getScrubberFactory(ScrubberFactoryConfig config) throws  NoSuchMethodException,
             InvocationTargetException, InstantiationException, IllegalAccessException {
         return (RecordScrubberFactory<T>) config.getScrubberFactoryClass().getConstructor().newInstance();
+    }
+
+    /*
+    Items that will be of general usage
+     */
+    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
+        return Collections.emptyList();
     }
 }

@@ -83,11 +83,9 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 .removeApprovalId(true)
                 .setAllAuditorsToAbstractUser(true)
                 .build();
-        JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
         SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)
-                .generalSettings(generalSettings)
                 .configurationKey("Advanced SDFiles")
                 .build();
         try {

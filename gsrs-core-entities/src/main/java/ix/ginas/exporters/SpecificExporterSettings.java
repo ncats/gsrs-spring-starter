@@ -1,6 +1,8 @@
 package ix.ginas.exporters;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.models.Text;
@@ -14,6 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SpecificExporterSettings {
 
     private String configurationId;
@@ -21,7 +24,6 @@ public class SpecificExporterSettings {
     private String exporterKey;
     private JsonNode scrubberSettings;
     private JsonNode exporterSettings;
-    private JsonNode generalSettings;//we may not need this item
     private JsonNode expanderSettings;
     private String entityClass;
 
@@ -35,8 +37,10 @@ public class SpecificExporterSettings {
     }
 
     public static SpecificExporterSettings fromText(Text text) throws JsonProcessingException {
-        SpecificExporterSettings conf = (new ObjectMapper()).readValue(text.getValue(), SpecificExporterSettings.class);
+        ObjectMapper mapper = new ObjectMapper();
+        SpecificExporterSettings conf = mapper.readValue(text.getValue(), SpecificExporterSettings.class);
         conf.setConfigurationId(text.id.toString());
         return conf;
     }
+
 }
