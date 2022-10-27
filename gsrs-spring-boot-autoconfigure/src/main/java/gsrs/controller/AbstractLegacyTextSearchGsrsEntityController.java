@@ -294,7 +294,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));    	
     	
-    	Long returnId = textService.updateTextString("bulkSearch", id, queryStringToSave);
+    	Long returnId = textService.updateTextString("bulkSearch", queryId, queryStringToSave);
     	
     	String uri = request.getRequestURL().toString(); 
     	if(request.getQueryString()!=null)

@@ -41,9 +41,11 @@ public class TextServiceImpl implements TextService {
     }
     
     @Override
-    public Long updateTextString(String label, long id, String textString){
-    	Text text = textRepository.findById(id).orElse(null);
-    	text.setText(textString);
+    public Long updateTextString(String label, String id, String textString){
+    	Long recordId = Long.parseLong(id);
+    	Text text = textRepository.findById(recordId).orElse(null);
+    	text.label = label;
+    	text.text = textString;    	
     	Text saved = textRepository.saveAndFlush(text);
     	return saved.id;
     }
