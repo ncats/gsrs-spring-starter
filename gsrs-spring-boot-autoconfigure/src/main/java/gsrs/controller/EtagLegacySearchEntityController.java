@@ -15,6 +15,7 @@ import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.ETag;
+import ix.core.models.Text;
 import ix.core.search.SearchResult;
 import ix.ginas.exporters.*;
 import lombok.Builder;
@@ -165,6 +166,14 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 Long itemId=Long.parseLong(exportConfigId);
                 log.trace("converted configid to {}", itemId);
                 exportConfig = getConfigById(itemId);
+                if( exportConfig==null  || !exportConfig.isPresent()){
+                    log.trace("going to look up config with ID {} in hardcoded", itemId);
+                    for(Text t : getHardcodedConfigs()){
+                        if( t.id==itemId){
+                            exportConfig= Optional.of(SpecificExporterSettings.fromText(t));
+                        }
+                    }
+                }
             } else {
                 Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext()).stream()
                         .filter(e->e.getExtension().equalsIgnoreCase(exportConfigId))
@@ -181,6 +190,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
 
         if(!exportConfig.isPresent()) {
+            log.trace("Creating default config");
             exportConfig=Optional.of(createDefaultConfig());
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
@@ -325,12 +335,18 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     }
 
     public boolean isInteger(String testValue) {
+
         if( testValue == null || testValue.trim().length()==0){
             return false;
         }
-        String testString = testValue.trim();
-        Pattern integerPattern = Pattern.compile("\\d+");
-        return integerPattern.matcher(testString).matches();
+        try{
+            int testInt =Integer.parseInt(testValue);
+            return true;
+        }
+        catch(NumberFormatException nfe){
+
+        }
+        return false;
     }
 
     private SpecificExporterSettings createDefaultConfig(){
