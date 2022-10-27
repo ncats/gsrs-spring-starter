@@ -96,10 +96,10 @@ class LuceneSearchResultPopulator {
 			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
-					String ss=ei.getInternalIdField();
-					try {
-						Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
-						return new Key(ei, id);
+					try {						
+						String idS = doc.getField(ei.getInternalIdField()).stringValue();
+						
+						return new Key(ei, Long.parseLong(idS));
 					}catch(Exception e) {
 						throw new RuntimeException(e);
 					}

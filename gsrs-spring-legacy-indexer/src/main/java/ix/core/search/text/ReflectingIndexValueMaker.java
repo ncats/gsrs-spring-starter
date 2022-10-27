@@ -48,7 +48,7 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 					Tuple<String, String> t = key.asLuceneIdTuple();
 					String internalIdField = ew.getEntityInfo().getInherittedRootEntityInfo().getInternalIdField();
 					if (o instanceof Long) {
-						toAdd.accept(new IndexableValueDirect(new LongField(internalIdField, (Long) o, (path.getDepth()<2)?YES:NO)));
+						toAdd.accept(new IndexableValueDirect(new StringField(internalIdField, o.toString(), (path.getDepth()<2)?YES:NO)));
 						//katzelda October 2020:
 						//Looks like newer versions of lucene removed LongField.
 						// There was a LegacyLongField but that's gone now too and now there is LongPoint

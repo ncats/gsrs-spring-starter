@@ -3939,9 +3939,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 						.type(IndexedFieldType.STRING)
 						.build());
 			}else if(ifx instanceof LongField) {
-				record.facets.add(IndexedFacet.builder()
-						.facetName(ifx.name())
-						.facetValue(ifx.stringValue())
+				LongField lf = (LongField)ifx;
+				
+				record.fields.add(IndexedField.builder()
+						.fieldName(lf.name())
+						.fieldValue(lf.numericValue().longValue()+"")
+						.stored(lf.fieldType().stored())
 						.type(IndexedFieldType.INTEGER)
 						.build());
 			}else {
