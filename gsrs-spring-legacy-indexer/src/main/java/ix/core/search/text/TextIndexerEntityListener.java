@@ -11,6 +11,7 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -105,6 +107,13 @@ public class TextIndexerEntityListener {
     @TransactionalEventListener
     public void updateEntity(IndexUpdateEntityEvent event) {
         autowireIfNeeded();
+        // This addition is to stop infinite recursion from the fetcher below,
+        // which still makes a new transaction, but not one that should be acted on
+        // BTW: it really shouldn't trigger an update at all, it'd be nice
+        // to figure out how
+        if(TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
+        	return;
+        }
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         if(indexer !=null) {
             try {
