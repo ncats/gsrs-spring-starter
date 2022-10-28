@@ -37,6 +37,10 @@ public interface ExporterFactory<T> {
         default JsonNode detailedParameters() {
             return JsonNodeFactory.instance.objectNode();
         }
+
+        String getUsername();
+
+        void setUsername(String username);
         /* new stuff 19 August*/
 /*
         default RecordScrubber getScrubber() {

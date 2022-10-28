@@ -11,12 +11,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Slf4j
 public class SpecificExporterSettings {
 
     private String configurationId;
@@ -26,6 +28,7 @@ public class SpecificExporterSettings {
     private JsonNode exporterSettings;
     private JsonNode expanderSettings;
     private String entityClass;
+    private String owner;
 
     public static String getEntityKeyFromClass(String className){
         return "export config " + className;
@@ -37,9 +40,16 @@ public class SpecificExporterSettings {
     }
 
     public static SpecificExporterSettings fromText(Text text) throws JsonProcessingException {
+        log.trace("starting in fromText");
         ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings conf = mapper.readValue(text.getValue(), SpecificExporterSettings.class);
-        conf.setConfigurationId(text.id.toString());
+        if(conf == null) {
+            log.error("Error creating config from input {}", text.getValue());
+            return null;
+        }
+        if(text.id!=null){
+            conf.setConfigurationId(text.id.toString());
+        }
         return conf;
     }
 

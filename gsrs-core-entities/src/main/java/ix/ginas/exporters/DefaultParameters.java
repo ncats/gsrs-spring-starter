@@ -14,6 +14,8 @@ public class DefaultParameters implements ExporterFactory.Parameters {
 
         private JsonNode detailedParameters=null;
 
+        private String username;
+
         public DefaultParameters(OutputFormat format, boolean publicOnly) {
             Objects.requireNonNull(format);
             this.format = format;
@@ -41,4 +43,14 @@ public class DefaultParameters implements ExporterFactory.Parameters {
         public JsonNode detailedParameters() {
             return detailedParameters;
         }
+
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Override
+    public void setUsername(String username) {
+            this.username=username;
+    }
 }

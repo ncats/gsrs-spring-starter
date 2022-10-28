@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.autoconfigure.ExpanderFactoryConfig;
 import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.repository.TextRepository;
+import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Text;
 import ix.ginas.exporters.*;
 import lombok.extern.slf4j.Slf4j;
@@ -118,6 +119,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
         conf.setEntityClass(getEntityService().getEntityClass().getName());
+        conf.setOwner(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown");
 
         Text textObject = conf.asText();
         //deserialize exportConfigJson to DefaultExporterFactoryConfig
@@ -147,10 +149,14 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         log.trace("starting in handleExportConfigFetch");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
 
+
         Optional<Text> configurationHolder = textRepository.findById(id);
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
         HttpStatus status;
-        if (configurationHolder.isPresent()) {
+        if( !GsrsSecurityUtils.isAdmin()){
+            resultNode.put("Error!", "Only admin users can delete an export configuration");
+            status=HttpStatus.UNAUTHORIZED;
+        } else if (configurationHolder.isPresent()) {
             TransactionTemplate transactionTemplateDelete = new TransactionTemplate(transactionManager);
             transactionTemplateDelete.executeWithoutResult(t -> textRepository.deleteByRecordId(id));
             resultNode.put("Result", String.format("Deleted export configuration with ID %d", id));
@@ -169,26 +175,45 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         log.trace("starting in handleExportConfigUpdate");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
 
+        String currentUser = GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown";
+
         Optional<Text> configurationHolder = textRepository.findById(id);
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
         HttpStatus status;
         if (configurationHolder.isPresent()) {
             Text retrievedText= configurationHolder.get();
-            retrievedText.setValue(exportConfigJson);
-            log.trace("made call to setValue");
-            TransactionTemplate transactionTemplateUpdate = new TransactionTemplate(transactionManager);
-            transactionTemplateUpdate.executeWithoutResult(t ->{
-                retrievedText.setIsAllDirty();
-                Text updated= textRepository.saveAndFlush(retrievedText);
-                if(updated== null) {
-                    log.error("Error updating Text object!");
+            SpecificExporterSettings retrievedSettings = SpecificExporterSettings.fromText(retrievedText);
+            if( retrievedSettings.getOwner() != null && retrievedSettings.getOwner().length()>0 && !retrievedSettings.getOwner().equals(currentUser) && !GsrsSecurityUtils.isAdmin()){
+                resultNode.put("Error!", String.format("Attempt to update configuration created by %s", retrievedSettings.getOwner()));
+                status=HttpStatus.UNAUTHORIZED;
+            } else {
+                Text textObj = new Text();
+                textObj.setValue(exportConfigJson);
+                SpecificExporterSettings exporterSettingsFromInput = SpecificExporterSettings.fromText(textObj);
+                if( retrievedSettings.getOwner() == null || retrievedSettings.getOwner().length()==0){
+                    log.info("retrieved export configuration without an owner; setting to current user ");
+                    retrievedSettings.setOwner(currentUser);
                 }
-                if(!Objects.equals(exportConfigJson,updated.getValue())) {
-                    log.error("saved value is not what was supplied!");
-                }
-            });
-            resultNode.put("Result", String.format("Updated export configuration with ID %d", id));
-            status=HttpStatus.OK;
+                exporterSettingsFromInput.setOwner(retrievedSettings.getOwner());
+                exporterSettingsFromInput.setConfigurationId(id.toString());
+                exportConfigJson = exporterSettingsFromInput.asText().getValue();
+                retrievedText.setValue(exportConfigJson);
+                log.trace("made call to setValue");
+                TransactionTemplate transactionTemplateUpdate = new TransactionTemplate(transactionManager);
+                String valueToSave =exportConfigJson;
+                transactionTemplateUpdate.executeWithoutResult(t -> {
+                    retrievedText.setIsAllDirty();
+                    Text updated = textRepository.saveAndFlush(retrievedText);
+                    if (updated == null) {
+                        log.error("Error updating Text object!");
+                    }
+                    if (!Objects.equals(valueToSave, updated.getValue())) {
+                        log.error("saved value is not what was supplied!");
+                    }
+                });
+                resultNode.put("Result", String.format("Updated export configuration with ID %d", id));
+                status = HttpStatus.OK;
+            }
         } else {
             resultNode.put("Error!", String.format("No configuration found with id %d", id));
             status=HttpStatus.BAD_REQUEST;

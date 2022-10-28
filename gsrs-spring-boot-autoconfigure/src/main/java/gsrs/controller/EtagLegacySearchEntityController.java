@@ -11,6 +11,7 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.repository.ETagRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportService;
 import gsrs.springUtils.AutowireHelper;
@@ -257,6 +258,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             throws IOException {
 
         ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters);
+        params.setUsername(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "[unknown]");
 
         ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
         if (factory == null) {
