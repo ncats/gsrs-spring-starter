@@ -75,7 +75,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	private long start;
     	private long finshed;
     	private List<String> ids;
-    	//TODO need self
+    	private String _self;
     }
     
     @Data
@@ -111,9 +111,11 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     }
     
     @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
-    public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
+    		HttpServletRequest request){
     	
     	return Optional.ofNullable(reindexing.get(id)).map(o->{
+    		o.set_self(request.getRequestURL().toString());
     		return new ResponseEntity<>(o, HttpStatus.OK);	
     	})
     	.map(oo->(ResponseEntity)oo)
@@ -171,7 +173,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	tasks.tasks=reindexing.values().stream().collect(Collectors.toList());
         return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
-    @GetGsrsRestApiMapping(value="/@reindexBulk/clear", apiVersions = 1)
+    @DeleteGsrsRestApiMapping(value="/@reindexBulk/clear", apiVersions = 1)
     public ResponseEntity bulkReindexClear(@RequestParam Map<String, String> queryParameters){
     	reindexing.entrySet().stream()
 	    	.filter(e->e.getValue().isDone())
