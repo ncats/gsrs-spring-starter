@@ -223,26 +223,4 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     }
         
     
-    @Data
-    class IndexData {
-    	List<IndexedField> indexedFiledList;
-    	List<IndexedFacet> indexedFacetList; 
-    	IndexData() {
-    		indexedFiledList = new ArrayList<>();
-    		indexedFacetList = new ArrayList<>();
-    	}
-    }
-    
-    @Data
-    class IndexedField{
-    	String fieldName;
-    	String fieldValue;
-    	String type;
-	}
-    
-    @Data
-	class IndexedFacet{
-		String facetName;
-		String facetValue;
-	}
 }

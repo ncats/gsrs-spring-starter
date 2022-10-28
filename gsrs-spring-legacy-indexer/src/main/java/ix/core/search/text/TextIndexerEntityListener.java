@@ -1,36 +1,28 @@
 package ix.core.search.text;
 
-import gsrs.DefaultDataSourceConfig;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionalEventListener;
+
 import gsrs.events.MaintenanceModeEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
-import ix.utils.Util;
+import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PostPersist;
-import javax.persistence.PostRemove;
-import javax.persistence.PostUpdate;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Optional;
 
 /**
  * Hibernate Entity listener that will update our legacy {@link TextIndexer}.
@@ -39,7 +31,19 @@ import java.util.Optional;
 @Slf4j
 @Transactional(readOnly = true)
 public class TextIndexerEntityListener {
-
+	   
+    private HashSet<Key> working =new LinkedHashSet<>();
+    
+    // TP 08-27-2021: In general this shouldn't be necessary,
+    // but if a new transactional operation inside a preUpdate
+    // hook gets called, this sometimes tries to re-run all preUpdate
+    // hooks at the "close" of that transaction. Setting proper isolation
+    // levels should help prevent this, but this isn't always obvious.
+    // At the time of this comment it's not necessary in any known code
+    // to have this on. But it may turn out to be necessary.
+    private static boolean PREVENT_RECURSION=true;
+    
+    
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
@@ -107,20 +111,31 @@ public class TextIndexerEntityListener {
     @TransactionalEventListener
     public void updateEntity(IndexUpdateEntityEvent event) {
         autowireIfNeeded();
-        // This addition is to stop infinite recursion from the fetcher below,
-        // which still makes a new transaction, but not one that should be acted on
-        // BTW: it really shouldn't trigger an update at all, it'd be nice
-        // to figure out how
-        if(TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-        	return;
+        Key k = event.getSource();
+        
+        if(PREVENT_RECURSION) {
+            if(working.contains(k)) {
+                log.warn("Update TextIndexer called, but already updating record for:" + k);
+                return;
+            }
         }
-        TextIndexer indexer = textIndexerFactory.getDefaultInstance();
-        if(indexer !=null) {
-            try {
-                EntityUtils.EntityWrapper ew = EntityWrapper.of(EntityFetcher.of(event.getSource()).call());
-                indexer.update(ew);
-            }catch(Throwable t){
-                log.warn("trouble updating index for:" + event.getSource().toString(), t);
+        
+        try {
+            if(PREVENT_RECURSION) {
+                working.add(k);
+            }
+            TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+            if(indexer !=null) {
+                try {
+                    EntityUtils.EntityWrapper ew = event.getOptionalFetchedEntity().orElse(null);
+                    indexer.update(ew);
+                }catch(Throwable t){
+                    log.warn("trouble updating index for:" + event.getSource().toString(), t);
+                }
+            }
+        } finally {
+            if(PREVENT_RECURSION) {
+                working.remove(k);
             }
         }
     }

@@ -495,15 +495,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             return o.getNTerms()-this.getNTerms();
         }
     }
-    private static <T>  T getFieldValue(Object obj, String fieldName){
-        try {
-            java.lang.reflect.Field f = obj.getClass().getDeclaredField(fieldName);
-            f.setAccessible(true);
-            return (T) f.get(obj);
-        }catch(NoSuchFieldException  | IllegalAccessException e){
-            throw new RuntimeException(e);
-        }
-    }
+    
 
     static class TermVectorsCollector<T> 
     implements Collector 
@@ -913,6 +905,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		String name;
 		File dir;
 		AtomicBoolean dirty = new AtomicBoolean(false);
+		long lastRefresh;
+		ConcurrentHashMap<String, Addition> additions = new ConcurrentHashMap<String, Addition>();
+		
 		CachedSupplier.CachedThrowingSupplier<ExactMatchSuggesterDecorator> lookup = CachedSupplier.ofThrowing(()->{
 			boolean isNew = false;
 			if (!dir.exists()) {
@@ -926,7 +921,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
 
 
-			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester,()-> TextIndexer.getFieldValue(suggester, "searcherMgr"));
+			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester);
 
 			// If there's an error getting the index count, it probably wasn't
 			// saved properly. Treat it as new if an error is thrown.
@@ -948,9 +943,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return lookupt;
 		});
 
-		long lastRefresh;
-
-		ConcurrentHashMap<String, Addition> additions = new ConcurrentHashMap<String, Addition>();
 
 		class Addition {
 			String text;
@@ -1005,6 +997,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			add.addToWeight(weight);
 			incr();
 		}
+		
 
 		private void incr() {
 			dirty.compareAndSet(false, true);
@@ -1028,14 +1021,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 			while (additionIterator.hasNext()) {
 				Addition add = additionIterator.next();
 				BytesRef ref = new BytesRef(add.text);
-				add.addToWeight(emd.getWeightFor(ref));
-				//lookup.
-				((AnalyzingInfixSuggester)emd.getDelegate()).update(ref, null, add.weight.get(), ref);
+				
+				long p = add.weight.get();
+				if(p!=0) {
+					//an addition
+					if(p>0) {
+						add.addToWeight(emd.getWeightFor(ref));	
+						p = add.weight.get();
+					}
+					emd.update(ref, null, p, ref);
+				}
 				additionIterator.remove();
 			}
 
-			long start = System.currentTimeMillis();
-			((AnalyzingInfixSuggester)emd.getDelegate()).refresh();
+			long start = TimeUtil.getCurrentTimeMillis();
+			emd.refresh();
 			lastRefresh = System.currentTimeMillis();
 			log.debug(emd.getClass().getName() + " refreshs " + emd.getCount() + " entries in "
 					+ String.format("%1$.2fs", 1e-3 * (lastRefresh - start)));
@@ -1069,6 +1069,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			refreshIfDirty();
 			return lookup.get().get().lookup(key, null, false, max).stream()
 					.map(r -> new SuggestResult(r.payload.utf8ToString(), r.key, r.value))
+					.filter(sr->sr.getWeight()>=0)
 					.collect(Collectors.toList());
 		}
 	}
@@ -2782,7 +2783,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return ir;
 		}
 		return null;
-		
 	}
 	public Document getFullRecordDoc(Key k) throws Exception {
 		Query uq=getUniqueEntityFullDocQuery(k);
@@ -3271,7 +3271,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			IndexRecordProcessor irp = new IndexRecordProcessor(doc, ix, kk.getEntityInfo(),  this);
 			irp.process();
 			
-			
 //			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
 //			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 			
@@ -3394,6 +3393,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         Lock l = stripedLock.get(key);
         l.lock();
         try {
+        	
             Tuple<String, String> docKey = key.asLuceneIdTuple();
             //if (DEBUG(2)){
             log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
@@ -3409,6 +3409,18 @@ public class TextIndexer implements Closeable, ProcessListener {
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
+            
+            try {
+				IndexRecord ix =getIndexRecord(key);
+				if(ix!=null && ix.getSuggest()!=null) {
+					ix.getSuggest().forEach(is->{
+						addSuggestedField(is.getSuggestName(), is.getSuggestValue(),-is.getSuggestWeight());
+					});
+				}
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
             
             try {
             	Query qf = getUniqueEntityFullDocQuery(key);
@@ -4239,7 +4251,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (lookup != null) {
 				lookup.addSuggest(value, weight);
 			}
-
 		} catch (Exception ex) {
 			log.trace("Can't create Lookup!", ex);
 		}
