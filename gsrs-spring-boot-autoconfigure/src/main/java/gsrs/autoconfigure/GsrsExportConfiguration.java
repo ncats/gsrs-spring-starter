@@ -1,19 +1,33 @@
 package gsrs.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.springUtils.AutowireHelper;
-import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.exporters.OutputFormat;
-import ix.ginas.exporters.RecordScrubber;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
-import java.io.File;
-import java.util.*;
-import com.fasterxml.jackson.databind.JsonNode;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.models.Text;
+import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.SpecificExporterSettings;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Configuration
@@ -25,16 +39,28 @@ public class GsrsExportConfiguration {
     private File path = new File("./exports");
     private File tmpDir=null;
 
+    //Parsed from config
+    
     private Map<String, List<Class>> factories;//legacy as of 3.0.3+
     private Map<String, List<ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
-    private Map<String,ExpanderFactoryConfig> expanderFactory;
+    
+    private Map<String, Map<String,SpecificExporterSettings>> settingsPresets;
+    
+    private Map<String, ExpanderFactoryConfig> expanderFactory; //placeholder, not used yet
+    private Map<String, ScrubberFactoryConfig> scrubberFactory; //placeholder, not used yet
 
+    
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
-
+    
+    
+    //Used after parsed from config
+    
+    @JsonIgnore
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
 
-    private Map<String,Map<String, RecordScrubber>> scrubbers;
-    private Map<String, ScrubberFactoryConfig> scrubberFactory;
+    @JsonIgnore
+    private Map<String, List<Text>> settingsPresetsAsText = new HashMap<>();
+
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         log.trace("inside initializer");
@@ -94,6 +120,32 @@ public class GsrsExportConfiguration {
         } else {
             log.warn("exporterFactories null");
         }
+        
+        //
+        if(settingsPresets!=null) {
+        	
+        	settingsPresets.forEach((cont,m)->{
+        		long[] id = new long[] {0};
+        		List<Text> items = new ArrayList<>();
+        		m.forEach((presetName,setting)->{
+        			setting.setExporterKey(presetName);
+        			setting.setOwner("admin");
+        			//TODO: we should probably set some other properties too, may need to set the class
+        			
+                    Text allItems;
+					try {
+						allItems = new Text("settings", mapper.writeValueAsString(setting));
+	                    allItems.id=id[0]--;
+	                    items.add(allItems);
+					} catch (JsonProcessingException e) {
+						log.warn("Trouble creating export settings preset", e);
+					}
+        		});
+
+    			settingsPresetsAsText.put(cont, items);
+        	});        	
+        }
+        
     });
 
 
@@ -173,6 +225,13 @@ public class GsrsExportConfiguration {
             }
         }
         return null;
+    }
+    
+    
+    
+    public List<Text> getHardcodedDefaultExportPresets(String context){
+    	 initializer.get();
+    	return settingsPresetsAsText.get(context);
     }
 
 

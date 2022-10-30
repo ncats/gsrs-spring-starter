@@ -1,16 +1,14 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import gsrs.autoconfigure.ExpanderFactoryConfig;
-import gsrs.autoconfigure.ScrubberFactoryConfig;
-import gsrs.repository.TextRepository;
-import gsrs.security.GsrsSecurityUtils;
-import ix.core.models.Text;
-import ix.ginas.exporters.*;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +18,24 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.autoconfigure.ExpanderFactoryConfig;
+import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
+import gsrs.repository.TextRepository;
+import gsrs.security.GsrsSecurityUtils;
+import ix.core.models.Text;
+import ix.ginas.exporters.DefaultRecordExpanderFactory;
+import ix.ginas.exporters.NoOpRecordScrubberFactory;
+import ix.ginas.exporters.RecordExpanderFactory;
+import ix.ginas.exporters.RecordScrubberFactory;
+import ix.ginas.exporters.SpecificExporterSettings;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class AbstractExportSupportingGsrsEntityController<C extends AbstractExportSupportingGsrsEntityController, T, I>
@@ -31,9 +43,21 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     protected TextRepository textRepository;
+    
+
+    @Autowired
+    private GsrsExportConfiguration gsrsExportConfiguration;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+    
+    CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
+
+    	List<Text> tlist = gsrsExportConfiguration.getHardcodedDefaultExportPresets(this.getEntityService().getContext());
+    	if(tlist==null)return Collections.emptyList();
+    	
+    	return tlist;
+    });
 
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
@@ -277,6 +301,6 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     Items that will be of general usage
      */
     public List<Text> getHardcodedConfigs() throws JsonProcessingException {
-        return Collections.emptyList();
+        return exportSettingsPresets.get();
     }
 }
