@@ -3,7 +3,6 @@ package ix.core.search;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -141,11 +140,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         SearcherManager manager=null;
         try{
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num,SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
@@ -198,11 +197,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             TermQuery tq=new TermQuery(t);
 
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);

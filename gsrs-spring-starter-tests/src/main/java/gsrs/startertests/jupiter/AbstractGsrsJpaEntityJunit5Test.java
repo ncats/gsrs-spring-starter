@@ -77,6 +77,7 @@ public abstract class AbstractGsrsJpaEntityJunit5Test {
     @AfterEach
     public void deleteFile() throws IOException {
         StaticContextAccessor.addStaticShutdownRunnable(()->{
+            
             //sometimes there's a background thread still working on the files inside our directory
             int tries=0;
             do {

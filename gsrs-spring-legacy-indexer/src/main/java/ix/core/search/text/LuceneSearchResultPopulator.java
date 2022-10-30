@@ -3,14 +3,13 @@ package ix.core.search.text;
 
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
-import ix.core.controllers.EntityFactory;
-import ix.core.search.LazyList;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +89,9 @@ class LuceneSearchResultPopulator {
 //	 For lucene document
 		public static Key keyOf(Document doc) throws Exception {
 			// TODO: This should be moved to somewhere more Abstract, probably
-			String kind = doc.getField(TextIndexer.FIELD_KIND).stringValue();
+		    IndexableField iff=doc.getField(TextIndexer.FIELD_KIND);
+		    String kind=iff.binaryValue().utf8ToString();
+//			String kind = iff.stringValue();
 			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
