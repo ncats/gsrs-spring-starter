@@ -54,8 +54,8 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
             @SneakyThrows
             @Override
             protected GsrsEntityService getEntityService() {
-               GsrsEntityService entityService = (GsrsEntityService) mock(AbstractExportSupportingGsrsEntityControllerTest.class);
-                when(entityService.getEntityClass()).thenReturn(Class.forName("ix.ginas.models.Substance"));
+               GsrsEntityService entityService = (GsrsEntityService) mock(GsrsEntityService.class);
+                when(entityService.getEntityClass()).thenReturn(ix.core.models.Text.class);
                 return entityService;
             }
         };
