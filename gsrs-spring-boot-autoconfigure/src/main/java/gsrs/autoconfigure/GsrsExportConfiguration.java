@@ -44,7 +44,7 @@ public class GsrsExportConfiguration {
     private Map<String, List<Class>> factories;//legacy as of 3.0.3+
     private Map<String, List<ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
     
-    private Map<String, Map<String,SpecificExporterSettings>> settingsPresets;
+    private Map<String, LinkedHashMap<String,Map<String,Object>>> settingsPresets;
     
     private Map<String, ExpanderFactoryConfig> expanderFactory; //placeholder, not used yet
     private Map<String, ScrubberFactoryConfig> scrubberFactory; //placeholder, not used yet
@@ -127,7 +127,8 @@ public class GsrsExportConfiguration {
         	settingsPresets.forEach((cont,m)->{
         		long[] id = new long[] {0};
         		List<Text> items = new ArrayList<>();
-        		m.forEach((presetName,setting)->{
+        		m.forEach((presetName,obj)->{
+        			SpecificExporterSettings setting = mapper.convertValue(obj, SpecificExporterSettings.class);
         			setting.setExporterKey(presetName);
         			setting.setOwner("admin");
         			//TODO: we should probably set some other properties too, may need to set the class
