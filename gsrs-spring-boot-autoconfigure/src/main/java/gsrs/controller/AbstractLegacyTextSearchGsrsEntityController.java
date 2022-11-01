@@ -82,7 +82,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 	protected GsrsCache gsrscache;
     
     @Autowired
-    private EntityLinks entityLinks;
+	protected EntityLinks entityLinks;
     
     private final int BULK_SEARCH_DEFAULT_TOP = 1000;
     
