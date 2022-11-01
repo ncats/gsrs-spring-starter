@@ -136,7 +136,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         log.trace("starting in handleExportConfigSave");
         ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings conf = mapper.readValue(exportConfigJson, SpecificExporterSettings.class);
-        if(doesConfigurationKeyExist(conf.getExporterKey())) {
+        if(doesExporterKeyExist(conf.getExporterKey())) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("Error in provided configuration",String.format("An Export configuration with key %s already exists in the database!",
                     conf.getExporterKey()));
@@ -263,9 +263,11 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getExpanderFactory().getSettingsSchema(), queryParameters), HttpStatus.OK);
     }
 
-    boolean doesConfigurationKeyExist(String configurationKey) {
+    boolean doesExporterKeyExist(String exporterKey) {
         Class entityClass = getEntityService().getEntityClass();
         Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
+        
+        
         String label = SpecificExporterSettings.getEntityKeyFromClass(entityClass.getName());
         List<Text> configs = textRepository.findByLabel(label);
         return configs.stream().anyMatch(c->{
@@ -275,7 +277,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             } catch (JsonProcessingException e) {
                 log.error("Error");
             }
-            return config.getConfigurationKey()!= null && config.getConfigurationKey().equalsIgnoreCase(configurationKey);
+            return config.getExporterKey()!= null && config.getExporterKey().equalsIgnoreCase(exporterKey);
         });
     }
 
