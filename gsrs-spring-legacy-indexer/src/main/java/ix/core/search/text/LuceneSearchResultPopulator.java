@@ -75,6 +75,7 @@ class LuceneSearchResultPopulator {
 				//doc.
 				try {
 					Key k = keyOf(doc).toRootKey();
+					
 					result.addNamedCallable(new EntityFetcher(k));
 				} catch (Exception e) {
 					System.out.println("Record:" + i + " of " + hits.scoreDocs.length);
@@ -93,19 +94,18 @@ class LuceneSearchResultPopulator {
 		    IndexableField iff=doc.getField(TextIndexer.FIELD_KIND);
 		    String kind=iff.binaryValue().utf8ToString();
 //			String kind = iff.stringValue();
-			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
+			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind).getInherittedRootEntityInfo();
+			String eiField = ei.getInternalIdField();
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
-					try {						
+					try{
 						String idS = doc.getField(ei.getInternalIdField()).stringValue();
-						
 						return new Key(ei, Long.parseLong(idS));
 					}catch(Exception e) {
 						throw new RuntimeException(e);
 					}
-					
 				} else {
-					String id = doc.getField(ei.getInternalIdField()).stringValue();
+					String id = doc.getField(eiField).stringValue();
 					return new Key(ei, ei.formatIdToNative(id));
 				}
 			}else{

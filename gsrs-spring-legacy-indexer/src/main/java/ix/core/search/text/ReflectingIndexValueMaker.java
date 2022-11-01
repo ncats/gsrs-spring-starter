@@ -1,13 +1,12 @@
 package ix.core.search.text;
 
 
+
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.PathStack;
 import org.apache.lucene.document.LongField;
-//import org.apache.lucene.document.LongPoint;
-//import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 
@@ -61,7 +60,6 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 					}
 					toAdd.accept(new IndexableValueDirect(new StringField(t.k(), o.toString(), NO)));
 				}); //
-	
 
 				if(ReflectingIndexerAware.class.isAssignableFrom(ew.getEntityClass()) && path.getDepth()>0){
 
@@ -83,13 +81,13 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 								fi.k().getIndexable()));
 					});
 				}); //Primitive fields
-	
+
 				ew.getDynamicFacet().ifPresent(fv -> {
 					path.pushAndPopWith(fv.k(), () -> {
 						toAdd.accept(new IndexableValueFromRaw(fv.k(), fv.v(), path.toPath()).dynamic().suggestable());
 					});
 				}); //Dynamic Facets
-				
+
 				ew.streamMethodReflectingIndexerAwares()
 						.filter(r ->r.getEmbeddedIndexFieldName() !=null)
 						.forEach(kw -> {
@@ -99,7 +97,7 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 //						toAdd.accept(new IndexableValueFromRaw(kw.label, kw.getValue(), path.toPath()).dynamic().suggestable());
 					});
 				}); //Method keywords
-	
+
 				ew.streamMethodsAndValues(m -> m.isArrayOrCollection()).forEach(t -> {
 					path.pushAndPopWith(t.k().getName(), () -> {
 						t.k().forEach(t.v(), (i, o) -> {

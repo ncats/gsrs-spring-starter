@@ -32,11 +32,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -146,6 +148,7 @@ import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -190,6 +193,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
     private TextIndexerConfig textIndexerConfig;
 
+    @Autowired
+    private TextService textService;
+  
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -1608,8 +1614,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 	public SearchResult search(GsrsRepository gsrsRepository, SearchOptions options, String text) throws IOException {
 		return search(gsrsRepository, options, text, null);
-	}
+	}	
+	
 	public SearchResult search(GsrsRepository gsrsRepository,  SearchOptions options, String qtext, Collection<?> subset) throws IOException {
+				
 		SearchResult searchResult = new SearchResult(options, qtext);
 
 		Supplier<Query> qs = ()->{
@@ -1632,14 +1640,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 		Supplier<Query> fs = ()->{
 			Query f = null;
 			if (subset != null) {
-				List<Term> terms = getTerms(subset);
+				List<Term> terms = getTerms(subset);		
 				if (!terms.isEmpty()){
 					f = getTermsQuery(terms);
 				}
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
 					Stream<Key> ids = subset.stream()
-											.map(o-> EntityWrapper.of(o).getKey());
+											.map(o-> {
+												if(o instanceof Key) {
+													return (Key)o;
+												}else { 
+													return EntityWrapper.of(o).getKey();
+												}
+												});
+					
 					Comparator<Key> comp= Util.comparator(ids);
 
 					searchResult.setRank(comp);
@@ -2103,7 +2118,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		return searchResult;
 	}
-	
+		
 	/**
      * Performs a basic Lucene query using the provided Filter and Query, and any other
      * refining information from the SearchResult options. Facet results are placed in
@@ -2729,9 +2744,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if (entity == null)
 			return null;
 
+		if(entity instanceof Key) {
+			return getTerm((Key)entity);
+		}
+		
 		return EntityWrapper.of(entity)
 		           .getOptionalKey()
-                   .map(key->getTerm(key))
+                   .map(key->getTerm(key.toRootKey()))
                    .orElseGet(()->{
                        log.warn("Entity " + entity + "[" + entity.getClass() + "] has no Id field!");
                        return null;
@@ -3238,21 +3257,17 @@ public class TextIndexer implements Closeable, ProcessListener {
                 });
 
             }
-            
             IndexRecord ix = new IndexRecord();
             Key kk = ew.getKey().toRootKey();
-            
             ix.kind=kk.getKind();
             ix.id=kk.getIdString();
             ix.idField=kk.getEntityInfo().getInternalIdField();
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
-			
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
 				this.instrumentIndexableValue(ix, iv);
 			});
-			
 			ix.fields.add(IndexedField.builder()
 					.fieldName(FIELD_KIND)
 					.fieldValue(kk.getKind())
@@ -3330,7 +3345,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-		
 
 //			if (DEBUG(2)) {
 //                log.debug("<<< " + ew.getValue());
@@ -3389,14 +3403,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 	}
 
-	public void remove(Key key) throws IOException {
+	public void remove(Key tkey) throws IOException {
+		Key key = tkey.toRootKey();
         Lock l = stripedLock.get(key);
         l.lock();
         try {
         	
             Tuple<String, String> docKey = key.asLuceneIdTuple();
             //if (DEBUG(2)){
-            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
             //}
 
             Query q = getUniqueEntityQuery(key);
@@ -3409,7 +3424,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
-            
             try {
 				IndexRecord ix =getIndexRecord(key);
 				if(ix!=null && ix.getSuggest()!=null) {
@@ -3418,10 +3432,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 					});
 				}
 			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+                                log.warn("trouble removing autosugget index elements",e1);
 			}
-            
+
             try {
             	Query qf = getUniqueEntityFullDocQuery(key);
             	indexerService.deleteDocuments(qf);

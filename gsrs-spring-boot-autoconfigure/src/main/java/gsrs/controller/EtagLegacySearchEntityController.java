@@ -1,54 +1,58 @@
 package gsrs.controller;
 
 
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.stream.StreamUtil;
-import gov.nih.ncats.common.util.Unchecked;
-import gsrs.DefaultDataSourceConfig;
-import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
-import gsrs.controller.hateoas.HttpRequestHolder;
-import gsrs.model.GsrsUrlLink;
-import gsrs.repository.ETagRepository;
-import gsrs.service.EtagExportGenerator;
-import gsrs.service.ExportGenerator;
-import gsrs.service.ExportService;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.controllers.EntityFactory;
-import ix.core.models.ETag;
-import ix.core.search.SearchResult;
-import ix.core.util.EntityUtils;
-import ix.ginas.exporters.*;
-import lombok.Builder;
-import lombok.Data;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.data.repository.core.EntityMetadata;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.function.EntityResponse;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
-import javax.websocket.server.PathParam;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.security.Principal;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.DefaultDataSourceConfig;
+import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.controller.hateoas.HttpRequestHolder;
+import gsrs.repository.ETagRepository;
+import gsrs.service.EtagExportGenerator;
+import gsrs.service.ExportService;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.models.ETag;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.ginas.exporters.DefaultParameters;
+import ix.ginas.exporters.ExportMetaData;
+import ix.ginas.exporters.ExportProcess;
+import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.OutputFormat;
+import ix.utils.CallableUtil;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractLegacyTextSearchGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
@@ -57,6 +61,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
 //        super(context, idHelper);
 //    }
+	
+	@Autowired
+	GsrsCache gsrscache;
+	
     @Autowired
     private ETagRepository eTagRepository;
 
@@ -270,7 +278,58 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
+//        etag.setSummary(result.getSummary());
 
         return etag;
     }
+    static String getOrderedKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
+    }
+    static String getKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
+    }
+    
+    public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
+            throws IOException, Exception{
+
+        final String key = (preserveOrder)? getOrderedKey(ctx,req):getKey (ctx, req);
+
+        CallableUtil.TypedCallable<SearchResult> tc = CallableUtil.TypedCallable.of(() -> {
+            Collection results = ctx.getResults();
+            SearchRequest request = new SearchRequest.Builder()
+                    .subset(results)
+                    .options(req.getOptions())
+                    .skip(0)
+                    .top(results.size())
+                    .query(req.getQuery())
+                    .build();
+            request=instrumentSearchRequest(request);
+
+            SearchResult searchResult =null;
+
+            if (results.isEmpty()) {
+                searchResult= SearchResult.createEmptyBuilder(req.getOptions())
+                        .build();
+            }else{
+                //katzelda : run it through the text indexer for the facets?
+//                searchResult = SearchFactory.search (request);
+                searchResult = getlegacyGsrsSearchService().search(request.getQuery(), request.getOptions(), request.getSubset());
+                log.debug("Cache misses: "
+                        +key+" size="+results.size()
+                        +" class="+searchResult);
+            }
+
+            // make an alias for the context.id to this search
+            // result
+            searchResult.setKey(ctx.getId());
+            return searchResult;
+        }, SearchResult.class);
+
+        if(ctx.isDetermined()) {
+            return gsrscache.getOrElse(key, tc);
+        }else {
+            return tc.call();
+        }
+    }
+
 }
