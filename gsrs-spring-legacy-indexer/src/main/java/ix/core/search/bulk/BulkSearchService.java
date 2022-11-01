@@ -109,14 +109,13 @@ public class BulkSearchService {
 				request.getQueries().forEach(q -> {
 					
 					String query = preProcessQuery(q, searchOnIdentifiers);
-					System.out.println("query before : " + q + " query after: " + query);
 					List<Key> keys = new ArrayList<>();					
 					
 					SearchResult result;
 					try {
 						result = textIndexer.search(gsrsRepository, optionsCopy, query);
 						result.copyKeysTo(keys, 0, MAX_BULK_SUB_QUERY_COUNT, true);
-															
+																					
 						if(keys.size()==0)
 							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
 						
