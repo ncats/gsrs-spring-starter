@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,18 +28,24 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.repository.ETagRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.EtagExportGenerator;
 import gsrs.service.ExportService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.ETag;
+import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
@@ -48,12 +55,15 @@ import ix.ginas.exporters.ExportProcess;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.RecordExpander;
+import ix.ginas.exporters.RecordScrubber;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
-public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractLegacyTextSearchGsrsEntityController<C, T,I> {
+public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
 //        super(context, pattern);
@@ -86,7 +96,6 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
 
-
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);
@@ -105,7 +114,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/               ix.core.controllers.
 GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.controllers.v1.RouteFactory.createExport(context: String, etagId: String, format: String, publicOnly: Boolean ?=true)
 
      */
-    @GetGsrsRestApiMapping("/export")
+    @GetGsrsRestApiMapping("/export") //inventory -- lists what's available.  Eventually, provide more info...
     public Object exportFormats(@RequestParam Map<String, String> parameters) throws Exception {
         return gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext());
     }
@@ -113,6 +122,12 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     @GetGsrsRestApiMapping("/export/{etagId}")
     public Object exportLinks(@PathVariable("etagId") String etagId,
                               @RequestParam Map<String, String> parameters) throws Exception {
+        //the parameter called 'etagid' might be a file extension...
+        ExporterFactory matchingFactory = getFirstMatchingExporterFactory(etagId);
+        if( matchingFactory!=null ){
+            log.trace("found matching factory in exportLinks");
+            return matchingFactory.getSchema();
+        }
         List<ExportLink> links = new ArrayList<>();
          for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
             links.add(ExportLink.builder()
@@ -127,6 +142,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
          return links;
     }
+
     @Data
     @Builder
     public static class ExportLink{
@@ -134,65 +150,124 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         private String extension;
         private GsrsUnwrappedEntityModel.RestUrlLink link;
     }
-    
 
-    
+    private ExporterFactory getFirstMatchingExporterFactory(String extension) throws IOException {
+        if(gsrsExportConfiguration.getExporters() == null || gsrsExportConfiguration.getExporters().size()==0) {
+            log.debug("no exporters in getFirstMatchingExporterFactory");
+            return null;
+        }
+        for(ExporterFactory factory : gsrsExportConfiguration.getExporters().get(getEntityService().getContext())){
+            Set<OutputFormat> formats =factory.getSupportedFormats();
+            for(OutputFormat format: formats) {
+                if(format.getExtension().equalsIgnoreCase(extension) || format.getDisplayName().equalsIgnoreCase(extension)) {
+                   return factory;
+                }
+            }
+        }
+        return null;
+    }
+
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
     public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
                                                @PathVariable("format") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
                                                @RequestParam(value ="filename", required= false) String fileName,
+                                               @RequestParam(value="exportConfigId", required = false) String exportConfigId,
                                                Principal prof,
                                                @RequestParam Map<String, String> parameters,
                                                HttpServletRequest request
-                                               
+
             ) throws Exception {
+        log.warn("Starting in createExport. exportConfigId: {}", exportConfigId);
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
+
+        Optional<SpecificExporterSettings> exportConfig=Optional.empty();
+        if( exportConfigId == null){
+            exportConfig=Optional.of(createDefaultConfig());
+        } else {
+            if(isInteger(exportConfigId)) {
+                Long itemId=Long.parseLong(exportConfigId);
+                log.trace("converted configid to {}", itemId);
+                exportConfig = getConfigById(itemId);
+                if( exportConfig==null  || !exportConfig.isPresent()){
+                    log.trace("going to look up config with ID {} in hardcoded", itemId);
+                    for(Text t : getHardcodedConfigs()){
+                        if( t.id==itemId){
+                            exportConfig= Optional.of(SpecificExporterSettings.fromText(t));
+                        }
+                    }
+                }
+            } else {
+                Set<OutputFormat> formats= gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext()).stream()
+                        .filter(e->e.getExtension().equalsIgnoreCase(exportConfigId))
+                        .collect(Collectors.toSet());
+
+                if(formats.isEmpty()) {
+                    ObjectMapper mapper= new ObjectMapper();
+                    SpecificExporterSettings config = mapper.readValue(exportConfigId, SpecificExporterSettings.class);
+                    if( config !=null) {
+                        exportConfig=Optional.of(config);
+                    }
+                }
+            }
+        }
+
+        if(!exportConfig.isPresent()) {
+            log.trace("Creating default config");
+            exportConfig=Optional.of(createDefaultConfig());
+        }
+        Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
+        //instantiate all settings and scrubber...
+        Map<String, ScrubberFactoryConfig> factoryMap= gsrsExportConfiguration.getScrubberFactory();
+        if(factoryMap== null){
+            log.trace("factoryMap null");
+        }else{
+            factoryMap.keySet().forEach(k->{
+                log.trace("key: {}; scrubber: {}", k, factoryMap.get(k).getScrubberFactoryClass().getName());
+            });
+        }
+
+        RecordScrubber<T> scrubber= getScrubberFactory(gsrsExportConfiguration.getScrubberFactory().get(getEntityService().getContext())).createScrubber(exportConfig.get().getScrubberSettings());
+        log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
+        RecordExpander<T> expander = getExpanderFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
+        log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
             return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
         }
-
-
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
-
-
-        
         //Not ideal, but gets around user problem
         Stream<T> mstream = new EtagExportGenerator<T>(entityManager, transactionManager, HttpRequestHolder.fromRequest(request))
                 .generateExportFrom(getEntityService().getContext(), etagObj.get())
                 .get();
 
-        //GSRS-699 REALLY filter out anything that isn't public unless we are looking at private data
-//        if(publicOnly){
-//            mstream = mstream.filter(s-> s.getAccess().isEmpty());
-//        }
-
-
-        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters);
-
+        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters)
+                .map(t->  scrubber.scrub(t))
+                .filter(o->o.isPresent())
+                .flatMap(t->expander.expandRecord(t.get()))
+                .distinct()
+                .map(t->  scrubber.scrub(t))
+                .filter(o->o.isPresent())
+                .map(o->o.get());
+        log.trace("computed effectivelyFinalStream using distinct");
 
         if(fileName!=null){
             emd.setDisplayFilename(fileName);
         }
-
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
-
-        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters)));
-
+        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings())));
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
-
-
     }
 
-    protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters){
+    protected ExporterFactory.Parameters createParameters(String extension, boolean publicOnly, Map<String, String> parameters,
+                                                          JsonNode detailedParameters){
         for(OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())){
             if(extension.equals(f.getExtension())){
-                return new DefaultParameters(f, publicOnly);
+                return new DefaultParameters(f, publicOnly, detailedParameters);
             }
         }
         throw new IllegalArgumentException("could not find supported exporter for extension '"+ extension +"'");
@@ -201,10 +276,12 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
 
-    private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters)
+    private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters,
+                                       JsonNode detailedParameters)
             throws IOException {
 
-        ExporterFactory.Parameters params = createParamters(extension, publicOnly, parameters);
+        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters);
+        params.setUsername(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "[unknown]");
 
         ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
         if (factory == null) {
@@ -281,6 +358,27 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 //        etag.setSummary(result.getSummary());
 
         return etag;
+    }
+
+    public boolean isInteger(String testValue) {
+
+        if( testValue == null || testValue.trim().length()==0){
+            return false;
+        }
+        try{
+            int testInt =Integer.parseInt(testValue);
+            return true;
+        }catch(NumberFormatException nfe){
+
+        }
+        return false;
+    }
+
+    private SpecificExporterSettings createDefaultConfig(){
+        SpecificExporterSettings config=  new SpecificExporterSettings();
+        log.trace("Setting entity class to {}", getEntityService().getEntityClass().getName());
+        config.setEntityClass(getEntityService().getEntityClass().getName());
+        return config;
     }
     static String getOrderedKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();

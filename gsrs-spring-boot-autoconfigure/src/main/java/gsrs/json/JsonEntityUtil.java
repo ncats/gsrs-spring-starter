@@ -39,37 +39,32 @@ public final class JsonEntityUtil {
         boolean found=false;
         for(Method m: aClass.getDeclaredMethods()){
         	try {
-	            m.setAccessible(true);
-	            
-	            if(m.getAnnotation(ParentReference.class) != null){
-	                try{
-	                    m.invoke(obj, owner);
-	                } catch (Throwable e) {
-	                    Sneak.sneakyThrow(e);
-	                }
-	                found=true;
-	            }
-        	}catch(Exception e) {
-        		
-        	}
+        		m.setAccessible(true);
+        	}catch(Exception e) {}
+            if(m.getAnnotation(ParentReference.class) != null){
+                try{
+                    m.invoke(obj, owner);
+                } catch (Throwable e) {
+                    Sneak.sneakyThrow(e);
+                }
+                found=true;
+            }
         }
         if(!found) {
             for (Field f : aClass.getDeclaredFields()) {
             	try {
-	                f.setAccessible(true);
-	                if (f.getAnnotation(ParentReference.class) != null) {
-	                    try {
-	                        if (force || f.get(obj) == null) {
-	                            f.set(obj, owner);
-	                        }
-	                    } catch (IllegalAccessException e) {
-	                        Sneak.sneakyThrow(e);
-	                    }
-	                    break;
-	                }
-            	}catch(Exception e) {
-            		
-            	}
+                f.setAccessible(true);
+            	}catch(Exception e) {}
+                if (f.getAnnotation(ParentReference.class) != null) {
+                    try {
+                        if (force || f.get(obj) == null) {
+                            f.set(obj, owner);
+                        }
+                    } catch (IllegalAccessException e) {
+                        Sneak.sneakyThrow(e);
+                    }
+                    break;
+                }
             }
         }
     }

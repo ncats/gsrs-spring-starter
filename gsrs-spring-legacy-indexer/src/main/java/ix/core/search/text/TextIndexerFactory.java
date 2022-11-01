@@ -58,7 +58,7 @@ public class TextIndexerFactory {
                     try{
                         return EntityUtils.getEntityInfoFor(s).getTypeAndSubTypes();
                     }catch(Exception e){
-                        e.printStackTrace();
+//                        e.printStackTrace();
                         return null;
                     }
                 })

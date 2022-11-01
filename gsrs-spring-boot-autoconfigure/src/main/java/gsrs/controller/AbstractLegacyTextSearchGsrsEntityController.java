@@ -119,7 +119,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 	protected GsrsCache gsrscache;
     
     @Autowired
-    private EntityLinks entityLinks;
+    protected EntityLinks entityLinks;
     //should maybe use cache
     //TODO: empty sometimes somehow
     private Map<String, ReindexStatus> reindexing = new ConcurrentHashMap<>();

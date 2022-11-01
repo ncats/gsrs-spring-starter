@@ -1,5 +1,7 @@
 package ix.ginas.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Objects;
 
 /**
@@ -9,6 +11,15 @@ import java.util.Objects;
 public class OutputFormat {
     private final String extension;
     private final String displayname;
+    private JsonNode parameterSchema;
+
+    public JsonNode getParameterSchema() {
+        return parameterSchema;
+    }
+
+    public void setParameterSchema(JsonNode parameterSchema) {
+        this.parameterSchema = parameterSchema;
+    }
 
     public OutputFormat(String extension, String displayname) {
         Objects.requireNonNull(extension);
