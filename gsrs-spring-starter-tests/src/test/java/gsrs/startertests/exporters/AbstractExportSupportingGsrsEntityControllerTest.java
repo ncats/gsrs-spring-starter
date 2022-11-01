@@ -1,8 +1,27 @@
 package gsrs.startertests.exporters;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.service.GsrsEntityService;
@@ -11,36 +30,22 @@ import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
-import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
+import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @ActiveProfiles("test")
 @SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class})
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
-    @Test
-    public void testdoesExporterKeyExist() throws JsonProcessingException {
-        AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
+	AbstractExportSupportingGsrsEntityController controller;
+	
+	@BeforeEach
+	public void setup() {
+		AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
             @Override
             protected LegacyGsrsSearchService getlegacyGsrsSearchService() {
                 return null;
@@ -59,7 +64,12 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 return entityService;
             }
         };
-        controller = AutowireHelper.getInstance().autowireAndProxy(controller);
+        this.controller = AutowireHelper.getInstance().autowireAndProxy(controller);
+	}
+	
+    @Test
+    public void testdoesExporterKeyExist() throws JsonProcessingException {
+        
         //create 2 configurations with identical keys
         String madeUpKey = "Made Up Key";
         String config1 = createBogusConfig(madeUpKey);
