@@ -31,20 +31,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,7 +60,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -78,7 +81,6 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -87,7 +89,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -135,6 +136,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.Striped;
+
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.io.IOUtil;
@@ -145,11 +147,13 @@ import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
-import ix.core.models.*;
-import ix.core.search.*;
-
+import ix.core.models.FV;
+import ix.core.models.Facet;
+import ix.core.models.FacetFilter;
+import ix.core.models.FieldedQueryFacet;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.ExactMatchSuggesterDecorator;
 import ix.core.search.LazyList;
@@ -166,59 +170,6 @@ import ix.core.utils.executor.ProcessListener;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.document.*;
-import org.apache.lucene.facet.*;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.LongRangeFacetCounts;
-import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.*;
-import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.queries.FilterClause;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.suggest.DocumentDictionary;
-import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
-import org.springframework.beans.factory.annotation.Autowired;
-import java.io.*;
-import java.nio.file.Files;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.apache.lucene.document.Field.Store.NO;
-import static org.apache.lucene.document.Field.Store.YES;
-
 
 /**
  * Singleton class that responsible for all entity indexing
@@ -232,6 +183,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
     private TextIndexerConfig textIndexerConfig;
 
+    @Autowired
+    private TextService textService;
+  
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
 //	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
@@ -1645,8 +1599,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 	public SearchResult search(GsrsRepository gsrsRepository, SearchOptions options, String text) throws IOException {
 		return search(gsrsRepository, options, text, null);
-	}
+	}	
+	
 	public SearchResult search(GsrsRepository gsrsRepository,  SearchOptions options, String qtext, Collection<?> subset) throws IOException {
+				
 		SearchResult searchResult = new SearchResult(options, qtext);
 
 		Supplier<Query> qs = ()->{
@@ -1669,14 +1625,21 @@ public class TextIndexer implements Closeable, ProcessListener {
 		Supplier<Query> fs = ()->{
 			Query f = null;
 			if (subset != null) {
-				List<Term> terms = getTerms(subset);
+				List<Term> terms = getTerms(subset);		
 				if (!terms.isEmpty()){
 					f = getTermsQuery(terms);
 				}
 				if(options.getOrder().isEmpty() ||
 				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
 					Stream<Key> ids = subset.stream()
-											.map(o-> EntityWrapper.of(o).getKey());
+											.map(o-> {
+												if(o instanceof Key) {
+													return (Key)o;
+												}else { 
+													return EntityWrapper.of(o).getKey();
+												}
+												});
+					
 					Comparator<Key> comp= Util.comparator(ids);
 
 					searchResult.setRank(comp);
@@ -2140,7 +2103,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		return searchResult;
 	}
-	
+		
 	/**
      * Performs a basic Lucene query using the provided Filter and Query, and any other
      * refining information from the SearchResult options. Facet results are placed in
@@ -2766,9 +2729,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if (entity == null)
 			return null;
 
+		if(entity instanceof Key) {
+			return getTerm((Key)entity);
+		}
+		
 		return EntityWrapper.of(entity)
 		           .getOptionalKey()
-                   .map(key->getTerm(key))
+                   .map(key->getTerm(key.toRootKey()))
                    .orElseGet(()->{
                        log.warn("Entity " + entity + "[" + entity.getClass() + "] has no Id field!");
                        return null;
@@ -2935,15 +2902,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 							}
 						}
 						if(f.name().equals(FIELD_KIND)) {
-						    String val = f.stringValue();
-						    if(val.contains("ubstance")) {
-						        System.out.println("T");
-						    }
+						    String val = f.stringValue();	
+//						    log.error("add field "+ val);
 						    doc.add(new SortedDocValuesField(f.name(),new BytesRef(val)));
 						    doc.add(new StoredField(f.name(), new BytesRef(val)));
-						    return;
-//						    SortedDocValuesField
-
 						}
 					}else if(f instanceof FacetField){
 					    String key = ((FacetField)f).dim;
@@ -2976,9 +2938,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 			
 			if(textIndexerConfig.isFieldsuggest()  && deepKindFunction.apply(ew) && ew.hasKey()){
-				Key key =ew.getKey();
+				Key key =ew.getKey().toRootKey();
 				if(!key.getIdString().equals("")){  //probably not needed
-					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + ew.getKind(),YES);
+					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind(),YES);
 					StringField analyzeMarker=new StringField(ANALYZER_MARKER_FIELD, "true",YES);
 
 
@@ -3016,7 +2978,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			      });
 			  }
 			});
-			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
+			fieldCollector.accept(new StringField(FIELD_KIND, ew.getKey().toRootKey().getKind(), YES));			
 			fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
 
 			// now index
@@ -3079,26 +3041,29 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 	}
 
-	public void remove(Key key) throws Exception {
+	public void remove(Key tkey) throws Exception {
+		Key key = tkey.toRootKey();
         Lock l = stripedLock.get(key);
         l.lock();
         try {
             Tuple<String, String> docKey = key.asLuceneIdTuple();
             //if (DEBUG(2)){
-            log.debug("Deleting document " + docKey.k() + "=" + docKey.v() + "...");
+//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
             //}
 
-            BooleanQuery q = new BooleanQuery();
-            q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-            q.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST);
+            BooleanQuery q = new BooleanQuery.Builder()
+            		.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST)
+            		.add(new TermQuery(new Term(FIELD_KIND, key.getKind())), BooleanClause.Occur.MUST)
+            		.build();
 
             indexerService.deleteDocuments(q);
             notifyListenersDeleteDocuments(q);
 
             if (textIndexerConfig.isFieldsuggest()) { //eliminate
-                BooleanQuery qa = new BooleanQuery();
-                qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-                qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST);
+                BooleanQuery qa = new BooleanQuery.Builder()
+                	.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST)
+                	.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.getKind())), BooleanClause.Occur.MUST)
+                	.build();
                 indexerService.deleteDocuments(qa);
                 notifyListenersDeleteDocuments(qa);
             }
