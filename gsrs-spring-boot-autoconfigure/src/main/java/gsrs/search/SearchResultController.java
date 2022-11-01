@@ -1,8 +1,8 @@
 package gsrs.search;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +30,8 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
+import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
@@ -74,12 +76,17 @@ public class SearchResultController {
     @GetGsrsRestApiMapping(value = {"({key})/results","/{key}/results"})
     public ResponseEntity<Object> getSearchResultContextResult(@PathVariable("key") String key,
                                                         @RequestParam(required = false, defaultValue = "10") int top,
-                                                        @RequestParam(required = false, defaultValue = "0") int skip,
+                                                        @RequestParam(required = false, defaultValue = "0") int skip,                                                        
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
                                                         @RequestParam(required = false) String query,
                                                         @RequestParam MultiValueMap<String, String> queryParameters,
                                                                HttpServletRequest request) throws URISyntaxException {
+    	
+    	//default qTop 100
+    	
+    	int qTop = Integer.parseInt(queryParameters.getOrDefault("qTop", Arrays.asList("100")).get(0));
+    	int qSkip = Integer.parseInt(queryParameters.getOrDefault("qSkip", Arrays.asList("0")).get(0));
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
@@ -133,10 +140,7 @@ public class SearchResultController {
             results.copyTo(resultSet, so.getSkip(), so.getTop(), true);
         }
 
-
-
         int count = resultSet.size();
-
 
         Object ret= EntityUtils.EntityWrapper.of(resultSet)
                 .at(pp)
@@ -155,13 +159,39 @@ public class SearchResultController {
 
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
-        etag.setFieldFacets(results.getFieldFacets());
+        etag.setFieldFacets(results.getFieldFacets()); 
+  
+        if(results.getSummary()!= null)
+        	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip));
+        
         //TODO Filters and things
 
         return new ResponseEntity<>(etag, HttpStatus.OK);
 
     }
 
+    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary, int qTop, int qSkip) {
+	
+		BulkQuerySummary.BulkQuerySummaryBuilder builder = BulkQuerySummary.builder();
+		builder.qTotal(savedSummary.getQTotal())
+			   .qTop(qTop)
+			   .qSkip(qSkip)
+			   .qMatchTotal(savedSummary.getQTotal() - savedSummary.getQUnMatchTotal())
+			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
+			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers())
+			   .build();
+		
+		List<SearchResultSummaryRecord> queiesList = savedSummary.getQueries();
+		
+		if(qSkip > queiesList.size()-1) {
+			builder.queries(new ArrayList<SearchResultSummaryRecord>());
+		}else {        
+			builder.queries(queiesList.subList(qSkip, Math.min(qSkip+qTop,queiesList.size())));
+		}
+    	
+    	return builder.build();
+    }
+    
     private SearchResultContext.SearchResultContextOrSerialized getContextForKey(String key){
     	SearchResultContext context=null;
     	SearchResultContext.SerailizedSearchResultContext serial=null;

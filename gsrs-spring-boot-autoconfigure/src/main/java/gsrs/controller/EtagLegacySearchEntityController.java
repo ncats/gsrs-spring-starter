@@ -18,7 +18,12 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.models.ETag;
 import ix.core.models.Text;
 import ix.core.search.SearchResult;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.core.util.EntityUtils;
 import ix.ginas.exporters.*;
+import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -332,6 +337,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         etag.setFacets(result.getFacets());
         etag.setFieldFacets(result.getFieldFacets());
         etag.setSelected(result.getOptions().getFacets(), result.getOptions().isSideway());
+//        etag.setSummary(result.getSummary());
 
         return etag;
     }
@@ -344,8 +350,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         try{
             int testInt =Integer.parseInt(testValue);
             return true;
-        }
-        catch(NumberFormatException nfe){
+        }catch(NumberFormatException nfe){
 
         }
         return false;
@@ -356,6 +361,55 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         log.trace("Setting entity class to {}", getEntityService().getEntityClass().getName());
         config.setEntityClass(getEntityService().getEntityClass().getName());
         return config;
+    }
+    static String getOrderedKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
+    }
+    static String getKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
+    }
+    
+    public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
+            throws IOException, Exception{
+
+        final String key = (preserveOrder)? getOrderedKey(ctx,req):getKey (ctx, req);
+
+        CallableUtil.TypedCallable<SearchResult> tc = CallableUtil.TypedCallable.of(() -> {
+            Collection results = ctx.getResults();
+            SearchRequest request = new SearchRequest.Builder()
+                    .subset(results)
+                    .options(req.getOptions())
+                    .skip(0)
+                    .top(results.size())
+                    .query(req.getQuery())
+                    .build();
+            request=instrumentSearchRequest(request);
+
+            SearchResult searchResult =null;
+
+            if (results.isEmpty()) {
+                searchResult= SearchResult.createEmptyBuilder(req.getOptions())
+                        .build();
+            }else{
+                //katzelda : run it through the text indexer for the facets?
+//                searchResult = SearchFactory.search (request);
+                searchResult = getlegacyGsrsSearchService().search(request.getQuery(), request.getOptions(), request.getSubset());
+                log.debug("Cache misses: "
+                        +key+" size="+results.size()
+                        +" class="+searchResult);
+            }
+
+            // make an alias for the context.id to this search
+            // result
+            searchResult.setKey(ctx.getId());
+            return searchResult;
+        }, SearchResult.class);
+
+        if(ctx.isDetermined()) {
+            return gsrscache.getOrElse(key, tc);
+        }else {
+            return tc.call();
+        }
     }
 
 }

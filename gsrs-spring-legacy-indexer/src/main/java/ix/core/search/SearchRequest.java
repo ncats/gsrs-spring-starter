@@ -56,6 +56,21 @@ public class SearchRequest {
 			opBuilder.skip(skip);
 			return this;
 		}
+		
+		public Builder qTop(int qTop) {
+			opBuilder.qTop(qTop);
+			return this;
+		}
+
+		public Builder qSkip(int qSkip) {
+			opBuilder.qSkip(qSkip);
+			return this;
+		}
+		
+		public Builder bulkSearchOnIdentifiers(boolean on) {
+			opBuilder.bulkSearchOnIdentifiers(on);
+			return this;
+		}
 
 		public Builder fetch(int fetch) {
 			opBuilder.fetch(fetch);
