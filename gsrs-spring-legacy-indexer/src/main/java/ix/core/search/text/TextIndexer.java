@@ -2969,7 +2969,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     @NoArgsConstructor(access = AccessLevel.PACKAGE)
     @Setter(value = AccessLevel.PACKAGE)
     @Getter
-    static class IndexedField implements IndexedElement{
+    public static class IndexedField implements IndexedElement{
     	private String fieldName;
     	private String fieldValue;
     	private IndexedFieldType type;
@@ -3009,7 +3009,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     @NoArgsConstructor(access = AccessLevel.PACKAGE)
     @Setter(value = AccessLevel.PACKAGE)
     @Getter
-    static class IndexedSuggestField implements IndexedElement{
+    public static class IndexedSuggestField implements IndexedElement{
     	private String suggestName;
     	private String suggestValue;
     	private int suggestWeight;
@@ -3021,7 +3021,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     @NoArgsConstructor(access = AccessLevel.PACKAGE)
     @Setter(value = AccessLevel.PACKAGE)
     @Getter
-    static class IndexedFacet implements IndexedElement{
+    public static class IndexedFacet implements IndexedElement{
     	private String facetName;
     	private String facetValue;
     	private IndexedFieldType type;
