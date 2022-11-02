@@ -2,6 +2,7 @@ package gsrs.scheduler;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
@@ -62,8 +63,11 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
             ScheduledTaskInitializer task = null;
             try {
+            	System.out.println("Doing:" + config.scheduledTaskClass);
                 task = (ScheduledTaskInitializer) mapper.convertValue(params, Class.forName(config.scheduledTaskClass));
-            } catch (ClassNotFoundException e) {
+            } catch (Exception e) {
+            	JsonNode jsn= mapper.convertValue(params, JsonNode.class);
+            	System.out.println(jsn.toPrettyString());
                 e.printStackTrace();
                 throw new IllegalStateException(e);
             }

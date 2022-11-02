@@ -24,5 +24,7 @@ public class SuggestResult implements GsrsSuggestResult {
     @Override
     public CharSequence getHighlight() { return highlight; }
     @Override
-    public Long getWeight() { return weight; }
+    public Long getWeight() { 
+    	return weight; 
+   }
 }

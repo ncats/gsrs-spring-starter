@@ -33,7 +33,9 @@ class LuceneSearchResultPopulator {
 	IndexSearcher searcher;
 	SearchOptions options;
 	int total, offset, last=0;
-	GsrsRepository gsrsRepository;
+	//TODO: Remove
+//	GsrsRepository gsrsRepository;
+	
 	LuceneSearchResultPopulator(GsrsRepository gsrsRepository, SearchResult result, TopDocs hits, IndexSearcher searcher) {
 		this.result = result;
 		this.hits = hits;
@@ -42,7 +44,7 @@ class LuceneSearchResultPopulator {
 		result.setCount(hits.totalHits);
 		total  = Math.max(0, Math.min(options.max(), result.getCount()));
 		offset = Math.min(options.getSkip(), total);
-		this.gsrsRepository = gsrsRepository;
+//		this.gsrsRepository = gsrsRepository;
 	}
 	
 	
@@ -72,6 +74,7 @@ class LuceneSearchResultPopulator {
 				//because the document id integer may not always remain the same between loads
 				//and that can cause a problem
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
+				//doc.
 				try {
 					Key k = keyOf(doc).toRootKey();
 					
@@ -97,8 +100,12 @@ class LuceneSearchResultPopulator {
 			String eiField = ei.getInternalIdField();
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
-					Long id = doc.getField(eiField).numericValue().longValue();
-					return new Key(ei, id);
+					try{
+						String idS = doc.getField(ei.getInternalIdField()).stringValue();
+						return new Key(ei, Long.parseLong(idS));
+					}catch(Exception e) {
+						throw new RuntimeException(e);
+					}
 				} else {
 					String id = doc.getField(eiField).stringValue();
 					return new Key(ei, ei.formatIdToNative(id));

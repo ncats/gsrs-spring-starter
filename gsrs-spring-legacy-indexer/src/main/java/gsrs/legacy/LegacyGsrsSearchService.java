@@ -1,6 +1,7 @@
 package gsrs.legacy;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +18,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.hasAdminRole;
 import ix.core.EntityFetcher;
@@ -30,14 +34,17 @@ import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>{
 
     @Autowired
-    private TextIndexerFactory textIndexerFactory;        
-   
+    private TextIndexerFactory textIndexerFactory;
+    private IndexerEntityListener indexerEntityListener;
+
     private final GsrsRepository gsrsRepository;
     
     private final Class<T> entityClass;    
@@ -50,9 +57,9 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     private AtomicBoolean reindexing = new AtomicBoolean(false);
 
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository){
-        this(entityClass, repository, new MatchViewGenerator() {});  
+        this(entityClass, repository, new MatchViewGenerator() {});
     }
-    
+
     protected LegacyGsrsSearchService(Class<T> entityClass, GsrsRepository<T, ?> repository, MatchViewGenerator generator){
         gsrsRepository= repository;
         this.entityClass = entityClass;
@@ -178,4 +185,59 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
             }
         }
     }
+    
+    public void reindex(Object entity, boolean deleteFirst){
+    	//this ensures that the reindexing is done recursively
+    	//TODO: technically this will not handle the cases where 
+    	// a child element which is indexed at root had been deleted via the database
+    	// and a reindexing is triggered. For example, a name of a substance is deleted
+    	// in the database and the substance is marked for reindexing. While the reindexing
+    	// of the substance fields will work, the reindexing of the NAME will not delete
+    	// the now orphaned index. To do this, we would need to add some field to the name
+    	// which specifies its parent substance and have another step to delete all such elements
+    	// 
+    	// In practice this case is rare, but it may become more common. This must be addressed
+    	// eventually
+    	
+    	EntityWrapper wrapper =EntityWrapper.of(entity);
+    	wrapper.traverse().execute((p, child) -> {
+            EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+            //this should speed up indexing so that we only index
+            //things that are roots.  the actual indexing process of the root should handle any
+            //child objects of that root.
+            boolean isEntity = wrapped.isEntity();
+            boolean isRootIndexed = wrapped.isRootIndex();
+
+            if (isEntity && isRootIndexed) {
+                try {
+                    indexerEntityListener.reindexEntity(wrapped.getRawValue(), deleteFirst);
+                } catch (Throwable t) {
+                    log.warn("indexing error handling:" + wrapped, t);
+                }
+            }
+
+        });
+    
+    	
+    }
+    
+    
+    public Key toKey(String id) {
+    	return Key.ofStringId(entityClass, id);
+    }
+    
+    
+    public TextIndexer.IndexRecord getIndexData(Key k) throws IOException {
+    	TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+    	
+    	try {
+			return indexer.getIndexRecord(k);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return null;
+    }
+        
+    
 }

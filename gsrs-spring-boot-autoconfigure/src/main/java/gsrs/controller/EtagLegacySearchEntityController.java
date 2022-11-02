@@ -1,32 +1,23 @@
 package gsrs.controller;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.Unchecked;
-import gsrs.DefaultDataSourceConfig;
-import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.autoconfigure.ScrubberFactoryConfig;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
-import gsrs.controller.hateoas.HttpRequestHolder;
-import gsrs.repository.ETagRepository;
-import gsrs.security.GsrsSecurityUtils;
-import gsrs.service.EtagExportGenerator;
-import gsrs.service.ExportService;
-import gsrs.springUtils.AutowireHelper;
-import ix.core.models.ETag;
-import ix.core.models.Text;
-import ix.core.search.SearchResult;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.search.SearchResultContext;
-import ix.core.util.EntityUtils;
-import ix.ginas.exporters.*;
-import ix.utils.CallableUtil;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
@@ -37,17 +28,40 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.security.Principal;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.DefaultDataSourceConfig;
+import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.controller.hateoas.HttpRequestHolder;
+import gsrs.repository.ETagRepository;
+import gsrs.security.GsrsSecurityUtils;
+import gsrs.service.EtagExportGenerator;
+import gsrs.service.ExportService;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.models.ETag;
+import ix.core.models.Text;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.ginas.exporters.DefaultParameters;
+import ix.ginas.exporters.ExportMetaData;
+import ix.ginas.exporters.ExportProcess;
+import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.RecordExpander;
+import ix.ginas.exporters.RecordScrubber;
+import ix.ginas.exporters.SpecificExporterSettings;
+import ix.utils.CallableUtil;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
 
@@ -57,6 +71,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
 //        super(context, idHelper);
 //    }
+	
+	@Autowired
+	protected GsrsCache gsrscache;
+	
     @Autowired
     private ETagRepository eTagRepository;
 
