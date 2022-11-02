@@ -73,7 +73,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //    }
 	
 	@Autowired
-	GsrsCache gsrscache;
+	protected GsrsCache gsrscache;
 	
     @Autowired
     private ETagRepository eTagRepository;
