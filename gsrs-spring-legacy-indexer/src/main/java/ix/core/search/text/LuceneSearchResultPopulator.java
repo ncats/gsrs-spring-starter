@@ -33,7 +33,9 @@ class LuceneSearchResultPopulator {
 	IndexSearcher searcher;
 	SearchOptions options;
 	int total, offset, last=0;
-	GsrsRepository gsrsRepository;
+	//TODO: Remove
+//	GsrsRepository gsrsRepository;
+	
 	LuceneSearchResultPopulator(GsrsRepository gsrsRepository, SearchResult result, TopDocs hits, IndexSearcher searcher) {
 		this.result = result;
 		this.hits = hits;
@@ -42,7 +44,7 @@ class LuceneSearchResultPopulator {
 		result.setCount(hits.totalHits);
 		total  = Math.max(0, Math.min(options.max(), result.getCount()));
 		offset = Math.min(options.getSkip(), total);
-		this.gsrsRepository = gsrsRepository;
+//		this.gsrsRepository = gsrsRepository;
 	}
 	
 	

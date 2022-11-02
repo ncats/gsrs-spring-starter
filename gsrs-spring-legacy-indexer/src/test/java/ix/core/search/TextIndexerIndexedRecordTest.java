@@ -4,6 +4,8 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
@@ -26,6 +28,7 @@ import ix.core.search.text.TextIndexer.IndexedField;
 import ix.core.search.text.TextIndexer.IndexedSuggestField;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
 import lombok.Builder;
 import lombok.Data;
 
@@ -120,6 +123,26 @@ public class TextIndexerIndexedRecordTest {
 		ti.remove(wrapped.getKey());
 		IndexRecord ir2 = ti.getIndexRecord(wrapped.getKey());
 		Assertions.assertNull(ir2);
+	}
+	
+	@Test
+	public void testIndexRecordGetsSavedAndCanBeSearched() throws NoSuchElementException, Exception {
+		TextIndexer ti=getNewTextIndexer();
+		TestEntity addTest = TestEntity.builder().id(1l).field("demo").build();
+		EntityWrapper wrapped = EntityWrapper.of(addTest);
+		ti.add(wrapped);
+
+		//Simple searches
+		SearchResult srMiss = ti.search(null, "foofoo:bar", 50);
+		Assertions.assertTrue(srMiss.finished());
+		Assertions.assertEquals(0,srMiss.getMatches().size());
+		
+		SearchResult sr = ti.search(null, "foo:bar", 50);
+		Assertions.assertTrue(sr.finished());
+		List<Key> res = new ArrayList<Key>();
+		sr.copyKeysTo(res, 0, sr.size(), false);
+		Assertions.assertEquals(1,res.size());
+		Assertions.assertEquals(res.get(0).getIdNative(),addTest.id);
 	}
 	
 }
