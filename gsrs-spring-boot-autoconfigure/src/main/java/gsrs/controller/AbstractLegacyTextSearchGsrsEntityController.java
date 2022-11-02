@@ -516,7 +516,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		qTop.ifPresent(t -> builder.qTop(t));
 		qSkip.ifPresent(t -> builder.qSkip(t));
 		
-		System.out.println("searchOnIdentifiers " + searchOnIdentifiers);
 		searchOnIdentifiers.ifPresent(t -> builder.bulkSearchOnIdentifiers(t.booleanValue()));
 				
 		SearchRequest searchRequest = builder.withParameters(request.getParameterMap()).build();

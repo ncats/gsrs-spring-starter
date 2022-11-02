@@ -166,7 +166,7 @@ public class BulkSearchService {
 		query = query.trim();
 
 		// 1. check to see that no field specified
-		if (query.matches("^[A-Z0-9a-z_][:]")) { // looks for things like root_names_name: or text:
+		if (query.matches("^[A-Z0-9a-z_]+[:].+")) { // looks for things like root_names_name: or text:
 			return query; // don't try to change any part that has an explicit field. Assume user meant it
 							// as-is
 		}
