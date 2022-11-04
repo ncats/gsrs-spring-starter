@@ -109,8 +109,7 @@ public class ETag extends IxModel {
 	public Integer total;
 	public Integer count;
 	public Integer skip;
-	public Integer top;	
-	public String context;
+	public Integer top;
 
 	public Integer status;
 
