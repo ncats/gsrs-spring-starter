@@ -139,12 +139,12 @@ public class IxCache implements GsrsCache {
 	
 	@Override
     public void addToMatchingContext(String contextID, Key key, String prop, Object value){
-        Map<String,Object> additionalProps = getMatchingContextByContextID(contextID, key);
+        Map<String,Object> additionalProps = getMatchingContextByContextID(contextID, key.toRootKey());
         if(additionalProps==null){
             additionalProps=new HashMap<String,Object>();
         }
         additionalProps.put(prop, value);
-        setMatchingContext(contextID,key, additionalProps);
+        setMatchingContext(contextID,key.toRootKey(), additionalProps);
     }
 	
 	@Override

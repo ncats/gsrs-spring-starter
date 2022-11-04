@@ -35,7 +35,7 @@ public class BulkSearchResultProcessor<T> extends SearchResultProcessor<BulkSear
 
 	private void addBulkResultToSubstanceMatchContext(BulkSearchResult r) {		
 		Map<String, Object> map = new HashMap<>();
-		map.put("queries", matches.get(r.getKey()));
-		ixCache.setMatchingContext(this.getContext().getId(), r.getKey(), map);
+		map.put("queries", matches.get(r.getKey().toRootKey()));
+		ixCache.setMatchingContext(this.getContext().getId(), r.getKey().toRootKey(), map);
 	}
 }
