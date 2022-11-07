@@ -218,19 +218,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             exportConfig=Optional.of(createDefaultConfig());
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
-        //instantiate all settings and scrubber...
-        Map<String, ScrubberFactoryConfig> factoryMap= gsrsExportConfiguration.getScrubberFactory();
-        if(factoryMap== null){
-            log.trace("factoryMap null");
-        }else{
-            factoryMap.keySet().forEach(k->{
-                log.trace("key: {}; scrubber: {}", k, factoryMap.get(k).getScrubberFactoryClass().getName());
-            });
-        }
 
-        RecordScrubber<T> scrubber= getScrubberFactory(gsrsExportConfiguration.getScrubberFactory().get(getEntityService().getContext())).createScrubber(exportConfig.get().getScrubberSettings());
+	RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
-        RecordExpander<T> expander = getExpanderFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
+        RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
