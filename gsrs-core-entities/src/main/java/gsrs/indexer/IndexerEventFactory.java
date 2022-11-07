@@ -36,7 +36,7 @@ public interface IndexerEventFactory extends Ordered {
     default Object newCreateEventFor(EntityUtils.EntityWrapper ew){
         Optional<EntityUtils.Key> optKey = ew.getOptionalKey();
         if(optKey.isPresent()) {
-            return new IndexCreateEntityEvent(optKey.get());
+            return new IndexCreateEntityEvent(optKey.get(), Optional.of(ew));
         }
         return null;
     }
