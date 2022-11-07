@@ -90,6 +90,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -1696,13 +1697,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return searchResult;
 	}	
   
-	private static Query getTermsQuery(List<Term> terms) {
-	    BooleanQuery.Builder qb = new BooleanQuery.Builder();
-	    
-	    for(Term t: terms) {
-	        qb.add(new TermQuery(t), Occur.SHOULD);
-	    }
-	    return qb.build();
+	private static Query getTermsQuery(List<Term> terms) {				
+		return new TermsQuery(terms);
 	}
 	
   private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
