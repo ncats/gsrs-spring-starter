@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -19,6 +18,9 @@ import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.repository.TextRepository;
+import ix.ginas.exporters.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
@@ -51,15 +53,6 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.ginas.exporters.DefaultParameters;
-import ix.ginas.exporters.ExportMetaData;
-import ix.ginas.exporters.ExportProcess;
-import ix.ginas.exporters.Exporter;
-import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.exporters.OutputFormat;
-import ix.ginas.exporters.RecordExpander;
-import ix.ginas.exporters.RecordScrubber;
-import ix.ginas.exporters.SpecificExporterSettings;
 import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
@@ -108,6 +101,9 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private ETagRepository eTagRepository;
 
+    @Autowired
+    protected TextRepository textRepository;
+
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
@@ -131,7 +127,13 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return saveAsEtag(results, result, request);
     }
 
+    CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
 
+        List<Text> tlist = gsrsExportConfiguration.getHardcodedDefaultExportPresets(this.getEntityService().getContext());
+        if(tlist==null)return Collections.emptyList();
+
+        return tlist;
+    });
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
@@ -258,9 +260,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             });
         }
 
-        RecordScrubber<T> scrubber= getScrubberFactory(gsrsExportConfiguration.getScrubberFactory().get(getEntityService().getContext())).createScrubber(exportConfig.get().getScrubberSettings());
+        RecordScrubber<T> scrubber= getScrubberFactory(getScrubberFactory().createScrubber(exportConfig.get()).getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
-        RecordExpander<T> expander = getScrubberFactory(gsrsExportConfiguration.getExpanderFactory().get(getEntityService().getContext())).createExpander(exportConfig.get().getExpanderSettings());
+        RecordExpander<T> expander = getScrubberFactory(gsrsExportConfiguration.getExpanderFactory().get()).createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
@@ -476,6 +478,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
      */
     public List<Text> getHardcodedConfigs() throws JsonProcessingException {
         return exportSettingsPresets.get();
+    }
+
+    public RecordScrubberFactory<T> getScrubberFactory(){
+        return new NoOpRecordScrubberFactory<T>();
     }
 
 }
