@@ -38,7 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -56,33 +55,6 @@ import ix.core.search.SearchResultContext;
 import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
-//<<<<<<< HEAD
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.core.task.TaskExecutor;
-//import org.springframework.data.repository.core.EntityMetadata;
-//import org.springframework.hateoas.server.EntityLinks;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.security.access.prepost.PreAuthorize;
-//import org.springframework.transaction.PlatformTransactionManager;
-//import org.springframework.transaction.support.TransactionTemplate;
-//import org.springframework.web.bind.annotation.GetMapping;
-//import org.springframework.web.bind.annotation.PathVariable;
-//import org.springframework.web.bind.annotation.RequestParam;
-//import org.springframework.web.servlet.function.EntityResponse;
-//
-//import javax.persistence.EntityManager;
-//import javax.persistence.PersistenceContext;
-//import javax.servlet.http.HttpServletRequest;
-//import javax.transaction.Transactional;
-//import javax.websocket.server.PathParam;
-//import java.io.IOException;
-//import java.io.OutputStream;
-//import java.security.Principal;
-//import java.util.*;
-//import java.util.stream.Collectors;
-//import java.util.stream.Stream;
-//
 @Slf4j
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController, T, I> extends AbstractImportSupportingGsrsEntityController<C, T, I> {
 //=======
@@ -250,19 +222,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             exportConfig=Optional.of(createDefaultConfig());
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
-        //instantiate all settings and scrubber...
-        Map<String, ScrubberFactoryConfig> factoryMap= gsrsExportConfiguration.getScrubberFactory();
-        if(factoryMap== null){
-            log.trace("factoryMap null");
-        }else{
-            factoryMap.keySet().forEach(k->{
-                log.trace("key: {}; scrubber: {}", k, factoryMap.get(k).getScrubberFactoryClass().getName());
-            });
-        }
 
-        RecordScrubber<T> scrubber= getScrubberFactory(getScrubberFactory().createScrubber(exportConfig.get()).getScrubberSettings());
+	RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
-        RecordExpander<T> expander = getScrubberFactory(gsrsExportConfiguration.getExpanderFactory().get()).createExpander(exportConfig.get().getExpanderSettings());
+        RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
@@ -482,6 +445,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
     public RecordScrubberFactory<T> getScrubberFactory(){
         return new NoOpRecordScrubberFactory<T>();
+    }
+
+    public RecordExpanderFactory<T> getExpanderFactory(){
+        return new DefaultRecordExpanderFactory<>();
     }
 
 }
