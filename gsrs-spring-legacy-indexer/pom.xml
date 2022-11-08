@@ -5,13 +5,14 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1-SNAPSHOT</version>    </parent>
+        <version>3.1-SNAPSHOT</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-spring-legacy-indexer</artifactId>
 
     <properties>
-        <lucene.version>4.10.0</lucene.version>
+        <lucene.version>5.5.0</lucene.version>
     </properties>
     <dependencies>
     <dependency>
@@ -95,5 +96,17 @@
         <version>4.13.1</version>
         <scope>test</scope>
     </dependency>
+            <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>3.2.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.11.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

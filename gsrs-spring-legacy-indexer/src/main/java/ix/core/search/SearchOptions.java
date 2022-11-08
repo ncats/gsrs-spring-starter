@@ -79,8 +79,10 @@ public class SearchOptions implements RequestOptions {
 	
 	private int fskip=DEFAULT_FSKIP;
 	
+	private int qTop = DEFAULT_TOP;
+	private int qSkip;
+	private boolean bulkSearchOnIdentifiers = true;
 	
-
     private String ffilter=DEFAULT_FFILTER;
 	
 	
@@ -170,6 +172,8 @@ public class SearchOptions implements RequestOptions {
 		     	}),
 		     	ofInteger("top", a->setTop(a), ()->getTop()),
 		     	ofInteger("skip", a->skip=a, ()->skip),
+		     	ofInteger("qTop", a->setQTop(a), ()->getQTop()),
+		     	ofInteger("qSkip", a->qSkip=a, ()->qSkip),
 		     	ofInteger("fskip", a->fskip=a, ()->fskip),
 		     	ofInteger("fdim", a->setFdim(a), ()->getFdim()),
 		     	ofInteger("fetch", a->setFetch(a), ()->getFetch()),
@@ -392,6 +396,19 @@ public class SearchOptions implements RequestOptions {
 	public int getSkip() {
 		return this.skip;
 	}
+	
+	public int getQTop() {
+		return this.qTop;
+	}
+
+	
+	public int getQSkip() {
+		return this.qSkip;
+	}
+	
+	public boolean getBulkSearchOnIdentifiers() {
+		return bulkSearchOnIdentifiers;
+	}
 
 	//TODO I don't think this is ever used anymore
 	@Override
@@ -404,6 +421,9 @@ public class SearchOptions implements RequestOptions {
 		private Class<?> kind;
 		private int top=DEFAULT_TOP;
 		private int skip=0;
+		private int qTop=DEFAULT_TOP;
+		private int qSkip=0;		
+		private boolean bulkSearchOnIdentifiers;
 		private int fetch=DEFAULT_FETCH_SIZE;
 		private int fdim=DEFAULT_FDIM;
 		private boolean sideway=true;
@@ -437,6 +457,9 @@ public class SearchOptions implements RequestOptions {
 		public Builder from(SearchOptions so) {
 			top(so.getTop());
 			skip(so.skip);
+			qTop(so.getQTop());
+			qSkip(so.getQSkip());
+			bulkSearchOnIdentifiers(so.getBulkSearchOnIdentifiers());
 			fetch(so.getFetch());
 			fdim(so.getFdim());
 			sideway(so.isSideway());
@@ -468,7 +491,22 @@ public class SearchOptions implements RequestOptions {
 			this.skip = skip;
 			return this;
 		}
+		
+		public Builder qTop(int qTop) {
+			this.qTop = qTop;
+			return this;
+		}
 
+		public Builder qSkip(int qSkip) {
+			this.qSkip = qSkip;
+			return this;
+		}
+
+		public Builder bulkSearchOnIdentifiers(boolean on) {
+			this.bulkSearchOnIdentifiers = on;
+			return this;
+		}
+		
 		public Builder fetch(int fetch) {
 			this.fetch = fetch;
 			return this;
@@ -597,6 +635,9 @@ public class SearchOptions implements RequestOptions {
 		this.setKind(builder.kind);
 		this.setTop(builder.top);
 		this.skip = builder.skip;
+		this.qTop = builder.qTop;
+		this.qSkip = builder.qSkip;
+		this.bulkSearchOnIdentifiers = builder.bulkSearchOnIdentifiers;
 		this.setFetch(builder.fetch);
 		this.setFdim(builder.fdim);
 		this.setSideway(builder.sideway);
@@ -727,6 +768,28 @@ public class SearchOptions implements RequestOptions {
 		this.top = top;
 		queryParams.resetCache();
 		return top;
+	}
+	
+	public int setSkip(int skip) {
+		this.skip = skip;
+		queryParams.resetCache();
+		return skip;
+	}
+	
+	public int setQTop(int qTop) {
+		this.qTop = qTop;
+		queryParams.resetCache();
+		return top;
+	}
+	
+	public int setQSkip(int qSkip) {
+		this.qSkip = qSkip;
+		queryParams.resetCache();
+		return skip;
+	}
+	
+	public void setBulkSearchOnIdentifiers(boolean on) {
+		bulkSearchOnIdentifiers = on;
 	}
 
 	public boolean isWait() {

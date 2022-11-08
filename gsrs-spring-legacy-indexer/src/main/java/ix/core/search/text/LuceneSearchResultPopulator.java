@@ -3,14 +3,13 @@ package ix.core.search.text;
 
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
-import ix.core.controllers.EntityFactory;
-import ix.core.search.LazyList;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +33,9 @@ class LuceneSearchResultPopulator {
 	IndexSearcher searcher;
 	SearchOptions options;
 	int total, offset, last=0;
-	GsrsRepository gsrsRepository;
+	//TODO: Remove
+//	GsrsRepository gsrsRepository;
+	
 	LuceneSearchResultPopulator(GsrsRepository gsrsRepository, SearchResult result, TopDocs hits, IndexSearcher searcher) {
 		this.result = result;
 		this.hits = hits;
@@ -43,7 +44,7 @@ class LuceneSearchResultPopulator {
 		result.setCount(hits.totalHits);
 		total  = Math.max(0, Math.min(options.max(), result.getCount()));
 		offset = Math.min(options.getSkip(), total);
-		this.gsrsRepository = gsrsRepository;
+//		this.gsrsRepository = gsrsRepository;
 	}
 	
 	
@@ -73,8 +74,10 @@ class LuceneSearchResultPopulator {
 				//because the document id integer may not always remain the same between loads
 				//and that can cause a problem
 				Document doc = searcher.doc(hits.scoreDocs[i + offset].doc);
+				//doc.
 				try {
 					Key k = keyOf(doc).toRootKey();
+					
 					result.addNamedCallable(new EntityFetcher(k));
 				} catch (Exception e) {
 					System.out.println("Record:" + i + " of " + hits.scoreDocs.length);
@@ -90,14 +93,21 @@ class LuceneSearchResultPopulator {
 //	 For lucene document
 		public static Key keyOf(Document doc) throws Exception {
 			// TODO: This should be moved to somewhere more Abstract, probably
-			String kind = doc.getField(TextIndexer.FIELD_KIND).stringValue();
-			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind);
+		    IndexableField iff=doc.getField(TextIndexer.FIELD_KIND);
+		    String kind=iff.binaryValue().utf8ToString();
+//			String kind = iff.stringValue();
+			EntityUtils.EntityInfo<?> ei = EntityUtils.getEntityInfoFor(kind).getInherittedRootEntityInfo();
+			String eiField = ei.getInternalIdField();
 			if(ei.hasIdField()){
 				if (ei.hasLongId()) {
-					Long id = doc.getField(ei.getInternalIdField()).numericValue().longValue();
-					return new Key(ei, id);
+					try{
+						String idS = doc.getField(ei.getInternalIdField()).stringValue();
+						return new Key(ei, Long.parseLong(idS));
+					}catch(Exception e) {
+						throw new RuntimeException(e);
+					}
 				} else {
-					String id = doc.getField(ei.getInternalIdField()).stringValue();
+					String id = doc.getField(eiField).stringValue();
 					return new Key(ei, ei.formatIdToNative(id));
 				}
 			}else{

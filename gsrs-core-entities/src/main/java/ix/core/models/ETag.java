@@ -39,6 +39,7 @@ import java.util.*;
   "top",
   "query",
   "sideway",
+  "summary",
   "facets",
   "exactMatches",
   "narrowSearchSuggestions",
@@ -151,10 +152,15 @@ public class ETag extends IxModel {
 
 		return id.toString();
 	}
+	
+	@Transient
+	@JsonIgnore
+	private transient Object summary = null;
 
 	@Transient
 	@JsonIgnore
 	private transient Object content = null;
+	
 	@Transient
 	@JsonIgnore
 	private transient Object sponsoredResults = null;
@@ -261,7 +267,7 @@ public class ETag extends IxModel {
 			this.top = top;
 			return this;
 		}
-
+		
 		public Builder status(Integer status) {
 			this.status = status;
 			return this;
@@ -298,7 +304,7 @@ public class ETag extends IxModel {
 		this.top = builder.top;
 		this.status = builder.status;
 		this.query = builder.query;
-		this.filter = builder.filter;
+		this.filter = builder.filter;	
 	}
 	@JsonIgnore
 	public List<FieldedQueryFacet> getFieldFacets() {
@@ -307,6 +313,10 @@ public class ETag extends IxModel {
 
 	public void setFieldFacets(List<FieldedQueryFacet> fieldFacets) {
 		this.fieldFacets = fieldFacets;
+	}
+	
+	public void setSummary(Object summary) {
+		this.summary = summary;
 	}
 
 	public void setContent(Object cont) {
@@ -335,6 +345,11 @@ public class ETag extends IxModel {
 	public Object getContent() {
 		return this.content;
 	}
+	@JsonProperty("summary")
+	// Maybe make this a link unless full bean view?
+	public Object getBulkQuerySummary() {
+		return this.summary;
+	}	
 	@JsonProperty("facets")
 	// Maybe make this a link unless full bean view?
 	public List<Facet> getFacets() {

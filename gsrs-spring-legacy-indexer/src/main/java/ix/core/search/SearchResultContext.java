@@ -351,6 +351,18 @@ public class SearchResultContext {
     public void setGeneratingUrl(String url){
     	this.originalRequest=url;
     }
+    
+    
+    @JsonProperty("context")
+    public String getContext(){
+    	String eratingUrl=this.getGeneratingUrl();
+    	if(eratingUrl!=null){
+    	    return eratingUrl.split("/v1/")[1].split("/")[0];
+    	}else{
+    		return null;
+    	}
+    }
+
 	//TODO katzelda October 2020 : comment out getting result call for now since we don't implement that yet
 	/*
     @JsonIgnore

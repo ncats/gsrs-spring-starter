@@ -1,9 +1,14 @@
 package ix.ginas.exporters;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Factory interface for making an {@link Exporter}
@@ -28,6 +33,22 @@ public interface ExporterFactory<T> {
         }
 
         default boolean publicOnly(){ return false;}
+
+        default JsonNode detailedParameters() {
+            return JsonNodeFactory.instance.objectNode();
+        }
+
+        String getUsername();
+
+        void setUsername(String username);
+        /* new stuff 19 August*/
+/*
+        default RecordScrubber getScrubber() {
+            //not clear what's requested
+            return null;
+        }
+*/
+
     }
 
     /**
@@ -42,6 +63,7 @@ public interface ExporterFactory<T> {
     /**
      * Get all the {@link OutputFormat}s that this factory
      * can support.
+     * @return a Set of {@link OutputFormat}s; should never be null,
      * @return a Set of {@link OutputFormat}s; should never be null,
      * but could be empty.
      */
@@ -63,5 +85,25 @@ public interface ExporterFactory<T> {
      */
     Exporter<T> createNewExporter(OutputStream out, Parameters params) throws IOException;
 
+    default JsonNode getSchema(){
+        return generateSchemaNode(this.getClass().getSimpleName(), JsonNodeFactory.instance.objectNode());
+    }
 
+    default JsonNode generateSchemaNode(String exporterName, ObjectNode schemaNode) {
+        //build a complex node that will serialize into perfect JSON schema
+        ObjectNode outputNode = JsonNodeFactory.instance.objectNode();
+        outputNode.put("$schema",  "https://json-schema.org/draft/2020-12/schema");
+        outputNode.put("$id", "https://gsrs.ncats.nih.gov/#/export.scrubber.schema.json");
+        outputNode.put("title", "Exporter Parameters");
+        outputNode.put("description", exporterName);
+        outputNode.put("type", "object");
+
+        ObjectNode propertiesNode = JsonNodeFactory.instance.objectNode();
+        schemaNode.fieldNames().forEachRemaining(fn->{
+            propertiesNode.set(fn, schemaNode.get(fn));
+        });
+        outputNode.set("properties", propertiesNode);
+
+        return outputNode;
+    }
 }

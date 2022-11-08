@@ -40,25 +40,22 @@ public final class JsonEntityUtil {
     private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
         boolean found=false;
         for(Method m: aClass.getDeclaredMethods()){
-            try {
-                m.setAccessible(true);
-                if (m.getAnnotation(ParentReference.class) != null) {
-                    try {
-                        m.invoke(obj, owner);
-                    } catch (Throwable e) {
-                        log.trace("error executing class {} method {}. Error: {}", aClass.getName(), m.getName(), e.getMessage());
-                        Sneak.sneakyThrow(e);
-                    }
-                    found = true;
+        	try {
+        		m.setAccessible(true);
+        	}catch(Exception e) {}
+            if(m.getAnnotation(ParentReference.class) != null){
+                try{
+                    m.invoke(obj, owner);
+                } catch (Throwable e) {
+                    Sneak.sneakyThrow(e);
                 }
-            } catch (Throwable outer){
-                log.trace("class: {}; method: {}; outer error: {} ", aClass.getName(), m.getName(), outer.getMessage());
-                Sneak.sneakyThrow(outer);
             }
         }
         if(!found) {
             for (Field f : aClass.getDeclaredFields()) {
+            	try {
                 f.setAccessible(true);
+            	}catch(Exception e) {}
                 if (f.getAnnotation(ParentReference.class) != null) {
                     try {
                         if (force || f.get(obj) == null) {

@@ -146,14 +146,22 @@ public class UserProfile extends IxModel{
 	}
 
 	public Long getTokenTimeToExpireMS() {
-		long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().getTimeResolutionMS();
-		return (date - TimeUtil.getCurrentTimeMillis());
+		try {
+			long date = (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() + 1) * TOKEN_CONFIG.get().getTimeResolutionMS();
+			return (date - TimeUtil.getCurrentTimeMillis());
+		}catch(Exception e) {
+			return null;
+		}
 	}
 
 	private String getPreviousComputedToken() {
 		if(getKey()==null)return null;
-		String date = "" + (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() - 1);
-		return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
+		try {
+			String date = "" + (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() - 1);
+			return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
+		}catch(Exception e) {
+			return null;
+		}
 	}
 
 	public boolean acceptKey(String key) {
