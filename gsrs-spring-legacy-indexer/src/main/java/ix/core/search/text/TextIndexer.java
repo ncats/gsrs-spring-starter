@@ -3305,7 +3305,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			
 			//ID
 			docExact.add(new StringField(FULL_DOC_PREFIX + luceneKey.k() , luceneKey.v(),YES));
+			
 			docExact.add(new StringField(FIELD_KIND, FULL_DOC_PREFIX + kk.getKind(),YES));
+			docExact.add(new SortedDocValuesField(FIELD_KIND,new BytesRef(FULL_DOC_PREFIX + kk.getKind())));
+			docExact.add(new StoredField(FIELD_KIND, new BytesRef(FULL_DOC_PREFIX + kk.getKind())));
 			
 			docExact.add(new StoredField("FULL_INDEX", new BytesRef(EntityWrapper.of(ix).toInternalJson())));
 			docExact.add(new StringField(ANALYZER_MARKER_FIELD, "false",YES));
@@ -3316,6 +3319,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 				
 				if(!kk.getIdString().equals("")){  //probably not needed
 					StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + kk.getKind(),YES);
+					SortedDocValuesField toAnalyze2= new SortedDocValuesField(FIELD_KIND,new BytesRef(ANALYZER_VAL_PREFIX + kk.getKind()));
+					StoredField toAnalyze3= new StoredField(FIELD_KIND, new BytesRef(ANALYZER_VAL_PREFIX + kk.getKind()));
 					StringField analyzeMarker=new StringField(ANALYZER_MARKER_FIELD, "true",YES);
 
 
@@ -3326,6 +3331,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 							try{
                                 Document fielddoc = new Document();
 								fielddoc.add(toAnalyze);
+								fielddoc.add(toAnalyze2);
+								fielddoc.add(toAnalyze3);
 								fielddoc.add(analyzeMarker);
 								fielddoc.add(docParent);
 								fielddoc.add(docParentFacet);
