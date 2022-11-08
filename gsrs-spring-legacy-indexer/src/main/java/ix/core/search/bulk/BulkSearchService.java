@@ -178,19 +178,19 @@ public class BulkSearchService {
 			query = query.substring(0, query.length() - 1);
 		}
 
-		// 3. remove any explicit signifiers if present
-		if (query.startsWith("^")) {
-			query = query.substring(1);
-		}
-		if (query.endsWith("$")) {
-			query = query.substring(0, query.length() - 1);
-		}
-		// 4. add ( or add back) the exact signifier
 		
-		if(identifiers)
-			return "\"^" + query + "$\"";
-		else
+		if(identifiers) {
+			// 3. remove any explicit signifiers if present
+			if (query.startsWith("^")) {
+				query = query.substring(1);
+			}
+			if (query.endsWith("$")) {
+				query = query.substring(0, query.length() - 1);
+			}
+			return "\"^" + query + "$\"";			
+		}else {
 			return "\"" + query + "\"";
+		}
 	}
 	
 	@Data
