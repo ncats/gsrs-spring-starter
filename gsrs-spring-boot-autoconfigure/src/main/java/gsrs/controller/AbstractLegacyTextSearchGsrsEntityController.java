@@ -224,18 +224,16 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    @hasAdminRole
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
     public ResponseEntity reindex(@PathVariable("id") String id,
-    		    		  		  @RequestParam(value = "fromBackup",defaultValue="true") boolean fromBackup,
-                                  @RequestParam Map<String, String> queryParameters){
+    		    		  		  @RequestParam Map<String, String> queryParameters){
         //this needs to trigger a reindex
 
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             Key k = EntityWrapper.of(obj.get()).getKey();
-            //delete first
-            getlegacyGsrsSearchService().reindex(obj.get(), true);
-            //TODO: invent response
             
-            return new ResponseEntity<>(id, HttpStatus.OK);
+            getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/);
+            //TODO: invent a better response?
+            return getIndexData(k.getIdString(),queryParameters);
         }    	
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }

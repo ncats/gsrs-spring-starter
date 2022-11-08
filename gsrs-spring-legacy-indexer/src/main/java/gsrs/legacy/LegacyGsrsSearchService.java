@@ -43,6 +43,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
 
     @Autowired
     private TextIndexerFactory textIndexerFactory;
+    
     private IndexerEntityListener indexerEntityListener;
 
     private final GsrsRepository gsrsRepository;
@@ -64,6 +65,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         gsrsRepository= repository;
         this.entityClass = entityClass;
         matchViewGenerator = generator;
+        indexerEntityListener = new IndexerEntityListener();
     }
 
     @Override
