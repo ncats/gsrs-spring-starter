@@ -258,7 +258,7 @@ public class IxCacheTest {
 		timeTraveller.freezeTime();
 		timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         IxCache.markChange();
-       timeTraveller.jumpAhead(1, TimeUnit.HOURS);
+        timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseIfDirty("Test", ()->{
             return sOther;
         });
