@@ -18,6 +18,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
@@ -457,6 +458,24 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else {
             return tc.call();
         }
+    }
+
+    protected Optional<SpecificExporterSettings> getConfigById(Long id){
+        Optional<Text> configurationHolder = textRepository.findById(id);
+        return configurationHolder.map(t->{
+            try {
+                return SpecificExporterSettings.fromText(t);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /*
+    Items that will be of general utility
+     */
+    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
+        return exportSettingsPresets.get();
     }
 
 }
