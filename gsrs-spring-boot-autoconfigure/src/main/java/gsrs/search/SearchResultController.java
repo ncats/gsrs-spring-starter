@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -186,7 +188,9 @@ public class SearchResultController {
 		if(qSkip > queiesList.size()-1) {
 			builder.queries(new ArrayList<SearchResultSummaryRecord>());
 		}else {        
-			builder.queries(queiesList.subList(qSkip, Math.min(qSkip+qTop,queiesList.size())));
+			builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queiesList.size()))
+					.mapToObj(i->queiesList.get(i))
+					.collect(Collectors.toList()));
 		}
     	
     	return builder.build();
