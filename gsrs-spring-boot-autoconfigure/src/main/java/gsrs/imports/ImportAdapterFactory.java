@@ -1,7 +1,6 @@
 package gsrs.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 
 import java.io.InputStream;
 import java.util.List;
