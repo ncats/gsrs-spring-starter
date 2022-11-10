@@ -1,18 +1,13 @@
 package gsrs.controller;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zaxxer.hikari.HikariDataSource;
+import java.sql.DatabaseMetaData;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.hateoas.GsrsControllerInfo;
-import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
-import gsrs.security.hasAdminRole;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.jdbc.metadata.HikariDataSourcePoolMetadata;
 import org.springframework.context.event.EventListener;
@@ -23,12 +18,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.sql.DataSource;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.zaxxer.hikari.HikariDataSource;
+
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsControllerInfo;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import lombok.Data;
 
 @RestController
 @ExposesResourceFor(HealthController.UpStatus.class)
@@ -216,38 +212,42 @@ databaseInformation: Array [ {
 
 
     }
-    public static class DataBaseInfo{
-        public String database;
-        public String driver;
-        public String product;
-        public Long latency = (long) -1;
-        public boolean connected = false;
-        public int maxConnectionPool;
-        public int activeConnection;
 
-        public DataBaseInfo(){}
-        public static  DataBaseInfo create(DataSource dataSource) {
-            DataBaseInfo dbInfo = new DataBaseInfo();            
-            DatabaseMetaData metadata;                     
-                              	
+	public static class DataBaseInfo {
+		public String database = "Unnamed data source";
+		public String driver;
+		public String product;
+		public Long latency = (long) -1;
+		public boolean connected = false;
+		public int maxConnectionPool;
+		public int activeConnection;
+
+		public DataBaseInfo() {
+		}
+
+		public static DataBaseInfo create(DataSource dataSource) {
+			DataBaseInfo dbInfo = new DataBaseInfo();
+			DatabaseMetaData metadata;
+
 			try {
-				long start=System.currentTimeMillis();		
-				metadata = dataSource.getConnection().getMetaData();				
-	            dbInfo.driver = metadata.getDriverName();	            
-	            dbInfo.product = metadata.getDatabaseProductName()+ " " +metadata.getDatabaseProductVersion();
-				long end=System.currentTimeMillis();
+				long start = System.currentTimeMillis();
+				metadata = dataSource.getConnection().getMetaData();
+				dbInfo.driver = metadata.getDriverName();
+				dbInfo.product = metadata.getDatabaseProductName() + " " + metadata.getDatabaseProductVersion();
+				long end = System.currentTimeMillis();
 				dbInfo.connected = true;
-				dbInfo.latency = end-start;	            
-			} catch (SQLException e) {
+				dbInfo.latency = end - start;
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-            HikariDataSourcePoolMetadata hikariMetadata = new HikariDataSourcePoolMetadata((HikariDataSource) dataSource);
-            dbInfo.maxConnectionPool = hikariMetadata.getMax();
-            dbInfo.activeConnection = hikariMetadata.getActive();	
-            return dbInfo;
-        }
+
+			HikariDataSourcePoolMetadata hikariMetadata = new HikariDataSourcePoolMetadata(
+					(HikariDataSource) dataSource);
+			dbInfo.maxConnectionPool = hikariMetadata.getMax();
+			dbInfo.activeConnection = hikariMetadata.getActive();
+			return dbInfo;
+		}
 //        public static  DataBaseInfo create(DBConfigInfo info){
 //            DataBaseInfo dbInfo = new DataBaseInfo();
 //            dbInfo.database = info.getName();
