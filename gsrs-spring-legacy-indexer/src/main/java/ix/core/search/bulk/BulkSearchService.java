@@ -41,7 +41,7 @@ public class BulkSearchService {
 	@Autowired
 	protected PlatformTransactionManager transactionManager;
 		
-	private final int MAX_BULK_SUB_QUERY_COUNT = 1000;
+	private final int MAX_BULK_SUB_QUERY_COUNT = 10000;
 	private ExecutorService threadPool;
     
 
@@ -70,10 +70,8 @@ public class BulkSearchService {
             	SearchOptions optionsCopy = new SearchOptions();
         		optionsCopy.parse(options.asQueryParams());
         		optionsCopy.setSimpleSearchOnly(true);
-        		optionsCopy.setTop(options.getTop());		
-        		optionsCopy.setSkip(options.getSkip());
-        		optionsCopy.setQTop(options.getQTop());		
-        		optionsCopy.setQSkip(options.getQSkip());  
+        		optionsCopy.setTop(MAX_BULK_SUB_QUERY_COUNT);		
+        		optionsCopy.setSkip(0);        	
         		optionsCopy.setBulkSearchOnIdentifiers(options.getBulkSearchOnIdentifiers());
         		optionsCopy.setFetchAll();       		
         		       		
