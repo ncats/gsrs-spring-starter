@@ -120,7 +120,7 @@ public class BulkSearchService {
 							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
 						
 						
-						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q);
+						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q, query);
 						List<MatchView> list = new ArrayList<>();				
 												
 						keys.forEach((k) -> {
