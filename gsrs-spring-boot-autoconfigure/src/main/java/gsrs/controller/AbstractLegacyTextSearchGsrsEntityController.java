@@ -156,7 +156,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     		return gsrsControllerConfiguration.handleNotFound(queryParameters);
     	});
     }
-//    @hasAdminRole
+    
+    @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
     public ResponseEntity bulkReindex(@RequestBody String ids, @RequestParam Map<String, String> queryParameters){
     	List<String> queries = Arrays.asList(ids.split("\n"));
@@ -221,7 +222,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     
     
-//    @hasAdminRole
+
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
     public ResponseEntity reindex(@PathVariable("id") String id,
     		    		  		  @RequestParam Map<String, String> queryParameters){
