@@ -41,7 +41,7 @@ public class BulkSearchService {
 	@Autowired
 	protected PlatformTransactionManager transactionManager;
 		
-	private final int MAX_BULK_SUB_QUERY_COUNT = 1000;
+	private final int MAX_BULK_SUB_QUERY_COUNT = 10000;
 	private ExecutorService threadPool;
     
 
@@ -70,10 +70,8 @@ public class BulkSearchService {
             	SearchOptions optionsCopy = new SearchOptions();
         		optionsCopy.parse(options.asQueryParams());
         		optionsCopy.setSimpleSearchOnly(true);
-        		optionsCopy.setTop(options.getTop());		
-        		optionsCopy.setSkip(options.getSkip());
-        		optionsCopy.setQTop(options.getQTop());		
-        		optionsCopy.setQSkip(options.getQSkip());  
+        		optionsCopy.setTop(MAX_BULK_SUB_QUERY_COUNT);		
+        		optionsCopy.setSkip(0);        	
         		optionsCopy.setBulkSearchOnIdentifiers(options.getBulkSearchOnIdentifiers());
         		optionsCopy.setFetchAll();       		
         		       		
@@ -120,7 +118,7 @@ public class BulkSearchService {
 							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
 						
 						
-						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q);
+						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q, query);
 						List<MatchView> list = new ArrayList<>();				
 												
 						keys.forEach((k) -> {
@@ -178,19 +176,19 @@ public class BulkSearchService {
 			query = query.substring(0, query.length() - 1);
 		}
 
-		// 3. remove any explicit signifiers if present
-		if (query.startsWith("^")) {
-			query = query.substring(1);
-		}
-		if (query.endsWith("$")) {
-			query = query.substring(0, query.length() - 1);
-		}
-		// 4. add ( or add back) the exact signifier
 		
-		if(identifiers)
-			return "\"^" + query + "$\"";
-		else
+		if(identifiers) {
+			// 3. remove any explicit signifiers if present
+			if (query.startsWith("^")) {
+				query = query.substring(1);
+			}
+			if (query.endsWith("$")) {
+				query = query.substring(0, query.length() - 1);
+			}
+			return "\"^" + query + "$\"";			
+		}else {
 			return "\"" + query + "\"";
+		}
 	}
 	
 	@Data

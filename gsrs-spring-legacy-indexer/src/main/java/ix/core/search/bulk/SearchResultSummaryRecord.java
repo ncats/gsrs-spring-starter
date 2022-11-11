@@ -11,10 +11,12 @@ import lombok.Setter;
 public class SearchResultSummaryRecord {
 
 	private String searchTerm;
+        private String modifiedSearchTerm;
 	private List<MatchView> records;
 
-	public SearchResultSummaryRecord(String term) {
-		searchTerm = term;
+	public SearchResultSummaryRecord(String searchTerm, String modifiedSearchTerm) {
+		this.searchTerm = searchTerm;
+		this.modifiedSearchTerm=modifiedSearchTerm;
 		records = new ArrayList<MatchView>();
 	}
 }

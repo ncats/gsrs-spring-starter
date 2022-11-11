@@ -1,17 +1,15 @@
 package gsrs.controller;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.hateoas.GsrsControllerInfo;
-import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
-import gsrs.security.hasAdminRole;
-import lombok.Data;
+import java.sql.DatabaseMetaData;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.jdbc.metadata.HikariDataSourcePoolMetadata;
 import org.springframework.context.event.EventListener;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
@@ -20,11 +18,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.sql.DataSource;
-import java.sql.DatabaseMetaData;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.zaxxer.hikari.HikariDataSource;
+
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.hateoas.GsrsControllerInfo;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import lombok.Data;
 
 @RestController
 @ExposesResourceFor(HealthController.UpStatus.class)
@@ -34,7 +34,7 @@ public class HealthController {
     private GsrsEntityToControllerMapper controllerMapper;
 
     @Autowired
-    private List<DataSourceProperties> dataSources;
+    private List<DataSource> dataSourcesRaw;
 
     @Autowired(required = false)
     private GsrsCache gsrsCache;
@@ -72,10 +72,10 @@ public class HealthController {
     }
 
     @GetMapping("api/v1/health/info")
-    @hasAdminRole
+//    @hasAdminRole
     public HealthController.Application info() throws Exception{
         int[] uptime = uptime(startTime);
-        return Application.createFromCurrentRuntime(uptime, startTime, gsrsCache, dataSources);
+        return Application.createFromCurrentRuntime(uptime, startTime, gsrsCache, dataSourcesRaw);
     }
 
     public int[] uptime (long startTime) {
@@ -120,10 +120,10 @@ public class HealthController {
 
         public Object cacheInfo;
 
-        public static Application createFromCurrentRuntime(int[] uptime, long startTime, GsrsCache gsrsCache, List<DataSourceProperties> datasources) throws Exception {
+        public static Application createFromCurrentRuntime(int[] uptime, long startTime, GsrsCache gsrsCache, List<DataSource> datasources) throws Exception {
             return createFrom(Runtime.getRuntime(), uptime, startTime, gsrsCache, datasources);
         }
-        public static Application createFrom(Runtime rt, int[] uptime, long startTime, GsrsCache gsrsCache, List<DataSourceProperties> datasources) throws Exception {
+        public static Application createFrom(Runtime rt, int[] uptime, long startTime, GsrsCache gsrsCache, List<DataSource> datasources) throws Exception {
             Application app = new Application();
             app.uptime = new UptimeInfo();
 
@@ -212,23 +212,42 @@ databaseInformation: Array [ {
 
 
     }
-    public static class DataBaseInfo{
-        public String database;
-        public String driver;
-        public String product;
-        public Long latency;
-        public boolean connected;
 
-        public DataBaseInfo(){}
-        public static  DataBaseInfo create(DataSourceProperties dataSourceProperties){
-            DataBaseInfo dbInfo = new DataBaseInfo();
-            dbInfo.database = dataSourceProperties.getName();
-            dbInfo.driver = dataSourceProperties.getDriverClassName();
-            dbInfo.product = dataSourceProperties.determineDriverClassName();
-            dbInfo.latency = 0L;
-            dbInfo.connected = true;
-            return dbInfo;
-        }
+	public static class DataBaseInfo {
+		public String database = "Unnamed data source";
+		public String driver;
+		public String product;
+		public Long latency = (long) -1;
+		public boolean connected = false;
+		public int maxConnectionPool;
+		public int activeConnection;
+
+		public DataBaseInfo() {
+		}
+
+		public static DataBaseInfo create(DataSource dataSource) {
+			DataBaseInfo dbInfo = new DataBaseInfo();
+			DatabaseMetaData metadata;
+
+			try {
+				long start = System.currentTimeMillis();
+				metadata = dataSource.getConnection().getMetaData();
+				dbInfo.driver = metadata.getDriverName();
+				dbInfo.product = metadata.getDatabaseProductName() + " " + metadata.getDatabaseProductVersion();
+				long end = System.currentTimeMillis();
+				dbInfo.connected = true;
+				dbInfo.latency = end - start;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			HikariDataSourcePoolMetadata hikariMetadata = new HikariDataSourcePoolMetadata(
+					(HikariDataSource) dataSource);
+			dbInfo.maxConnectionPool = hikariMetadata.getMax();
+			dbInfo.activeConnection = hikariMetadata.getActive();
+			return dbInfo;
+		}
 //        public static  DataBaseInfo create(DBConfigInfo info){
 //            DataBaseInfo dbInfo = new DataBaseInfo();
 //            dbInfo.database = info.getName();
