@@ -96,23 +96,30 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> handleExportConfigsFetch(
             @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigsFetch");
-        String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
-        List<Text> configs = textRepository.findByLabel(label);
         try {
-            configs.addAll(getHardcodedConfigs());
-        } catch (JsonProcessingException ex) {
-            log.error("Error creating hard-coded exporter settings", ex);
-        }
+            String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
+            log.trace("label: {}", label);
+            List<Text> configs = textRepository.findByLabel(label);
+            log.trace("found {} configs", configs.size());
+            try {
+                configs.addAll(getHardcodedConfigs());
+            } catch (JsonProcessingException ex) {
+                log.error("Error creating hard-coded exporter settings", ex);
+            }
 
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t-> {
-                    try {
-                        return SpecificExporterSettings.fromText(t);
-                    } catch (JsonProcessingException e) {
-                        log.error("Error converting configuration value", e);
-                    }
-                    return null;
-                }).collect(Collectors.toList()),
-                queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t -> {
+                        try {
+                            return SpecificExporterSettings.fromText(t);
+                        } catch (JsonProcessingException e) {
+                            log.error("Error converting configuration value", e);
+                        }
+                        return null;
+                    }).collect(Collectors.toList()),
+                    queryParameters), HttpStatus.OK);
+        }  catch (Exception ex) {
+            log.error("Error in handleExportConfigsFetch", ex);
+            return new ResponseEntity<>("error: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // todo:

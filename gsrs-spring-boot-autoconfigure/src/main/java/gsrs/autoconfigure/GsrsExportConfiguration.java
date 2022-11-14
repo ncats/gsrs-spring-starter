@@ -123,11 +123,12 @@ public class GsrsExportConfiguration {
         
         //
         if(settingsPresets!=null) {
-        	
+        	log.trace("settingsPresets not null");
         	settingsPresets.forEach((cont,m)->{
         		long[] id = new long[] {0};
         		List<Text> items = new ArrayList<>();
         		m.forEach((presetName,obj)->{
+                    log.trace("presetName: {}", presetName);
         			SpecificExporterSettings setting = mapper.convertValue(obj, SpecificExporterSettings.class);
         			setting.setExporterKey(presetName);
         			setting.setOwner("admin");
@@ -145,6 +146,8 @@ public class GsrsExportConfiguration {
 
     			settingsPresetsAsText.put(cont, items);
         	});        	
+        } else {
+            log.trace("settingsPresets null");
         }
         
     });
@@ -231,7 +234,7 @@ public class GsrsExportConfiguration {
     
     
     public List<Text> getHardcodedDefaultExportPresets(String context){
-    	 initializer.get();
+        initializer.get();
     	return settingsPresetsAsText.get(context);
     }
 
