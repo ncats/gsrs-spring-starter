@@ -105,21 +105,19 @@ public class BulkSearchService {
 
 			try {
 				request.getQueries().forEach(q -> {
-					
-					String query = preProcessQuery(q, searchOnIdentifiers);
-					List<Key> keys = new ArrayList<>();					
-					
-					SearchResult result;
+					String query = preProcessQuery(q, searchOnIdentifiers);					
 					try {
+						SearchResult result;						
+						List<Key> keys = new ArrayList<>();
+						
 						result = textIndexer.search(gsrsRepository, optionsCopy, query);
 						result.copyKeysTo(keys, 0, MAX_BULK_SUB_QUERY_COUNT, true);
 																					
 						if(keys.size()==0)
-							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
-						
+							querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());	
 						
 						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q, query);
-						List<MatchView> list = new ArrayList<>();				
+						List<MatchView> list = new ArrayList<>();
 												
 						keys.forEach((k) -> {
 							BulkSearchResult bsr = new BulkSearchResult();
@@ -131,11 +129,14 @@ public class BulkSearchService {
 						});
 						singleQuerySummary.setRecords(list);
 						summaryList.add(singleQuerySummary);						
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
+					} catch (Exception e) {
+						querySummary.setQUnMatchTotal(1+ querySummary.getQUnMatchTotal());
+						SearchResultSummaryRecord singleQuerySummary = new SearchResultSummaryRecord(q, query);
+						List<MatchView> list = new ArrayList<>();
+						singleQuerySummary.setRecords(list);
+						summaryList.add(singleQuerySummary);
+//						e.printStackTrace();						
+					}					
 				});
 				
 
