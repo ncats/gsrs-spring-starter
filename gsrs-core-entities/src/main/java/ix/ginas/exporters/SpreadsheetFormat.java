@@ -42,7 +42,7 @@ public abstract class SpreadsheetFormat extends OutputFormat {
 
     };
 
-    public static final SpreadsheetFormat TSV = new SpreadsheetFormat("txt", "TSV (tab) File"){
+    public static final SpreadsheetFormat TSV = new SpreadsheetFormat("txt", "Tab-Delimited (txt) File"){
         public Spreadsheet createSpeadsheet(OutputStream out) {
             return  new CsvSpreadsheetBuilder(out)
                     .delimiter('\t')
