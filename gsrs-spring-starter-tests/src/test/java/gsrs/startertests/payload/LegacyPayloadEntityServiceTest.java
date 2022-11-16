@@ -1,6 +1,6 @@
 package gsrs.startertests.payload;
 
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.repository.FileDataRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.payload.LegacyPayloadService;

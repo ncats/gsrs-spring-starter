@@ -1,6 +1,6 @@
 package gsrs.startertests.processors;
 
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 

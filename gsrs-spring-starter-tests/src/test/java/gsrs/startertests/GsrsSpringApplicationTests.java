@@ -1,6 +1,6 @@
 package gsrs.startertests;
 
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;

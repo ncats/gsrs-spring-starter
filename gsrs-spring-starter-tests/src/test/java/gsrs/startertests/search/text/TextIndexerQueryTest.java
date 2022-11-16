@@ -3,7 +3,7 @@ package gsrs.startertests.search.text;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;

@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 public abstract class AbstractImportSupportingGsrsEntityController<C extends AbstractImportSupportingGsrsEntityController, T, I>
-        extends AbstractLegacyTextSearchGsrsEntityController<C, T, I> {
+        extends AbstractExportSupportingGsrsEntityController <C, T, I> {
 
     @Autowired
     private PayloadService payloadService;

@@ -1,6 +1,6 @@
 package gsrs.startertests.indexValueMaker;
 
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.text.IndexValueMaker;

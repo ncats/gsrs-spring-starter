@@ -4,6 +4,7 @@ import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.holdingarea.model.ImportMetadata;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import gsrs.GsrsSpringApplication;
 
 import java.io.IOException;
 import java.util.UUID;

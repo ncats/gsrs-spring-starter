@@ -1,7 +1,7 @@
 package gsrs.startertests.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.GsrsSpringApplication;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
