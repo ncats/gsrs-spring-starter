@@ -29,7 +29,7 @@ public abstract class SpreadsheetFormat extends OutputFormat {
         };
     }
 
-    public static final SpreadsheetFormat CSV = new SpreadsheetFormat("csv", "CSV (csv) File"){
+    public static final SpreadsheetFormat CSV = new SpreadsheetFormat("csv", "Comma-delimited (.csv)"){
 
         @Override
         public Spreadsheet createSpeadsheet(OutputStream out) {
@@ -42,7 +42,7 @@ public abstract class SpreadsheetFormat extends OutputFormat {
 
     };
 
-    public static final SpreadsheetFormat TSV = new SpreadsheetFormat("txt", "TSV (tab) File"){
+    public static final SpreadsheetFormat TSV = new SpreadsheetFormat("txt", "Tab-delimited (.txt)"){
         public Spreadsheet createSpeadsheet(OutputStream out) {
             return  new CsvSpreadsheetBuilder(out)
                     .delimiter('\t')
@@ -52,7 +52,7 @@ public abstract class SpreadsheetFormat extends OutputFormat {
         }
     };
 
-    public static final SpreadsheetFormat XLSX = new SpreadsheetFormat("xlsx", "Excel (xlsx) File"){
+    public static final SpreadsheetFormat XLSX = new SpreadsheetFormat("xlsx", "Excel (.xslx)"){
         public Spreadsheet createSpeadsheet(OutputStream out) {
 
             return new ExcelSpreadsheet.Builder(out)
