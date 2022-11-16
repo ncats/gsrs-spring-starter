@@ -43,7 +43,10 @@ public class ScheduledTaskController {
     }
 
     @GetGsrsRestApiMapping({"/",""})
-    public ResponseEntity<Object> getTaskByOrdinal(@RequestParam(value ="top", defaultValue = "10") long top,
+    public ResponseEntity<Object> getTaskByOrdinal(@RequestParam(value ="top", defaultValue = "1000") long top,   //we don't want this to page by default
+                                                                                                                  //because the UI doesn't know about paging
+                                                                                                                  //and currently the user has no way to see
+                                                                                                                  //the next page
                                                    @RequestParam(value ="skip", defaultValue = "0") long skip,
                                                    @RequestParam Map<String,String> queryParameters){
         List<SchedulerPlugin.ScheduledTask> list = gsrsSchedulerConfiguration.getTasks();
