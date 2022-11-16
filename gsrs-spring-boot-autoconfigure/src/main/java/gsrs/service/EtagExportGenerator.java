@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +45,7 @@ import ix.core.util.EntityUtils.EntityWrapper;
  * to fetch the entities.
  * @param <T>
  */
+@Slf4j
 public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
     private static final Pattern removeTopPattern = Pattern.compile("(&top=\\d+)");
@@ -162,10 +164,10 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of pagged results
         if (cleanedUri.indexOf('?') > 0) {
             //has parameters so append
-            cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0";
+            cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0&format=json";
         } else {
             //doesn't have parameters
-            cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0";
+            cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0&format=json";
         }
 
         //TODO consider using RestTemplateBuilder in configuration?
@@ -184,7 +186,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         try {
             return mapper.readTree(response.getBody());
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            log.error("error converting output ({}) ", response.getBody(), e);
+            //e.printStackTrace();
             throw new IllegalStateException(e);
         }
 
