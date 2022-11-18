@@ -161,14 +161,15 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
         cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
         cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
-        //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of pagged results
+        //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of paged results
         if (cleanedUri.indexOf('?') > 0) {
             //has parameters so append
-            cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0&format=json";
+            cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         } else {
             //doesn't have parameters
-            cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0&format=json";
+            cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         }
+        cleanedUri+="&format=json";
 
         //TODO consider using RestTemplateBuilder in configuration?
         RestTemplate restTemplate = new RestTemplate();
