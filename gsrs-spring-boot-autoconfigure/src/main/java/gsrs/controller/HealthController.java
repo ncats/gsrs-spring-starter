@@ -1,6 +1,7 @@
 package gsrs.controller;
 
 
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.Date;
 import java.util.List;
@@ -228,10 +229,9 @@ databaseInformation: Array [ {
 		public static DataBaseInfo create(DataSource dataSource) {
 			DataBaseInfo dbInfo = new DataBaseInfo();
 			DatabaseMetaData metadata;
-
-			try {
-				long start = System.currentTimeMillis();
-				metadata = dataSource.getConnection().getMetaData();
+			long start = System.currentTimeMillis();
+			try(Connection c = dataSource.getConnection()){				
+				metadata = c.getMetaData();
 				dbInfo.driver = metadata.getDriverName();
 				dbInfo.product = metadata.getDatabaseProductName() + " " + metadata.getDatabaseProductVersion();
 				long end = System.currentTimeMillis();
