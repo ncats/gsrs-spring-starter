@@ -286,6 +286,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @PostGsrsRestApiMapping("/import")
     public ResponseEntity<Object> handleImport(@RequestParam("file") MultipartFile file,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("handleImport start");
         try {
             //This follows 3 steps:
             // 1. save the file as a payload
@@ -330,7 +331,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
         } catch (Throwable t) {
-            t.printStackTrace();
+            log.error("Error in handleImport", t);
             throw t;
         }
     }
