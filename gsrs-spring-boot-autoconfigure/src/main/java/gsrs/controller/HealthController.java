@@ -229,7 +229,9 @@ databaseInformation: Array [ {
 		public static DataBaseInfo create(DataSource dataSource) {
 			DataBaseInfo dbInfo = new DataBaseInfo();
 			DatabaseMetaData metadata;
+
 			long start = System.currentTimeMillis();
+			
 			try(Connection c = dataSource.getConnection()){				
 				metadata = c.getMetaData();
 				dbInfo.driver = metadata.getDriverName();
