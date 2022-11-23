@@ -91,7 +91,7 @@ public class GsrsFactoryConfiguration {
         try {
             List<Map<String, Object>> list = importAdapterFactories.get(context);
             log.trace("list:");
-            list.forEach(i -> i.keySet().forEach(k -> log.trace("key: %s; value: %s", k, i.get(k))));
+            list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
 
             if (list == null || list.isEmpty()) {
                 log.warn("no import adapter factory configuration info found!");
