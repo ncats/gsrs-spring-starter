@@ -188,6 +188,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				getlegacyGsrsSearchService().reindex(obj.get(), true);
     				stat.indexed++;
     			}catch(Exception e) {
+				log.warn("trouble reindexing id: " + i, e);
     				stat.failed++;
     			}   
     			
