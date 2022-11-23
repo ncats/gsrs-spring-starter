@@ -3,9 +3,11 @@ package gsrs.search;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -89,6 +91,8 @@ public class SearchResultController {
     	
     	int qTop = Integer.parseInt(queryParameters.getOrDefault("qTop", Arrays.asList("100")).get(0));
     	int qSkip = Integer.parseInt(queryParameters.getOrDefault("qSkip", Arrays.asList("0")).get(0));
+    	String qSort = queryParameters.getFirst("qSort");
+    	String qFilter = queryParameters.getFirst("qFilter");
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
@@ -164,7 +168,7 @@ public class SearchResultController {
         etag.setFieldFacets(results.getFieldFacets()); 
   
         if(results.getSummary()!= null)
-        	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip));
+        	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip, qFilter, qSort));
         
         //TODO Filters and things
 
@@ -172,7 +176,7 @@ public class SearchResultController {
 
     }
 
-    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary, int qTop, int qSkip) {
+    private BulkQuerySummary getPagedSummary(BulkQuerySummary savedSummary, int qTop, int qSkip, String qFilter, String qSort) {
 	
 		BulkQuerySummary.BulkQuerySummaryBuilder builder = BulkQuerySummary.builder();
 		builder.qTotal(savedSummary.getQTotal())
@@ -180,17 +184,85 @@ public class SearchResultController {
 			   .qSkip(qSkip)
 			   .qMatchTotal(savedSummary.getQTotal() - savedSummary.getQUnMatchTotal())
 			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
-			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers())
-			   .build();
+			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
 		List<SearchResultSummaryRecord> queiesList = savedSummary.getQueries();
 		
-		if(qSkip > queiesList.size()-1) {
-			builder.queries(new ArrayList<SearchResultSummaryRecord>());
-		}else {        
-			builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queiesList.size()))
-					.mapToObj(i->queiesList.get(i))
-					.collect(Collectors.toList()));
+		Comparator<SearchResultSummaryRecord> comp= null;
+		boolean rev = (qSort!=null)?qSort.startsWith("$"):false; //$ will be reverse sort, 
+		                                                         //all other characters are normal sort
+		String sortOn=(qSort!=null)?qSort.substring(1):null;
+		if(sortOn!=null) {
+			if(sortOn.equalsIgnoreCase("records_length")) {
+				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getRecords().size());
+			}else if(sortOn.equalsIgnoreCase("searchTerm")) {
+				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getSearchTerm());	
+			}
+			if(comp!=null) {
+				builder.qSort(qSort);
+			}
+		}
+		if(rev&&comp!=null)comp=comp.reversed();
+		
+		Predicate<SearchResultSummaryRecord> filter = null;
+		if(qFilter!=null) {
+			String qf=qFilter.toLowerCase();
+			
+			if(qf.startsWith("records_length:")) {
+				int count=-1;
+				try {
+					count = Integer.parseInt(qf.split(":")[1]);
+				}catch(Exception e) {}
+				if(count>=0) {
+					int fcount=count;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()==fcount;
+				}
+			}else if(qf.startsWith("records_length>")) {
+				int count=-1;
+				try {
+					count = Integer.parseInt(qf.split(">")[1]);
+				}catch(Exception e) {}
+				if(count>=0) {
+					int fcount=count;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()>fcount;
+				}
+			}else if(qf.startsWith("records_length<")) {
+				int count=-1;
+				try {
+					count = Integer.parseInt(qf.split("<")[1]);
+				}catch(Exception e) {}
+				if(count>=0) {
+					int fcount=count;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()<fcount;
+				}
+			}
+			if(filter!=null) {
+				builder.qFilter(qFilter);
+			}
+		}
+		
+		if(filter==null && comp==null) {
+			if(qSkip > queiesList.size()-1) {
+				builder.queries(new ArrayList<SearchResultSummaryRecord>());
+			}else {        
+				builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queiesList.size()))
+						.mapToObj(i->queiesList.get(i))
+						.collect(Collectors.toList()));
+			}
+		}else {
+			if(comp==null)comp=(Comparator<SearchResultSummaryRecord>) (a,b)->0;
+			if(filter==null)filter=(s)->true;
+			Predicate<SearchResultSummaryRecord> finalfilter=filter;
+			Comparator<SearchResultSummaryRecord> finalcomp=comp;
+			
+			List<SearchResultSummaryRecord> recs= IntStream.range(0, queiesList.size())
+				     .mapToObj(i->queiesList.get(i))
+				     .filter(finalfilter)
+				     .sorted(finalcomp)
+				     .skip(qSkip)
+				     .limit(qTop)
+				     .collect(Collectors.toList());
+			builder.queries(recs);
 		}
     	
     	return builder.build();
