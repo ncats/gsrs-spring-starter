@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.GsrsRepository;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.cache.CacheStrategy;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
@@ -262,6 +263,7 @@ public class BulkSearchService {
 	@Data
 	@Builder
 	@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE, fieldVisibility = JsonAutoDetect.Visibility.ANY)
+	@CacheStrategy(evictable=false)
 	public static class BulkQuerySummary{
 		int qTotal;
 		int qTop;

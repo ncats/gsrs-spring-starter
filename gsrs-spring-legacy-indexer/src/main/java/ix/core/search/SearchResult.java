@@ -27,16 +27,16 @@ import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.controller.GsrsControllerUtil;
 import gsrs.controller.hateoas.GsrsLinkUtil;
+import ix.core.cache.CacheStrategy;
 import ix.core.models.Facet;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
-import ix.core.search.bulk.SearchResultSummaryRecord;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.Util;
-//TODO katzelda October 2020 : ignore caching for now
-//@CacheStrategy(evictable = false)
+
+@CacheStrategy(evictable = false)
 public class SearchResult {
 
 	private String key;
