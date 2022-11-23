@@ -45,4 +45,45 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 .collect(Collectors.toList());
 
     }
+
+    @Override
+    public List<String> getAvailableAdapterNames(String context) {
+        List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
+        return configs.stream().map(c -> c.getAdapterName())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public <T> List<ClientFriendlyImportAdapterConfig> getConfiguredAdapters(String context, Class <T> clazz) {
+        List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
+        ObjectMapper mapper = new ObjectMapper();
+        return configs.stream().map(c ->
+                {
+                    try {
+                        ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
+                        log.trace("c.getHoldingServiceClass(): {}", c.getHoldingAreaServiceClass()==null ? "null!!" :
+                                c.getHoldingAreaServiceClass().getName());
+                        iaf.setHoldingAreaService(c.getHoldingAreaServiceClass());
+                        log.trace("entity services:");
+                        //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
+                        //iaf.setEntityServices(c.getEntityServices());
+                        iaf.setEntityServiceClass(c.getEntityServiceClass());
+                        iaf = AutowireHelper.getInstance().autowireAndProxy(iaf);
+                        //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
+                        iaf.initialize();
+                        ClientFriendlyImportAdapterConfig clientFriendlyImportAdapterConfig = new ClientFriendlyImportAdapterConfig();
+                        clientFriendlyImportAdapterConfig.setAdapterName(c.getAdapterName());
+                        clientFriendlyImportAdapterConfig.setParameters(c.getParameters());
+                        clientFriendlyImportAdapterConfig.setFileExtensions(iaf.getSupportedFileExtensions());
+                        clientFriendlyImportAdapterConfig.setAdapterKey( iaf.getAdapterKey());
+
+                        return clientFriendlyImportAdapterConfig;
+                    } catch (Exception e) {
+                        log.warn("exception during import adapter factory init: ", e);
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
 }

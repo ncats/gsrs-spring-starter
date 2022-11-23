@@ -19,6 +19,7 @@ Information necessary to create an ImportAdapterFactory
 public interface ImportAdapterFactoryConfig {
 
     Class getImportAdapterFactoryClass();
+
     void setImportAdapterFactoryClass(Class importAdapterFactoryClass);
 
     Map<String, Object> getParameters();

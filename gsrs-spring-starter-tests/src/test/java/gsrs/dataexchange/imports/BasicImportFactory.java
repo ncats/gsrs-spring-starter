@@ -29,6 +29,11 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
+    public String getAdapterKey() {
+        return "basic";
+    }
+
+    @Override
     public List<String> getSupportedFileExtensions() {
         return Arrays.asList(new String[] {"txt", "text"});
     }

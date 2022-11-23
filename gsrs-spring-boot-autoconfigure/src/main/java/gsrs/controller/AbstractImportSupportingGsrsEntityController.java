@@ -14,9 +14,7 @@ import gsrs.holdingarea.model.ImportRecordParameters;
 import gsrs.holdingarea.model.MatchedRecordSummary;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.holdingarea.service.HoldingAreaService;
-import gsrs.imports.GsrsImportAdapterFactoryFactory;
-import gsrs.imports.ImportAdapterFactory;
-import gsrs.imports.ImportAdapterStatistics;
+import gsrs.imports.*;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.hasAdminRole;
@@ -265,6 +263,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return importAdapterFactories.get();
     }
 
+    public List<String> getImportAdapterNames() {
+        return gsrsImportAdapterFactoryFactory.getAvailableAdapterNames(this.getEntityService().getContext());
+    }
+
+    public List<ClientFriendlyImportAdapterConfig> getConfiguredImportAdapters(){
+        return gsrsImportAdapterFactoryFactory.getConfiguredAdapters(this.getEntityService().getContext(), this.getEntityService().getEntityClass());
+    }
+
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
         log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
         if (getImportAdapters().size() > 0) {
@@ -277,8 +283,26 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //STEP 0: list adapter classes
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import/adapters"})
-    public ResponseEntity<Object> getImport(@RequestParam Map<String, String> queryParameters) throws IOException {
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getImportAdapters(), queryParameters), HttpStatus.OK);
+    public ResponseEntity<Object> getImportAdapters(@RequestParam Map<String, String> queryParameters) throws IOException {
+        log.trace("in getImportAdapters");
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getConfiguredImportAdapters(), queryParameters), HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"/import/adapters/{adapterkey}/@schema"})
+    public ResponseEntity<Object> getSpecificImportAdapter(@PathVariable("adapterkey") String adapterKey, @RequestParam Map<String, String> queryParameters) throws IOException {
+        log.trace("in getSpecificImportAdapter, adapterKey: {}", adapterKey);
+        List<ClientFriendlyImportAdapterConfig> outputList = getConfiguredImportAdapters().stream()
+                .filter(a->a.getAdapterKey().equals(adapterKey))
+                .collect(Collectors.toList());
+        if( outputList!=null && outputList.size()>0) {
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(outputList,
+                queryParameters), HttpStatus.OK);
+        }
+        ObjectNode outputNode = JsonNodeFactory.instance.objectNode();
+        outputNode.put("message", String.format("No adapter found with key %s", adapterKey));
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(outputNode,
+                queryParameters), HttpStatus.BAD_REQUEST);
     }
 
     //STEP 1: UPLOAD

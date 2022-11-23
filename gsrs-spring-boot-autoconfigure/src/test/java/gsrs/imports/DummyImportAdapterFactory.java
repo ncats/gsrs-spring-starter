@@ -19,6 +19,11 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
         return ADAPTER_NAME;
     }
 
+    @Override
+    public String getAdapterKey() {
+        return "dummy";
+    }
+
     public static String[] extensions = {"txt", "sdf"};
 
     @Override

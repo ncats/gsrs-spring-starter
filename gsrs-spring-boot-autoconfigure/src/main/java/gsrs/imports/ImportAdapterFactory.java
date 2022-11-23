@@ -20,6 +20,11 @@ public interface ImportAdapterFactory<T> {
     String getAdapterName();
 
     /**
+     * A unique identifier, human-recognizable
+     */
+    String getAdapterKey();
+
+    /**
      * Returns list of supported file extensions this import adapter may support. This list
      * does not have to be exhaustive, but will serve as a hint when suggesting adapters from
      * a set of possible adapters.
