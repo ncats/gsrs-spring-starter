@@ -1,13 +1,12 @@
 package ix.core.cache;
 
-import ix.utils.CallableUtil.TypedCallable;
-
-import net.sf.ehcache.Element;
-import net.sf.ehcache.statistics.CoreStatistics;
-
 import java.io.Closeable;
 import java.util.List;
 import java.util.stream.Stream;
+
+import gsrs.cache.GsrsCache.CacheStatistics;
+import ix.utils.CallableUtil.TypedCallable;
+import net.sf.ehcache.Element;
 
 /**
  * Created by katzelda on 5/26/16.
@@ -45,7 +44,7 @@ public interface GateKeeper extends Closeable {
 
     Stream<Element> elements(int top, int skip);
 
-    List<CoreStatistics> getStatistics();
+    List<CacheStatistics> getStatistics();
 
     void clear();
 }

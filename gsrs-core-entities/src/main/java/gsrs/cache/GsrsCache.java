@@ -1,12 +1,13 @@
 package gsrs.cache;
 
-import ix.core.util.EntityUtils;
-import ix.utils.CallableUtil;
-
 import java.io.Closeable;
+import java.util.List;
 import java.util.Map;
 
-import gov.nih.ncats.common.util.TimeUtil;
+import ix.core.util.EntityUtils;
+import ix.utils.CallableUtil;
+import lombok.Builder;
+import lombok.Data;
 
 public interface GsrsCache extends Closeable {
     Object get(String key);
@@ -51,6 +52,7 @@ public interface GsrsCache extends Closeable {
 
     Object getConfiguration();
     
+    public List<CacheStatistics> getStatistics ();
     
     /**
      * Whenever there's a change to some underlying data store (Lucene, Database, etc)
@@ -61,4 +63,15 @@ public interface GsrsCache extends Closeable {
     public void markChange();
     
     public boolean hasBeenMarkedSince(long thistime);
+    
+    @Data
+    @Builder
+    public static class CacheStatistics{
+    	private String cacheName;
+    	private long maxCacheElements;
+    	private long currentCacheElements;
+    	private long timeToLive;
+    	private long timeToIdle;
+    	
+    }
 }

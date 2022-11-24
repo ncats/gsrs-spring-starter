@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.jdbc.metadata.HikariDataSourcePoolMetadata;
@@ -18,13 +20,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.sql.DataSource;
 import com.zaxxer.hikari.HikariDataSource;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
+import gsrs.cache.GsrsCache.CacheStatistics;
 import gsrs.controller.hateoas.GsrsControllerInfo;
 import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import lombok.Builder;
 import lombok.Data;
 
 @RestController
@@ -106,6 +109,14 @@ public class HealthController {
             this.totalMemory = rt.totalMemory();
         }
     }
+    @Data
+    @Builder
+    public static class LegacyCacheInfo{
+    	private String maxCacheElements;
+    	private String maxNotEvictableCacheElements;
+    	private long timeToLive;
+    	private long timeToIdle;
+    }
     public static class Application{
 
         public Date epoch;
@@ -119,7 +130,8 @@ public class HealthController {
 
         public List<DataBaseInfo> databaseInformation;
 
-        public Object cacheInfo;
+        public LegacyCacheInfo cacheInfo;
+        public List<CacheStatistics> detailedCacheInfo;
 
         public static Application createFromCurrentRuntime(int[] uptime, long startTime, GsrsCache gsrsCache, List<DataSource> datasources) throws Exception {
             return createFrom(Runtime.getRuntime(), uptime, startTime, gsrsCache, datasources);
@@ -149,7 +161,15 @@ public class HealthController {
                                                 .map(DataBaseInfo::create)
                                                 .collect(Collectors.toList());
 
-            app.cacheInfo = gsrsCache ==null? null: gsrsCache.getConfiguration();
+//            app.cacheInfo = gsrsCache ==null? null: gsrsCache.getConfiguration();
+            app.detailedCacheInfo = gsrsCache ==null? null: gsrsCache.getStatistics();
+            app.cacheInfo = gsrsCache ==null? null: LegacyCacheInfo.builder()
+            		.maxCacheElements(gsrsCache.getStatistics().get(0).getCurrentCacheElements() + " of " + gsrsCache.getStatistics().get(0).getMaxCacheElements())
+            		.timeToIdle(gsrsCache.getStatistics().get(0).getTimeToIdle())
+            		.timeToLive(gsrsCache.getStatistics().get(0).getTimeToLive())
+            		.maxNotEvictableCacheElements(gsrsCache.getStatistics().stream().skip(1).findFirst().map(s->s.getCurrentCacheElements() + " of " + s.getMaxCacheElements()).orElse(null))
+            		.build();
+//            app.cacheInfo = gsrsCache.
             return app;
         }
     }
