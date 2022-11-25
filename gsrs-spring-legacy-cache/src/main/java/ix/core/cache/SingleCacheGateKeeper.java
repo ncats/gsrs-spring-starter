@@ -1,18 +1,19 @@
 package ix.core.cache;
 
-import ix.utils.CallableUtil.TypedCallable;
-import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.statistics.CoreStatistics;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import gsrs.cache.GsrsCache.CacheStatistics;
+import ix.utils.CallableUtil.TypedCallable;
+import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+import net.sf.ehcache.statistics.StatisticsGateway;
 
 /**
  * Created by katzelda on 5/19/16.
@@ -127,9 +128,17 @@ public class SingleCacheGateKeeper implements GateKeeper {
    }
 
     @Override
-    public List<CoreStatistics> getStatistics() {
-    	List<CoreStatistics> statlist=new ArrayList<>();
-    	statlist.add(evictableCache.getStatistics().getCore());
+    public List<CacheStatistics> getStatistics() {
+    	List<CacheStatistics> statlist=new ArrayList<>();
+    	StatisticsGateway coreStats=evictableCache.getStatistics();
+    	CacheStatistics cs = CacheStatistics.builder()
+    				.cacheName("Evictable Cache")
+			    	.maxCacheElements(evictableCache.getCacheConfiguration().getMaxEntriesLocalHeap())
+			    	.currentCacheElements(coreStats.getSize())
+			    	.timeToIdle(evictableCache.getCacheConfiguration().getTimeToIdleSeconds())
+			    	.timeToLive(evictableCache.getCacheConfiguration().getTimeToLiveSeconds()).build();
+    	
+    	statlist.add(cs);
         return statlist;
     }
 
