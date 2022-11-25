@@ -13,12 +13,13 @@ import java.util.stream.Stream;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.cache.GsrsCache.CacheStatistics;
 import ix.utils.CallableUtil.TypedCallable;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
 import net.sf.ehcache.Element;
-import net.sf.ehcache.statistics.CoreStatistics;
+import net.sf.ehcache.statistics.StatisticsGateway;
 
 
 /**
@@ -429,10 +430,25 @@ public class TwoCacheGateKeeper implements GateKeeper {
     }
 
     @Override
-    public List<CoreStatistics> getStatistics() {
-    	List<CoreStatistics> stats= new ArrayList<>();
-    	stats.add(evictableCache.getStatistics().getCore());
-    	stats.add(nonEvictableCache.getStatistics().getCore());
+    public List<CacheStatistics> getStatistics() {
+    	List<CacheStatistics> stats= new ArrayList<>();
+    	
+    	StatisticsGateway coreStats=evictableCache.getStatistics();
+    	CacheStatistics cs = CacheStatistics.builder()
+    				.cacheName("Evictable Cache")
+			    	.maxCacheElements(evictableCache.getCacheConfiguration().getMaxEntriesLocalHeap())
+			    	.currentCacheElements(coreStats.getSize())
+			    	.timeToIdle(evictableCache.getCacheConfiguration().getTimeToIdleSeconds())
+			    	.timeToLive(evictableCache.getCacheConfiguration().getTimeToLiveSeconds()).build();
+    	stats.add(cs);
+    	StatisticsGateway coreStatsN=nonEvictableCache.getStatistics();
+    	CacheStatistics csN = CacheStatistics.builder()
+    				.cacheName("Non-Evictable Cache")
+			    	.maxCacheElements(nonEvictableCache.getCacheConfiguration().getMaxEntriesLocalHeap())
+			    	.currentCacheElements(coreStatsN.getSize())
+			    	.timeToIdle(nonEvictableCache.getCacheConfiguration().getTimeToIdleSeconds())
+			    	.timeToLive(nonEvictableCache.getCacheConfiguration().getTimeToLiveSeconds()).build();
+    	stats.add(csN);
         return stats;
     }
     
