@@ -20,7 +20,7 @@ import javax.persistence.*;
  */
 
 @Entity
-@Table(name="ix_ginas_vocabulary_term")
+@Table(name="ix_ginas_vocabulary_term", indexes = {@Index(name = "vocabulary_term_owner_index", columnList = "owner_id")})
 @Inheritance
 @DiscriminatorValue("VOCAB")
 @SingleParent
