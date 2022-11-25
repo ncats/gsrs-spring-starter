@@ -270,6 +270,8 @@ public class BulkSearchService {
 		int qSkip;
 		int qMatchTotal;
 		int qUnMatchTotal;
+		String qFilter;
+		String qSort;
 		boolean searchOnIdentifiers;
 		List<SearchResultSummaryRecord> queries;
 		
