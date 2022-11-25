@@ -119,7 +119,7 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 				    };
                     TypedCallable<T> caller = ()->{
                         TransactionTemplate ttemp = fetcher.theKey.getTransactionTemplate();
-                        ttemp.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//                        ttemp.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         ttemp.setReadOnly(true);
                         try {
                             T tret= ttemp.execute(s->{
