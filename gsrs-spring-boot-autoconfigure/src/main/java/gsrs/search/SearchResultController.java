@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -184,9 +185,10 @@ public class SearchResultController {
 			   .qSkip(qSkip)
 			   .qMatchTotal(savedSummary.getQTotal() - savedSummary.getQUnMatchTotal())
 			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
+			   .qFilteredTotal(savedSummary.getQTotal())
 			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
-		List<SearchResultSummaryRecord> queiesList = savedSummary.getQueries();
+		List<SearchResultSummaryRecord> queriesList = savedSummary.getQueries();
 		
 		Comparator<SearchResultSummaryRecord> comp= null;
 		boolean rev = (qSort!=null)?qSort.startsWith("$"):false; //$ will be reverse sort, 
@@ -242,11 +244,11 @@ public class SearchResultController {
 		}
 		
 		if(filter==null && comp==null) {
-			if(qSkip > queiesList.size()-1) {
+			if(qSkip > queriesList.size()-1) {
 				builder.queries(new ArrayList<SearchResultSummaryRecord>());
 			}else {        
-				builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queiesList.size()))
-						.mapToObj(i->queiesList.get(i))
+				builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queriesList.size()))
+						.mapToObj(i->queriesList.get(i))
 						.collect(Collectors.toList()));
 			}
 		}else {
@@ -255,14 +257,18 @@ public class SearchResultController {
 			Predicate<SearchResultSummaryRecord> finalfilter=filter;
 			Comparator<SearchResultSummaryRecord> finalcomp=comp;
 			
-			List<SearchResultSummaryRecord> recs= IntStream.range(0, queiesList.size())
-				     .mapToObj(i->queiesList.get(i))
+			AtomicInteger filteredTotal = new AtomicInteger();
+			
+			List<SearchResultSummaryRecord> recs= IntStream.range(0, queriesList.size())
+				     .mapToObj(i->queriesList.get(i))
 				     .filter(finalfilter)
+				     .peek(s->filteredTotal.addAndGet(1))
 				     .sorted(finalcomp)
 				     .skip(qSkip)
 				     .limit(qTop)
 				     .collect(Collectors.toList());
 			builder.queries(recs);
+			builder.qFilteredTotal(filteredTotal.get());
 		}
     	
     	return builder.build();
