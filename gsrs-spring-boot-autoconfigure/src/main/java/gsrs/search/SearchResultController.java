@@ -189,11 +189,17 @@ public class SearchResultController {
 			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
 		List<SearchResultSummaryRecord> queriesList = savedSummary.getQueries();
-		
+
 		Comparator<SearchResultSummaryRecord> comp= null;
-		boolean rev = (qSort!=null)?qSort.startsWith("$"):false; //$ will be reverse sort, 
-		                                                         //all other characters are normal sort
-		String sortOn=(qSort!=null)?qSort.substring(1):null;
+
+		boolean rev = false;
+		String sortOn = null;
+
+		if(qSort!=null && qSort.trim()!=""){
+			 rev = qSort.startsWith("$"); // $ will be reverse sort, all other characters are normal sort.
+			 sortOn=qSort.substring(1);
+		}
+
 		if(sortOn!=null) {
 			if(sortOn.equalsIgnoreCase("records_length")) {
 				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getRecords().size());
