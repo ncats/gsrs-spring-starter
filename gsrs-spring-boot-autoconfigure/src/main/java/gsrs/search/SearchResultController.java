@@ -195,7 +195,7 @@ public class SearchResultController {
 		boolean rev = false;
 		String sortOn = null;
 
-		if(qSort!=null && qSort.trim()!=""){
+		if(qSort!=null && !(qSort.trim().equals(""))){
 			 rev = qSort.startsWith("$"); // $ will be reverse sort, all other characters are normal sort.
 			 sortOn=qSort.substring(1);
 		}
