@@ -83,9 +83,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     private Map<String, HoldingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
     public DefaultHoldingAreaService(String context) {
-
         this.context = Objects.requireNonNull(context, "context can not be null");
+    }
 
+    /*
+    For a unit test... temporarily
+     */
+    public DefaultHoldingAreaService() {
+        this.context = "substances";
     }
 
     @PostConstruct

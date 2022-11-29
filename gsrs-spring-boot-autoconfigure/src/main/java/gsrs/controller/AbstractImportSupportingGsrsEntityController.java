@@ -22,8 +22,6 @@ import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
 import ix.core.search.text.TextIndexerFactory;
-import ix.core.validator.ValidationResponse;
-import ix.ginas.models.GinasCommonData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -318,7 +316,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             // 3. return the ImportTaskMetaData
 
             String adapterName = queryParameters.get("adapter");
-            log.trace("handleImport, adapterName: " + adapterName);
+            log.trace("handleImport, adapterName: {}; platformTransactionManager: {}", adapterName, platformTransactionManager);
             String fileEncoding = queryParameters.get("fileEncoding");
             log.trace("fileEncoding: " + fileEncoding);
             String entityType = queryParameters.get("entityType");//type of domain object to create, eventually
