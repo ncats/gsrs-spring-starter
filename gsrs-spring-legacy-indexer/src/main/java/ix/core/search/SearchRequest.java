@@ -156,6 +156,26 @@ public class SearchRequest {
 			this.query = query;
 			return this;
 		}
+		
+
+	    public Builder includeFacets(boolean f) {
+            this.opBuilder.includeFacets(f);
+            return this;
+        }
+        public Builder includeBreakdown(boolean b) {
+        	this.opBuilder.includeBreakdown(b);
+            return this;
+        }
+
+        public Builder promoteSpecialMatches(boolean p) {
+        	this.opBuilder.promoteSpecialMatches(p);
+            return this;
+        }
+
+        public Builder simpleSearchOnly(boolean s) {
+        	this.opBuilder.promoteSpecialMatches(s);
+            return this;
+        }
 
 		public SearchRequest build() {
 			return new SearchRequest(this);

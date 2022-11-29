@@ -48,7 +48,7 @@ public class EditEventService {
                 Edit newEdit = new Edit(event.getKind(), refid);
                 // TP 10/03/2021 I've changed this to use the supplied
                 // version for the edit. That's often "null" for objects
-                // which weren't editted via a "registred edit"
+                // which weren't edited via a "registered edit"
                 newEdit.version = event.getVersion();
                 newEdit.newValue = ew.toFullJson();
                 if(event.getComments() !=null){

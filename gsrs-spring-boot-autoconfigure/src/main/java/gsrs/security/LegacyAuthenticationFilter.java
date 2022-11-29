@@ -26,6 +26,7 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.PrincipalService;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.Session;
@@ -249,10 +250,12 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
 
     }
-    private UserProfile autoregisterNewUser(String username ) {
+    
+    public UserProfile autoregisterNewUser(String username ) {
         return autoregisterNewUser(username, null, null);
     }
-    private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
+    
+    public UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
         Principal p =  principalService.registerIfAbsent(username);
         p.email=email;
         UserProfile up = new UserProfile(p);
