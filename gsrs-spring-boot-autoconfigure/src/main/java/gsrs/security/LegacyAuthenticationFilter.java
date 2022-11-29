@@ -48,7 +48,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private SessionRepository sessionRepository;
-
+    
+    @Autowired
+    private PrincipalService principalService;
+    
     @Autowired
     private GsrsCache gsrsCache;
 
@@ -250,7 +253,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         return autoregisterNewUser(username, null, null);
     }
     private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
-        Principal p =  Principal.createStandardized(username, email);
+        Principal p =  principalService.registerIfAbsent(username);
+        p.email=email;
         UserProfile up = new UserProfile(p);
         if (authenticationConfiguration.isAutoregisteractive()) {
             up.active = true;
