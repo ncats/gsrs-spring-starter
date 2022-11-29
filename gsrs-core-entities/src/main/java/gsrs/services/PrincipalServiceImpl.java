@@ -54,7 +54,7 @@ public class PrincipalServiceImpl implements PrincipalService {
             }
             log.debug("creating principal " + username);
             created[0] = Boolean.TRUE;
-            return new Principal(username, null);
+            return new Principal(username, null).standardizeAndUpdate();
         });
 
         //entity might be detached
