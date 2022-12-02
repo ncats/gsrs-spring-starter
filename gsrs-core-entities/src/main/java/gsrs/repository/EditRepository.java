@@ -42,7 +42,11 @@ public interface EditRepository extends GsrsRepository<Edit, UUID> {
         
         return findByRefidAndVersionAndKinds(k.getIdString(),version, kinds);
     }
-    
+    /**
+     * Gets the most recent edit for the supplied Key
+     * @param k
+     * @return
+     */
     default Optional<Edit> findFirstByKeyOrderByCreatedDesc(Key k){
         Set<String> kinds = k.getEntityInfo().getInherittedRootEntityInfo().getTypeAndSubTypes()
                 .stream().map(ei->ei.getEntityClass().getName()).collect(Collectors.toSet());
