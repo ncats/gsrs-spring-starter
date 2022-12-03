@@ -201,7 +201,7 @@ public class GsrsExportConfiguration {
         if(exporters !=null) {
             for (ExporterFactory factory : exporters) {
                 Set<OutputFormat> supportedFormats= factory.getSupportedFormats();
-                log.trace("enhancing output formats");
+                //log.trace("enhancing output formats");
                 supportedFormats.forEach(f->f.setParameterSchema(factory.getSchema()));
                 list.addAll(supportedFormats);
             }

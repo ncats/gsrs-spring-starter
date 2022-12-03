@@ -83,6 +83,7 @@ public interface ImportAdapterFactory<T> {
     void setHoldingAreaEntityService(Class holdingAreaEntityService);
 
     List<Class> getEntityServices();
+
     void setEntityServices(List<Class> services);
 
     Class getEntityServiceClass();
