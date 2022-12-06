@@ -657,11 +657,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 List<T> rlist = new ArrayList<>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
-                for (T s : rlist) { 
-                	if(s instanceof BaseModel) {
-                		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
-                	}
-                }
+//                for (T s : rlist) { 
+//                	if(s instanceof BaseModel) {
+//                		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
+//                	}
+//                }
                 return sr;
             } catch (Exception e) {
                 e.printStackTrace();

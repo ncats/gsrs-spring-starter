@@ -30,6 +30,7 @@ import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.repository.ETagRepository;
+import ix.core.models.BaseModel;
 import ix.core.models.ETag;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
@@ -145,6 +146,11 @@ public class SearchResultController {
             resultSet=klist;
         }else{
             results.copyTo(resultSet, so.getSkip(), so.getTop(), true);
+            for (Object s : resultSet) { 
+            	if(s instanceof BaseModel) {
+            		((BaseModel)s).setMatchContextProperty(gsrsCache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
+            	}
+            }
         }
 
         int count = resultSet.size();

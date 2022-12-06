@@ -28,10 +28,12 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.controller.GsrsControllerUtil;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import ix.core.cache.CacheStrategy;
+import ix.core.models.BaseModel;
 import ix.core.models.Facet;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
+import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.Util;
@@ -229,7 +231,12 @@ public class SearchResult {
 
 		int i = 0;
 		for (; i < count && it.hasNext(); ++i) {
-			list.add(it.next());
+			Object s = it.next();
+			//need this to clear temp cache stuff that comes from other searches
+			if(s instanceof BaseModel) {
+            		((BaseModel)s).clearAllMatchContextProperties();
+            }            
+			list.add(s);
 		}
 
 		return i;
