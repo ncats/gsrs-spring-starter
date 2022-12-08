@@ -97,6 +97,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         private Long size;
         private String mimeType;
         private String fileEncoding;
+
         private String holdingAreaRecordId;
         private String entityType;
 
