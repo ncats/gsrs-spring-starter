@@ -88,4 +88,6 @@ public interface ImportAdapterFactory<T> {
 
     Class getEntityServiceClass();
     void setEntityServiceClass(Class newClass);
+
+    void setInputParameters(JsonNode parameters);
 }

@@ -1,5 +1,6 @@
 package gsrs.dataexchange.imports;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -15,6 +16,7 @@ import org.springframework.core.io.Resource;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -66,6 +68,25 @@ public class BasicTextImportTest {
         });
         Assertions.assertEquals(2, counter.get());
         fis.close();
+    }
+
+    @Test
+    public void testParameterPassing() {
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+        parameters.put("A", "a");
+        parameters.put("delimiter", "\t");
+        parameters.put("originality", "some original phrase");
+        BasicImportFactory basicImportFactory = new BasicImportFactory();
+
+        basicImportFactory.setInputParameters(parameters);
+
+        JsonNode echoedSettings = basicImportFactory.getOriginalParameters();
+        Iterator<String> keys =parameters.fieldNames();
+        while( keys.hasNext()) {
+            String field = keys.next();
+            System.out.printf("field: %s; input: %s; echo: %s\n", field, parameters.get(field).asText(), echoedSettings.get(field).asText());
+            Assertions.assertEquals(parameters.get(field).asText(), echoedSettings.get(field).asText());
+        }
     }
 
     private ObjectNode createSimpleObjectNode() {

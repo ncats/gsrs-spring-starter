@@ -92,6 +92,11 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     }
 
     @Override
+    public void setInputParameters(JsonNode parameters) {
+
+    }
+
+    @Override
     public void setEntityServices(List services) {
         this.services=services;
     }

@@ -101,6 +101,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         private String holdingAreaRecordId;
         private String entityType;
 
+        private JsonNode inputSettings;
+
         public ImportTaskMetaData() {
         }
 
@@ -215,13 +217,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
         log.trace("in predictSettings, task for file: {}  with payload: {}", task.getFilename(), task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
+        adaptFac.setInputParameters(task.inputSettings);
         log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
         ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
 
         ImportTaskMetaData<T> newMeta = task.copy();
-        newMeta.adapterSettings = predictedSettings.getAdapterSettings();
-        newMeta.adapterSchema = predictedSettings.getAdapterSchema();
+        if( predictedSettings!=null) {
+            newMeta.adapterSettings = predictedSettings.getAdapterSettings();
+            newMeta.adapterSchema = predictedSettings.getAdapterSchema();
+        }else {
+            ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+            messageNode.put("Message", "Error predicting settings");
+        }
         return newMeta;
     }
 
@@ -323,6 +331,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             String entityType = queryParameters.get("entityType");//type of domain object to create, eventually
             Objects.requireNonNull(entityType, "Must supply entityType (class of object to create)");
 
+            //pass the rest of the queryParameters to the task so they can be used by the adapter
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode queryParameterNode = mapper.valueToTree(queryParameters);
+
             TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
@@ -345,13 +357,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             itmd.setEntityType(entityType);
             itmd.setFileEncoding(fileEncoding);
+            itmd.setInputSettings(queryParameterNode);
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd);
                 //save after we assign the fields we'll need later on
             }
             itmd = saveImportTask(itmd).get();
 
-            log.trace("itmd.adapterSettings: " + itmd.adapterSettings.toPrettyString());
+            if( itmd!=null && itmd.adapterSettings!=null) {
+                log.trace("itmd.adapterSettings: {}", itmd.adapterSettings.toPrettyString());
+            } else {
+                log.warn("itmd.adapterSettings null");
+            }
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
         } catch (Throwable t) {
             log.error("Error in handleImport", t);

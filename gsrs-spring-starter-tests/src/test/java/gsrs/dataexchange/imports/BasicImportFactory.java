@@ -23,6 +23,8 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     private List<Class> services;
     private Class serviceClass;
 
+    private JsonNode originalParameters;
+
     @Override
     public String getAdapterName() {
         return "Basic Import Adapter";
@@ -140,5 +142,15 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     @Override
     public void setEntityServiceClass(Class newClass) {
         this.serviceClass=newClass;
+    }
+
+    @Override
+    public void setInputParameters(JsonNode parameters) {
+        log.trace("setInputParameters");
+        this.originalParameters=parameters;
+    }
+
+    public JsonNode getOriginalParameters(){
+        return this.originalParameters;
     }
 }

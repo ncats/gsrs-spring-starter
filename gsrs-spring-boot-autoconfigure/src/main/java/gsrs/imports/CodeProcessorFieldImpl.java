@@ -10,6 +10,8 @@ public class CodeProcessorFieldImpl implements CodeProcessorField {
     private Boolean required;   //required for UI
     private String lookupKey;
 
+    private String cv;
+
     @Override
     public String getFieldName() {
         return fieldName;
@@ -78,5 +80,13 @@ public class CodeProcessorFieldImpl implements CodeProcessorField {
     @Override
     public void setLookupKey(String key) {
         this.lookupKey= key;
+    }
+
+    public String getCv() {
+        return cv;
+    }
+
+    public void setCv(String cv) {
+        this.cv = cv;
     }
 }
