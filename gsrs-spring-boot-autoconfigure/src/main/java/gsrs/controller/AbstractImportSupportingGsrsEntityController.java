@@ -362,6 +362,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 itmd = predictSettings(itmd);
                 //save after we assign the fields we'll need later on
             }
+            ((ObjectNode) itmd.getAdapterSettings()).set("parameters",queryParameterNode);
+            log.trace("set parameter node");
             itmd = saveImportTask(itmd).get();
 
             if( itmd!=null && itmd.adapterSettings!=null) {
