@@ -1646,13 +1646,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 					f = getTermsQuery(terms);
 				}
 				if(options.getOrder().isEmpty() ||
-				   options.getOrder().stream().collect(Collectors.joining("_")).equals("default")){
+				   options.getOrder().stream()
+				   .collect(Collectors.joining("_"))
+				   .equals("default")
+				   
+						){
 					Stream<Key> ids = subset.stream()
 											.map(o-> {
 												if(o instanceof Key) {
-													return (Key)o;
+													return ((Key)o).toRootKey();
 												}else { 
-													return EntityWrapper.of(o).getKey();
+													return EntityWrapper.of(o).getKey().toRootKey();
 												}
 												});
 					

@@ -12,20 +12,23 @@ import java.io.File;
 @ConfigurationProperties(prefix = "ix.cache", ignoreInvalidFields = true)
 @Data
 public class GsrsLegacyCachePropertyConfiguration {
-    /*
-
-    static final int DEFAULT_MAX_ELEMENTS = 10000;
-    static final int DEFAULT_TIME_TO_LIVE = 60*60; // 1hr
-    static final int DEFAULT_TIME_TO_IDLE = 60*60; // 1hr
-
-    public static final String CACHE_MAX_ELEMENTS = "ix.cache.maxElements";
-    public static final String CACHE_MAX_NOT_EVICTABLE_ELEMENTS = "ix.cache.maxElementsNotEvictable";
-    public static final String CACHE_TIME_TO_LIVE = "ix.cache.timeToLive";
-    public static final String CACHE_TIME_TO_IDLE = "ix.cache.timeToIdle";
-
-    public static final String CACHE_USE_FILEDB = "ix.cache.useFileDb";
-     */
-    public static final int DEFAULT_MAX_ELEMENTS = 10000;
+  
+	
+	
+	/*
+	 * These default values will only be used if there are no corresponding
+	 * settings for maxElements, maxElementsNonEvictable, timeToLive and 
+	 * timeToIdle in the config file property "ix.cache". To change the 
+	 * settings for debugging or for a running instance it's best to
+	 * add setting changes to the local.conf like:
+	 * 
+	 * ix.cache.maxElements = 40
+	 * ix.cache.maxElementsNonEvictable = 100
+	 * 
+	 * and so on
+	 */
+	
+	public static final int DEFAULT_MAX_ELEMENTS = 10000;
     public static final int DEFAULT_TIME_TO_LIVE = 60*60; // 1hr
     public static final int DEFAULT_TIME_TO_IDLE = 60*60; // 1hr
 
@@ -34,10 +37,11 @@ public class GsrsLegacyCachePropertyConfiguration {
     private int timeToLive = DEFAULT_TIME_TO_LIVE;
     private int timeToIdle = DEFAULT_TIME_TO_IDLE;
     private boolean useFileDb = false;
+    
     @Value("${ix.debug:5}")
     private int debugLevel;
 
-    boolean clearpersist = true;
+    private boolean clearpersist = true;
     private String base;
 
 

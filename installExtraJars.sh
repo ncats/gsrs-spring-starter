@@ -12,8 +12,6 @@
 ./mvnw install:install-file -Dfile=extraJars/cdk-smarts-2.6-SNAPSHOT.jar
 ./mvnw install:install-file -Dfile=extraJars/cdk-smiles-2.6-SNAPSHOT.jar
 ./mvnw install:install-file -Dfile=extraJars/cdk-standard-2.6-SNAPSHOT.jar
-./mvnw install:install-file -Dfile=extraJars/structure-indexer-0.0.14-SNAPSHOT.jar
-
 
 #./mvnw install:install-file -Dfile=extraJars/jchem3.jar -DgroupId=chemaxon -DartifactId=jchem -Dversion=1.0.0fake -Dpackaging=jar
 #./mvnw install:install-file -Dfile=extraJars/molwitch-jchem3-1.0.9.jar
