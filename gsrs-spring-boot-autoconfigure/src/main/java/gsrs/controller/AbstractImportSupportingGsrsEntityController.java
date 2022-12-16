@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -464,6 +465,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 try {
                     importDataRecordIds.add( saveHoldingAreaRecord(service, mapper.writeValueAsString(object), itmd));
                     if(recordCount.get()< limit) {
+                        if( object instanceof Supplier){
+                            log.trace("going to invoke supplier on object");
+                            object= (T) ((Supplier) object).get();
+                        }
                         previewNode.add(mapper.writeValueAsString(object));
                     }
                 } catch (JsonProcessingException e) {
