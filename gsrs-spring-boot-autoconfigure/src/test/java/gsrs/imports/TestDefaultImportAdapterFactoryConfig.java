@@ -23,6 +23,7 @@ public class TestDefaultImportAdapterFactoryConfig {
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", new String[] {"sdf", "sd"});
         oneAdapter.put("parameters", buildConfigParameters());
+        oneAdapter.put("description", "general description");
         List<Map<String,Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);

@@ -164,7 +164,7 @@ public class EntityUtils {
 		}
 		jsn = fixJSONNode(jsn);
 		try {
-			log.trace("looking to convert node: {} of type {}", jsn.toPrettyString(), ref.getType().getTypeName());
+			log.trace("looking to convert node of type {}", ref.getType().getTypeName());
 			T convertedObject= om.convertValue(jsn, ref);
 			return convertedObject;
 		} catch (NullPointerException npe) {

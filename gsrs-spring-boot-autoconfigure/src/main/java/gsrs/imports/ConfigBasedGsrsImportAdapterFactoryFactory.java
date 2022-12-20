@@ -33,8 +33,15 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         //iaf.setEntityServices(c.getEntityServices());
                         iaf.setEntityServiceClass(c.getEntityServiceClass());
                         iaf = AutowireHelper.getInstance().autowireAndProxy(iaf);
+
+                        //allow config to override what's in code
+                        if(c.getDescription() !=null && c.getDescription().length()>0) {
+                            iaf.setDescription(c.getDescription());
+                        }
+                        log.trace("using description {} for this iaf", iaf.getDescription());
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();
+
                         return iaf;
                     } catch (Exception e) {
                         log.warn("exception during import adapter factory init: ", e);
@@ -43,7 +50,6 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-
     }
 
     @Override
@@ -76,6 +82,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         clientFriendlyImportAdapterConfig.setParameters(c.getParameters());
                         clientFriendlyImportAdapterConfig.setFileExtensions(iaf.getSupportedFileExtensions());
                         clientFriendlyImportAdapterConfig.setAdapterKey( iaf.getAdapterKey());
+                        clientFriendlyImportAdapterConfig.setDescription(c.getDescription());
 
                         return clientFriendlyImportAdapterConfig;
                     } catch (Exception e) {

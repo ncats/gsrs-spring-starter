@@ -90,4 +90,8 @@ public interface ImportAdapterFactory<T> {
     void setEntityServiceClass(Class newClass);
 
     void setInputParameters(JsonNode parameters);
+
+    String getDescription();
+
+    void setDescription(String description);
 }

@@ -150,6 +150,16 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
         this.originalParameters=parameters;
     }
 
+    @Override
+    public String getDescription() {
+        return "This is a basic import factory for testing";
+    }
+
+    @Override
+    public void setDescription(String description) {
+
+    }
+
     public JsonNode getOriginalParameters(){
         return this.originalParameters;
     }

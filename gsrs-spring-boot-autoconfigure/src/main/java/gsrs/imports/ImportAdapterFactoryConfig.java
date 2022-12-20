@@ -4,9 +4,7 @@ package gsrs.imports;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import gsrs.validator.DefaultValidatorConfig;
 import ix.core.util.InheritanceTypeIdResolver;
-import ix.ginas.utils.validation.ValidatorPlugin;
 
 import java.util.List;
 import java.util.Map;
@@ -43,4 +41,9 @@ public interface ImportAdapterFactoryConfig {
 
     Class getEntityServiceClass();
     void setEntityServiceClass(Class newClass);
+
+    String getDescription();
+
+    void setDescription(String description);
+
 }

@@ -13,6 +13,8 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     private List<Class> services;
     private Class serviceClass;
 
+    private String description = "Simplest Import Adapter used for testing";
+
     public String ADAPTER_NAME="Dummy Import Adapter";
     @Override
     public String getAdapterName() {
@@ -94,6 +96,16 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     @Override
     public void setInputParameters(JsonNode parameters) {
 
+    }
+
+    @Override
+    public String getDescription() {
+        return this.description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description=description;
     }
 
     @Override

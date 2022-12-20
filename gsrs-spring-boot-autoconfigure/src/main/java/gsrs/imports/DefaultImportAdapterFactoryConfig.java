@@ -28,6 +28,8 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private List<Class> entityServices;
     private Class entityServiceClass;
 
+    private String description;
+
     public DefaultImportAdapterFactoryConfig(String adapterName, Class importAdapterFactoryClass, List<String> extensions) {
         this.adapterName=adapterName;
         this.importAdapterFactoryClass= importAdapterFactoryClass;
@@ -146,4 +148,14 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     public void setEntityServiceClass(Class newClass) {
         entityServiceClass= newClass;
     }
+
+    @Override
+    public String getDescription(){
+        return this.description;
+    }
+    @Override
+    public void setDescription(String description){
+        this.description=description;
+    }
+
 }

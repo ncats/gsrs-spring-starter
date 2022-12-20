@@ -90,7 +90,7 @@ public class GsrsFactoryConfiguration {
         }
         try {
             List<Map<String, Object>> list = importAdapterFactories.get(context);
-            log.trace("list:");
+            log.trace("list (before):");
             list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
 
             if (list == null || list.isEmpty()) {
@@ -99,6 +99,8 @@ public class GsrsFactoryConfiguration {
             }
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
             });
+            //log.trace("list (after):");
+            //configs.forEach(c-> log.trace("name: {}; desc: {}", c.getAdapterName(), c.getDescription()));
             return configs;
         } catch (Exception t) {
             log.error("Error fetching import factory config");

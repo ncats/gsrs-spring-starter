@@ -14,4 +14,5 @@ public class ClientFriendlyImportAdapterConfig {
     private String adapterKey;
     private List<String> fileExtensions;
     private Map<String, Object> parameters;
+    private String description;
 }
