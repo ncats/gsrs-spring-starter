@@ -97,12 +97,11 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
         List<MappingAction<GinasCommonData, TextRecordContext>> actions = new ArrayList<>();
         log.trace("adapterSettings: " + adapterSettings.toPrettyString());
         adapterSettings.get("actions").forEach(js -> {
-            String actionName = js.get("actionName").asText();
+            /*String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
-            System.out.println("actionParameters: "+actionParameters.toPrettyString());
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {
-            });
+            });*/
             MappingAction<GinasCommonData, TextRecordContext> action =null;
             try {
                 String actionClassName="";

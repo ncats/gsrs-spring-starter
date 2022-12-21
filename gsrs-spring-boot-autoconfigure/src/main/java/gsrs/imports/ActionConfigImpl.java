@@ -13,6 +13,8 @@ public class ActionConfigImpl implements ActionConfig{
     private List<CodeProcessorFieldImpl> fields;
     private Map<String, Object> parameters = new HashMap<>();
 
+    private String label;
+
     @Override
     public String getActionName() {
         return this.actionName;
@@ -52,4 +54,15 @@ public class ActionConfigImpl implements ActionConfig{
     public void setParameters(Map<String, Object> parameters) {
         this.parameters= parameters;
     }
+
+    @Override
+    public void setLabel(String label){
+        this.label= label;
+    }
+
+    @Override
+    public String getLabel(){
+        return this.label;
+    }
+
 }

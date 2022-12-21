@@ -23,4 +23,8 @@ public interface ActionConfig {
     // we can specify a code system as a parameter
     Map<String,Object> getParameters();
     void setParameters(Map<String,Object> parameters);
+
+    void setLabel(String label);
+
+    String getLabel();
 }

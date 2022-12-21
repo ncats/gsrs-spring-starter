@@ -45,5 +45,4 @@ public interface ImportAdapterFactoryConfig {
     String getDescription();
 
     void setDescription(String description);
-
 }
