@@ -26,11 +26,16 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
         return "dummy";
     }
 
-    public static String[] extensions = {"txt", "sdf"};
+    public String[] extensions = {"txt", "sdf"};
 
     @Override
     public List<String> getSupportedFileExtensions() {
         return Arrays.asList(extensions);
+    }
+
+    @Override
+    public void setSupportedFileExtensions(List extensions) {
+        this.extensions = (String[]) extensions.toArray();
     }
 
     @Override

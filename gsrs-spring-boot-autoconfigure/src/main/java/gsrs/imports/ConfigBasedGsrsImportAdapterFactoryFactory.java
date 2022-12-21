@@ -39,6 +39,12 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                             iaf.setDescription(c.getDescription());
                         }
                         log.trace("using description {} for this iaf", iaf.getDescription());
+                        if(c.getSupportedFileExtensions()!=null && !c.getSupportedFileExtensions().isEmpty()) {
+                            log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
+                            iaf.setSupportedFileExtensions(c.getSupportedFileExtensions());
+                        } else {
+                            log.trace("using extensions within class");
+                        }
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();
 
@@ -67,8 +73,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 {
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
-                        log.trace("c.getHoldingServiceClass(): {}", c.getHoldingAreaServiceClass()==null ? "null!!" :
-                                c.getHoldingAreaServiceClass().getName());
+                        log.trace("c.getAdapterName(): {}", c.getAdapterName() );
                         iaf.setHoldingAreaService(c.getHoldingAreaServiceClass());
                         log.trace("entity services:");
                         //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
@@ -80,7 +85,14 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         ClientFriendlyImportAdapterConfig clientFriendlyImportAdapterConfig = new ClientFriendlyImportAdapterConfig();
                         clientFriendlyImportAdapterConfig.setAdapterName(c.getAdapterName());
                         clientFriendlyImportAdapterConfig.setParameters(c.getParameters());
-                        clientFriendlyImportAdapterConfig.setFileExtensions(iaf.getSupportedFileExtensions());
+
+                        if( c.getSupportedFileExtensions()!=null && !c.getSupportedFileExtensions().isEmpty()) {
+                            log.trace("using extensions from config: {}", String.join("|", c.getSupportedFileExtensions()));
+                            clientFriendlyImportAdapterConfig.setFileExtensions(c.getSupportedFileExtensions());
+                        } else if( iaf.getSupportedFileExtensions()!=null && !iaf.getSupportedFileExtensions().isEmpty()){
+                            log.trace("using extensions from importer: {}", String.join("|", iaf.getSupportedFileExtensions()));
+                            clientFriendlyImportAdapterConfig.setFileExtensions(iaf.getSupportedFileExtensions());
+                        }
                         clientFriendlyImportAdapterConfig.setAdapterKey( iaf.getAdapterKey());
                         clientFriendlyImportAdapterConfig.setDescription(c.getDescription());
 

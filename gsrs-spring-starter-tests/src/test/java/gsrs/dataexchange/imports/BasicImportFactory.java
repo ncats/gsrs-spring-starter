@@ -41,6 +41,11 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+
+    }
+
+    @Override
     public ImportAdapter<GinasCommonData> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<GinasCommonData, TextRecordContext>> actions = null;

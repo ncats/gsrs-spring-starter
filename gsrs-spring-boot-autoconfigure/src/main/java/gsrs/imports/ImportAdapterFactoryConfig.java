@@ -28,8 +28,8 @@ public interface ImportAdapterFactoryConfig {
     void setAdapterName(String name);
 
     //optional: class may set its own extensions
-    List<String> getExtensions();
-    void setExtensions(List<String> extensions);
+    List<String> getSupportedFileExtensions();
+    void setSupportedFileExtensions(List<String> extensions);
 
     ImportAdapterFactory newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
 

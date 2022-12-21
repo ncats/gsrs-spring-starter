@@ -96,12 +96,12 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public List<String> getExtensions() {
+    public List<String> getSupportedFileExtensions() {
         return this.extensions;
     }
 
     @Override
-    public void setExtensions(List<String> extensions) {
+    public void setSupportedFileExtensions(List<String> extensions) {
         this.extensions=extensions;
     }
 

@@ -99,8 +99,8 @@ public class GsrsFactoryConfiguration {
             }
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
             });
-            //log.trace("list (after):");
-            //configs.forEach(c-> log.trace("name: {}; desc: {}", c.getAdapterName(), c.getDescription()));
+            log.trace("list (after):");
+            configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
             return configs;
         } catch (Exception t) {
             log.error("Error fetching import factory config");

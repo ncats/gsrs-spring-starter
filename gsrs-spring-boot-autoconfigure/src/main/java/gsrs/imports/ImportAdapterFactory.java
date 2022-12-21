@@ -33,6 +33,8 @@ public interface ImportAdapterFactory<T> {
      */
     List<String> getSupportedFileExtensions();
 
+    void setSupportedFileExtensions(List<String> extensions);
+
     /**
      * Creates an {@link ImportAdapter} based on the supplied {@link JsonNode}, which can
      * encode information about the initialization of the adapter. The adapterSettings typically
