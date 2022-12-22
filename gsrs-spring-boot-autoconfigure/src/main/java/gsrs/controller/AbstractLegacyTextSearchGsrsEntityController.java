@@ -704,5 +704,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
             resultContext.setGeneratingUrl(oldURL + queryParamBuilder);            
         }
     }
+    
+    @GetGsrsRestApiMapping(value="/@bulkQuery")
+    public ResponseEntity<String> getUserBulkSearchResultLists(@RequestParam String id,
+    										   @RequestParam("top") Optional<Integer> top,
+    										   @RequestParam("skip") Optional<Integer> skip,
+    										   HttpServletRequest request){ 
+    	
+    }
 
 }
