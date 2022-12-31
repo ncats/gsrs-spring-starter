@@ -1,6 +1,7 @@
 package ix.ginas.exporters;
 
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
 import java.util.function.Function;
@@ -56,6 +57,13 @@ public abstract class SpreadsheetFormat extends OutputFormat {
         public Spreadsheet createSpeadsheet(OutputStream out) {
 
             return new ExcelSpreadsheet.Builder(out)
+                    .maxRowsInMemory(100)
+                    .build();
+
+        }
+        public Spreadsheet createSpreadsheet(InputStream in) {
+
+            return new ExcelSpreadsheetReader.Builder(in)
                     .maxRowsInMemory(100)
                     .build();
 
