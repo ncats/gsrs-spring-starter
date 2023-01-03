@@ -73,5 +73,15 @@
             <artifactId>maven-model</artifactId>
             <version>3.8.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml-full</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.2</version>
+        </dependency>
     </dependencies>
 </project>

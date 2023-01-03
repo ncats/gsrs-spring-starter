@@ -14,6 +14,10 @@ public abstract class SpreadsheetFormat extends OutputFormat {
 
     public abstract Spreadsheet createSpeadsheet(OutputStream out);
 
+    public abstract Spreadsheet createSpreadsheet(OutputStream out);
+
+    //public abstract Spreadsheet createSpreadsheet(InputStream out);
+
     public SpreadsheetFormat withInfo(Function<StringBuilder, String> extension, Function<StringBuilder, String> displayName){
         Objects.requireNonNull(extension);
         Objects.requireNonNull(displayName);
@@ -26,6 +30,16 @@ public abstract class SpreadsheetFormat extends OutputFormat {
             @Override
             public Spreadsheet createSpeadsheet(OutputStream out) {
                 return parentClass.createSpeadsheet(out);
+            }
+
+            @Override
+            public Spreadsheet createSpreadsheet(OutputStream out) {
+                return createSpeadsheet(out);
+            }
+
+            //@Override
+            public Spreadsheet createSpreadsheet(InputStream out) {
+                return null;
             }
         };
     }
@@ -40,6 +54,16 @@ public abstract class SpreadsheetFormat extends OutputFormat {
                     .build();
         }
 
+        @Override
+        public Spreadsheet createSpreadsheet(OutputStream out) {
+            return createSpeadsheet(out);
+        }
+
+        //@Override
+        public Spreadsheet createSpreadsheet(InputStream out) {
+            return null;
+        }
+
 
     };
 
@@ -51,6 +75,16 @@ public abstract class SpreadsheetFormat extends OutputFormat {
                     .maxRowsInMemory(100)
                     .build();
         }
+
+        @Override
+        public Spreadsheet createSpreadsheet(OutputStream out) {
+            return createSpreadsheet(out);
+        }
+
+        //@Override
+        public Spreadsheet createSpreadsheet(InputStream out) {
+            return null;
+        }
     };
 
     public static final SpreadsheetFormat XLSX = new SpreadsheetFormat("xlsx", "Excel (.xslx)"){
@@ -61,12 +95,18 @@ public abstract class SpreadsheetFormat extends OutputFormat {
                     .build();
 
         }
-        public Spreadsheet createSpreadsheet(InputStream in) {
+
+        @Override
+        public Spreadsheet createSpreadsheet(OutputStream out) {
+            return createSpeadsheet(out);
+        }
+
+        /*public Spreadsheet createSpreadsheet(InputStream in) {
 
             return new ExcelSpreadsheetReader.Builder(in)
                     .maxRowsInMemory(100)
                     .build();
 
-        }
+        }*/
     };
 }
