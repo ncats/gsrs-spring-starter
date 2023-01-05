@@ -39,7 +39,9 @@ public class BasicTextImportTest {
 
         ObjectNode settings=createSimpleObjectNode();
         ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
-        Stream<GinasCommonData> objects= adapter.parse(fis, Charset.defaultCharset().name());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Charset", Charset.defaultCharset().name());
+        Stream<GinasCommonData> objects= adapter.parse(fis, settingsNode);
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");
@@ -59,7 +61,9 @@ public class BasicTextImportTest {
 
         ObjectNode settings=createComplexObjectNode();
         ImportAdapter<GinasCommonData> adapter = basicImportFactory.createAdapter(settings);
-        Stream<GinasCommonData> objects= adapter.parse(fis, Charset.defaultCharset().name());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Charset", Charset.defaultCharset().name());
+        Stream<GinasCommonData> objects= adapter.parse(fis, settingsNode);
         AtomicInteger counter = new AtomicInteger(0);
         objects.forEach(o-> {
             System.out.println("object: ");

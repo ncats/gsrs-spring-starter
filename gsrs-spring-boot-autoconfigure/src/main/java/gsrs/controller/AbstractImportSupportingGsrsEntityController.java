@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -160,20 +161,24 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         //TODO: add _self link
     }
 
-    public Stream<T> execute(ImportTaskMetaData<T> task) throws Exception {
+    public Stream<T> execute(ImportTaskMetaData<T> task, Map<String, String> settingsMap) throws Exception {
         log.trace("starting in execute. task: " + task.toString());
         log.trace("using encoding {}, looking for payload with ID {}", task.fileEncoding, task.payloadID);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode settingsNode = mapper.convertValue(settingsMap, ObjectNode.class);
+        if( !settingsNode.hasNonNull("Encoding")) {
+            settingsNode.put("Encoding", task.fileEncoding);
+        }
         return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
-                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), task.fileEncoding);
+                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), settingsNode);
     }
 
     private ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
         if (task.adapter == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
-        ImportAdapterFactory<T> adaptFac = (ImportAdapterFactory<T>)
-                getImportAdapterFactory(task.adapter)
+        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task.adapter)
                         .orElse(null);
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
@@ -215,13 +220,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return service;
     }
 
-    private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task) throws Exception {
+    private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task, Map<String, String> inputParameters) throws Exception {
         log.trace("in predictSettings, task for file: {}  with payload: {}", task.getFilename(), task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
         adaptFac.setInputParameters(task.inputSettings);
         log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
-        ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get(), null);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode parameters= mapper.convertValue(inputParameters, ObjectNode.class);
+        ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get(), parameters);
 
         ImportTaskMetaData<T> newMeta = task.copy();
         if( predictedSettings!=null) {
@@ -251,7 +258,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //MECHANISM TO SAVE IMPORT META DATA
     //TODO: move to better data store, perhaps more like export/download service
-    private Map<UUID, ImportTaskMetaData> importTaskCache = new ConcurrentHashMap<>();
+    private final Map<UUID, ImportTaskMetaData> importTaskCache = new ConcurrentHashMap<>();
 
     private Optional<ImportTaskMetaData> getImportTask(UUID id) {
         return Optional.ofNullable(importTaskCache.get(id));
@@ -360,7 +367,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             itmd.setFileEncoding(fileEncoding);
             itmd.setInputSettings(queryParameterNode);
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
-                itmd = predictSettings(itmd);
+                itmd = predictSettings(itmd, queryParameters);
                 //save after we assign the fields we'll need later on
             }
             ((ObjectNode) itmd.getAdapterSettings()).set("parameters",queryParameterNode);
@@ -405,7 +412,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (adapterName != null) {
                 itmd.setAdapter(adapterName);
             }
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(predictSettings(itmd), queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(predictSettings(itmd, queryParameters), queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -420,12 +427,17 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportTaskMetaData itmd = om.treeToValue(updatedJson, ImportTaskMetaData.class);
 
         if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
-            itmd = predictSettings(itmd);
+            itmd = predictSettings(itmd, queryParameters);
         }
 
         //TODO: validation
         //override any existing task version
-        itmd = saveImportTask(itmd).get();
+        Optional<ImportTaskMetaData> taskHolder=saveImportTask(itmd);
+        if( taskHolder.isPresent()) {
+            itmd = saveImportTask(itmd).get();
+        } else {
+            log.error("error saving ImportTaskMetaData! ");
+        }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
     }
 
@@ -446,10 +458,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
             log.trace("limit: {}", limit);
 
-            Stream<T> objectStream=execute(itmd);
-            /*List<T> previewList = (objectStream
-                    .limit(limit)
-                    .collect(Collectors.toList()));*/
+            Stream<T> objectStream=execute(itmd, queryParameters);
 
             HoldingAreaService service = getHoldingAreaService(itmd);
             ObjectMapper mapper = new ObjectMapper();
@@ -481,10 +490,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
             returnNode.put("complete success", objectProcessingOK.get());
             ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
-            importDataRecordIds.forEach(i->recordIdListNode.add(i));
+            importDataRecordIds.forEach(recordIdListNode::add);
             returnNode.set("staging area record IDs", recordIdListNode);
             ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
-            errorRecords.forEach(r->problemRecords.add(r));
+            errorRecords.forEach(problemRecords::add);
             returnNode.set("Records with processing errors", problemRecords);
             returnNode.set( String.format("data preview (limit: %d", limit), previewNode);
 
@@ -509,7 +518,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if(response==null) {
             ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
             responseNode.put("message",
-                    String.format("an error occurred while performing validation. Check the instanceId %. Check the server logs", id));
+                    String.format("an error occurred while performing validation. Check the instanceId %s. Check the server logs", id));
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
@@ -522,7 +531,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> findMatches(@RequestBody JsonNode entityJson,
                                               @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in findMatches");
-        ObjectMapper om = new ObjectMapper();
         String entityType = queryParameters.get("entityType");
         String adapterName = queryParameters.get("adapter");
         log.trace("adapterName: " + adapterName);
@@ -641,7 +649,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HoldingAreaService service = getHoldingAreaService(adapterName);
         log.trace("retrieved service");
         String result = service.updateRecord(recordId, updatedJson);
-        ObjectNode resultNode= JsonNodeFactory.instance.objectNode();;
+        ObjectNode resultNode= JsonNodeFactory.instance.objectNode();
         resultNode.put("Results",result);
 
         //TODO: validation ?????

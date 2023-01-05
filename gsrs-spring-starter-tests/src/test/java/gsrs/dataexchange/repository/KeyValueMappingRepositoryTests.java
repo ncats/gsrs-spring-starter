@@ -29,6 +29,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
     private static boolean setupDone =false;
 
+/*
     @BeforeEach
     public void setup() {
         System.out.println("starting in setup");
@@ -38,6 +39,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
             setupDone=true;
         }
     }
+*/
 
     @Test
     public void testDeleteByRecordId() {
