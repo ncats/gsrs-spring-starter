@@ -221,7 +221,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         adaptFac.setInputParameters(task.inputSettings);
         log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
-        ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get());
+        ImportAdapterStatistics predictedSettings = adaptFac.predictSettings(iStream.get(), null);
 
         ImportTaskMetaData<T> newMeta = task.copy();
         if( predictedSettings!=null) {

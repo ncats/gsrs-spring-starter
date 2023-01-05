@@ -1,6 +1,7 @@
 package gsrs.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
 import java.util.List;
@@ -64,7 +65,7 @@ public interface ImportAdapterFactory<T> {
      * @return {@link ImportAdapterStatistics} object giving some statistics and suggestions for how to configure
      * the {@link ImportAdapter} with the {@link #createAdapter(JsonNode)} method.
      */
-    public ImportAdapterStatistics predictSettings(InputStream is);
+    public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings);
 
     public void setFileName(String fileName);
     public String getFileName();

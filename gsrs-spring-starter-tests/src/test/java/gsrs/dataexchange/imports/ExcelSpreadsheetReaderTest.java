@@ -1,7 +1,8 @@
 package gsrs.dataexchange.imports;
 
 import gsrs.importer.DefaultPropertyBasedRecordContext;
-import ix.ginas.exporters.ExcelSpreadsheetReader;
+import ix.ginas.importers.ExcelSpreadsheetReader;
+import ix.ginas.importers.InputFieldStatistics;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -15,11 +16,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class PoiExploration {
+public class ExcelSpreadsheetReaderTest {
 
     @Test
     public void basicReadTest1() throws IOException {
@@ -177,6 +179,23 @@ public class PoiExploration {
 
     }
 
+    @Test
+    public void getFileStatisticsTest() throws IOException {
+        String filePathName = "excel/export-29-12-2022_17-40-13.xlsx";
+        File inputFile= (new ClassPathResource(filePathName)).getFile();
+        FileInputStream fis = new FileInputStream(inputFile);
+        ExcelSpreadsheetReader reader= new ExcelSpreadsheetReader(fis);
+        Map<String, InputFieldStatistics>statisticsMap= reader.getFileStatistics("Sheet0", null, 4, 0);
+        List<String> expectedFields = Arrays.asList("UUID", "APPROVAL_ID", "DISPLAY_NAME", "RN", "EC", "NCIT", "RXCUI", "PUBCHEM",
+                "ITIS", "NCBI", "PLANTS", "GRIN", "MPNS", "INN_ID", "USAN_ID", "MF", "INCHIKEY", "SMILES", "INGREDIENT_TYPE",
+                "UTF8_DISPLAY_NAME", "SUBSTANCE_TYPE", "PROTEIN_SEQUENCE", "NUCLEIC_ACID_SEQUENCE", "RECORD_ACCESS_GROUPS");
+        List<String> actualFields= statisticsMap.keySet().stream().collect(Collectors.toList());
+        Assertions.assertTrue(expectedFields.containsAll(actualFields));
+        statisticsMap.keySet().forEach(k->{
+            InputFieldStatistics statistics= statisticsMap.get(k);
+            log.trace("field: {} - examples: {}",k, String.join("|", statistics.getExamples()));
+        });
+    }
     /*@Test
     public void listPoi() {
         ClassLoader classloader =

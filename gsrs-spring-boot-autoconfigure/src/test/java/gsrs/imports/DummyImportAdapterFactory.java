@@ -1,6 +1,7 @@
 package gsrs.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -44,7 +45,7 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
     }
 
     @Override
-    public ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         return null;
     }
 

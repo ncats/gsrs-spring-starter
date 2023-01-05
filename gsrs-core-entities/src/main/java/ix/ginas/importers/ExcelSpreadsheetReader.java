@@ -1,12 +1,11 @@
-package ix.ginas.exporters;
+package ix.ginas.importers;
 
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
+import ix.ginas.exporters.Spreadsheet;
+import ix.ginas.exporters.SpreadsheetCell;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -114,7 +113,7 @@ public class ExcelSpreadsheetReader {
         return getFileFields(fieldNameSheet, row);
     }
 
-    public Stream<DefaultPropertyBasedRecordContext> readSheet(String sheetName, List<String> inputFields, int rowWithFields){
+    public Stream<DefaultPropertyBasedRecordContext> readSheet(String sheetName, List<String> inputFields, int rowWithFields) {
 
         Sheet dataSheet = workbook.getSheet(sheetName);
         List<String> fields;
@@ -174,5 +173,46 @@ public class ExcelSpreadsheetReader {
         return stringValue;
     }
 
+    public Map<String, InputFieldStatistics> getFileStatistics(String sheetName, List<String> fieldNames,
+                                                               int maxRecords, int fieldRow) {
+        log.trace("In getFileStatistics, sheetName: {}; fieldRow: {}", sheetName, fieldRow);
+        Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
+
+        Sheet dataSheet = workbook.getSheet(sheetName);
+        List<String> fields = new ArrayList<>();
+        if (fieldNames != null && fieldNames.size() > 0) {
+            log.trace("getFileStatistics received input fieldNames");
+            fields.addAll(fieldNames);
+        } else {
+            log.trace("getFileStatistics reading fields from file");
+            List<String> finalFields = fields;
+            dataSheet.getRow(fieldRow).cellIterator().forEachRemaining(
+                    c -> {
+                        log.trace("adding data from cell {}",c.getAddress());
+                        if (c.getCellType() == CellType.STRING || c.getCellType() == CellType.FORMULA) {
+                            finalFields.add(c.getStringCellValue());
+                        }
+                    }
+            );
+            log.trace("retrieved {} fields", fields.size());
+            fields.forEach(log::trace);
+        }
+
+        for (int lineToRead = 0; (lineToRead <= maxRecords && dataSheet.getRow(lineToRead) != null); lineToRead++) {
+            if(lineToRead==fieldRow)continue;
+            for (int f = 0; f < fields.size(); f++) {
+                String fieldName = fields.get(f);
+                Cell currentCell = dataSheet.getRow(lineToRead).getCell(f);
+                if(currentCell==null) {
+                    log.warn("cell at row {}, column {} is missing", lineToRead, f);
+                    continue;
+                }
+                String value = getCellValueAsString(currentCell);
+                InputFieldStatistics fs = retMap.computeIfAbsent(fieldName, k -> new InputFieldStatistics(k, maxRecords));
+                fs.add(value.trim());
+            }
+        }
+        return retMap;
+    }
 
 }
