@@ -41,6 +41,8 @@ import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.security.hasAdminRole;
+import gsrs.services.BulkSearchResultService;
+import gsrs.services.BulkSearchResultService.ReturnList;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.BaseModel;
@@ -120,6 +122,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @Autowired
     protected EntityLinks entityLinks;
+    
+    @Autowired
+    protected BulkSearchResultService bulkSearchResultService;
+    
     //should maybe use cache
     //TODO: empty sometimes somehow
     private Map<String, ReindexStatus> reindexing = new ConcurrentHashMap<>();
@@ -705,12 +711,78 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         }
     }
     
-    @GetGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> getUserBulkSearchResultLists(@RequestParam String id,
+    @GetGsrsRestApiMapping(value="/@bulkQueryResult/{name}")
+    public ResponseEntity<Object> getUserBulkSearchResultLists(@PathVariable String name,
     										   @RequestParam("top") Optional<Integer> top,
-    										   @RequestParam("skip") Optional<Integer> skip,
-    										   HttpServletRequest request){ 
+    										   @RequestParam("skip") Optional<Integer> skip){
+    	if(!validStringParamater(name)) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	}    	
     	
+    	int rTop = top.orElse(100);   
+    	int rSkip = skip.orElse(0);
+    	
+    	List<String> list = bulkSearchResultService.getUserSearchResultLists(name);
+    	List<String> topList;
+    	if(list.size() <= rTop)
+    		topList = list;
+    	else
+    		topList = list.subList(0, rTop);
+    	
+    	BulkSearchResultService.ReturnList returnList = new BulkSearchResultService.ReturnList(rTop,rSkip,topList);
+    	return new ResponseEntity<>(returnList, HttpStatus.OK);		
+    }
+    
+    @PostGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> saveUserBulkSearchResultList(@RequestParam String userName,    											
+    										   @RequestParam String listName,
+    										   @RequestParam List<String> keys,
+    										   HttpServletRequest request){ 
+    	if(!validStringParamater(userName) || !validStringParamater(listName) || keys == null || keys.isEmpty()) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	} 
+    	
+    	bulkSearchResultService.saveBulkSearchResultList(userName, listName, keys);    	
+    	return new ResponseEntity<>(HttpStatus.OK);	
+    }
+    
+    @DeleteGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> deleteUserBulkSearchResultList(@RequestParam String userName,    											
+    										   @RequestParam List<String> listNames,    										   
+    										   HttpServletRequest request){ 
+    	if(!validStringParamater(userName) || listNames == null || listNames.isEmpty()) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	} 
+    	bulkSearchResultService.deleteBulkSearchResultLists(userName, listNames);
+    	return new ResponseEntity<>(HttpStatus.OK);	
+    }
+    
+    @PutGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> updateUserBulkSearchResultList(@RequestParam String userName,    											
+    										   @RequestParam String listName,
+    										   @RequestParam List<String> keys,
+    										   @RequestParam String operation,
+    										   HttpServletRequest request){ 
+    	if(!validStringParamater(userName) || !validStringParamater(listName) || 
+    			keys == null || keys.isEmpty() ) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	} 
+    	
+    	BulkSearchResultService.Operation op = BulkSearchResultService.Operation.valueOf(operation);
+    	if(op == null) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	}
+    	
+    	bulkSearchResultService.updateBulkSearchResultList(userName, listName, keys, op);
+    	return new ResponseEntity<>(HttpStatus.OK);	
+    }
+    
+    boolean validStringParamater(String param) {
+    	if(param == null)
+    		return false;
+    	else if(param.trim().isEmpty())
+    		return false;
+    	return true;
     }
 
 }
