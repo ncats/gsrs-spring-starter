@@ -127,6 +127,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     public Object exportLinks(@PathVariable("etagId") String etagId,
                               @RequestParam Map<String, String> parameters) throws Exception {
         //the parameter called 'etagid' might be a file extension...
+        //todo: validate etagid to make sure it contains only characters + numbers
         ExporterFactory matchingFactory = getFirstMatchingExporterFactory(etagId);
         if( matchingFactory!=null ){
             log.trace("found matching factory in exportLinks");
@@ -231,6 +232,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
+            //todo: validate egtagid to only contains characters (letters & numbers). length
             return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
         }
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);

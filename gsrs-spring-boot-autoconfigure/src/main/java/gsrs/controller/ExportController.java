@@ -101,6 +101,7 @@ public class ExportController {
     public ResponseEntity<Object> getStatusOf(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
+            //check that id only contains characters TDOD
             return new ResponseEntity<>("could not find etag with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
@@ -121,10 +122,12 @@ public class ExportController {
     public ResponseEntity<Object> cancel(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
+            //todo: validate id
             return new ResponseEntity<>("could not find etag with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
         if(opt.get().isComplete()){
+            //TODO check ID
             return new ResponseEntity<>("Can not cancel a completed export" + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }

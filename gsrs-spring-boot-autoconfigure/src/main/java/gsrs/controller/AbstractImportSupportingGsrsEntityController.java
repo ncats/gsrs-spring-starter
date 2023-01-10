@@ -174,7 +174,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), settingsNode);
     }
 
-    private ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
+    protected ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
         if (task.adapter == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
