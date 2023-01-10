@@ -41,7 +41,7 @@ public class ExportController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
-    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9]*$");
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     /**
      * Get a listing of all the downloads by this user.

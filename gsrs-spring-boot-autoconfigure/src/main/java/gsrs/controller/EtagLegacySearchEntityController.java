@@ -102,7 +102,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return saveAsEtag(results, result, request);
     }
 
-    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9]*$");
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
