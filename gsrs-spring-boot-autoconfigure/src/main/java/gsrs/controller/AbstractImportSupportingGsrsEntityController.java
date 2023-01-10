@@ -183,7 +183,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.adapter + "\"");
         }
-        log.trace("in fetchAdapterFactory, adaptFac: {}, holding area service: {}", adaptFac.getClass().getName(), adaptFac.getHoldingAreaService().getName());
+        log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
+        log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
+        log.trace("in fetchAdapterFactory, holding area service: {}", adaptFac.getHoldingAreaService().getName());
         adaptFac.setFileName(task.filename);
         return adaptFac;
     }
@@ -289,9 +291,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
         log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
         if (getImportAdapters().size() > 0) {
-            getImportAdapters().forEach(a -> log.trace("adapter with name: {}", a.getAdapterName()));
+            getImportAdapters().forEach(a -> log.trace("adapter with name: {}, key: {}", a.getAdapterName(), a.getAdapterKey()));
         }
-        return getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        Optional<ImportAdapterFactory<T>> adapterFactory= getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        if( !adapterFactory.isPresent()) {
+            log.trace("searching for adapter by name failed; using key");
+            adapterFactory= getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+        }
+        return adapterFactory;
     }
 
 
@@ -369,6 +376,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
                 itmd = predictSettings(itmd, queryParameters);
                 //save after we assign the fields we'll need later on
+            }
+            log.trace("queryParameterNode: {}", queryParameterNode);
+            if(itmd.getAdapterSettings()==null) {
+                log.trace("AdapterSettings was null");
+                itmd.setAdapterSettings(JsonNodeFactory.instance.objectNode());
             }
             ((ObjectNode) itmd.getAdapterSettings()).set("parameters",queryParameterNode);
             log.trace("set parameter node");
