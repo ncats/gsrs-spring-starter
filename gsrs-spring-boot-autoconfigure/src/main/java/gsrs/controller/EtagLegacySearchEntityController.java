@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -101,7 +102,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return saveAsEtag(results, result, request);
     }
 
-
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
@@ -227,7 +228,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
-            return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            if(ALPHANUMERIC.matcher(etagId).matches()) {
+                return new ResponseEntity<>("could not find etag with Id " + etagId, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
         //Not ideal, but gets around user problem
