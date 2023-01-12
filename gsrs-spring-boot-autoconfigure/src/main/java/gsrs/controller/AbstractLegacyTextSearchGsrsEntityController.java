@@ -40,22 +40,20 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
-import gsrs.services.BulkSearchResultService;
-import gsrs.services.BulkSearchResultService.ReturnList;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
-import ix.core.models.BaseModel;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.BulkSearchResultService;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
-import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil;
@@ -142,7 +140,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      *                  defaults to {@code false}.
      * @return
      */
-    @hasAdminRole
+    
+
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
     public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
         getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
@@ -711,49 +710,104 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         }
     }
     
-    @GetGsrsRestApiMapping(value="/@bulkQueryResult/{name}")
-    public ResponseEntity<Object> getUserBulkSearchResultLists(@PathVariable String name,
+    
+    @GetGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> getCurrentUserBulkSearchResultLists(
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
-    	if(!validStringParamater(name)) {
-    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    	}    	
     	
+    	String name = GsrsSecurityUtils.getCurrentUsername().isPresent() ? 
+    			GsrsSecurityUtils.getCurrentUsername().get() : "";
+    	if(name.isEmpty())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	    	
     	int rTop = top.orElse(100);   
     	int rSkip = skip.orElse(0);
-    	
     	List<String> list = bulkSearchResultService.getUserSearchResultLists(name);
+    	
+    	return new ResponseEntity<>(getBulkSearchResultListString(rTop, rSkip, list), HttpStatus.OK);   	
+    	
+    }
+    
+    
+    @GetGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> getUserBulkSearchResultLists(@RequestParam("name") Optional<String> name,
+    										   @RequestParam("top") Optional<Integer> top,
+    										   @RequestParam("skip") Optional<Integer> skip){
+    	List<String> list; 
+    	if(!name.isPresent())
+    		list = bulkSearchResultService.getAllUserSearchResultLists();
+    	else 
+    		list = bulkSearchResultService.getUserSearchResultLists(name.get());
+    	
+    	int rTop = top.orElse(100);   
+    	int rSkip = skip.orElse(0);    	    	
+    	return new ResponseEntity<>(getBulkSearchResultListString(rTop, rSkip, list), HttpStatus.OK); 		
+    }
+    
+    private String getBulkSearchResultListString(int top, int skip, List<String> list) {
     	List<String> topList;
-    	if(list.size() <= rTop)
+    	if(list.size() <= top)
     		topList = list;
     	else
-    		topList = list.subList(0, rTop);
+    		topList = list.subList(0, top);
     	
-    	BulkSearchResultService.ReturnList returnList = new BulkSearchResultService.ReturnList(rTop,rSkip,topList);
-    	return new ResponseEntity<>(returnList, HttpStatus.OK);		
+    	ObjectMapper mapper = new ObjectMapper();
+    	ObjectNode baseNode = mapper.createObjectNode();   	   	
+    	    	
+    	baseNode.put("top", top);
+    	baseNode.put("skip", skip);    	
+    	ArrayNode listNode = baseNode.putArray("lists");
+    	topList.forEach(listNode::add);   
+    	
+    	return baseNode.toPrettyString();
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQueryResult")
     public ResponseEntity<String> saveUserBulkSearchResultList(@RequestParam String userName,    											
     										   @RequestParam String listName,
-    										   @RequestParam List<String> keys,
+    										   @RequestBody String keys,
     										   HttpServletRequest request){ 
-    	if(!validStringParamater(userName) || !validStringParamater(listName) || keys == null || keys.isEmpty()) {
+    	if(!validStringParamater(userName) || !validStringParamater(listName) || 
+    			!validStringParamater(keys)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
     	
-    	bulkSearchResultService.saveBulkSearchResultList(userName, listName, keys);    	
+    	List<String> keyList = Arrays.asList(keys.split(","));
+    	if(keyList == null || keyList.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);	
+    	bulkSearchResultService.saveBulkSearchResultList(userName, listName, keyList);    	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
     @DeleteGsrsRestApiMapping(value="/@bulkQueryResult")
-    public ResponseEntity<String> deleteUserBulkSearchResultList(@RequestParam String userName,    											
-    										   @RequestParam List<String> listNames,    										   
+    public ResponseEntity<String> deleteCurrentUserBulkSearchResultList(   											
+    										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
-    	if(!validStringParamater(userName) || listNames == null || listNames.isEmpty()) {
+    	if(!validStringParamater(listName)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
-    	bulkSearchResultService.deleteBulkSearchResultLists(userName, listNames);
+    	
+    	String name = GsrsSecurityUtils.getCurrentUsername().isPresent() ? 
+    			GsrsSecurityUtils.getCurrentUsername().get() : "";
+    			
+    	if(name.isEmpty())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);    	
+    	
+    	bulkSearchResultService.deleteBulkSearchResultLists(name, listName);
+    	return new ResponseEntity<>(HttpStatus.OK);	
+    }
+    
+    
+    @DeleteGsrsRestApiMapping(value="/@bulkQueryResult")
+    public ResponseEntity<String> deleteUserBulkSearchResultList(@RequestParam String userName,    											
+    										   @RequestParam String listName,    										   
+    										   HttpServletRequest request){ 
+    	if(!validStringParamater(userName) || !validStringParamater(listName)) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	} 
+    	
+    	bulkSearchResultService.deleteBulkSearchResultLists(userName, listName);
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     

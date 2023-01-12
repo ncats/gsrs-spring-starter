@@ -13,28 +13,23 @@ import ix.core.models.UserBulkSearchResult;
 @Transactional
 public interface UserBulkSearchResultRepository extends GsrsRepository<UserBulkSearchResult, Long> {
 	
-	@Query("select listName from UserBulkSearchResult ubsr where ubsr.user_id=?1 order by listName")	
+	@Query("select name from UserBulkSearchResult where user_id = ?1 order by name")	
 	public List<String> getUserSearchResultListsByUserId(Long userId);
 	
-	@Query("select listName from UserBulkSearchResult ubsr where ubsr.username=?1 order by listName")	
-	public List<String> getUserSearchResultListsByUserName(String name);
-		
+	@Query("select name from UserBulkSearchResult order by name")	
+	public List<String> getAllUserSearchResultLists();
+			
 	@Modifying
     @Transactional
-    @Query("delete from UserBulkSearchResult ubsr where ubsr.user_id = ?1 and ubsr.name = ?2")
-    public void removeUserSearchResultList(Long userId, String listName);
+    @Query("delete from UserBulkSearchResult ubsr where user_id = ?1 and name = ?2")
+    public void removeUserSearchResultList(Long userId, String listName);	
 	
-	@Modifying
-    @Transactional
-    @Query("delete from UserBulkSearchResult ubsr where ubsr.user_id = ?1 and ubsr.name in ?2")
-    public void removeUserSearchResultLists(Long userId, List<String> listName);
-
-	@Query("select list from UserBulkSearchResult ubsr where ubsr.user_id = ?1 and ubsr.name = ?2")
+	@Query("select list from UserBulkSearchResult where user_id = ?1 and name = ?2")
 	public String getUserSavedBulkSearchResult(Long userId, String listName);
 	
 	@Modifying
     @Transactional
-	@Query("update UserBulkSearchResult ubsr set list = ?3 where ubsr.user_id = ?1 and ubsr.name = ?2")
+	@Query("update UserBulkSearchResult set list = ?3 where user_id = ?1 and name = ?2")
 	public String updateUserSavedBulkSearchResult(Long userId, String listName, String listString);
 	
 }

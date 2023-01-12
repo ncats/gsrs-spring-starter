@@ -24,9 +24,8 @@ public class UserBulkSearchResult {
     private Long id;
 	
 	@ManyToOne    
-    @JoinColumn(name ="user_id")
-	@Column(nullable=false)
-    public Principal user;
+    @JoinColumn(name="user_id", nullable = false)	
+    public Principal principal;
 
 	@Column(nullable=false)
 	public String name; 
@@ -36,7 +35,7 @@ public class UserBulkSearchResult {
 	public String list;	
 	
 	public UserBulkSearchResult(Principal user, String name, String list) {
-        this.user = user;
+        this.principal = user;
         this.name = name;
         this.list = list;
     }
