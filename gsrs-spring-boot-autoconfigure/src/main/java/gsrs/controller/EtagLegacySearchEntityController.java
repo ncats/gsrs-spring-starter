@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,11 +19,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.repository.TextRepository;
-import ix.ginas.exporters.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
@@ -38,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -52,13 +50,21 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.ginas.exporters.DefaultParameters;
+import ix.ginas.exporters.ExportMetaData;
+import ix.ginas.exporters.ExportProcess;
+import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.RecordExpander;
+import ix.ginas.exporters.RecordScrubber;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 @Slf4j
-public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController, T, I> extends AbstractImportSupportingGsrsEntityController<C, T, I> {
-//=======
-//import lombok.extern.slf4j.Slf4j;
+public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractImportSupportingGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
 //        super(context, pattern);
@@ -66,15 +72,12 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
 //        super(context, idHelper);
 //    }
-	
-	@Autowired
-	protected GsrsCache gsrscache;
-	
-    @Autowired
-    private ETagRepository eTagRepository;
 
     @Autowired
-    protected TextRepository textRepository;
+    protected GsrsCache gsrscache;
+
+    @Autowired
+    private ETagRepository eTagRepository;
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
@@ -99,13 +102,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return saveAsEtag(results, result, request);
     }
 
-    CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
-
-        List<Text> tlist = gsrsExportConfiguration.getHardcodedDefaultExportPresets(this.getEntityService().getContext());
-        if(tlist==null)return Collections.emptyList();
-
-        return tlist;
-    });
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
@@ -127,25 +124,24 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     public Object exportLinks(@PathVariable("etagId") String etagId,
                               @RequestParam Map<String, String> parameters) throws Exception {
         //the parameter called 'etagid' might be a file extension...
-        //todo: validate etagid to make sure it contains only characters + numbers
         ExporterFactory matchingFactory = getFirstMatchingExporterFactory(etagId);
         if( matchingFactory!=null ){
             log.trace("found matching factory in exportLinks");
             return matchingFactory.getSchema();
         }
         List<ExportLink> links = new ArrayList<>();
-         for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
+        for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
             links.add(ExportLink.builder()
                     .displayname(fmt.getDisplayName())
                     .extension(fmt.getExtension())
 
                     .link(new GsrsUnwrappedEntityModel.RestUrlLink(GsrsLinkUtil.fieldLink(null,null, getLinkBuilderForEntity(getEntityService().getEntityClass()).get()
-                            .slash("export").slash(etagId).slash(fmt.getExtension())
-                            .withSelfRel() )
+                                    .slash("export").slash(etagId).slash(fmt.getExtension())
+                                    .withSelfRel() )
                             .getHref()))
                     .build());
         }
-         return links;
+        return links;
     }
 
     @Data
@@ -165,7 +161,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             Set<OutputFormat> formats =factory.getSupportedFormats();
             for(OutputFormat format: formats) {
                 if(format.getExtension().equalsIgnoreCase(extension) || format.getDisplayName().equalsIgnoreCase(extension)) {
-                   return factory;
+                    return factory;
                 }
             }
         }
@@ -174,16 +170,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
-    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId,
                                                @PathVariable("format") String format,
-                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
+                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj,
                                                @RequestParam(value ="filename", required= false) String fileName,
                                                @RequestParam(value="exportConfigId", required = false) String exportConfigId,
                                                Principal prof,
                                                @RequestParam Map<String, String> parameters,
                                                HttpServletRequest request
 
-            ) throws Exception {
+    ) throws Exception {
         log.warn("Starting in createExport. exportConfigId: {}", exportConfigId);
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
@@ -224,7 +220,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
 
-	RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
+        RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
         RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
@@ -232,8 +228,11 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
-            //todo: validate egtagid to only contains characters (letters & numbers). length
-            return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            if(ALPHANUMERIC.matcher(etagId).matches()) {
+                return new ResponseEntity<>("could not find etag with Id " + etagId, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
         //Not ideal, but gets around user problem
@@ -307,8 +306,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else{
             viewMap= Collections.singletonMap("view", view);
         }
-        
-        
+
+
         //Due to the way that hibernate works, the series of fetches that may have happened
         //before this line could include some staged insert/update statements
         //that haven't been executed. The entities which remain attached at this time
@@ -317,16 +316,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         //and the updates/inserts won't happen. This shouldn't be necessary, ultimately,
         //and it's worth tracking down WHY some entities become flagged as dirty/updated
         //from simple fetches that happen before this.
-        // 
+        //
         entityManager.clear();
-        
+
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult( stauts -> {
-                    if (request.getParameter("export") == null) {
-                        entityManager.merge(etag);
-                    }
-                });
-        
+            if (request.getParameter("export") == null) {
+                entityManager.merge(etag);
+            }
+        });
+
         //content is transient so don't need to worry about transforming results
         if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
             etag.setContent(results.stream().map(r-> {
@@ -336,9 +335,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else {
             etag.setContent(results);
         }
-       
-        
-        
+
+
+
         etag.setSponosredResults(result.getSponsoredMatches());
         //sponsored Results also needs to be "enhanced" GSRS-2042
         if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
@@ -383,7 +382,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     static String getKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
     }
-    
+
     public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
             throws IOException, Exception{
 
@@ -425,32 +424,6 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else {
             return tc.call();
         }
-    }
-
-    protected Optional<SpecificExporterSettings> getConfigById(Long id){
-        Optional<Text> configurationHolder = textRepository.findById(id);
-        return configurationHolder.map(t->{
-            try {
-                return SpecificExporterSettings.fromText(t);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /*
-    Items that will be of general utility
-     */
-    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
-        return exportSettingsPresets.get();
-    }
-
-    public RecordScrubberFactory<T> getScrubberFactory(){
-        return new NoOpRecordScrubberFactory<T>();
-    }
-
-    public RecordExpanderFactory<T> getExpanderFactory(){
-        return new DefaultRecordExpanderFactory<>();
     }
 
 }

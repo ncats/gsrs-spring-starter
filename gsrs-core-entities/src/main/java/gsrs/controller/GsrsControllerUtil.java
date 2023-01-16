@@ -95,7 +95,7 @@ public final class GsrsControllerUtil {
     }
 
     public static GsrsUnwrappedEntityModel enhanceWithView(List<Object> list, Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
-        log.trace("enhanceWithView with list");
+        //log.trace("enhanceWithView with list");
         List<Object> modelList = new ArrayList<>(list.size());
         for(Object o : list){
             modelList.add(enhanceWithView(o, queryParameters, additionalLinksConsumer));

@@ -264,34 +264,52 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public void deleteRecord(String recordId, int version) {
-        log.trace("starting deleteRecord");
+        log.trace("starting deleteRecord. recordId: {}; version: {}", recordId, version);
         UUID id = UUID.fromString(recordId);
+
         //need to retrieve instance IDs so individual validations can be deleted
         List<UUID> instanceIds = importDataRepository.findInstancesForRecord(id);
 
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
-        transactionDelete.executeWithoutResult(r -> {
-            importDataRepository.deleteByRecordId(id);
-            log.trace("completed importDataRepository.deleteById");
-            metadataRepository.deleteByRecordId(id);
-            log.trace("completed metadataRepository.deleteById");
-            rawImportDataRepository.deleteByRecordId(id);
-            log.trace("completed rawImportDataRepository.deleteByRecordId");
-            if( keyValueMappingRepository.findRecordsByRecordId(id) != null
-                    && !keyValueMappingRepository.findRecordsByRecordId(id).isEmpty()) {
-                keyValueMappingRepository.deleteByRecordId(id);
-                log.trace("completed keyValueMappingRepository.deleteByRecordId");
-            }
-            else {
-                log.trace("no keyValueMappingRepository records to delete");
-            }
-
-
-            instanceIds.forEach(i -> {
-                log.trace("going to call importValidationRepository.deleteByInstanceId with id {}", i);
-                importValidationRepository.deleteByInstanceId(i);
+        if( version>0) {
+            log.trace("deleting specific version {}", version);
+            transactionDelete.executeWithoutResult(r -> {
+                importDataRepository.deleteByRecordIdAndVersion(id, version);
+                log.trace("completed importDataRepository.deleteByIdAndVersion");
+                metadataRepository.deleteByRecordIdAndVersion(id, version);
+                log.trace("completed metadataRepository.deleteByIdAndVersion");
+                //Have we deleted ALL records with that ID?  If so, clean up
+                if( !importDataRepository.existsById(id)) {
+                    deleteRawDataAndMappings(id);
+                }
             });
-        });
+        } else {
+            transactionDelete.executeWithoutResult(r -> {
+                importDataRepository.deleteByRecordId(id);
+                log.trace("completed importDataRepository.deleteById");
+                metadataRepository.deleteByRecordId(id);
+                log.trace("completed metadataRepository.deleteById");
+                deleteRawDataAndMappings(id);
+
+                instanceIds.forEach(i -> {
+                    log.trace("going to call importValidationRepository.deleteByInstanceId with id {}", i);
+                    importValidationRepository.deleteByInstanceId(i);
+                });
+            });
+        }
+    }
+
+    private void deleteRawDataAndMappings(UUID id){
+        rawImportDataRepository.deleteByRecordId(id);
+        log.trace("completed rawImportDataRepository.deleteByRecordId");
+        if( keyValueMappingRepository.findRecordsByRecordId(id) != null
+                && !keyValueMappingRepository.findRecordsByRecordId(id).isEmpty()) {
+            keyValueMappingRepository.deleteByRecordId(id);
+            log.trace("completed keyValueMappingRepository.deleteByRecordId");
+        }
+        else {
+            log.trace("no keyValueMappingRepository records to delete");
+        }
 
     }
 

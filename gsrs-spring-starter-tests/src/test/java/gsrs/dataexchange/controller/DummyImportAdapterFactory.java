@@ -1,13 +1,23 @@
-package gsrs.imports;
+package gsrs.dataexchange.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gsrs.imports.ImportAdapter;
+import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.ImportAdapterStatistics;
+import ix.ginas.importers.InputFieldStatistics;
+import ix.ginas.importers.TextFileReader;
+import ix.ginas.models.GinasCommonData;
 
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-public class DummyImportAdapterFactory implements ImportAdapterFactory {
+public class DummyImportAdapterFactory implements ImportAdapterFactory<GinasCommonData> {
 
     private String fileName;
     private Class holdingAreaServiceClass;
@@ -16,7 +26,7 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
 
     private String description = "Simplest Import Adapter used for testing";
 
-    public String ADAPTER_NAME="Dummy Import Adapter";
+    public static String ADAPTER_NAME="Dummy Import Adapter";
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
@@ -41,12 +51,24 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
 
     @Override
     public ImportAdapter createAdapter(JsonNode adapterSettings) {
-        return null;
+        return new DummyImportAdapter();
     }
 
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
-        return null;
+        ImportAdapterStatistics statistics = new ImportAdapterStatistics();
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        TextFileReader reader = new TextFileReader();
+        Map<String, InputFieldStatistics> map=reader.getFileStatistics(is, ",", false, null, 100, 0);
+        node.putPOJO("Fields", map.keySet().stream().collect(Collectors.toList()));
+        node.put("fileName", getFileName());
+        statistics.setAdapterSchema(node);
+        ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        result.add(createDefaultReferenceNode());
+        adapterSettings.set("actions", result);
+        statistics.setAdapterSettings(adapterSettings);
+        return statistics;
     }
 
     @Override
@@ -119,4 +141,18 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory {
         this.services=services;
     }
 
+
+    protected JsonNode createDefaultReferenceNode() {
+        ObjectNode referenceNode = JsonNodeFactory.instance.objectNode();
+        referenceNode.put("actionName", "public_reference");
+
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+        parameters.put("docType", "CATALOG");
+        parameters.put("citation", "INSERT REFERENCE CITATION HERE");
+        parameters.put("referenceID", "INSERT REFERENCE ID HERE");
+        parameters.put("uuid", String.format("[[%s]]", "UUID_1"));
+        referenceNode.set("actionParameters", parameters);
+
+        return referenceNode;
+    }
 }

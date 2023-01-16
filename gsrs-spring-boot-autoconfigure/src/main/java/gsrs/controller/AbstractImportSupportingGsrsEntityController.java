@@ -39,12 +39,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,13 +53,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         extends AbstractExportSupportingGsrsEntityController <C, T, I> {
 
     @Autowired
-    private PayloadService payloadService;
+    protected PayloadService payloadService;
 
     @Autowired
     private PayloadRepository payloadRepository;
 
     @Autowired
-    private PlatformTransactionManager platformTransactionManager;
+    protected PlatformTransactionManager platformTransactionManager;
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
@@ -73,6 +73,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
             = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
             this.getEntityService().getEntityClass()));
+
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     @Data
     public static class ImportTaskMetaData<T> {
@@ -169,9 +171,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if( !settingsNode.hasNonNull("Encoding")) {
             settingsNode.put("Encoding", task.fileEncoding);
         }
-        return fetchAdapterFactory(task)
+        ImportAdapterFactory<T> factory =fetchAdapterFactory(task);
+        ImportAdapter<T> adapter= factory.createAdapter(task.adapterSettings);
+        Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.payloadID);
+        InputStream stream =streamHolder.get();
+        return adapter.parse(stream, settingsNode);
+        /*return fetchAdapterFactory(task)
                 .createAdapter(task.adapterSettings)
-                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), settingsNode);
+                .parse(payloadService.getPayloadAsInputStream(task.payloadID).get(), settingsNode);*/
     }
 
     protected ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
@@ -203,7 +210,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 getImportAdapterFactory(adapterName)
                         .orElse(null);
         if (adaptFac == null) {
-            throw new IOException("Cannot predict settings with unknown import adapter:\"" + adapterName + "\"");
+            String message;
+            if(ALPHANUMERIC.matcher(adapterName).matches()) {
+                message= "Cannot predict settings with unknown import adapter: " + adapterName;
+            } else {
+                message= "Cannot predict settings with unknown import adapter";
+            }
+            throw new IOException(message);
         }
         Class<T> c = adaptFac.getHoldingAreaService();
         log.trace("in getHoldingAreaService, instantiating HoldingAreaService: {}", c.getName());
@@ -260,7 +273,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //MECHANISM TO SAVE IMPORT META DATA
     //TODO: move to better data store, perhaps more like export/download service
-    private final Map<UUID, ImportTaskMetaData> importTaskCache = new ConcurrentHashMap<>();
+    protected final Map<UUID, ImportTaskMetaData> importTaskCache = new ConcurrentHashMap<>();
 
     private Optional<ImportTaskMetaData> getImportTask(UUID id) {
         return Optional.ofNullable(importTaskCache.get(id));
@@ -290,7 +303,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
         log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
-        if (getImportAdapters().size() > 0) {
+        if (getImportAdapters()!=null) {
             getImportAdapters().forEach(a -> log.trace("adapter with name: {}, key: {}", a.getAdapterName(), a.getAdapterKey()));
         }
         Optional<ImportAdapterFactory<T>> adapterFactory= getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
@@ -529,8 +542,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Object response = holdingAreaService.validateInstance(id);
         if(response==null) {
             ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
-            responseNode.put("message",
-                    String.format("an error occurred while performing validation. Check the instanceId %s. Check the server logs", id));
+            String message = "an error occurred while performing validation. Check the instanceId. Check the server logs";
+            if(ALPHANUMERIC.matcher(adapterName).matches()) {
+                message=String.format("an error occurred while performing validation. Check the instanceId %s. Check the server logs", id);
+            }
+
+            responseNode.put("message",message);
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
@@ -576,6 +593,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HoldingAreaService service = getHoldingAreaService(adapterName);
         log.trace("retrieved service");
         int version = 0;//todo: retrieve from parameters
+        if( queryParameters.get("version")!=null) {
+            try {
+                int versionValue= Integer.valueOf(queryParameters.get("version"));
+                version=versionValue;
+            } catch (NumberFormatException ex){
+                //we just fall back on the original 0 value
+            }
+        }
         service.deleteRecord(id, version);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
@@ -592,7 +617,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        HoldingAreaService service;
+        try {
+            service= getHoldingAreaService(adapterName);
+        }catch (IOException ex){
+            Map<String, String > messages = new HashMap<>();
+            messages.put("message", ex.getMessage());
+            return new ResponseEntity<>(messages, HttpStatus.BAD_REQUEST);
+        }
         log.trace("retrieved service");
         int version = Integer.parseInt(queryParameters.get("version"));
         ImportMetadata data = service.retrieveRecord(id, version);
@@ -629,7 +661,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        HoldingAreaService service;
+        try {
+            service=getHoldingAreaService(adapterName);
+        } catch (IOException ex) {
+            Map<String, String > messages = new HashMap<>();
+            messages.put("message", ex.getMessage());
+            return new ResponseEntity<>(messages, HttpStatus.BAD_REQUEST);
+        }
         log.trace("retrieved service");
         String data = service.getInstanceData(instanceId);
         return new ResponseEntity<>(data, HttpStatus.OK);

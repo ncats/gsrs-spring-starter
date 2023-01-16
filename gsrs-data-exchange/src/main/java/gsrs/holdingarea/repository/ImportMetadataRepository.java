@@ -39,4 +39,9 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     @Query("delete from ImportMetadata i where i.recordId = ?1")
     void deleteByRecordId(UUID recordId);
 
+    @Modifying
+    @Transactional
+    @Query("delete from ImportMetadata i where i.recordId = ?1 and version=?2")
+    void deleteByRecordIdAndVersion(UUID recordId, int version);
+
 }

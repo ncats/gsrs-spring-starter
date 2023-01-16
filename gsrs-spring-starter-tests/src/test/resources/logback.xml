@@ -4,4 +4,5 @@
     <logger name="org.springframework" level="INFO"/>
     <logger name="ix.ginas.importers" level="TRACE" />
     <logger name="gsrs.dataexchange.imports" level="TRACE" />
+    <logger name="gsrs.dataexchange.controller" level="TRACE" />
 </configuration>

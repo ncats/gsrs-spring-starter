@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,6 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     protected TextRepository textRepository;
-    
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
@@ -58,6 +58,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     	
     	return tlist;
     });
+
 
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
