@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
@@ -25,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -63,6 +65,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
+@Validated
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
@@ -169,8 +172,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
-    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
-                                               @PathVariable("format") String format,
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") @Pattern(regexp="^[a-fA-F0-9]{16}$") String etagId, 
+                                               @PathVariable("format") @Pattern(regexp="^[a-zA-Z0-9-.]*$") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
                                                @RequestParam(value ="filename", required= false) String fileName,
                                                @RequestParam(value="exportConfigId", required = false) String exportConfigId,
@@ -227,7 +230,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
-            return new ResponseEntity<>("could not find etag with Id " + etagId,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            return GsrsControllerConfiguration.createResponseEntity("could not find etag with Id " + etagId, HttpStatus.BAD_REQUEST.value());
         }
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
         //Not ideal, but gets around user problem
