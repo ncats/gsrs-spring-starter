@@ -1,6 +1,8 @@
 package gsrs.holdingarea.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.holdingarea.model.*;
+import gsrs.service.GsrsEntityService;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
@@ -41,4 +43,10 @@ public interface HoldingAreaService {
     MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
 
     <T> String persistEntity(String instanceId);
+
+    <T> T retrieveEntity(String entityType, String entityId);
+
+    <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException;
+
+    <T>  GsrsEntityService.UpdateResult<T> persistPermanentEntity(String entityType, T entity);
 }

@@ -2,6 +2,7 @@ package gsrs.holdingarea.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
+import gsrs.service.GsrsEntityService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.validator.ValidationResponse;
 import java.util.List;
@@ -17,5 +18,7 @@ public interface HoldingAreaEntityService<T> {
 
     IndexValueMaker<T> createIVM(T t);
 
-    T persistEntity(T t);
+    GsrsEntityService.UpdateResult<T> persistEntity(T t);
+
+    T retrieveEntity(String entityId);
 }

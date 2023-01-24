@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.holdingarea.model.*;
 import gsrs.holdingarea.repository.*;
+import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.SearchRequest;
@@ -399,7 +400,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public <T>  String persistEntity(String instanceId){
+    public <T> String persistEntity(String instanceId){
         log.trace("in persistEntity, instanceId: {}", instanceId);
         Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
         if( data.isPresent()) {
@@ -424,6 +425,17 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             }
         }
         return "";
+    }
+
+    @Override
+    public <T> T retrieveEntity(String entityType, String entityId) {
+        log.trace("going to retrieve entity of type {} - id {}", entityType, entityId);
+        return (T) _entityServiceRegistry.get(entityType).retrieveEntity(entityId);
+    }
+
+    @Override
+    public <T> GsrsEntityService.UpdateResult<T> persistPermanentEntity(String entityType, T entity) {
+        return _entityServiceRegistry.get(entityType).persistEntity(entity);
     }
 
     @Override
@@ -571,7 +583,8 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         this.indexer = indexer;
     }
 
-    private Object deserializeObject(String entityClassName, String json) throws JsonProcessingException {
+    @Override
+    public Object deserializeObject(String entityClassName, String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(json);
         if (_entityServiceRegistry.containsKey(entityClassName)) {
