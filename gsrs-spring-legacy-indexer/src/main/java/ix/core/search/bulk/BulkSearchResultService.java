@@ -48,11 +48,42 @@ public class BulkSearchResultService {
 		userBulkSearchResultRepository.removeUserSearchResultList(userId, listName);
 	}
 	
+	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, int top, int skip){
+		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
+		if(user == null)
+			return new ArrayList<String>();
+		
+		return getUserSavedBulkSearchResultListContent(user.id, listName, top, skip);
+		
+	}
 	
-	//todo: add pagination
+	
+	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, int top, int skip){
+		List<String> keyList = new ArrayList<String>();
+		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
+		
+		if(listString == null || listString.trim().isEmpty())
+			return keyList;
+		
+		keyList = Arrays.asList(listString.split(","));
+		
+		if(skip >= keyList.size())
+			return new ArrayList<String>();
+		
+		int endIndex = keyList.size()-1;
+		if(top+skip < endIndex)
+			endIndex = top+skip;
+		
+		return keyList.subList(skip, endIndex);
+	}
+	
+	
 	public List<String> getUserSavedBulkSearchResultLists(Long userId, String listName){
 		List<String> keyList = new ArrayList<String>();
 		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
+		if(listString == null || listString.trim().isEmpty())
+			return keyList;
+		
 		keyList = Arrays.asList(listString.split(","));
 		return keyList;
 	}

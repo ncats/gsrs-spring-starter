@@ -711,37 +711,38 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     
-    @GetGsrsRestApiMapping(value="/@bulkQueryResult")
+    @GetGsrsRestApiMapping(value="/@bulkQueryResultLists/currentUser")
     public ResponseEntity<String> getCurrentUserBulkSearchResultLists(
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
-    	String name = GsrsSecurityUtils.getCurrentUsername().isPresent() ? 
-    			GsrsSecurityUtils.getCurrentUsername().get() : "";
-    	if(name.isEmpty())
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    	
+    	String name = GsrsSecurityUtils.getCurrentUsername().get(); 	
     	    	
-    	int rTop = top.orElse(100);   
-    	int rSkip = skip.orElse(0);
+    	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
+    	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> list = bulkSearchResultService.getUserSearchResultLists(name);
     	
     	return new ResponseEntity<>(getBulkSearchResultListString(rTop, rSkip, list), HttpStatus.OK);   	
     	
     }
     
-    
-    @GetGsrsRestApiMapping(value="/@bulkQueryResult")
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value="/@bulkQueryResultLists/otherUser")
     public ResponseEntity<String> getUserBulkSearchResultLists(@RequestParam("name") Optional<String> name,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
+    	
     	List<String> list; 
     	if(!name.isPresent())
     		list = bulkSearchResultService.getAllUserSearchResultLists();
     	else 
     		list = bulkSearchResultService.getUserSearchResultLists(name.get());
     	
-    	int rTop = top.orElse(100);   
-    	int rSkip = skip.orElse(0);    	    	
+    	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
+    	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);    	    	
     	return new ResponseEntity<>(getBulkSearchResultListString(rTop, rSkip, list), HttpStatus.OK); 		
     }
     
@@ -763,43 +764,76 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return baseNode.toPrettyString();
     }
     
-    @PostGsrsRestApiMapping(value="/@bulkQueryResult")
-    public ResponseEntity<String> saveUserBulkSearchResultList(@RequestParam String userName,    											
+    @GetGsrsRestApiMapping(value="/@bulkQueryResultLists/{list}")
+    public ResponseEntity<String> getCurrentUserBulkSearchResultLists(@PathVariable String list,
+    										   @RequestParam("top") Optional<Integer> top,
+    										   @RequestParam("skip") Optional<Integer> skip){
+    	
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    	    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	
+//    	String userName = "ADMIN";
+    	    	
+    	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
+    	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
+    	List<String> keys = bulkSearchResultService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
+    	   	
+    	return new ResponseEntity<>(getBulkSearchResultListString(rTop, rSkip, keys), HttpStatus.OK);  	
+    	
+    }
+    
+    @PostGsrsRestApiMapping(value="/@bulkQueryResultList")
+    public ResponseEntity<String> saveUserBulkSearchResultList(  											
     										   @RequestParam String listName,
-    										   @RequestBody String keys,
-    										   HttpServletRequest request){ 
-    	if(!validStringParamater(userName) || !validStringParamater(listName) || 
-    			!validStringParamater(keys)) {
-    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    	} 
+    										   @RequestBody String keys){
+    	
+    	
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	
+//    	String userName = "ADMIN";
+    	
+    	if(!validStringParamater(listName) || !validStringParamater(keys)) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
+    	   	
     	
     	List<String> keyList = Arrays.asList(keys.split(","));
-    	if(keyList == null || keyList.size() ==0)
-    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);	
-    	bulkSearchResultService.saveBulkSearchResultList(userName, listName, keyList);    	
+    	    	
+    	List<String> list = keyList.stream().map(key->key.trim())
+    										.filter(key->!key.isEmpty())
+    										.collect(Collectors.toList());
+    	
+    	if(list.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    		
+    	bulkSearchResultService.saveBulkSearchResultList(userName, listName, list);    	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
-    @DeleteGsrsRestApiMapping(value="/@bulkQueryResult")
+    @DeleteGsrsRestApiMapping(value="/@bulkQueryResultList/currentUser")
     public ResponseEntity<String> deleteCurrentUserBulkSearchResultList(   											
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
     	if(!validStringParamater(listName)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
+    	    	
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
-    	String name = GsrsSecurityUtils.getCurrentUsername().isPresent() ? 
-    			GsrsSecurityUtils.getCurrentUsername().get() : "";
-    			
-    	if(name.isEmpty())
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);    	
+    	String name = GsrsSecurityUtils.getCurrentUsername().get(); 			
+    	
     	
     	bulkSearchResultService.deleteBulkSearchResultLists(name, listName);
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
-    
-    @DeleteGsrsRestApiMapping(value="/@bulkQueryResult")
+    @hasAdminRole
+    @DeleteGsrsRestApiMapping(value="/@bulkQueryResultList/otherUser")
     public ResponseEntity<String> deleteUserBulkSearchResultList(@RequestParam String userName,    											
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
@@ -811,14 +845,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
-    @PutGsrsRestApiMapping(value="/@bulkQueryResult")
-    public ResponseEntity<String> updateUserBulkSearchResultList(@RequestParam String userName,    											
+    @PutGsrsRestApiMapping(value="/@bulkQueryResultList")
+    public ResponseEntity<String> updateUserBulkSearchResultList(   											
     										   @RequestParam String listName,
-    										   @RequestParam List<String> keys,
+    										   @RequestParam String keys,
     										   @RequestParam String operation,
-    										   HttpServletRequest request){ 
-    	if(!validStringParamater(userName) || !validStringParamater(listName) || 
-    			keys == null || keys.isEmpty() ) {
+    										   HttpServletRequest request){
+    	
+    	if(!validStringParamater(listName) ||	!validStringParamater(keys) ) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
     	
@@ -827,7 +861,22 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}
     	
-    	bulkSearchResultService.updateBulkSearchResultList(userName, listName, keys, op);
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
+    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();    	
+
+    	
+    	List<String> keyList = Arrays.asList(keys.split(","));
+    	
+    	List<String> list = keyList.stream().map(key->key.trim())
+    										.filter(key->!key.isEmpty())
+    										.collect(Collectors.toList());
+    	
+    	if(list.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	
+    	bulkSearchResultService.updateBulkSearchResultList(userName, listName, list, op);
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
