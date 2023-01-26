@@ -30,6 +30,6 @@ public interface UserBulkSearchResultRepository extends GsrsRepository<UserBulkS
 	@Modifying
     @Transactional
 	@Query("update UserBulkSearchResult set list = ?3 where user_id = ?1 and name = ?2")
-	public String updateUserSavedBulkSearchResult(Long userId, String listName, String listString);
+	public void updateUserSavedBulkSearchResult(Long userId, String listName, String listString);
 	
 }

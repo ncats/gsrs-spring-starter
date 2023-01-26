@@ -70,7 +70,7 @@ public class BulkSearchResultService {
 		if(skip >= keyList.size())
 			return new ArrayList<String>();
 		
-		int endIndex = keyList.size()-1;
+		int endIndex = keyList.size();
 		if(top+skip < endIndex)
 			endIndex = top+skip;
 		
@@ -95,7 +95,7 @@ public class BulkSearchResultService {
 		String listString = keyList.stream()
 				.filter(s->s.length()>0)
 				.reduce("", (substring, key)-> substring.concat(","+key));
-		listString = listString.substring(listString.indexOf(","));
+		listString = listString.substring(listString.indexOf(",")+1);
 		UserBulkSearchResult record = new UserBulkSearchResult(user, listName, listString);
 		userBulkSearchResultRepository.saveAndFlush(record);
 	}
@@ -125,25 +125,31 @@ public class BulkSearchResultService {
 			return;
 		list = Arrays.asList(listString.split(","));
 		SortedSet<String> sortedSet = new TreeSet<>(list);
-		for(String string: keyList) {
-			if(!sortedSet.contains(string)) {
-				switch(operation) {
-				case ADD: 
-					sortedSet.add(string);
-					break;
-				case REMOVE:
-					sortedSet.remove(string);
-					break;	
-				default:
-					return;					
-				}				
-			}		
-		}
 		
-	    List<String> sortedList = new ArrayList<>(sortedSet);
+		switch(operation) {
+			case ADD:
+				for(String string: keyList) {
+					if(!sortedSet.contains(string)) {
+						sortedSet.add(string);
+					}
+				}
+				break;
+			case REMOVE:
+				for(String string: keyList) {
+					if(sortedSet.contains(string)) {
+						sortedSet.remove(string);
+					}
+				}
+				break;	
+			default:
+				return;					
+			}				
+					
+		
+		List<String> sortedList = new ArrayList<>(sortedSet);
 	    String resultString = sortedList.stream().reduce("", (substring, key)-> substring.concat(","+key));
-	    resultString = resultString.substring(listString.indexOf(","));
-	    userBulkSearchResultRepository.updateUserSavedBulkSearchResult(userId, listName, listString);	
+	    resultString = resultString.substring(resultString.indexOf(",")+1);
+	    userBulkSearchResultRepository.updateUserSavedBulkSearchResult(userId, listName, resultString);	
 	}
 	
 	public void updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation) {

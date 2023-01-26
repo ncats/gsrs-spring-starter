@@ -719,7 +719,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
     	
-    	String name = GsrsSecurityUtils.getCurrentUsername().get(); 	
+//    	String name = GsrsSecurityUtils.getCurrentUsername().get();
+    	
+    	String name = "ADMIN";
+    	System.out.println("CurrentUser" + name);
     	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
@@ -769,12 +772,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
-    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
-    	    	
-    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+//    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+//    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+//    	    	
+//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
-//    	String userName = "ADMIN";
+    	String userName = "ADMIN";
     	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
@@ -790,12 +793,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     										   @RequestBody String keys){
     	
     	
-    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+//    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+//    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+//    	
+//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
-    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	
-//    	String userName = "ADMIN";
+    	String userName = "ADMIN";
     	
     	if(!validStringParamater(listName) || !validStringParamater(keys)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
@@ -825,8 +828,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
-    	String name = GsrsSecurityUtils.getCurrentUsername().get(); 			
-    	
+//    	String name = GsrsSecurityUtils.getCurrentUsername().get(); 			
+    	String name = "Admin";
     	
     	bulkSearchResultService.deleteBulkSearchResultLists(name, listName);
     	return new ResponseEntity<>(HttpStatus.OK);	
@@ -854,7 +857,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	if(!validStringParamater(listName) ||	!validStringParamater(keys) ) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    	} 
+    	}    	
     	
     	BulkSearchResultService.Operation op = BulkSearchResultService.Operation.valueOf(operation);
     	if(op == null) {
@@ -864,7 +867,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
-    	String userName = GsrsSecurityUtils.getCurrentUsername().get();    	
+//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	String userName = "ADMIN";
 
     	
     	List<String> keyList = Arrays.asList(keys.split(","));
