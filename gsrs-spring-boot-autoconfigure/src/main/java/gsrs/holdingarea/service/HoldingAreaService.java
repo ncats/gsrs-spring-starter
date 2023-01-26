@@ -16,11 +16,11 @@ public interface HoldingAreaService {
 
     String updateRecord(String recordId, String jsonData);
 
-    ImportMetadata retrieveRecord(String recordId, int version);
+    ImportMetadata getImportMetaData(String recordId, int version);
 
     List<UUID> getInstancesForRecord(String recordId);
 
-    List<ImportData> getDataForRecord(String recordId);
+    List<ImportData> getImportData(String recordId);
 
     String getInstanceData(String instanceId);
 
@@ -48,5 +48,7 @@ public interface HoldingAreaService {
 
     <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException;
 
-    <T>  GsrsEntityService.UpdateResult<T> persistPermanentEntity(String entityType, T entity);
+    <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity);
+
+    void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status);
 }

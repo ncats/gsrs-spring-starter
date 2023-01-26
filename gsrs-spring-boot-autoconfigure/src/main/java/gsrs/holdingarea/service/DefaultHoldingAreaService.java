@@ -259,7 +259,14 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public ImportMetadata retrieveRecord(String recordId, int version) {
+    public ImportMetadata getImportMetaData(String recordId, int version) {
+        if(version==0) {
+            List<ImportMetadata> matchingRecords = metadataRepository.retrieveByID(UUID.fromString(recordId));
+            if( matchingRecords !=null && matchingRecords.size()>0) {
+                return matchingRecords.stream().sorted(Comparator.comparing(ImportMetadata::getVersion)).findFirst().get();
+            }
+            return null;
+        }
         return metadataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
 
@@ -390,7 +397,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public List<ImportData> getDataForRecord(String recordId) {
+    public List<ImportData> getImportData(String recordId) {
         return  importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
     }
 
@@ -434,7 +441,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
     }
 
     @Override
-    public <T> GsrsEntityService.UpdateResult<T> persistPermanentEntity(String entityType, T entity) {
+    public <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity) {
         return _entityServiceRegistry.get(entityType).persistEntity(entity);
     }
 
@@ -559,9 +566,11 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         transactionUpdate.executeWithoutResult(c -> metadataRepository.updateRecordValidationStatus(instanceId, status));
     }
 
-    private void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status) {
+    @Override
+    public void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status) {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        //todo: should this be version-specific?
         transactionTemplate.executeWithoutResult(c -> metadataRepository.updateRecordImportStatus(instanceId, status));
     }
 

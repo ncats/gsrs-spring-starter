@@ -153,7 +153,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         task.setPayloadID(uuid);
         task.setAdapter("GSRS Object Adapter");
         Map<String, String> settingsMap = new HashMap<>();
-        Stream<GinasCommonData> commonDataStream = controller.execute(task, settingsMap);
+        Stream<GinasCommonData> commonDataStream = controller.generateObjects(task, settingsMap);
         Assertions.assertEquals(DummyImportAdapter.getExpectedStreamSize(), commonDataStream.count());
     }
 

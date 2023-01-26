@@ -56,6 +56,7 @@ public class ImportValidation {
     private ImportValidationType ValidationType;
 
     @Indexable
+    @Column(length =2048, updatable = false, unique = false)
     private String ValidationMessage;
 
     @Lob
