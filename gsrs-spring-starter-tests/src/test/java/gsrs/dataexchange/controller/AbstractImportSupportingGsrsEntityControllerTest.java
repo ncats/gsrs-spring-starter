@@ -50,10 +50,11 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
 
     private String oneTaskId;
 
+    private String originalFileName= "basicvalues.txt";
     @InjectMocks
     AbstractImportSupportingGsrsEntityController controller = new AbstractImportSupportingGsrsEntityController() {
         @Mock(name = "payloadService")
-        private PayloadService payloadService = mock(PayloadService.class);
+        public PayloadService payloadService = mock(PayloadService.class);
 
         private boolean ranSetup = false;
 
@@ -71,18 +72,22 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
             PlatformTransactionManager platformTransactionManager = new RabbitTransactionManager();
             //force the AbstractImportSupportingGsrsEntityController class to use a mock for payloadService
             super.payloadService = this.payloadService;
+            Payload p = new Payload();
+            p.id = UUID.randomUUID();
+
             try {
                 log.trace("going to set up return of stream");
                 when(super.payloadService.getPayloadAsInputStream(uuid)).thenReturn(Optional.of(new ByteArrayInputStream(dataInput.getBytes(Charset.defaultCharset()))));
+                when( super.payloadService.createPayload( originalFileName, "text/plain", dataInput.getBytes(Charset.defaultCharset()), PayloadService.PayloadPersistType.TEMP))
+                        .thenReturn( p);
+
             } catch (IOException e) {
                 log.error("error mocking behavior for payload service");
                 throw new RuntimeException(e);
             }
-
             ImportTaskMetaData task = createDummyTask();
             importTaskCache.put(UUID.fromString(task.getId()), task);
             oneTaskId = task.getId();
-
             ranSetup = true;
         }
 
@@ -211,7 +216,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         //hack to force autowiring
         controller.getImportAdapterNames();
         final MultipartFile mockFile = mock(MultipartFile.class);
-        when(mockFile.getOriginalFilename()).thenReturn("basicvalues.txt");
+        when(mockFile.getOriginalFilename()).thenReturn(originalFileName);
         String fileName = "text/basicvalues.txt";
         File textFile = (new ClassPathResource(fileName)).getFile();
         FileInputStream fileInputStream = new FileInputStream(textFile);
@@ -219,6 +224,18 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         byte[] data = new byte[(int) textFile.length()];
         fileInputStream.read(data);
         when(mockFile.getBytes()).thenReturn(data);
+        Payload p = new Payload();
+        p.id = UUID.randomUUID();
+        try {
+            log.trace("going to set up return of stream");
+            when( controller.payloadService.createPayload( originalFileName, "text/plain", "chemical CCCCCC".getBytes(Charset.defaultCharset()), PayloadService.PayloadPersistType.TEMP))
+                    .thenReturn( p);
+
+        } catch (IOException e) {
+            log.error("error mocking behavior for payload service");
+            throw new RuntimeException(e);
+        }
+
         Map<String, String> parameters = new HashMap<>();
         parameters.put("adapter", DummyImportAdapterFactory.ADAPTER_NAME);
         parameters.put("fileEncoding", "UTF-8");
