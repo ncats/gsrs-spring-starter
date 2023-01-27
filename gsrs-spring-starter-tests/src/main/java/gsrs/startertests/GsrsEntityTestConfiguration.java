@@ -5,6 +5,9 @@ import gsrs.GsrsFactoryConfiguration;
 import gsrs.autoconfigure.GsrsApiAutoConfiguration;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
+import gsrs.holdingarea.repository.ImportDataRepository;
+import gsrs.holdingarea.service.DefaultHoldingAreaService;
+import gsrs.holdingarea.service.HoldingAreaService;
 import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.indexer.IndexerEventFactoryFactory;
@@ -31,7 +34,7 @@ import org.springframework.test.context.ContextConfiguration;
 @TestConfiguration
 @ContextConfiguration(classes= {GsrsFactoryConfiguration.class, GsrsApiAutoConfiguration.class,
         TextIndexerFactory.class, TextIndexerConfig.class,
-        Lucene4IndexServiceFactory.class})
+        Lucene4IndexServiceFactory.class, HoldingAreaService.class, ImportDataRepository.class})
 @Order
 public class GsrsEntityTestConfiguration {
 

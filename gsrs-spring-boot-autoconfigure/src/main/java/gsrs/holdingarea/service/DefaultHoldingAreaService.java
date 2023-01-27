@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.holdingarea.model.*;
 import gsrs.holdingarea.repository.*;
+import gsrs.imports.indexers.MetadataMatchCountIndexValueMaker;
+import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
+import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
@@ -36,7 +40,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultHoldingAreaService implements HoldingAreaService {
 
-    //TODO: DISCUSS with team whether this is the best way to go.
     public static String IMPORT_FAILURE = "ERROR";
 
     public static String HOLDING_AREA_LOCATION = "Staging Area";
@@ -67,6 +70,9 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Autowired
     private ImportMetadataLegacySearchService importMetadataLegacySearchService;
+
+    @Autowired
+    private IndexValueMakerFactory factory;
 
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
@@ -209,6 +215,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
         updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
+        handleIndexing(metadata);
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
         //  validation, when done would trigger the next event
         //  event manager type of thing
@@ -235,6 +242,19 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         }
 
         return saved.getRecordId().toString();
+    }
+
+    private void handleIndexing(ImportMetadata importMetadata){
+        log.trace("Here is where we will index facets for the ImportMetadata object");
+        /*TODO: make this work
+        ConfigBasedIndexValueMakerConfiguration configuration = new ConfigBasedIndexValueMakerConfiguration();
+        IndexValueMakerFactory factory = configuration.indexValueMakerFactory();
+
+        IndexValueMaker ivm =factory.createIndexValueMakerFor(importMetadata);
+        MetadataMatchCountIndexValueMaker indexValueMaker1 = new MetadataMatchCountIndexValueMaker();
+        indexValueMaker1.setHoldingAreaService(this);
+        AutowireHelper.getInstance().autowire(indexValueMaker1);
+        indexValueMaker1.createIndexableValues(importMetadata, );*/
     }
 
     @Override
