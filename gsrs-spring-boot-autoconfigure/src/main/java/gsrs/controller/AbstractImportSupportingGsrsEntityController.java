@@ -431,6 +431,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("starting getImportData");
         log.trace("id: {} version: {}", id, version);
         String adapterName = queryParameters.get("adapter");
+        Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
         HoldingAreaService service = getHoldingAreaService(adapterName);
         List<ImportData> importDataList= service.getImportData(id);
         log.trace("getDataForRecord returned {}", importDataList.size());
@@ -446,6 +447,62 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"/importdata({id})/{segment}", "/importdata/{id}/{segment}"})
+    public ResponseEntity<Object> getImportDataFull(@PathVariable("id") String id,
+                                                @PathVariable("segment") String segment,
+                                                @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting getImportDataFull");
+        int version=0;
+        String versionRaw = queryParameters.get("version");
+        if(versionRaw!=null && versionRaw.trim().length()>0){
+            try {
+                version = Integer.parseInt(versionRaw);
+            }
+            catch (NumberFormatException numberFormatException){
+                log.warn("Unable to create integer from version input {}.  Using default", versionRaw);
+            }
+        }
+
+        final int versionFinal = version;
+        log.trace("id: {} version: {} segment: {}", id, version, segment);
+        String adapterName = queryParameters.get("adapter");
+        Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
+        HoldingAreaService service = getHoldingAreaService(adapterName);
+        List<ImportData> importDataList= service.getImportData(id);
+        log.trace("getDataForRecord returned {}", importDataList.size());
+        Optional<ImportData> foundData;
+        if(version>0) {
+            foundData= importDataList.stream().filter(i->i.getVersion()== versionFinal).findFirst();
+        } else{
+            foundData= importDataList.stream().max(Comparator.comparing(ImportData::getVersion));
+        }
+
+        if (foundData.isPresent()) {
+            log.trace(" found data ");
+            log.trace(foundData.get().getData());
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode realData = mapper.readTree(foundData.get().getData());
+            log.trace("converted to JsonNode");
+            if(segment!=null && segment.trim().length()>0) {
+                ObjectNode parentNode;
+                List<String> knownSegments = Arrays.asList("names", "codes", "notes", "properties", "references", "tags", "structure", "protein",
+                        "moieties", "modifications", "mixture", "nucleicAcid", "polymer", "structurallyDiverse");
+                if( knownSegments.contains(segment))
+                {
+                    parentNode= JsonNodeFactory.instance.objectNode();
+                    realData = realData.get(segment);
+                    parentNode.set(segment, realData);
+                    realData=parentNode;
+                }
+            }
+            log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
 
     //STEP 2.5: Retrieve & predict if needed
     @hasAdminRole
