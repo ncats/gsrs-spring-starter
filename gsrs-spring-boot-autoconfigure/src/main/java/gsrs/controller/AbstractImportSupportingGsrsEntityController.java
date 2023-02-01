@@ -26,6 +26,8 @@ import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
 import ix.core.search.text.TextIndexerFactory;
+import ix.core.util.EntityUtils;
+import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -486,7 +488,17 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             JsonNode realData = mapper.readTree(foundData.get().getData());
             log.trace("converted to JsonNode");
             if(segment!=null && segment.trim().length()>0) {
+                Object pojo= service.deserializeObject(foundData.get().getEntityClassName(), foundData.get().getData());
+                EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(pojo);
+                PojoPointer p = PojoPointer.fromURIPath(segment);
+                Optional<EntityUtils.EntityWrapper> specific= entityWrapper.at(p);
+                if(specific.isPresent()) {
+                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(specific.get(), queryParameters), HttpStatus.OK);
+                } else {
+                    //deal with not found
+                }
                 ObjectNode parentNode;
+
                 List<String> knownSegments = Arrays.asList("names", "codes", "notes", "properties", "references", "tags", "structure", "protein",
                         "moieties", "modifications", "mixture", "nucleicAcid", "polymer", "structurallyDiverse");
                 if( knownSegments.contains(segment))
