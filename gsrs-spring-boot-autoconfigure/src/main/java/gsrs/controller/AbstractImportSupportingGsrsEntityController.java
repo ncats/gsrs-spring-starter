@@ -488,25 +488,25 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             JsonNode realData = mapper.readTree(foundData.get().getData());
             log.trace("converted to JsonNode");
             if(segment!=null && segment.trim().length()>0) {
-                Object pojo= service.deserializeObject(foundData.get().getEntityClassName(), foundData.get().getData());
-                EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(pojo);
+                Object nativeObject= service.deserializeObject(foundData.get().getEntityClassName(), foundData.get().getData());
+                log.trace("nativeObject type {}; object:", nativeObject.getClass().getName());
+                log.trace(EntityUtils.EntityWrapper.of(nativeObject).toFullJson());
+                EntityUtils.EntityWrapper nativeObjectWrapped = EntityUtils.EntityWrapper.of(nativeObject);
                 PojoPointer p = PojoPointer.fromURIPath(segment);
-                Optional<EntityUtils.EntityWrapper> specific= entityWrapper.at(p);
+                Optional<EntityUtils.EntityWrapper> specific= nativeObjectWrapped.at(p);
                 if(specific.isPresent()) {
-                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(specific.get(), queryParameters), HttpStatus.OK);
+                    log.trace("specific data tree found: ");
+                    log.trace(EntityUtils.EntityWrapper.of(specific.get()).toFullJson());
+                    Object ret= EntityUtils.EntityWrapper.of(nativeObject)
+                            .at(p)
+                            .get()
+                            .getValue();
+
+                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ret, queryParameters), HttpStatus.OK);
                 } else {
                     //deal with not found
-                }
-                ObjectNode parentNode;
-
-                List<String> knownSegments = Arrays.asList("names", "codes", "notes", "properties", "references", "tags", "structure", "protein",
-                        "moieties", "modifications", "mixture", "nucleicAcid", "polymer", "structurallyDiverse");
-                if( knownSegments.contains(segment))
-                {
-                    parentNode= JsonNodeFactory.instance.objectNode();
-                    realData = realData.get(segment);
-                    parentNode.set(segment, realData);
-                    realData=parentNode;
+                    log.trace("specific part of data tree not found!");
+                    return gsrsControllerConfiguration.handleNotFound(queryParameters);
                 }
             }
             log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
