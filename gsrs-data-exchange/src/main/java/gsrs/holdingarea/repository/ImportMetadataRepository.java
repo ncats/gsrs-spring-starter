@@ -35,6 +35,9 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     @Query("select d from ImportMetadata d where d.recordId = ?1 and d.version = ?2")
     public ImportMetadata retrieveByIDAndVersion(UUID id, int version);
 
+    @Query("select d from ImportMetadata d where d.instanceId = ?1")
+    public ImportMetadata retrieveByInstanceID(UUID id);
+
     @Query("select d from ImportMetadata d where d.recordId = ?1")
     public List<ImportMetadata> retrieveByID(UUID id);
 

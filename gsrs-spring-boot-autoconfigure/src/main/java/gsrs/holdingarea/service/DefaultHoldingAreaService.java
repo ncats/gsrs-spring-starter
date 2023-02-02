@@ -5,15 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.holdingarea.model.*;
 import gsrs.holdingarea.repository.*;
-import gsrs.imports.indexers.MetadataMatchCountIndexValueMaker;
-import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
-import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
@@ -38,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DefaultHoldingAreaService implements HoldingAreaService {
+public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     public static String IMPORT_FAILURE = "ERROR";
 
@@ -187,6 +184,8 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
             return recordId.toString();
         }
 
+        _entityServiceRegistry.get(domainObject.getClass().getName()).IndexEntity(indexer, domainObject);
+
         ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
         domainObject = response.getNewObject();
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
@@ -290,6 +289,39 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
         return metadataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
 
+    @Override
+    public ImportMetadata getImportMetaData(String instanceId) {
+        return metadataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
+    }
+
+    @Override
+    public ImportData getImportDataByInstanceIdOrRecordId(String id, int version) {
+        log.trace("getImportDataByInstanceIdOrRecordId starting. ID: {}", id);
+        //first, look for ImportData directly
+        List<ImportData> importDataList = getImportData(id);
+        if( importDataList==null || importDataList.isEmpty()){
+            log.trace("no ImportData found; looking for ImportMetaData");
+            ImportMetadata metadata= getImportMetaData(id);
+            if( metadata!=null && metadata.getRecordId()!=null){
+                importDataList= getImportData(metadata.getRecordId().toString());
+            }
+        }
+        if( importDataList!=null && !importDataList.isEmpty()){
+            Optional<ImportData> data;
+            if( version<=0) {
+                log.trace("no version supplied; looking for latest item");
+                data = importDataList.stream().sorted(Comparator.comparing(ImportData::getVersion)).findFirst();
+            } else {
+                log.trace("looking for specific version {}",  version);
+                data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
+            }
+
+            if(data.isPresent()) {
+                return data.get();
+            }
+        }
+        return null;
+    }
     @Override
     public void deleteRecord(String recordId, int version) {
         log.trace("starting deleteRecord. recordId: {}; version: {}", recordId, version);
@@ -418,7 +450,7 @@ public class DefaultHoldingAreaService implements HoldingAreaService {
 
     @Override
     public List<ImportData> getImportData(String recordId) {
-        return  importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
+        return importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
     }
 
     @Override

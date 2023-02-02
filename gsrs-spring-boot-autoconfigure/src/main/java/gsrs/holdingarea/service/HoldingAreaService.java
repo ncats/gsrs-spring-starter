@@ -18,11 +18,15 @@ public interface HoldingAreaService {
 
     ImportMetadata getImportMetaData(String recordId, int version);
 
+    ImportMetadata getImportMetaData(String instanceId);
+
     List<UUID> getInstancesForRecord(String recordId);
 
     List<ImportData> getImportData(String recordId);
 
     String getInstanceData(String instanceId);
+
+    ImportData getImportDataByInstanceIdOrRecordId(String id, int version);
 
     void deleteRecord(String recordId, int version);
 

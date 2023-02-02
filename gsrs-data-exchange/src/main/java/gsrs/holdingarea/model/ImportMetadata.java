@@ -34,8 +34,6 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     //OLD WAY
     @JsonIgnore
     @Basic(fetch = FetchType.LAZY)
-//    @Lob
-//    @OneToOne(cascade=CascadeType.ALL)
     @Convert(converter = GinasAccessConverter.class)
     private GinasAccessContainer recordAccess;
 

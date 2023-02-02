@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.controller.hateoas.IxContext;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
@@ -24,12 +25,19 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Payload;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.text.FacetMeta;
+import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -50,6 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -206,7 +216,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return getHoldingAreaService(task.getAdapter());
     }
 
-    private HoldingAreaService getHoldingAreaService(String adapterName) throws Exception {
+    protected HoldingAreaService getHoldingAreaService(String adapterName) throws Exception {
         ImportAdapterFactory<T> adaptFac =
                 getImportAdapterFactory(adapterName)
                         .orElse(null);
@@ -432,7 +442,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                             @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting getImportData");
         log.trace("id: {} version: {}", id, version);
-        String adapterName = queryParameters.get("adapter");
+        String adapterName=queryParameters.get("adapter");
         Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
         HoldingAreaService service = getHoldingAreaService(adapterName);
         List<ImportData> importDataList= service.getImportData(id);
@@ -453,11 +463,29 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/importdata({id})/{segment}", "/importdata/{id}/{segment}"})
     public ResponseEntity<Object> getImportDataFull(@PathVariable("id") String id,
-                                                @PathVariable("segment") String segment,
-                                                @RequestParam Map<String, String> queryParameters) throws Exception {
+                                                    @PathVariable("segment") String segment,
+                                                    @RequestParam Map<String, String> queryParameters,
+                                                    HttpServletRequest request) throws Exception {
         log.trace("starting getImportDataFull");
-        int version=0;
+        return handleDataRetrieval(id, segment, queryParameters);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"/importdata({id})", "/importdata/{id}"})
+    public ResponseEntity<Object> getImportDataFullNoSegment(@PathVariable("id") String id,
+                                                    @RequestParam Map<String, String> queryParameters,
+                                                    HttpServletRequest request) throws Exception {
+        log.trace("starting getImportDataFullNoSegment");
+        return handleDataRetrieval(id, null, queryParameters);
+    }
+
+    private ResponseEntity<Object> handleDataRetrieval(String id, String segment, Map<String, String> queryParameters) throws Exception {
+        log.trace("starting handleDataRetrieval");
         String versionRaw = queryParameters.get("version");
+        String adapterName = queryParameters.get("adapter");
+
+        int version=0;
+
         if(versionRaw!=null && versionRaw.trim().length()>0){
             try {
                 version = Integer.parseInt(versionRaw);
@@ -469,26 +497,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         final int versionFinal = version;
         log.trace("id: {} version: {} segment: {}", id, version, segment);
-        String adapterName = queryParameters.get("adapter");
         Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
         HoldingAreaService service = getHoldingAreaService(adapterName);
-        List<ImportData> importDataList= service.getImportData(id);
-        log.trace("getDataForRecord returned {}", importDataList.size());
-        Optional<ImportData> foundData;
-        if(version>0) {
-            foundData= importDataList.stream().filter(i->i.getVersion()== versionFinal).findFirst();
-        } else{
-            foundData= importDataList.stream().max(Comparator.comparing(ImportData::getVersion));
-        }
+        ImportData requestedDataItem = service.getImportDataByInstanceIdOrRecordId(id, version);
 
-        if (foundData.isPresent()) {
+        if (requestedDataItem!=null) {
             log.trace(" found data ");
-            log.trace(foundData.get().getData());
+            log.trace(requestedDataItem.getData());
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode realData = mapper.readTree(foundData.get().getData());
+            JsonNode realData = mapper.readTree(requestedDataItem.getData());
             log.trace("converted to JsonNode");
             if(segment!=null && segment.trim().length()>0) {
-                Object nativeObject= service.deserializeObject(foundData.get().getEntityClassName(), foundData.get().getData());
+                Object nativeObject= service.deserializeObject(requestedDataItem.getEntityClassName(), requestedDataItem.getData());
                 log.trace("nativeObject type {}; object:", nativeObject.getClass().getName());
                 log.trace(EntityUtils.EntityWrapper.of(nativeObject).toFullJson());
                 EntityUtils.EntityWrapper nativeObjectWrapped = EntityUtils.EntityWrapper.of(nativeObject);
@@ -497,12 +517,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 if(specific.isPresent()) {
                     log.trace("specific data tree found: ");
                     log.trace(EntityUtils.EntityWrapper.of(specific.get()).toFullJson());
-                    Object ret= EntityUtils.EntityWrapper.of(nativeObject)
-                            .at(p)
-                            .get()
-                            .getValue();
-
-                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ret, queryParameters), HttpStatus.OK);
+                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(specific.get().getValue(), queryParameters), HttpStatus.OK);
                 } else {
                     //deal with not found
                     log.trace("specific part of data tree not found!");
@@ -512,9 +527,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
         }
-        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        messageNode.put("Message", "No data found for user input");
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.NOT_FOUND);
     }
-
 
     //STEP 2.5: Retrieve & predict if needed
     @hasAdminRole
@@ -674,7 +690,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    //search for records that have the same values for key fields
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/data", "/import/{id}/data"})
     public ResponseEntity<Object> retrieveRecord(@PathVariable("id") String id,
@@ -718,7 +733,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
 
-    //search for records that have the same values for key fields
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/instancedata", "/import/{id}/instancedata"})
     public ResponseEntity<Object> retrieveInstanceData(@PathVariable("id") String instanceId,
@@ -852,31 +866,16 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HoldingAreaService holdingAreaService = getHoldingAreaService(adapterName);
         String objectJson="";
         String objectClass="";
-        ImportMetadata metaData = holdingAreaService.getImportMetaData(holdingRecordId, version);
+        ImportData importData = holdingAreaService.getImportDataByInstanceIdOrRecordId( holdingRecordId, version);
         int realVersion = 0;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
 
-        if( metaData== null){
-            //nothing found interpreting id as ImportMetaData; now try as ImportData
-            log.trace("id {} does not work as ImportMetadata, will seek as ImportData", holdingRecordId);
-            List<ImportData> importDataList= holdingAreaService.getImportData(holdingRecordId);
-            Optional<ImportData> foundData;
-            if(version>0) {
-                foundData= importDataList.stream().filter(i->i.getVersion()== version).findFirst();
-            } else{
-                foundData= importDataList.stream().max(Comparator.comparing(ImportData::getVersion));
-            }
-            if(foundData.isPresent()){
-                objectJson=foundData.get().getData();
-                objectClass=foundData.get().getEntityClassName();
-                realVersion= foundData.get().getVersion();
-            }
-        } else {
-            log.trace("id {} appears to be ImportMetadata", holdingRecordId);
-            objectJson = holdingAreaService.getInstanceData(metaData.getInstanceId().toString());
-            objectClass=metaData.getEntityClassName();
-            realVersion=metaData.getVersion();
-            if(metaData.getImportStatus()== ImportMetadata.RecordImportStatus.imported){
+        if( importData!= null) {
+            log.trace("Data for id {} retrieved", holdingRecordId);
+            objectJson = importData.getData();
+            objectClass=importData.getEntityClassName();
+            ImportMetadata metadata = holdingAreaService.getImportMetaData(importData.getInstanceId().toString(), importData.getVersion());
+            if(metadata.getImportStatus()== ImportMetadata.RecordImportStatus.imported){
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
                         holdingRecordId));
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
@@ -936,5 +935,69 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(currentObject, queryParameters), HttpStatus.OK);
     }
+
+
+    @GetGsrsRestApiMapping(value = "/search", apiVersions = 1)
+    public ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
+                                           @RequestParam("top") Optional<Integer> top,
+                                           @RequestParam("skip") Optional<Integer> skip,
+                                           @RequestParam("fdim") Optional<Integer> fdim,
+                                           HttpServletRequest request,
+                                           @RequestParam Map<String, String> queryParameters){
+        SearchRequest.Builder builder = new SearchRequest.Builder()
+                .query(query.orElse(null))
+                .kind(getEntityService().getEntityClass());
+
+        top.ifPresent( t-> builder.top(t));
+        skip.ifPresent( t-> builder.skip(t));
+        fdim.ifPresent( t-> builder.fdim(t));
+
+        SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
+                .build();
+
+        this.instrumentSearchRequest(searchRequest);
+
+        SearchResult result = null;
+        try {
+            result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions() );
+        } catch (Exception e) {
+            return getGsrsControllerConfiguration().handleError(e, queryParameters);
+        }
+
+        SearchResult fresult=result;
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(true);
+        List results = (List) transactionTemplate.execute(stauts -> {
+            //the top and skip settings  look wrong, because we're not skipping
+            //anything, but it's actually right,
+            //because the original request did the skipping.
+            //This mechanism should probably be worked out
+            //better, as it's not consistent.
+
+            //Note that the SearchResult uses a LazyList,
+            //but this is copying to a real list, this will
+            //trigger direct fetches from the lazylist.
+            //With proper caching there should be no further
+            //triggered fetching after this.
+
+            String viewType=queryParameters.get("view");
+            if("key".equals(viewType)){
+                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+                fresult.copyKeysTo(klist, 0, top.orElse(10), true);
+                return klist;
+            }else{
+                List tlist = new ArrayList<>(top.orElse(10));
+                fresult.copyTo(tlist, 0, top.orElse(10), true);
+                return tlist;
+            }
+        });
+
+
+        //even if list is empty we want to return an empty list not a 404
+        ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
+        return ret;
+    }
+
 
 }

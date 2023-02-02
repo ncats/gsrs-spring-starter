@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.text.IndexValueMaker;
+import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
 import java.util.List;
 
@@ -21,4 +22,6 @@ public interface HoldingAreaEntityService<T> {
     GsrsEntityService.ProcessResult<T> persistEntity(T t);
 
     T retrieveEntity(String entityId);
+
+    void IndexEntity(TextIndexer indexer, Object object);
 }
