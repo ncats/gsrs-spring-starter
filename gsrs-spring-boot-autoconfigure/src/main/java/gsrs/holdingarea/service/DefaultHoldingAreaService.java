@@ -183,8 +183,8 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             log.warn("null domainObject!");
             return recordId.toString();
         }
-
-        _entityServiceRegistry.get(domainObject.getClass().getName()).IndexEntity(indexer, domainObject);
+        log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
+        _entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
 
         ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
         domainObject = response.getNewObject();

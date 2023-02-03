@@ -937,13 +937,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
 
-    @GetGsrsRestApiMapping(value = "/search", apiVersions = 1)
-    public ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
+    @GetGsrsRestApiMapping(value = "/importdatasearch", apiVersions = 1)
+    public ResponseEntity<Object> searchImportData(@RequestParam("q") Optional<String> query,
                                            @RequestParam("top") Optional<Integer> top,
                                            @RequestParam("skip") Optional<Integer> skip,
                                            @RequestParam("fdim") Optional<Integer> fdim,
                                            HttpServletRequest request,
                                            @RequestParam Map<String, String> queryParameters){
+        log.trace("searchImportData. Query: {}; kind: {}", query, getEntityService().getEntityClass().getName());
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(query.orElse(null))
                 .kind(getEntityService().getEntityClass());
