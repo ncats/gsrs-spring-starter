@@ -208,7 +208,6 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         log.trace("overallStatus: " + overallStatus);
         updateImportValidationStatus(instanceId, overallStatus);
 
-        //TODO: extend this to other types of objects
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
         persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
@@ -282,7 +281,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         if(version==0) {
             List<ImportMetadata> matchingRecords = metadataRepository.retrieveByID(UUID.fromString(recordId));
             if( matchingRecords !=null && matchingRecords.size()>0) {
-                return matchingRecords.stream().sorted(Comparator.comparing(ImportMetadata::getVersion)).findFirst().get();
+                return matchingRecords.stream().min(Comparator.comparing(ImportMetadata::getVersion)).get();
             }
             return null;
         }
@@ -310,7 +309,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             Optional<ImportData> data;
             if( version<=0) {
                 log.trace("no version supplied; looking for latest item");
-                data = importDataList.stream().sorted(Comparator.comparing(ImportData::getVersion)).findFirst();
+                data = importDataList.stream().min(Comparator.comparing(ImportData::getVersion));
             } else {
                 log.trace("looking for specific version {}",  version);
                 data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
@@ -511,8 +510,10 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
     @SneakyThrows
+    @Override
     public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson) {
-        Object domainObject = null;
+        log.trace("starting findMatchesForJson with {}", qualifiedEntityType);
+        Object domainObject;
         try {
             log.trace("going deserialize object of class {}", qualifiedEntityType);
             log.trace(entityJson);

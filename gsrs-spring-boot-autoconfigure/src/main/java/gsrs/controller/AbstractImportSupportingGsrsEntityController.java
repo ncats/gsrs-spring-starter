@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.controller.hateoas.IxContext;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
@@ -577,26 +576,52 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //STEP 3.5: Preview import
     //May required additional work
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
+    @PutGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreview(@PathVariable("id") String id,
+                                                 @RequestBody(required = false) JsonNode updatedJson,
                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("executePreview.  id: " + id);
         Optional<ImportTaskMetaData> obj = getImportTask(UUID.fromString(id));
+        Stream<T> objectStream;
         if (obj.isPresent()) {
             log.trace("retrieved ImportTaskMetaData");
             //TODO: make async and do other stuff:
-            ImportTaskMetaData itmd = obj.get();
+            ImportTaskMetaData retrievedTask = obj.get();
+            HoldingAreaService service;
+            ImportTaskMetaData usableTask;
+            if(updatedJson!= null && updatedJson.size()>0) {
+                ObjectMapper om = new ObjectMapper();
+                ImportTaskMetaData taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
+                if (taskFromInput.getAdapter() != null && taskFromInput.getAdapterSettings() == null) {
+                    taskFromInput = predictSettings(taskFromInput, queryParameters);
+                }
+                log.trace("generating preview data using latest data");
+                objectStream = generateObjects(taskFromInput, queryParameters);
+                service=getHoldingAreaService(taskFromInput);
+                usableTask = taskFromInput;
+            } else {
+                log.trace("generating preview data using earlier data");
+                objectStream = generateObjects(retrievedTask, queryParameters);
+                service=getHoldingAreaService(retrievedTask);
+                usableTask= retrievedTask;
+            }
 
             //todo: increase limit -- 10 will not work for most imports!
             long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
             log.trace("limit: {}", limit);
 
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
-            Stream<T> objectStream = generateObjects(itmd, queryParameters);
+
             ObjectMapper mapper = new ObjectMapper();
             objectStream.forEach(object->{
                 try {
-                    previewNode.add(mapper.writeValueAsString(object));
+                    ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
+                    JsonNode dataAsNode= mapper.readTree(mapper.writeValueAsString(object));
+                    singleRecord.set("data", dataAsNode);
+                    MatchedRecordSummary matchSummary=service.findMatchesForJson(usableTask.entityType, mapper.writeValueAsString(object));
+                    JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
+                    singleRecord.set("matches", matchesAsNode);
+                    previewNode.add(singleRecord);
                 } catch (JsonProcessingException e) {
                     log.error("Error serializing imported GSRS object", e);
                     throw new RuntimeException(e);
@@ -827,7 +852,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                             log.trace("going to invoke supplier on object");
                             object = (T) ((Supplier) object).get();
                         }
-                        previewNode.add(mapper.writeValueAsString(object));
+                        //previewNode.add(mapper.writeValueAsString(object));
+                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
+                        JsonNode dataAsNode= mapper.readTree(mapper.writeValueAsString(object));
+                        singleRecord.set("data", dataAsNode);
+                        MatchedRecordSummary matchSummary=service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object));
+                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
+                        singleRecord.set("matches", matchesAsNode);
+                        previewNode.add(singleRecord);
                     }
                 } catch (JsonProcessingException e) {
                     objectProcessingOK.set(false);
