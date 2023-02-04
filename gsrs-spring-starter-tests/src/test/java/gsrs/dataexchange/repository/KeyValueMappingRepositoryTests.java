@@ -1,7 +1,11 @@
 package gsrs.dataexchange.repository;
 
+import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.holdingarea.model.KeyValueMapping;
 import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.startertests.GsrsEntityTestConfiguration;
+import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -10,12 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.UUID;
 
 @Slf4j
-@Configuration
-@Import(KeyValueMappingRepository.class)
+@GsrsJpaTest( classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
 public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
@@ -53,6 +57,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
     @Test
     public void testDeleteByLocation() {
+        createSomeRecords();
         log.trace("in testDeleteByLocation");
         boolean before =keyValueMappingRepository.findAll().stream().anyMatch(m->m.getDataLocation().equals(LOCATION_ONE));
         keyValueMappingRepository.deleteByDataLocation(LOCATION_ONE);
