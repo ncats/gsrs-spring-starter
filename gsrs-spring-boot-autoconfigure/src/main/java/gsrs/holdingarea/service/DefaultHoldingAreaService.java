@@ -3,6 +3,7 @@ package gsrs.holdingarea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.holdingarea.model.*;
 import gsrs.holdingarea.repository.*;
 import gsrs.indexer.IndexValueMakerFactory;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -85,6 +87,9 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     public final static String CURRENT_SOURCE = "Holding Area";
 
     private Map<String, HoldingAreaEntityService> _entityServiceRegistry = new HashMap<>();
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     public DefaultHoldingAreaService(String context) {
         this.context = Objects.requireNonNull(context, "context can not be null");
@@ -213,7 +218,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
         updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
-        handleIndexing(metadata);
+        handleIndexing(metadata, saved);
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
         //  validation, when done would trigger the next event
         //  event manager type of thing
@@ -242,17 +247,20 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         return saved.getRecordId().toString();
     }
 
-    private void handleIndexing(ImportMetadata importMetadata){
-        log.trace("Here is where we will index facets for the ImportMetadata object");
-        /*TODO: make this work
-        ConfigBasedIndexValueMakerConfiguration configuration = new ConfigBasedIndexValueMakerConfiguration();
-        IndexValueMakerFactory factory = configuration.indexValueMakerFactory();
-
-        IndexValueMaker ivm =factory.createIndexValueMakerFor(importMetadata);
-        MetadataMatchCountIndexValueMaker indexValueMaker1 = new MetadataMatchCountIndexValueMaker();
-        indexValueMaker1.setHoldingAreaService(this);
-        AutowireHelper.getInstance().autowire(indexValueMaker1);
-        indexValueMaker1.createIndexableValues(importMetadata, );*/
+    private void handleIndexing(ImportMetadata importMetadata, ImportData importData){
+        log.trace("Here is where we index facets for the ImportMetadata object");
+        EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(importMetadata);
+        UUID reindexUuid = UUID.randomUUID();
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), true);
+        applicationEventPublisher.publishEvent(event);
+        log.trace("published event for metadata");
+        if( importData!=null) {
+            EntityUtils.EntityWrapper entityWrapperData = EntityUtils.EntityWrapper.of(importData);
+            UUID reindexUuidData = UUID.randomUUID();
+            ReindexEntityEvent eventData = new ReindexEntityEvent(reindexUuidData, entityWrapperData.getKey(), Optional.of(entityWrapperData), true);
+            applicationEventPublisher.publishEvent(eventData);
+            log.trace("published event for data");
+        }
     }
 
     @Override
