@@ -173,4 +173,8 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     public GinasAccessContainer getRecordAccess() {
         return recordAccess;
     }
+
+    @Indexable
+    private String importAdapter;
+
 }

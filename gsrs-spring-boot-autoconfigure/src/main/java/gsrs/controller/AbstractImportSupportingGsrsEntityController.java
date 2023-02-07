@@ -24,7 +24,6 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Payload;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
@@ -53,12 +52,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -324,6 +323,30 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return adapterFactory;
     }
 
+    private HoldingAreaService getDefaultHoldingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("starting in getDefaultHoldingAreaService");
+        Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaService(getEntityService().getContext());
+        if( holdingAreaServiceClass== null){
+            log.error("Error retrieving !");
+            return null;
+        }
+        log.trace("got class {}", holdingAreaServiceClass.getName());
+        Constructor constructor = holdingAreaServiceClass.getConstructor(String.class);
+        Object o = constructor.newInstance(this.getEntityService().getContext());
+        HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
+        log.trace("instantiated service");
+
+        Class holdingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaEntityService(getEntityService().getContext());
+        log.trace("going entity service class: {}", holdingAreaEntityServiceClass.getName());
+        Constructor constructorEntityService = holdingAreaEntityServiceClass.getConstructor();
+        Object o2= constructorEntityService.newInstance();
+        log.trace("instantiated entity service");
+        HoldingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaEntityService)o2);
+        service.registerEntityService(entityService);
+        log.trace("called registerEntityService with {}", entityService.getClass().getName());
+        log.trace("finished in getDefaultHoldingAreaService");
+        return service;
+    }
 
     //STEP 0: list adapter classes
     @hasAdminRole
@@ -481,9 +504,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private ResponseEntity<Object> handleDataRetrieval(String id, String segment, Map<String, String> queryParameters) throws Exception {
         log.trace("starting handleDataRetrieval");
         String versionRaw = queryParameters.get("version");
-        String adapterName = queryParameters.get("adapter");
+        //String adapterName = queryParameters.get("adapter");
 
         int version=0;
+
+        HoldingAreaService service;
+        try {
+            service= getDefaultHoldingAreaService();
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            log.error("error setting up holding area service", e);
+            ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+            messageNode.put("Message", "Unable to obtain holding area service");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.NOT_FOUND);
+        }
 
         if(versionRaw!=null && versionRaw.trim().length()>0){
             try {
@@ -494,10 +527,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
         }
 
-        final int versionFinal = version;
         log.trace("id: {} version: {} segment: {}", id, version, segment);
-        Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        //Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
         ImportData requestedDataItem = service.getImportDataByInstanceIdOrRecordId(id, version);
 
         if (requestedDataItem!=null) {
@@ -1030,6 +1061,41 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         //even if list is empty we want to return an empty list not a 404
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
         return ret;
+    }
+
+    private ImportData getImportDataByInstanceIdOrRecordId(String id, int version) {
+        log.trace("getImportDataByInstanceIdOrRecordId starting. ID: {}", id);
+        HoldingAreaService service;
+        try {
+            service= getDefaultHoldingAreaService();
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            log.error("error setting up holding area service", e);
+            return null;
+        }
+        //first, look for ImportData directly
+        List<ImportData> importDataList = service.getImportData(id);
+        if( importDataList==null || importDataList.isEmpty()){
+            log.trace("no ImportData found; looking for ImportMetaData");
+            ImportMetadata metadata= service.getImportMetaData(id);
+            if( metadata!=null && metadata.getRecordId()!=null){
+                importDataList= service.getImportData(metadata.getRecordId().toString());
+            }
+        }
+        if( importDataList!=null && !importDataList.isEmpty()){
+            Optional<ImportData> data;
+            if( version<=0) {
+                log.trace("no version supplied; looking for latest item");
+                data = importDataList.stream().min(Comparator.comparing(ImportData::getVersion));
+            } else {
+                log.trace("looking for specific version {}",  version);
+                data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
+            }
+
+            if(data.isPresent()) {
+                return data.get();
+            }
+        }
+        return null;
     }
 
 

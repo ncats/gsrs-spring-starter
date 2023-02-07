@@ -29,6 +29,10 @@ public class GsrsFactoryConfiguration {
 
     private boolean createUnknownUsers = false;
 
+    private Map<String, Class> defaultHoldingAreaServiceClass;
+
+    private Map<String, Class> defaultHoldingAreaEntityService;
+
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();
         return Optional.ofNullable(search.get(context));
@@ -106,6 +110,6 @@ public class GsrsFactoryConfiguration {
             log.error("Error fetching import factory config");
             throw t;
         }
-
     }
+
 }

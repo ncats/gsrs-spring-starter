@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -104,5 +105,15 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Class<T> getDefaultHoldingAreaService(String context) {
+        return gsrsFactoryConfiguration.getDefaultHoldingAreaServiceClass().get(context);
+    }
+
+    @Override
+    public Class<T> getDefaultHoldingAreaEntityService(String context) {
+        return gsrsFactoryConfiguration.getDefaultHoldingAreaEntityService().get(context);
     }
 }

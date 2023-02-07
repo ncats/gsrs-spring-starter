@@ -329,6 +329,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         }
         return null;
     }
+
     @Override
     public void deleteRecord(String recordId, int version) {
         log.trace("starting deleteRecord. recordId: {}; version: {}", recordId, version);
