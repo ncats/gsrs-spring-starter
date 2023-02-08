@@ -20,5 +20,5 @@ public class ImportRecordParameters {
     private String entityClassName;
     private String formatType;
     private UUID recordId;//will be null for creation; populated when updating
-
+    private String adapterName;
 }

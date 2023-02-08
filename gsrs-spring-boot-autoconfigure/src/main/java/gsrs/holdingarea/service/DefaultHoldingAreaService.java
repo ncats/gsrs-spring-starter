@@ -156,6 +156,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         metadata.setVersionStatus(ImportMetadata.RecordVersionStatus.current);
         metadata.setVersionCreationDate(new Date());
         metadata.setDataFormat(parameters.getFormatType());
+        metadata.setImportAdapter(parameters.getAdapterName());
         metadataRepository.saveAndFlush(metadata);
         EntityUtils.EntityWrapper<ImportMetadata> wrapper = EntityUtils.EntityWrapper.of(metadata);
         try {

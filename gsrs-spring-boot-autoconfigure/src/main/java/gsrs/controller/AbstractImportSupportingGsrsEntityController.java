@@ -464,9 +464,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                             @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting getImportData");
         log.trace("id: {} version: {}", id, version);
-        String adapterName=queryParameters.get("adapter");
-        Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        HoldingAreaService service = getDefaultHoldingAreaService();
         List<ImportData> importDataList= service.getImportData(id);
         log.trace("getDataForRecord returned {}", importDataList.size());
         Optional<ImportData> foundData;
@@ -478,6 +476,22 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         if (foundData.isPresent()) {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(foundData.get(), queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"/import/metadata({id})", "/import/metadata/{id}"})
+    public ResponseEntity<Object> getImportMetadata(@PathVariable("id") String id,
+                                                @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting getImportMetadata");
+        log.trace("id: {}", id);
+        HoldingAreaService service = getDefaultHoldingAreaService();
+        ImportMetadata importMetadata= service.getImportMetaData(id);
+        log.trace("getDataForRecord returned {}", importMetadata==null ? "null" : "one record");
+
+        if (importMetadata !=null) {
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(importMetadata, queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
@@ -820,6 +834,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 .formatType(importTaskMetaData.mimeType)
                 //.rawData(importTaskMetaData.)
                 .source(importTaskMetaData.getFilename())
+                .adapterName(importTaskMetaData.adapter)
                 .build();
         return service.createRecord(parameters);
     }
@@ -1062,41 +1077,5 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
         return ret;
     }
-
-    private ImportData getImportDataByInstanceIdOrRecordId(String id, int version) {
-        log.trace("getImportDataByInstanceIdOrRecordId starting. ID: {}", id);
-        HoldingAreaService service;
-        try {
-            service= getDefaultHoldingAreaService();
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            log.error("error setting up holding area service", e);
-            return null;
-        }
-        //first, look for ImportData directly
-        List<ImportData> importDataList = service.getImportData(id);
-        if( importDataList==null || importDataList.isEmpty()){
-            log.trace("no ImportData found; looking for ImportMetaData");
-            ImportMetadata metadata= service.getImportMetaData(id);
-            if( metadata!=null && metadata.getRecordId()!=null){
-                importDataList= service.getImportData(metadata.getRecordId().toString());
-            }
-        }
-        if( importDataList!=null && !importDataList.isEmpty()){
-            Optional<ImportData> data;
-            if( version<=0) {
-                log.trace("no version supplied; looking for latest item");
-                data = importDataList.stream().min(Comparator.comparing(ImportData::getVersion));
-            } else {
-                log.trace("looking for specific version {}",  version);
-                data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
-            }
-
-            if(data.isPresent()) {
-                return data.get();
-            }
-        }
-        return null;
-    }
-
 
 }
