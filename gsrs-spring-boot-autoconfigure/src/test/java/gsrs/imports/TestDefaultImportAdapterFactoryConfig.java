@@ -3,6 +3,8 @@ package gsrs.imports;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.holdingarea.service.DefaultHoldingAreaService;
+import gsrs.holdingarea.service.HoldingAreaEntityService;
 import ix.ginas.models.GinasCommonData;
 import org.checkerframework.checker.units.qual.Substance;
 import org.junit.jupiter.api.Assertions;
@@ -15,8 +17,16 @@ public class TestDefaultImportAdapterFactoryConfig {
 
     @Test
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
-        String substanceContext="substance";
+        String substanceContext="substances";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
+        Map<String, Class> holdingAreaService = new HashMap<>();
+        holdingAreaService.put("substances", DefaultHoldingAreaService.class);
+        config.setDefaultHoldingAreaEntityService(holdingAreaService);
+
+        Map<String, Class> entityService = new HashMap<>();
+        entityService.put("substances", HoldingAreaEntityService.class);
+        config.setDefaultHoldingAreaEntityService(entityService);
+
         Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();
         Map<String,Object> oneAdapter = new HashMap<>();
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdaptorFactory");

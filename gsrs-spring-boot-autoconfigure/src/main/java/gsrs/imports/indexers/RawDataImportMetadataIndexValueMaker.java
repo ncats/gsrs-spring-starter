@@ -1,6 +1,7 @@
 package gsrs.imports.indexers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.holdingarea.model.ImportMetadata;
 import gsrs.holdingarea.repository.ImportDataRepository;
 import gsrs.holdingarea.service.HoldingAreaService;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Slf4j
 public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<ImportMetadata> {
@@ -20,8 +22,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     @Autowired
     IndexValueMakerFactory realFactory;
 
-    @Autowired
-    HoldingAreaService holdingAreaService;
+    Supplier<HoldingAreaService> holdingAreaServiceSupplier= null;
 
     @Autowired
     ImportDataRepository importDataRepository;
@@ -31,12 +32,17 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
         return ImportMetadata.class;
     }
 
+    public RawDataImportMetadataIndexValueMaker(){
+        holdingAreaServiceSupplier=()->AbstractImportSupportingGsrsEntityController.getHoldingAreaService();
+    }
+
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
+        log.trace("");
         try {
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
             if( objectJson != null && objectJson.length()>0) {
-                Object dataObject= holdingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
+                Object dataObject= holdingAreaServiceSupplier.get().deserializeObject(importMetadata.getEntityClassName(), objectJson);
                 log.trace("deserialized object");
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
                 log.trace("instantiated rawMaker");

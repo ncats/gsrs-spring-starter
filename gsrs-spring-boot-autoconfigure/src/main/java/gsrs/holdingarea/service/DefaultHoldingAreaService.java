@@ -255,13 +255,13 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), true);
         applicationEventPublisher.publishEvent(event);
         log.trace("published event for metadata");
-        if( importData!=null) {
+        /*if( importData!=null) {
             EntityUtils.EntityWrapper entityWrapperData = EntityUtils.EntityWrapper.of(importData);
             UUID reindexUuidData = UUID.randomUUID();
             ReindexEntityEvent eventData = new ReindexEntityEvent(reindexUuidData, entityWrapperData.getKey(), Optional.of(entityWrapperData), true);
             applicationEventPublisher.publishEvent(eventData);
             log.trace("published event for data");
-        }
+        }*/
     }
 
     @Override

@@ -6,6 +6,7 @@ import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
+import gsrs.holdingarea.service.DefaultHoldingAreaService;
 import gsrs.imports.ConfigBasedImportAdapterFactoryFactoryConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
@@ -91,7 +92,8 @@ public class GsrsApiSelector implements ImportSelector {
 
         EnableGsrsApi.EntityProcessorDetector entityProcessorDetector = attributes.getEnum("entityProcessorDetector");
 
-
+        //TODO: need a clean way to put this bean in scope.
+        //componentsToInclude.add(DefaultHoldingAreaService.class);
         switch(entityProcessorDetector){
             case COMPONENT_SCAN:
                 componentsToInclude.add(BasicEntityProcessorConfiguration.class);

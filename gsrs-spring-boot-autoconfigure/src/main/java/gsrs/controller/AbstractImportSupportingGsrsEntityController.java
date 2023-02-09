@@ -241,6 +241,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         } else {
             log.warn("No entity service found.  Import won't get far.");
         }
+        _holdingAreaService=service;
         return service;
     }
 
@@ -323,6 +324,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return adapterFactory;
     }
 
+    //todo: cleaner implementation:
+    static protected HoldingAreaService _holdingAreaService;
+
+    static public HoldingAreaService getHoldingAreaService(){
+        return _holdingAreaService;
+    }
+
     private HoldingAreaService getDefaultHoldingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         log.trace("starting in getDefaultHoldingAreaService");
         Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaService(getEntityService().getContext());
@@ -345,6 +353,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         service.registerEntityService(entityService);
         log.trace("called registerEntityService with {}", entityService.getClass().getName());
         log.trace("finished in getDefaultHoldingAreaService");
+        _holdingAreaService= service;
         return service;
     }
 
