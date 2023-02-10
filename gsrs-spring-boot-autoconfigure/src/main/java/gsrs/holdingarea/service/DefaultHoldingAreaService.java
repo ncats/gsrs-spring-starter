@@ -637,6 +637,17 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         transactionTemplate.executeWithoutResult(c -> metadataRepository.updateRecordImportStatus(instanceId, status));
     }
 
+    @Override
+    public void fillCollectionsForMetadata(ImportMetadata metadata) {
+        List<ImportValidation> validations=importValidationRepository.retrieveValidationsByInstanceId(metadata.getInstanceId());
+        metadata.validations.clear();
+        metadata.validations.addAll(validations);
+
+        List<KeyValueMapping> mappings= keyValueMappingRepository.findRecordsByRecordId(metadata.getRecordId());
+        metadata.keyValueMappings.clear();
+        metadata.keyValueMappings.addAll(mappings);
+    }
+
     private ImportMetadata.RecordValidationStatus getOverallValidationStatus(ValidationResponse validationResponse) {
         ImportMetadata.RecordValidationStatus response = ImportMetadata.RecordValidationStatus.valid;
 

@@ -12,6 +12,7 @@ import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -22,7 +23,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     @Autowired
     IndexValueMakerFactory realFactory;
 
-    Supplier<HoldingAreaService> holdingAreaServiceSupplier= null;
+    HoldingAreaService holdingAreaService= null;
 
     @Autowired
     ImportDataRepository importDataRepository;
@@ -33,16 +34,23 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     }
 
     public RawDataImportMetadataIndexValueMaker(){
-        holdingAreaServiceSupplier=()->AbstractImportSupportingGsrsEntityController.getHoldingAreaService();
     }
 
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
+        if( holdingAreaService == null) {
+            try {
+                holdingAreaService=AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal(importMetadata.getEntityClassName());
+            } catch (Exception e) {
+                log.error("Error obtaining holding area service", e);
+                throw new RuntimeException(e);
+            }
+        }
         log.trace("");
         try {
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
             if( objectJson != null && objectJson.length()>0) {
-                Object dataObject= holdingAreaServiceSupplier.get().deserializeObject(importMetadata.getEntityClassName(), objectJson);
+                Object dataObject= holdingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
                 log.trace("deserialized object");
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
                 log.trace("instantiated rawMaker");

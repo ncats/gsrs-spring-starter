@@ -55,4 +55,6 @@ public interface HoldingAreaService {
     <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity);
 
     void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status);
+
+    void fillCollectionsForMetadata(ImportMetadata metadata);
 }

@@ -11,10 +11,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
-import gsrs.holdingarea.model.ImportData;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.model.ImportRecordParameters;
-import gsrs.holdingarea.model.MatchedRecordSummary;
+import gsrs.holdingarea.model.*;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.holdingarea.service.HoldingAreaService;
 import gsrs.imports.*;
@@ -25,17 +22,13 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
-import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
-import ix.core.search.text.FacetMeta;
-import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -188,8 +181,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportAdapterFactory<T> factory = fetchAdapterFactory(task);
         ImportAdapter<T> adapter = factory.createAdapter(task.adapterSettings);
         Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.payloadID);
-        InputStream stream = streamHolder.get();
-        return adapter.parse(stream, settingsNode);
+        if(streamHolder.isPresent()) {
+            InputStream stream = streamHolder.get();
+            return adapter.parse(stream, settingsNode);
+        }
+        return Stream.empty();
     }
 
     protected ImportAdapterFactory<T> fetchAdapterFactory(ImportTaskMetaData<T> task) throws Exception {
@@ -229,7 +225,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         Class<T> c = adaptFac.getHoldingAreaService();
         log.trace("in getHoldingAreaService, instantiating HoldingAreaService: {}", c.getName());
-        Constructor constructor = c.getConstructor(String.class);
+        Constructor<T> constructor = c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
         HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
         if (adaptFac.getEntityServiceClass() != null) {
@@ -325,9 +321,34 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //todo: cleaner implementation:
-    static protected HoldingAreaService _holdingAreaService;
+    static protected HoldingAreaService _holdingAreaService = null;
 
-    static public HoldingAreaService getHoldingAreaService(){
+    static public HoldingAreaService getHoldingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        if( _holdingAreaService== null) {
+            GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory1 = new ConfigBasedGsrsImportAdapterFactoryFactory();
+            Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultHoldingAreaService(contextName);
+            if( holdingAreaServiceClass== null){
+                log.error("Error retrieving !");
+                return null;
+            }
+            log.trace("got class {}", holdingAreaServiceClass.getName());
+            Constructor constructor = holdingAreaServiceClass.getConstructor(String.class);
+            Object o = constructor.newInstance(contextName);
+            HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
+            log.trace("instantiated service");
+
+            Class holdingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultHoldingAreaEntityService(contextName);
+            log.trace("going entity service class: {}", holdingAreaEntityServiceClass.getName());
+            Constructor constructorEntityService = holdingAreaEntityServiceClass.getConstructor();
+            Object o2= constructorEntityService.newInstance();
+            log.trace("instantiated entity service");
+            HoldingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaEntityService)o2);
+            service.registerEntityService(entityService);
+            log.trace("called registerEntityService with {}", entityService.getClass().getName());
+            log.trace("finished in getDefaultHoldingAreaService");
+            _holdingAreaService= service;
+            return service;
+        }
         return _holdingAreaService;
     }
 
@@ -527,7 +548,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private ResponseEntity<Object> handleDataRetrieval(String id, String segment, Map<String, String> queryParameters) throws Exception {
         log.trace("starting handleDataRetrieval");
         String versionRaw = queryParameters.get("version");
-        //String adapterName = queryParameters.get("adapter");
 
         int version=0;
 
@@ -551,12 +571,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
 
         log.trace("id: {} version: {} segment: {}", id, version, segment);
-        //Objects.requireNonNull(adapterName, "Must supply adapter name to interpret input data");
+        Objects.requireNonNull(service, "Must have a Staging Area Service work with data!");
         ImportData requestedDataItem = service.getImportDataByInstanceIdOrRecordId(id, version);
+        ImportMetadata matchingMetadata;
 
         if (requestedDataItem!=null) {
             log.trace(" found data ");
             log.trace(requestedDataItem.getData());
+            matchingMetadata= service.getImportMetaData(requestedDataItem.getInstanceId().toString());
             ObjectMapper mapper = new ObjectMapper();
             JsonNode realData = mapper.readTree(requestedDataItem.getData());
             log.trace("converted to JsonNode");
@@ -576,6 +598,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     log.trace("specific part of data tree not found!");
                     return gsrsControllerConfiguration.handleNotFound(queryParameters);
                 }
+            }
+            if(realData instanceof ObjectNode) {
+                log.trace("yes, an ObjectNode");
+                enhanceWithMetadata((ObjectNode) realData, matchingMetadata, service);
             }
             log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
@@ -703,7 +729,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("executeValidate.  id: " + id);
 
         String adapterName = queryParameters.get("adapter");
-        HoldingAreaService holdingAreaService = getHoldingAreaService(adapterName);
+        HoldingAreaService holdingAreaService = getDefaultHoldingAreaService();
         Object response = holdingAreaService.validateInstance(id);
         if (response == null) {
             ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
@@ -1081,10 +1107,27 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
         });
 
-
         //even if list is empty we want to return an empty list not a 404
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
         return ret;
     }
 
+    private void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, HoldingAreaService service){
+        ObjectMapper mapper = new ObjectMapper();
+        if(metadata !=null){
+            String metadataAsString = null;
+            try {
+                if( metadata.validations== null || metadata.validations.isEmpty()) {
+                    service.fillCollectionsForMetadata(metadata);
+                }
+                metadataAsString = mapper.writeValueAsString(metadata);
+                JsonNode metadataAsNode = mapper.readTree(metadataAsString);
+                dataNode.set("_metadata", metadataAsNode);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            dataNode.put("_metadata", "[not found]");
+        }
+    }
 }

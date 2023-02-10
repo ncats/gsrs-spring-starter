@@ -155,7 +155,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    public List<KeyValueMapping> KeyValueMappings = new ArrayList<>();
+    public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
     @JSONEntity(title = "ImportValidations")
     @JsonView(BeanViews.Full.class)
@@ -164,7 +164,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @JoinColumns({
             @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
     })
-    public List<gsrs.holdingarea.model.ImportValidation> validations = new ArrayList<>();
+    public List<ImportValidation> validations = new ArrayList<>();
 
     @Indexable
     private String dataFormat;
