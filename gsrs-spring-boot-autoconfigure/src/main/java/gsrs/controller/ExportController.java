@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.validation.ConstraintViolationException;
 import javax.validation.constraints.Pattern;
 
 /**
@@ -196,4 +197,8 @@ public class ExportController {
                 .body(resource);
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity handleConstraintViolationException(ConstraintViolationException ex){
+        return GsrsControllerConfiguration.createResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST.value());
+    }
 }
