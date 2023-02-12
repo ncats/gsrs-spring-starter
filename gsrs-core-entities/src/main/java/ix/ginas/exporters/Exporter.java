@@ -1,6 +1,8 @@
 package ix.ginas.exporters;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gov.nih.ncats.common.io.IOUtil;
 
 import java.io.Closeable;
@@ -29,5 +31,4 @@ public interface Exporter<T> extends Closeable{
 	default void exportForEachAndClose(Iterable<T> it) throws IOException{
 		exportForEachAndClose(it.iterator());
 	}
-	
 }

@@ -38,7 +38,9 @@ public final class JsonEntityUtil {
     private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
         boolean found=false;
         for(Method m: aClass.getDeclaredMethods()){
-            m.setAccessible(true);
+        	try {
+        		m.setAccessible(true);
+        	}catch(Exception e) {}
             if(m.getAnnotation(ParentReference.class) != null){
                 try{
                     m.invoke(obj, owner);
@@ -50,7 +52,9 @@ public final class JsonEntityUtil {
         }
         if(!found) {
             for (Field f : aClass.getDeclaredFields()) {
+            	try {
                 f.setAccessible(true);
+            	}catch(Exception e) {}
                 if (f.getAnnotation(ParentReference.class) != null) {
                     try {
                         if (force || f.get(obj) == null) {

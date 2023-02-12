@@ -1,7 +1,11 @@
 package ix.core.cache;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.annotation.PreDestroy;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
@@ -9,14 +13,6 @@ import gsrs.cache.GsrsLegacyCachePropertyConfiguration;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil.TypedCallable;
 import net.sf.ehcache.Element;
-import net.sf.ehcache.statistics.CoreStatistics;
-
-import javax.annotation.PreDestroy;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 public class IxCache implements GsrsCache {
 	private AtomicLong lastNotifiedChange=new AtomicLong(0l); // The last timestamp IxCache was told there was a change
@@ -104,8 +100,8 @@ public class IxCache implements GsrsCache {
         return this.gateKeeper.removeAllChildKeys(key);
     }
     
-    public List<CoreStatistics> getStatistics () {
-        //TODO how to handle multiple caches
+    public List<CacheStatistics> getStatistics () {
+        
         return this.gateKeeper.getStatistics();
     }
 
@@ -139,12 +135,12 @@ public class IxCache implements GsrsCache {
 	
 	@Override
     public void addToMatchingContext(String contextID, Key key, String prop, Object value){
-        Map<String,Object> additionalProps = getMatchingContextByContextID(contextID, key);
+        Map<String,Object> additionalProps = getMatchingContextByContextID(contextID, key.toRootKey());
         if(additionalProps==null){
             additionalProps=new HashMap<String,Object>();
         }
         additionalProps.put(prop, value);
-        setMatchingContext(contextID,key, additionalProps);
+        setMatchingContext(contextID,key.toRootKey(), additionalProps);
     }
 	
 	@Override

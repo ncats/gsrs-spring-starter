@@ -137,7 +137,7 @@ public final class GateKeeperFactory {
                     Cache evictableCache = new Cache( new CacheConfiguration()
                             .name(IX_CACHE_NOT_EVICTABLE)
                             //.maxBytesLocalHeap(maxElements, MemoryUnit.MEGABYTES)
-                            .maxEntriesLocalHeap(10)
+                            .maxEntriesLocalHeap(maxElements)
                             .timeToLiveSeconds(timeToLive)
                             .timeToIdleSeconds(timeToIdle));
                     CacheManager.getInstance().removeCache(evictableCache.getName());

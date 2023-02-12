@@ -1,14 +1,15 @@
 package gsrs.indexer;
 
-import gsrs.springUtils.AutowireHelper;
-import ix.core.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
-import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+
+import gsrs.springUtils.AutowireHelper;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
 
 /**
  * JPA Entity Listener that will fire
@@ -52,6 +53,19 @@ public class IndexerEntityListener {
             }
         }
     }
+    
+    public void reindexEntity(Object obj, boolean deleteFirst) {
+        autowireIfNeeded();
+        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
+        if(ew.shouldIndex()) {
+            IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
+            if(indexerFactoryFor !=null) {
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst));
+                
+            }
+        }
+    }
+    
     @PostRemove
     public void deleteEntity(Object obj){
         autowireIfNeeded();
