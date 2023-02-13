@@ -1050,7 +1050,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
 
-    @GetGsrsRestApiMapping(value = "/importdatasearch", apiVersions = 1)
+    @GetGsrsRestApiMapping(value = "/importdata/search", apiVersions = 1)
     public ResponseEntity<Object> searchImportData(@RequestParam("q") Optional<String> query,
                                            @RequestParam("top") Optional<Integer> top,
                                            @RequestParam("skip") Optional<Integer> skip,
@@ -1060,7 +1060,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("searchImportData. Query: {}; kind: {}", query, getEntityService().getEntityClass().getName());
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(query.orElse(null))
-                .kind(getEntityService().getEntityClass());
+                .kind(ImportMetadata.class);
 
         top.ifPresent( t-> builder.top(t));
         skip.ifPresent( t-> builder.skip(t));
@@ -1069,7 +1069,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
 
-        this.instrumentSearchRequest(searchRequest);
+        //this.instrumentSearchRequest(searchRequest);
 
         SearchResult result = null;
         try {
