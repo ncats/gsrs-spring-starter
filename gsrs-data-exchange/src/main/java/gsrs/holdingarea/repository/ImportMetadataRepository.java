@@ -39,7 +39,7 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     public ImportMetadata retrieveByInstanceID(UUID id);
 
     @Query("select d from ImportMetadata d where d.recordId = ?1")
-    public List<ImportMetadata> retrieveByID(UUID id);
+    public ImportMetadata retrieveByID(UUID id);
 
     @Modifying
     @Transactional
@@ -51,4 +51,7 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     @Query("delete from ImportMetadata i where i.recordId = ?1 and version=?2")
     void deleteByRecordIdAndVersion(UUID recordId, int version);
 
+    @Modifying(clearAutomatically = true)
+    @Query("update ImportMetadata i set version = version +1 where i.recordId = ?1")
+    public void incrementVersion(UUID recordId);
 }

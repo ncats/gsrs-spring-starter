@@ -17,14 +17,15 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
-import ix.ginas.models.GinasCommonData;
-import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
+import org.checkerframework.common.reflection.qual.NewInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -76,7 +77,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
 
-    private ValidatorFactory validatorFactory;
+    //private ValidatorFactory validatorFactory;
 
     private TextIndexer indexer;
 
@@ -84,7 +85,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     private MatchableCalculationConfig matchableCalculationConfig;
 
-    public final static String CURRENT_SOURCE = "Holding Area";
+    //public final static String CURRENT_SOURCE = "Holding Area";
 
     private Map<String, HoldingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
@@ -219,7 +220,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
         updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
-        handleIndexing(metadata, saved);
+        handleIndexing(metadata);
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
         //  validation, when done would trigger the next event
         //  event manager type of thing
@@ -248,7 +249,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         return saved.getRecordId().toString();
     }
 
-    private void handleIndexing(ImportMetadata importMetadata, ImportData importData){
+    private void handleIndexing(ImportMetadata importMetadata){
         log.trace("Here is where we index facets for the ImportMetadata object");
         EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(importMetadata);
         UUID reindexUuid = UUID.randomUUID();
@@ -273,26 +274,40 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         }
         ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
         log.trace("located object with latest version {}", latestExisting.getVersion());
+        UUID latestInstanceId=UUID.randomUUID();
         ImportData newVersion = latestExisting.toBuilder()
-                .instanceId(UUID.randomUUID())
+                .instanceId(latestInstanceId)
                 .version(latestExisting.getVersion()+1)
                 .data(jsonData)
                 .build();
         log.trace("cloned");
+        ImportMetadata importMetadata = metadataRepository.retrieveByID(UUID.fromString(recordId));
+        log.trace("retrieved importMetadata with {} mappings and {} validations", importMetadata.keyValueMappings.size(), importMetadata.validations.size());
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
-        transactionDelete.executeWithoutResult(r -> importDataRepository.save(newVersion));
-
+        transactionDelete.executeWithoutResult(r -> {
+            importDataRepository.save(newVersion);
+            try {
+                handleUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
+                //retrieve importMetadata again because it has changed
+                ImportMetadata updatedImportMetadata= metadataRepository.retrieveByID(UUID.fromString(recordId));
+                //change the instanceID _after_ handleUpdate that uses the old value to clearn out related  data
+                updatedImportMetadata.setInstanceId(latestInstanceId);
+                metadataRepository.saveAndFlush(updatedImportMetadata);
+                handleIndexing(updatedImportMetadata);
+                log.trace("saved ImportMetadata with recordID {} and instanceId {}; latestInstanceId: {}", updatedImportMetadata.getRecordId(),
+                        updatedImportMetadata.getInstanceId(), latestInstanceId);
+            } catch (JsonProcessingException e) {
+                log.error("Error updating import metadata!", e);
+                throw new RuntimeException(e);
+            }
+        } );
         return String.format("updated data object");
     }
 
     @Override
     public ImportMetadata getImportMetaData(String recordId, int version) {
         if(version==0) {
-            List<ImportMetadata> matchingRecords = metadataRepository.retrieveByID(UUID.fromString(recordId));
-            if( matchingRecords !=null && matchingRecords.size()>0) {
-                return matchingRecords.stream().min(Comparator.comparing(ImportMetadata::getVersion)).get();
-            }
-            return null;
+            return metadataRepository.retrieveByID(UUID.fromString(recordId));
         }
         return metadataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
@@ -318,7 +333,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             Optional<ImportData> data;
             if( version<=0) {
                 log.trace("no version supplied; looking for latest item");
-                data = importDataList.stream().min(Comparator.comparing(ImportData::getVersion));
+                data = importDataList.stream().max(Comparator.comparing(ImportData::getVersion));
             } else {
                 log.trace("looking for specific version {}",  version);
                 data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
@@ -481,10 +496,14 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
                 List<ValidationMessage> messages = response.getValidationMessages();
                 if (messages.stream().noneMatch(m -> m.isError())) {
                     Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
-                    if (savedObject instanceof GinasCommonData) {
-                        metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
-                        return ((GinasCommonData) savedObject).uuid.toString();
+                    metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
+                    ObjectMapper mapper = new ObjectMapper();
+                    String json = mapper.writeValueAsString(savedObject);
+                    JsonNode objectNode= mapper.readTree(json);
+                    if(objectNode.hasNonNull("uuid")) {
+                        return objectNode.get("uuid").asText();
                     }
+
                     return "Object saved!";
                 }
                 return "One or more errors exist. Please validate and take action!";
@@ -678,9 +697,46 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         }
     }
 
+    @Override
+    public Page page(Pageable pageable) {
+        return metadataRepository.findAll(pageable);
+    }
+
     private String serializeObject(Object object) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(object);
     }
 
+    /*
+    After a domain entity within the holding area is updated, we rerun validation and matching and store the results
+    call this method inside a transaction
+     */
+    public void handleUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
+        log.trace("starting in handleUpdate");
+        //step 1: deserialize domain object
+        Object domainObject = deserializeObject(entityType, entityJson);
+        //step 2: validate
+        ValidationResponse<T> response = validateRecord(entityType, entityJson);
+        log.trace("validated");
+        List<ValidationMessage> messages = response.getValidationMessages();
+        //step 3a: delete previous validations
+        importValidationRepository.deleteByInstanceId(importMetadata.getInstanceId());
+        log.trace("cleared out previous validations");
+        //step 3b: persist new validations
+        persistValidationInfo(response, importMetadata.getVersion(), newInstanceId);
+        log.trace("persisted new validations");
+        //step 4: calculate matchables
+        List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
+        log.trace("calculated matchables");
+        definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+        //step 5a: remove old matchables
+        keyValueMappingRepository.deleteByRecordId(importMetadata.getRecordId());
+        log.trace("deleted previous matchables");
+        //step 5b: persist new matchables
+        persistDefinitionalValues(definitionalValueTuples, newInstanceId, importMetadata.getRecordId());
+        log.trace("persisted new matchables");
+        //step 6: increment version
+        metadataRepository.incrementVersion(importMetadata.getRecordId());
+        log.trace("called incrementVersion");
+    }
 }

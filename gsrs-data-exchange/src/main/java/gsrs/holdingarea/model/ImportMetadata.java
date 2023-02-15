@@ -99,13 +99,13 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
         indexed
     }
 
-    @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     @Type(type = "uuid-char" )
     @Column(length =40, updatable = false, unique = true)
     private UUID instanceId; //always unique!  changes when data change
 
+    @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary

@@ -279,6 +279,290 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
     }
 
     @Test
+    public void testremoveMetadataFromDomainObjectJson(){
+        String jsonBefore = "{\n" +
+                "\t\"deprecated\": false,\n" +
+                "\t\"definitionType\": \"PRIMARY\",\n" +
+                "\t\"definitionLevel\": \"COMPLETE\",\n" +
+                "\t\"substanceClass\": \"chemical\",\n" +
+                "\t\"status\": \"pending\",\n" +
+                "\t\"version\": \"1\",\n" +
+                "\t\"names\": [\n" +
+                "\t\t{\n" +
+                "\t\t\t\"deprecated\": false,\n" +
+                "\t\t\t\"name\": \"34-74-2\",\n" +
+                "\t\t\t\"type\": \"cn\",\n" +
+                "\t\t\t\"domains\": [],\n" +
+                "\t\t\t\"languages\": [\n" +
+                "\t\t\t\t\"en\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"nameJurisdiction\": [],\n" +
+                "\t\t\t\"nameOrgs\": [],\n" +
+                "\t\t\t\"preferred\": false,\n" +
+                "\t\t\t\"displayName\": false,\n" +
+                "\t\t\t\"references\": [\n" +
+                "\t\t\t\t\"7207ef8e-e6b6-45af-8845-5a85ffabbc32\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"access\": []\n" +
+                "\t\t},\n" +
+                "\t\t{\n" +
+                "\t\t\t\"deprecated\": false,\n" +
+                "\t\t\t\"name\": \"Monobutyl phthalate\",\n" +
+                "\t\t\t\"type\": \"cn\",\n" +
+                "\t\t\t\"domains\": [],\n" +
+                "\t\t\t\"languages\": [\n" +
+                "\t\t\t\t\"en\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"nameJurisdiction\": [],\n" +
+                "\t\t\t\"nameOrgs\": [],\n" +
+                "\t\t\t\"preferred\": false,\n" +
+                "\t\t\t\"displayName\": true,\n" +
+                "\t\t\t\"references\": [\n" +
+                "\t\t\t\t\"7207ef8e-e6b6-45af-8845-5a85ffabbc32\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"access\": []\n" +
+                "\t\t},\n" +
+                "\t\t{\n" +
+                "\t\t\t\"deprecated\": false,\n" +
+                "\t\t\t\"name\": \"Mono-n-butyl-phthalate\",\n" +
+                "\t\t\t\"type\": \"cn\",\n" +
+                "\t\t\t\"domains\": [],\n" +
+                "\t\t\t\"languages\": [\n" +
+                "\t\t\t\t\"en\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"nameJurisdiction\": [],\n" +
+                "\t\t\t\"nameOrgs\": [],\n" +
+                "\t\t\t\"preferred\": false,\n" +
+                "\t\t\t\"displayName\": false,\n" +
+                "\t\t\t\"references\": [\n" +
+                "\t\t\t\t\"7207ef8e-e6b6-45af-8845-5a85ffabbc32\"\n" +
+                "\t\t\t],\n" +
+                "\t\t\t\"access\": []\n" +
+                "\t\t}\n" +
+                "\t],\n" +
+                "\t\"codes\": [\n" +
+                "\t\t{\n" +
+                "\t\t\t\"deprecated\": false,\n" +
+                "\t\t\t\"codeSystem\": \"CAS\",\n" +
+                "\t\t\t\"code\": \"34-74-2\",\n" +
+                "\t\t\t\"type\": \"PRIMARY\",\n" +
+                "\t\t\t\"_isClassification\": false,\n" +
+                "\t\t\t\"references\": [],\n" +
+                "\t\t\t\"access\": []\n" +
+                "\t\t}\n" +
+                "\t],\n" +
+                "\t\"notes\": [],\n" +
+                "\t\"properties\": [],\n" +
+                "\t\"relationships\": [],\n" +
+                "\t\"references\": [\n" +
+                "\t\t{\n" +
+                "\t\t\t\"deprecated\": false,\n" +
+                "\t\t\t\"uuid\": \"7207ef8e-e6b6-45af-8845-5a85ffabbc32\",\n" +
+                "\t\t\t\"citation\": \"File \\\"nlm_small_1.sdf\\\" imported on Thu Sep 08 21:29:09 EDT 2022\",\n" +
+                "\t\t\t\"docType\": \"CATALOG\",\n" +
+                "\t\t\t\"publicDomain\": false,\n" +
+                "\t\t\t\"tags\": [],\n" +
+                "\t\t\t\"access\": []\n" +
+                "\t\t}\n" +
+                "\t],\n" +
+                "\t\"tags\": [],\n" +
+                "\t\"structure\": {\n" +
+                "\t\t\"deprecated\": false,\n" +
+                "\t\t\"molfile\": \"\\n  CDK     09082221292D\\n\\n 16 16  0  0  0  0  0  0  0  0999 V2000\\n   -0.3750   -8.1495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.6740   -8.8995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.6740  -10.3995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.3750  -11.1495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -2.9731  -11.1495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -4.2721  -10.3995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -4.2721   -8.8995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -2.9731   -8.1495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.9240   -8.8995    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.3750   -6.6495    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.3750  -12.6495    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.9240  -10.3995    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.9240   -5.8995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.9240   -4.3995    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.2231   -3.6495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.2231   -2.1495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  3  4  1  0  0  0  0\\n  3  5  2  0  0  0  0\\n  5  6  1  0  0  0  0\\n  6  7  2  0  0  0  0\\n  7  8  1  0  0  0  0\\n  2  8  2  0  0  0  0\\n  1  9  2  0  0  0  0\\n  1 10  1  0  0  0  0\\n  4 11  2  0  0  0  0\\n  4 12  1  0  0  0  0\\n 13 14  1  0  0  0  0\\n 14 15  1  0  0  0  0\\n 15 16  1  0  0  0  0\\n 10 13  1  0  0  0  0\\nM  END\",\n" +
+                "\t\t\"atropisomerism\": \"No\",\n" +
+                "\t\t\"mwt\": 0.0,\n" +
+                "\t\t\"properties\": [],\n" +
+                "\t\t\"links\": [],\n" +
+                "\t\t\"count\": 1,\n" +
+                "\t\t\"references\": [\n" +
+                "\t\t\t\"7207ef8e-e6b6-45af-8845-5a85ffabbc32\"\n" +
+                "\t\t],\n" +
+                "\t\t\"access\": []\n" +
+                "\t},\n" +
+                "\t\"moieties\": [],\n" +
+                "\t\"_name\": \"Monobutyl phthalate\",\n" +
+                "\t\"_approvalIDDisplay\": \"pending record\",\n" +
+                "\t\"access\": [],\n" +
+                "\t\"_metadata\": {\n" +
+                "\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\"version\": 1,\n" +
+                "\t\t\"sourceName\": \"nlm_small_1.sdf\",\n" +
+                "\t\t\"versionCreationDate\": 1662686949748,\n" +
+                "\t\t\"importStatus\": \"staged\",\n" +
+                "\t\t\"importType\": \"create\",\n" +
+                "\t\t\"versionStatus\": \"current\",\n" +
+                "\t\t\"validationStatus\": \"error\",\n" +
+                "\t\t\"processStatus\": \"loaded\",\n" +
+                "\t\t\"entityClassName\": \"ix.ginas.models.v1.Substance\",\n" +
+                "\t\t\"keyValueMappings\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"2cccb34e-e6ed-4776-a05d-d420b3c45040\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"CAS NUMBER\",\n" +
+                "\t\t\t\t\"value\": \"34-74-2\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"b17fdc94-5eab-4627-b13a-b4b1ac30c909\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Substance Name\",\n" +
+                "\t\t\t\t\"value\": \"34-74-2\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"349daeb4-a849-47c8-b6f5-21798e182e2e\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Substance Name\",\n" +
+                "\t\t\t\t\"value\": \"Mono-n-butyl-phthalate\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"643d8112-f407-4e72-bb21-e076041fc4c1\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Substance Name\",\n" +
+                "\t\t\t\t\"value\": \"Monobutyl phthalate\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"f6d0db70-a1df-4e82-bf8a-6a67eebf2fa6\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Primary Name\",\n" +
+                "\t\t\t\t\"value\": \"34-74-2\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"29d1357f-1b54-4766-a8b6-03cc852af61c\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Definitional Hash - Layer 1\",\n" +
+                "\t\t\t\t\"value\": \"806d83c4b5da31e7aef450e58ee70c29d49a3869\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"279bca4f-f8ed-4cd0-b41e-076398d8fa75\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"Definitional Hash - Layer 2\",\n" +
+                "\t\t\t\t\"value\": \"c93e97c8e6c800a4513abd517fbd139faea219e8\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"9a2f0ab5-f53c-4d6d-a160-bb0470ca9905\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"CODE\",\n" +
+                "\t\t\t\t\"value\": \"34-74-2\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"mappingId\": \"1cc7ebfa-d5bb-4cf7-ac5c-ea794826e4a7\",\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"recordId\": \"453d8ba3-5d25-4f14-b8d5-bd94d25fcffe\",\n" +
+                "\t\t\t\t\"key\": \"UUID\",\n" +
+                "\t\t\t\t\"value\": \"dd0ef046-77fb-492b-9819-af0f9c81037f\",\n" +
+                "\t\t\t\t\"dataLocation\": \"Staging Area\",\n" +
+                "\t\t\t\t\"entityClass\": \"substances\"\n" +
+                "\t\t\t}\n" +
+                "\t\t],\n" +
+                "\t\t\"validations\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"error\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950240,\n" +
+                "\t\t\t\t\"validationMessage\": \"Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"6f08543c-0f07-4a42-acf4-2f0f6d3e82bc\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"error\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950227,\n" +
+                "\t\t\t\t\"validationMessage\": \"The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public.\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"1c5c4578-1dae-4eed-8956-503876dd497c\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"error\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950234,\n" +
+                "\t\t\t\t\"validationMessage\": \"The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public.\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"38903496-ea8a-4de9-b2b9-31e9a8c2b375\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"error\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950237,\n" +
+                "\t\t\t\t\"validationMessage\": \"The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public.\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"5a447953-3ac4-4dc5-8a3c-d9943156f0c9\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"error\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950242,\n" +
+                "\t\t\t\t\"validationMessage\": \"Public substance definitions require a public definitional reference.  Please add one.\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"5e3650e4-c974-4a2f-b6f9-291d509a176e\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"info\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950244,\n" +
+                "\t\t\t\t\"validationMessage\": \"Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\"\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"2254ae83-2d23-4d4c-aee1-3c04a790a039\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"info\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950246,\n" +
+                "\t\t\t\t\"validationMessage\": \"Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"d63ef5e1-c63d-447b-97cf-4a40e8881bcd\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"instanceId\": \"dcdeb92e-f1b1-451f-a780-a76c8a50b0b8\",\n" +
+                "\t\t\t\t\"version\": 1,\n" +
+                "\t\t\t\t\"validationType\": \"info\",\n" +
+                "\t\t\t\t\"validationDate\": 1662686950249,\n" +
+                "\t\t\t\t\"validationMessage\": \"No moieties found in submission. They will be generated automatically.\",\n" +
+                "\t\t\t\t\"validationJson\": \"ValidationResponse{validationMessages=[INFO: Substance has no UUID, will generated uuid:\\\"980402e4-4a0d-4cd6-ac1d-4692af12019d\\\", ERROR: The name :\\\"34-74-2\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Monobutyl phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., ERROR: The name :\\\"Mono-n-butyl-phthalate\\\" needs an unprotected reference marked \\\"Public Domain\\\" in order to be made public., INFO: Substances should have exactly one (1) display name, Default to using:Monobutyl phthalate, INFO: No moieties found in submission. They will be generated automatically., ERROR: Public records must have a PUBLIC DOMAIN reference with a 'PUBLIC_DOMAIN_RELEASE' tag, ERROR: Public substance definitions require a public definitional reference.  Please add one.], valid=false, newObject=Substance{uuid=dd0ef046-77fb-492b-9819-af0f9c81037f, substanceClass=chemical, version='1'}}\",\n" +
+                "\t\t\t\t\"validationId\": \"bca76401-563d-4c25-b3cb-41611ced7de6\"\n" +
+                "\t\t\t}\n" +
+                "\t\t],\n" +
+                "\t\t\"dataFormat\": \"application/octet-stream\",\n" +
+                "\t\t\"importAdapter\": \"SDF Adapter\",\n" +
+                "\t\t\"access\": []\n" +
+                "\t}\n" +
+                "}";
+
+        String cleanJson = AbstractImportSupportingGsrsEntityController.removeMetadataFromDomainObjectJson(jsonBefore);
+        Assertions.assertFalse(cleanJson.contains("_metadata"));
+        Assertions.assertTrue(cleanJson.length()<jsonBefore.length());
+    }
+    @Test
     void updateImport() {
     }
 

@@ -7,6 +7,8 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -57,4 +59,6 @@ public interface HoldingAreaService {
     void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status);
 
     void fillCollectionsForMetadata(ImportMetadata metadata);
+
+    public Page page(Pageable pageable);
 }

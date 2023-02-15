@@ -30,16 +30,20 @@ import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.el.MethodNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
@@ -578,7 +582,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (requestedDataItem!=null) {
             log.trace(" found data ");
             log.trace(requestedDataItem.getData());
-            matchingMetadata= service.getImportMetaData(requestedDataItem.getInstanceId().toString());
+            matchingMetadata= service.getImportMetaData(requestedDataItem.getRecordId().toString(),0);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode realData = mapper.readTree(requestedDataItem.getData());
             log.trace("converted to JsonNode");
@@ -881,14 +885,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in updateImportData");
-        String adapterName = queryParameters.get("adapter");
-        log.trace("adapterName: " + adapterName);
-        if (adapterName == null || adapterName.length() == 0) {
-            return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
-        }
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        HoldingAreaService service = getDefaultHoldingAreaService();
         log.trace("retrieved service");
-        String result = service.updateRecord(recordId, updatedJson);
+        String cleanUpdatedJson =removeMetadataFromDomainObjectJson(updatedJson);
+        String result = service.updateRecord(recordId, cleanUpdatedJson);
+
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
         resultNode.put("Results", result);
 
@@ -973,10 +974,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                              @RequestBody String processingJson,
                                              @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting executeAct");
-        String adapterName = queryParameters.get("adapter");
         String matchedEntityId = queryParameters.get("matchedEntityId");
         String persist = queryParameters.get("persistChangedObject");
-        HoldingAreaService holdingAreaService = getHoldingAreaService(adapterName);
+        HoldingAreaService holdingAreaService = getDefaultHoldingAreaService();
         String objectJson="";
         String objectClass="";
         ImportData importData = holdingAreaService.getImportDataByInstanceIdOrRecordId( holdingRecordId, version);
@@ -1021,15 +1021,22 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         whatHappened.append("Processing record: ");
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
-        ImportMetadata.RecordImportStatus recordImportStatus;
+        ImportMetadata.RecordImportStatus recordImportStatus = ImportMetadata.RecordImportStatus.staged;
         for (ProcessingActionConfig configItem : configSet.getProcessingActions()) {
             ProcessingAction action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
             log.trace("going to call action {}", action.getClass().getName());
             currentObject = (T) action.process(currentObject, baseObject, configItem.getParameters(), whatHappened::append);
-            if(action.getClass().getName().toUpperCase().contains("MERGE")) {
+            //todo: check this logic
+            if(action.getClass().getName().toUpperCase().contains("MERGE") ||
+                    action.getClass().getName().toUpperCase().contains("CREATEBATCH")) {
                 recordImportStatus = ImportMetadata.RecordImportStatus.merged;
+            } else if(action.getClass().getName().toUpperCase().contains("REPLACE"))  {
+                recordImportStatus = ImportMetadata.RecordImportStatus.imported;
+            } else if(action.getClass().getName().toUpperCase().contains("IGNORE")){
+                recordImportStatus = ImportMetadata.RecordImportStatus.rejected;
             }
         }
+
         log.trace(whatHappened.toString());
         if(persist!=null && persist.equalsIgnoreCase("TRUE")){
             GsrsEntityService.ProcessResult<T>result =holdingAreaService.persistPermanentEntity(objectClass, currentObject);
@@ -1040,7 +1047,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             currentObject =result.getEntity();
-            recordImportStatus = ImportMetadata.RecordImportStatus.imported;
             holdingAreaService.updateRecordImportStatus(UUID.fromString(holdingRecordId), recordImportStatus);
             log.trace("saved updated entity");
         }else {
@@ -1112,6 +1118,25 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return ret;
     }
 
+    @GetGsrsRestApiMapping("/import/data")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Object> pageImportData(@RequestParam(value = "top", defaultValue = "10") long top,
+                                       @RequestParam(value = "skip", defaultValue = "0") long skip,
+                                       @RequestParam(value = "order", required = false) String order,
+                                       @RequestParam Map<String, String> queryParameters) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+
+        log.trace("starting page");
+        HoldingAreaService service = getDefaultHoldingAreaService();
+        Page<T> page = service.page(new OffsetBasedPageRequest(skip, top,parseSortFromOrderParam(order)));
+
+        String view=queryParameters.get("view");
+        if("key".equals(view)){
+            return new ResponseEntity<>( PagedResult.ofKeys(page), HttpStatus.OK);
+        }
+        
+        return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
+    }
+
     private void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, HoldingAreaService service){
         ObjectMapper mapper = new ObjectMapper();
         if(metadata !=null){
@@ -1130,4 +1155,33 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             dataNode.put("_metadata", "[not found]");
         }
     }
+
+    public static String removeMetadataFromDomainObjectJson(String domainObjectJson) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode objectAsNode= mapper.readTree(domainObjectJson);
+            if(objectAsNode.hasNonNull("_metadata") && objectAsNode.isObject()){
+                ((ObjectNode)  objectAsNode).remove("_metadata");
+            }
+            return objectAsNode.toString();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Sort parseSortFromOrderParam(String order){
+        //match Gsrs Play API
+        if(order ==null || order.trim().isEmpty()){
+            return Sort.sort(ImportMetadata.class);
+        }
+        char firstChar = order.charAt(0);
+        if('$'==firstChar){
+            return Sort.by(Sort.Direction.DESC, order.substring(1));
+        }
+        if('^'==firstChar){
+            return Sort.by(Sort.Direction.ASC, order.substring(1));
+        }
+        return Sort.by(Sort.Direction.ASC, order);
+    }
+
 }
