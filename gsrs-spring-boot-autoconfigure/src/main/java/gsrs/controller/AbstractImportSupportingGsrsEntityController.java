@@ -893,7 +893,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
         resultNode.put("Results", result);
 
-        //TODO: validation ?????
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
 
@@ -1133,7 +1132,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if("key".equals(view)){
             return new ResponseEntity<>( PagedResult.ofKeys(page), HttpStatus.OK);
         }
-        
+
         return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
     }
 
