@@ -30,6 +30,7 @@ import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
 import ix.ginas.exporters.SpecificExporterSettings;
@@ -58,6 +59,11 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 return null;
             }
 
+            @Override
+            public ResultListRecordGenerator getResultListRecordGenerator() {
+            	return null;
+            }
+            
             @SneakyThrows
             @Override
             protected GsrsEntityService getEntityService() {

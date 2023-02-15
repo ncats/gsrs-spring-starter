@@ -3,6 +3,8 @@ package gsrs.config;
 import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.service.GsrsEntityService;
+import ix.core.search.bulk.ResultListRecordGenerator;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +34,11 @@ public class EtagLegacySearchEntityControllerTest {
             @Override
             protected GsrsEntityService getEntityService() {
                 return null;
+            }
+            
+            @Override
+            public  ResultListRecordGenerator getResultListRecordGenerator() {
+            	return null;
             }
         };
         Method[] listOfMethods = controller.getClass().getDeclaredMethods();

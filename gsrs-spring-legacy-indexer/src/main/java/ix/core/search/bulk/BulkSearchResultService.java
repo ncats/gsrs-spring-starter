@@ -39,7 +39,7 @@ public class BulkSearchResultService {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null)
 			return new ArrayList<String>();
-		return 	userBulkSearchResultRepository.getUserSearchResultListsByUserId(user.id);
+		return 	getUserSearchResultLists(user.id);
 	} 
 	
 	public List<String> getUserSearchResultLists(Long userId){
@@ -59,14 +59,13 @@ public class BulkSearchResultService {
 		bulkSearchResultKeyRepository.removeList(userId, listName);
 	}
 	
-	//todo: add name in the return result
+	
 	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, int top, int skip){
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null)
 			return new ArrayList<String>();
 		
-		return getUserSavedBulkSearchResultListContent(user.id, listName, top, skip);
-		
+		return getUserSavedBulkSearchResultListContent(user.id, listName, top, skip);		
 	}
 	
 	
@@ -88,8 +87,16 @@ public class BulkSearchResultService {
 		
 		return keyList.subList(skip, endIndex);
 	}
+	
+	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName){
+		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
+		List<String> keyList = new ArrayList<String>();
+		if(user != null)
+			keyList = getUserSavedBulkSearchResultListContent(user.id, listName);
+		return keyList;		
+	}
 		
-	public List<String> getUserSavedBulkSearchResultLists(Long userId, String listName){
+	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName){
 		List<String> keyList = new ArrayList<String>();
 		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
 		if(listString == null || listString.trim().isEmpty())
@@ -118,8 +125,7 @@ public class BulkSearchResultService {
 		//todo: use batch insert here
 		for(String key: processedList)	{		
 			bulkSearchResultKeyRepository.saveAndFlush(new BulkSearchResultKey(key, user, listName));
-		}
-		
+		}		
 	}	
 	
 	public void deleteBulkSearchResultList(String userName, String listName) {
@@ -192,16 +198,21 @@ public class BulkSearchResultService {
 		
 	}
 	
-	public void updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation) {
+	public boolean updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null)
-			return; 
+			return false; 
 		List<String> changeSet = updateBulkSearchResultList(user.id, listName, keyList, operation);	
-		updateBulkSearchResultKey(user, listName, operation, changeSet);
+		if(changeSet.size()>0) {
+			updateBulkSearchResultKey(user, listName, operation, changeSet);
+			return true;
+		}else {
+			return false;
+		}
 	}	
 	
-	public static String getIndexedValue(String listName, String userName) {
-		return listName+":"+userName;		
+	public static String getIndexedValue(String userName, String listName) {
+		return userName+":"+listName;	
 	}
 	
 	

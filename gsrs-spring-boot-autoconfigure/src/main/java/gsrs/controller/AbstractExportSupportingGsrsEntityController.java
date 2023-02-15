@@ -49,7 +49,9 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     private GsrsExportConfiguration gsrsExportConfiguration;
 
     @Autowired
-    protected PlatformTransactionManager transactionManager;
+    protected PlatformTransactionManager transactionManager; 
+    
+    
     
     CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
 
