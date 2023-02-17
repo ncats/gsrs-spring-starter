@@ -1,6 +1,7 @@
 package gsrs;
 
 
+import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.repository.UserProfileRepository;
 import gsrs.security.AdminService;
 import gsrs.services.*;
@@ -113,4 +114,9 @@ public class GsrsEntitiesConfiguration {
         return new Jackson2JsonMessageConverter();
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public ImportMetadataReindexer importMetadataReindexer() {
+        return new ImportMetadataReindexer();
+    }
 }

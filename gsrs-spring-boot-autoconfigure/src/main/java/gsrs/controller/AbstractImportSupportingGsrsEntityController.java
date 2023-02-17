@@ -328,6 +328,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     static protected HoldingAreaService _holdingAreaService = null;
 
     static public HoldingAreaService getHoldingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("in getHoldingAreaServiceForExternal");
         if( _holdingAreaService== null) {
             GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory1 = new ConfigBasedGsrsImportAdapterFactoryFactory();
             Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultHoldingAreaService(contextName);
@@ -703,6 +704,29 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     JsonNode dataAsNode= mapper.readTree(mapper.writeValueAsString(object));
                     singleRecord.set("data", dataAsNode);
                     MatchedRecordSummary matchSummary=service.findMatchesForJson(usableTask.entityType, mapper.writeValueAsString(object));
+                    /*if( matchSummary.getMatches().size()>0) {
+                        log.trace("matchSummary:  1) matches ");
+
+                        matchSummary.getMatches().forEach(m->{
+                            log.trace("tuple  key: {} - {}",
+                            m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
+                            log.trace("# records matched: {}", m.getMatchingRecords().size());
+                            m.getMatchingRecords().forEach(r->{
+                               log.trace("key: {},",  r.getMatchedKey());
+                                log.trace("source: {}",r.getSourceName());
+                                if( r.getRecordId()!=null ) {
+                                    log.trace(" record id kind: {}", r.getRecordId().getKind());
+                                    log.trace(" record id id: {}", r.getRecordId().getEntityInfo());
+                                } else{
+                                    log.trace("recordID is null");
+                                }
+                            });
+
+                        });
+                        log.trace(mapper.writeValueAsString(matchSummary));
+                    } else {
+                        log.trace("no matches");
+                    }*/
                     JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
                     singleRecord.set("matches", matchesAsNode);
                     previewNode.add(singleRecord);
@@ -716,7 +740,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
             returnNode.put("complete success", objectProcessingOK.get());
-            returnNode.set(String.format("data preview (limit: %d", limit), previewNode);
+            ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
+            limitInfoNode.put("limit", limit);
+            previewNode.add(limitInfoNode);
+            returnNode.set("dataPreview", previewNode);
 
             /*log.trace("queryParameters:");
             queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));*/
@@ -957,7 +984,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
             errorRecords.forEach(problemRecords::add);
             returnNode.set("Records with processing errors", problemRecords);
-            returnNode.set(String.format("data preview (limit: %d", limit), previewNode);
+            ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
+            limitInfoNode.put("limit", limit);
+            previewNode.add(limitInfoNode);
+            returnNode.set("dataPreview", previewNode);
 
             /*log.trace("queryParameters:");
             queryParameters.keySet().forEach(k->log.trace("key: {}; value: {}", k, queryParameters.get(k)));*/
@@ -1142,6 +1172,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             String metadataAsString = null;
             try {
                 if( metadata.validations== null || metadata.validations.isEmpty()) {
+                    log.trace("going to fill in validations");
                     service.fillCollectionsForMetadata(metadata);
                 }
                 metadataAsString = mapper.writeValueAsString(metadata);

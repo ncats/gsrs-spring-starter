@@ -40,7 +40,14 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
         if( holdingAreaService == null) {
             try {
-                holdingAreaService=AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal(importMetadata.getEntityClassName());
+                String contextName = importMetadata.getEntityClassName();
+                //hack!
+                if(contextName.contains(".")) {
+                    String[] parts =contextName.split("\\.");
+                    contextName = parts[parts.length-1].toLowerCase() + "s";
+                }
+                log.trace("looking for a holding area service for context {}", contextName);
+                holdingAreaService=AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal(contextName);
             } catch (Exception e) {
                 log.error("Error obtaining holding area service", e);
                 throw new RuntimeException(e);

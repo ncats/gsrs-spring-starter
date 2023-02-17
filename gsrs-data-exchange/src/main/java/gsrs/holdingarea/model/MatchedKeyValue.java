@@ -1,5 +1,6 @@
 package gsrs.holdingarea.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.util.EntityUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class MatchedKeyValue {
     @NoArgsConstructor
     @Builder
     public static class MatchingRecordReference{
+
         private EntityUtils.Key recordId;
         private String sourceName;
         private String matchedKey;

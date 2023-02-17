@@ -20,7 +20,6 @@ import ix.core.validator.ValidationResponse;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
-import org.checkerframework.common.reflection.qual.NewInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -94,13 +93,6 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     public DefaultHoldingAreaService(String context) {
         this.context = Objects.requireNonNull(context, "context can not be null");
-    }
-
-    /*
-    For a unit test... temporarily
-     */
-    public DefaultHoldingAreaService() {
-        this.context = "substances";
     }
 
     @PostConstruct
@@ -217,7 +209,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-        persistDefinitionalValues(definitionalValueTuples, instanceId, recordId);
+        persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
         updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
 
         handleIndexing(metadata);
@@ -256,13 +248,6 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), true);
         applicationEventPublisher.publishEvent(event);
         log.trace("published event for metadata");
-        /*if( importData!=null) {
-            EntityUtils.EntityWrapper entityWrapperData = EntityUtils.EntityWrapper.of(importData);
-            UUID reindexUuidData = UUID.randomUUID();
-            ReindexEntityEvent eventData = new ReindexEntityEvent(reindexUuidData, entityWrapperData.getKey(), Optional.of(entityWrapperData), true);
-            applicationEventPublisher.publishEvent(eventData);
-            log.trace("published event for data");
-        }*/
     }
 
     @Override
@@ -287,12 +272,13 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         transactionDelete.executeWithoutResult(r -> {
             importDataRepository.save(newVersion);
             try {
-                handleUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
+                propagateUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
                 //retrieve importMetadata again because it has changed
                 ImportMetadata updatedImportMetadata= metadataRepository.retrieveByID(UUID.fromString(recordId));
-                //change the instanceID _after_ handleUpdate that uses the old value to clearn out related  data
+                //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
                 updatedImportMetadata.setInstanceId(latestInstanceId);
-                metadataRepository.saveAndFlush(updatedImportMetadata);
+                metadataRepository.save(updatedImportMetadata);
+                //metadataRepository.saveAndFlush(updatedImportMetadata);
                 handleIndexing(updatedImportMetadata);
                 log.trace("saved ImportMetadata with recordID {} and instanceId {}; latestInstanceId: {}", updatedImportMetadata.getRecordId(),
                         updatedImportMetadata.getInstanceId(), latestInstanceId);
@@ -440,6 +426,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     @Override
     public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException {
+        log.trace("in findMatches, entityClass: {}", entityClass);
         Class objectClass = Class.forName(entityClass);
         MatchedRecordSummary summary = new MatchedRecordSummary();
         summary.setQuery(recordMatchables);
@@ -452,12 +439,20 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
                 return;
             }
             List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
-                    .map(ma -> MatchedKeyValue.MatchingRecordReference.builder()
-                            .recordId(EntityUtils.Key.of(objectClass, ma.getInstanceId()))
-                            .sourceName(ma.getDataLocation())
-                            .matchedKey(m.getKey())
-                            .build())
+                    .map(ma ->{
+                        MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder= MatchedKeyValue.MatchingRecordReference.builder();
+                        builder
+                                .sourceName(ma.getDataLocation())
+                                .matchedKey(m.getKey());
+                        if(ma.getRecordId()!=null ) {
+                            builder.recordId(EntityUtils.Key.of(objectClass, ma.getRecordId()));
+                        } else {
+                            log.trace("skipping item without an recordID");
+                        }
+                        return builder.build();
+                    } )
                     .collect(Collectors.toList());
+
             MatchedKeyValue match = MatchedKeyValue.builder()
                     .tupleUsedInMatching(m)
                     .matchingRecords(matches)
@@ -593,15 +588,17 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     /*
     question: does this method need to return something?
      */
-    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId) {
+    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId,
+                                           String matchedEntityClass) {
 
         definitionalValues.forEach(kv -> {
+
             KeyValueMapping mapping = new KeyValueMapping();
             mapping.setKey(kv.getKey());
             mapping.setValue(kv.getValue());
             mapping.setInstanceId(instanceId);
             mapping.setRecordId(recordId);
-            mapping.setEntityClass(context);
+            mapping.setEntityClass(matchedEntityClass);
             mapping.setDataLocation(HOLDING_AREA_LOCATION);
             keyValueMappingRepository.saveAndFlush(mapping);
             //index for searching
@@ -659,6 +656,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     @Override
     public void fillCollectionsForMetadata(ImportMetadata metadata) {
         List<ImportValidation> validations=importValidationRepository.retrieveValidationsByInstanceId(metadata.getInstanceId());
+        log.trace("fillCollectionsForMetadata found {} validations", validations.size());
         metadata.validations.clear();
         metadata.validations.addAll(validations);
 
@@ -711,8 +709,8 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     After a domain entity within the holding area is updated, we rerun validation and matching and store the results
     call this method inside a transaction
      */
-    public void handleUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
-        log.trace("starting in handleUpdate");
+    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
+        log.trace("starting in propagateUpdate");
         //step 1: deserialize domain object
         Object domainObject = deserializeObject(entityType, entityJson);
         //step 2: validate
@@ -733,7 +731,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         keyValueMappingRepository.deleteByRecordId(importMetadata.getRecordId());
         log.trace("deleted previous matchables");
         //step 5b: persist new matchables
-        persistDefinitionalValues(definitionalValueTuples, newInstanceId, importMetadata.getRecordId());
+        persistDefinitionalValues(definitionalValueTuples, newInstanceId, importMetadata.getRecordId(), importMetadata.getEntityClassName());
         log.trace("persisted new matchables");
         //step 6: increment version
         metadataRepository.incrementVersion(importMetadata.getRecordId());
