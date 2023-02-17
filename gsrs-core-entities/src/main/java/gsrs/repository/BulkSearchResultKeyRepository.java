@@ -10,7 +10,7 @@ import ix.core.models.BulkSearchResultKey;
 
 public interface BulkSearchResultKeyRepository extends GsrsRepository<BulkSearchResultKey, Long> {
 			
-	@Query("select list_name from BulkSearchResultKey where key = ?1 and user_id = ?2 order by list_name")	
+	@Query("select distinct list_name from BulkSearchResultKey where key = ?1 and user_id = ?2 order by list_name")	
 	public List<String> getAllListNamesFromKey(String key, Long userId);
 			
 	@Modifying

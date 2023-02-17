@@ -425,7 +425,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         public FacetMeta getFacet(int top, int skip, String filter, String uri) throws ParseException {
             FacetImpl fac = new FacetImpl(getField(), null);
-
+            
+            String field = getField(); //name
+            
             Predicate<Tuple<String,Integer>> filt=(t)->true;
 
             if(filter!=null && !filter.equals("")){
@@ -440,6 +442,14 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
                 .filter(filt)
                 .map(t->new FV(fac,t.k(),t.v()))
+//                .filter(fv->{
+//                	if(field.equalsIgnoreCase("User List")) {
+//                		// check the current user
+//                		fv.getLabel().startsWith(username)
+//                	}else {
+//                		return true;
+//                	}                		
+//                })
                 .collect(StreamUtil.maxElements(top+skip, FacetImpl.Comparators.COUNT_SORTER_DESC))
                 .skip(skip)
                 .limit(top)
@@ -1937,7 +1947,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 
 				for(LabelAndValue lv:result.labelValues){
-				    fac.add(lv.label, lv.value.intValue());
+//					if(result.dim.equalsIgnoreCase("User List")) {
+//						// get and check name						
+//					}else {
+//						fac.add(lv.label, lv.value.intValue());
+//					}
+					fac.add(lv.label, lv.value.intValue());					
 				}
 
 				fac.getMissingSelections().stream().forEach(l->{

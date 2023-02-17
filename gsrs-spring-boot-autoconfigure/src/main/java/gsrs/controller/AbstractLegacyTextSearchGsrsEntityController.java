@@ -280,7 +280,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .ffilter("")
                 .withParameters(request.getParameterMap())
                 .build();
-        so = this.instrumentSearchOptions(so);
+        so = this.instrumentSearchOptions(so); //add user
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
@@ -824,13 +824,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
-//    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-//    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
-//    	    	
-//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	
-    	String userName = "ADMIN";
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
     	    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	    	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> keys = bulkSearchResultService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
@@ -847,10 +845,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     										   @RequestParam("skip") Optional<Integer> skip){
     	
   	    	
-//    	String userName = name;
-    	
-    	String userName = "ADMIN";
-    	    	
+    	String userName = name;    	
+     	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> keys = bulkSearchResultService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
@@ -861,19 +857,17 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     
     // if the user list exists, it will fail
-    @PostGsrsRestApiMapping(value="/@bulkQueryResultList")
+    @PostGsrsRestApiMapping(value="/@bulkQueryResultList")  //change to user list
     public ResponseEntity<String> saveNewUserBulkSearchResultList(  											
     										   @RequestParam String listName,
-    										   @RequestBody String keys){
+    										   @RequestBody String keys){ //take an etag and get all the keys 
     	
     	
-//    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-//    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
-//    	
-//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
     	
-    	String userName = "ADMIN";
-    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	   	
     	if(!validStringParamater(listName) || !validStringParamater(keys)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
     	   	
@@ -889,6 +883,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		
     	bulkSearchResultService.saveBulkSearchResultList(userName, listName, list);    
     	reIndexWithKeys(list);
+    	log.warn("testing ");
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
@@ -903,8 +898,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
-//    	String userName = GsrsSecurityUtils.getCurrentUsername().get(); 			
-    	String userName = "Admin";
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
     	List<String> keys = bulkSearchResultService.getUserSavedBulkSearchResultListContent(userName, listName);
     	bulkSearchResultService.deleteBulkSearchResultList(userName, listName);    	
@@ -927,7 +921,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
-    @PutGsrsRestApiMapping(value="/@bulkQueryResultList")
+    @PutGsrsRestApiMapping(value="/@bulkQueryResultList/currentUser") // change to userlist
     public ResponseEntity<String> updateUserBulkSearchResultList(   											
     										   @RequestParam String listName,
     										   @RequestBody String keys,
@@ -946,9 +940,40 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
-//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	String userName = "ADMIN";
-
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	    	
+    	List<String> keyList = Arrays.asList(keys.split(","));
+    	
+    	List<String> list = keyList.stream().map(key->key.trim())
+    										.filter(key->!key.isEmpty())
+    										.collect(Collectors.toList());
+    	
+    	if(list.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	
+    	boolean updated = bulkSearchResultService.updateBulkSearchResultList(userName, listName, list, op);
+    	if(updated)
+    		reIndexWithKeys(list);
+    	    	
+    	return new ResponseEntity<>(HttpStatus.OK);	
+    }
+    
+    @PutGsrsRestApiMapping(value="/@bulkQueryResultList/otherUser")
+    public ResponseEntity<String> updateUserBulkSearchResultList(   		
+    										   @RequestParam String userName, 	
+    										   @RequestParam String listName,
+    										   @RequestBody String keys,
+    										   @RequestParam String operation,
+    										   HttpServletRequest request){
+    	
+    	if(!validStringParamater(listName) || !validStringParamater(userName)||	!validStringParamater(keys) ) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	}    	
+    	
+    	BulkSearchResultService.Operation op = BulkSearchResultService.Operation.valueOf(operation.trim().toUpperCase());
+    	if(op == null) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	}
     	
     	List<String> keyList = Arrays.asList(keys.split(","));
     	
@@ -974,17 +999,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return true;
     }
     
-    private void reIndexWithKeys(List<String> keys) {
-//    	for(String key: keys) {
-//    		try {
-//    			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key);
-//    			getlegacyGsrsSearchService().reindex(obj.get(), true);
-//			
-//    		}catch(Exception e) {
-//    			log.warn("trouble reindexing id: " + key, e);
-//			
-//    		}   
-//    	}
+    private void reIndexWithKeys(List<String> keys) { //change keys to keyIds
+    	for(String key: keys) {
+    		log.warn("reindex  " + key);
+    		try {
+    			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key);
+    			getlegacyGsrsSearchService().reindex(obj.get(), true);
+			
+    		}catch(Exception e) {
+    			log.warn("trouble reindexing id: " + key, e);
+			
+    		}   
+    	}
     	
     }
 }
