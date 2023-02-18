@@ -23,6 +23,7 @@ import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -33,6 +34,8 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -205,12 +208,12 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         }
 
         log.trace("overallStatus: " + overallStatus);
-        updateImportValidationStatus(instanceId, overallStatus);
+        updateImportValidationStatus(recordId, overallStatus);
 
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
         persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
-        updateRecordImportStatus(instanceId, ImportMetadata.RecordImportStatus.staged);
+        updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
 
         handleIndexing(metadata);
         //event driven: each step in process sends an event (pub/sub) look in ... indexing
@@ -264,9 +267,10 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
                 .instanceId(latestInstanceId)
                 .version(latestExisting.getVersion()+1)
                 .data(jsonData)
+                .saveDate( new Date())
                 .build();
         log.trace("cloned");
-        ImportMetadata importMetadata = metadataRepository.retrieveByID(UUID.fromString(recordId));
+        ImportMetadata importMetadata = metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
         log.trace("retrieved importMetadata with {} mappings and {} validations", importMetadata.keyValueMappings.size(), importMetadata.validations.size());
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
         transactionDelete.executeWithoutResult(r -> {
@@ -274,14 +278,17 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             try {
                 propagateUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
                 //retrieve importMetadata again because it has changed
-                ImportMetadata updatedImportMetadata= metadataRepository.retrieveByID(UUID.fromString(recordId));
+                ImportMetadata updatedImportMetadata= metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
                 //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
                 updatedImportMetadata.setInstanceId(latestInstanceId);
-                metadataRepository.save(updatedImportMetadata);
+                metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));;
+                //ImportMetadata saved=metadataRepository.save(updatedImportMetadata);
                 //metadataRepository.saveAndFlush(updatedImportMetadata);
-                handleIndexing(updatedImportMetadata);
-                log.trace("saved ImportMetadata with recordID {} and instanceId {}; latestInstanceId: {}", updatedImportMetadata.getRecordId(),
-                        updatedImportMetadata.getInstanceId(), latestInstanceId);
+                //handleIndexing(updatedImportMetadata);
+                //log.trace("saved ImportMetadata with recordID {} and instanceId {}; latestInstanceId: {}; saved: {}", updatedImportMetadata.getRecordId(),
+                 //       updatedImportMetadata.getInstanceId(), latestInstanceId, saved.getInstanceId());
+                ImportMetadata reretrievedIM = metadataRepository.retrieveByRecordID(updatedImportMetadata.getRecordId());
+                log.trace("from reretrievedIM: {}", reretrievedIM.getInstanceId());
             } catch (JsonProcessingException e) {
                 log.error("Error updating import metadata!", e);
                 throw new RuntimeException(e);
@@ -293,28 +300,32 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     @Override
     public ImportMetadata getImportMetaData(String recordId, int version) {
         if(version==0) {
-            return metadataRepository.retrieveByID(UUID.fromString(recordId));
+            return metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
         }
         return metadataRepository.retrieveByIDAndVersion(UUID.fromString(recordId), version);
     }
 
     @Override
     public ImportMetadata getImportMetaData(String instanceId) {
-        return metadataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
+        return metadataRepository.retrieveByRecordID(UUID.fromString(instanceId));
     }
 
     @Override
     public ImportData getImportDataByInstanceIdOrRecordId(String id, int version) {
         log.trace("getImportDataByInstanceIdOrRecordId starting. ID: {}", id);
-        //first, look for ImportData directly
+        //first, look for ImportData directly -- assuming recordID
         List<ImportData> importDataList = getImportData(id);
+
         if( importDataList==null || importDataList.isEmpty()){
-            log.trace("no ImportData found; looking for ImportMetaData");
-            ImportMetadata metadata= getImportMetaData(id);
-            if( metadata!=null && metadata.getRecordId()!=null){
-                importDataList= getImportData(metadata.getRecordId().toString());
+
+            log.trace("no ImportData found by recordId; looking by instanceId");
+            ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
+            if( dataItem!=null) {
+                importDataList = new ArrayList<>();
+                importDataList.add(dataItem);
             }
         }
+
         if( importDataList!=null && !importDataList.isEmpty()){
             Optional<ImportData> data;
             if( version<=0) {
@@ -324,7 +335,6 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
                 log.trace("looking for specific version {}",  version);
                 data = importDataList.stream().filter(d->d.getVersion()==version).findFirst();
             }
-
             if(data.isPresent()) {
                 return data.get();
             }
@@ -400,10 +410,17 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     public <T> ValidationResponse<T> validateRecord(String entityClass, String json) {
 
         try {
+            Class requiredClass =Class.forName(entityClass);
             Object object = deserializeObject(entityClass, json);
+            if( !requiredClass.isAssignableFrom(object.getClass())) {
+                log.error("Validating object of type {} is not supported", object.getClass().getName());
+                return new ValidationResponse<T>();
+            }
+            log.trace("Going to validate object of type {} because it belongs to {}", object.getClass().getName(),
+                    entityClass);
             return _entityServiceRegistry.get(entityClass).validate(object);
 
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -477,7 +494,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
     }
 
-    @Override
+    /*@Override
     public <T> String persistEntity(String instanceId){
         log.trace("in persistEntity, instanceId: {}", instanceId);
         Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
@@ -507,7 +524,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             }
         }
         return "";
-    }
+    }*/
 
     @Override
     public <T> T retrieveEntity(String entityType, String entityId) {
@@ -639,18 +656,18 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
 
-    private void updateImportValidationStatus(UUID instanceId, ImportMetadata.RecordValidationStatus status) {
+    private void updateImportValidationStatus(UUID recordID, ImportMetadata.RecordValidationStatus status) {
         TransactionTemplate transactionUpdate = new TransactionTemplate(transactionManager);
         transactionUpdate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        transactionUpdate.executeWithoutResult(c -> metadataRepository.updateRecordValidationStatus(instanceId, status));
+        transactionUpdate.executeWithoutResult(c -> metadataRepository.updateRecordValidationStatus(recordID, status));
     }
 
     @Override
-    public void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status) {
+    public void updateRecordImportStatus(UUID recordId, ImportMetadata.RecordImportStatus status) {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         //todo: should this be version-specific?
-        transactionTemplate.executeWithoutResult(c -> metadataRepository.updateRecordImportStatus(instanceId, status));
+        transactionTemplate.executeWithoutResult(c -> metadataRepository.updateRecordImportStatus(recordId, status));
     }
 
     @Override

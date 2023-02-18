@@ -739,7 +739,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
 
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
-            returnNode.put("complete success", objectProcessingOK.get());
+            returnNode.put("completeSuccess", objectProcessingOK.get());
             ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
             limitInfoNode.put("limit", limit);
             previewNode.add(limitInfoNode);
@@ -911,10 +911,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> updateImportData(@PathVariable("id") String recordId,
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("in updateImportData");
+        log.trace("in updateImportData. json:");
         HoldingAreaService service = getDefaultHoldingAreaService();
-        log.trace("retrieved service");
         String cleanUpdatedJson =removeMetadataFromDomainObjectJson(updatedJson);
+        log.trace(cleanUpdatedJson);
         String result = service.updateRecord(recordId, cleanUpdatedJson);
 
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
@@ -977,13 +977,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             });
 
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
-            returnNode.put("complete success", objectProcessingOK.get());
+            returnNode.put("completeSuccess", objectProcessingOK.get());
             ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
             importDataRecordIds.forEach(recordIdListNode::add);
-            returnNode.set("staging area record IDs", recordIdListNode);
+            returnNode.set("stagingAreaRecordIds", recordIdListNode);
             ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
             errorRecords.forEach(problemRecords::add);
-            returnNode.set("Records with processing errors", problemRecords);
+            returnNode.set("RecordsWithProcessingErrors", problemRecords);
             ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
             limitInfoNode.put("limit", limit);
             previewNode.add(limitInfoNode);
@@ -1009,14 +1009,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         String objectJson="";
         String objectClass="";
         ImportData importData = holdingAreaService.getImportDataByInstanceIdOrRecordId( holdingRecordId, version);
-        int realVersion = 0;
+        UUID recordId=null;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
 
         if( importData!= null) {
             log.trace("Data for id {} retrieved", holdingRecordId);
             objectJson = importData.getData();
             objectClass=importData.getEntityClassName();
-            ImportMetadata metadata = holdingAreaService.getImportMetaData(importData.getInstanceId().toString(), importData.getVersion());
+            recordId=importData.getRecordId();
+            ImportMetadata metadata = holdingAreaService.getImportMetaData(recordId.toString(), importData.getVersion());
             if(metadata.getImportStatus()== ImportMetadata.RecordImportStatus.imported){
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
                         holdingRecordId));
@@ -1076,7 +1077,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             currentObject =result.getEntity();
-            holdingAreaService.updateRecordImportStatus(UUID.fromString(holdingRecordId), recordImportStatus);
+            holdingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
             log.trace("saved updated entity");
         }else {
             log.trace("skipped saving");

@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -17,20 +16,20 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     'clearAutomatically' makes these methods work correctly -- without it, they fail silently
      */
     @Modifying(clearAutomatically = true)
-    @Query("update ImportMetadata i set validationStatus= ?2 where i.instanceId = ?1")
-    public void updateRecordValidationStatus(UUID instanceId, ImportMetadata.RecordValidationStatus status);
+    @Query("update ImportMetadata i set validationStatus= ?2 where i.recordId = ?1")
+    public void updateRecordValidationStatus(UUID recordId, ImportMetadata.RecordValidationStatus status);
 
     @Modifying(clearAutomatically = true)
-    @Query("update ImportMetadata i set versionStatus= ?2 where i.instanceId = ?1")
-    public void updateRecordVersionStatus(UUID instanceId, ImportMetadata.RecordVersionStatus status);
+    @Query("update ImportMetadata i set versionStatus= ?2 where i.recordId = ?1")
+    public void updateRecordVersionStatus(UUID recordId, ImportMetadata.RecordVersionStatus status);
 
     @Modifying(clearAutomatically = true)
-    @Query("update ImportMetadata i set processStatus= ?2 where i.instanceId = ?1")
-    public void updateRecordProcessStatus(UUID instanceId, ImportMetadata.RecordProcessStatus status);
+    @Query("update ImportMetadata i set processStatus= ?2 where i.recordId = ?1")
+    public void updateRecordProcessStatus(UUID recordId, ImportMetadata.RecordProcessStatus status);
 
     @Modifying(clearAutomatically = true)
-    @Query("update ImportMetadata i set importStatus= ?2 where i.instanceId = ?1")
-    public void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status);
+    @Query("update ImportMetadata i set importStatus= ?2 where i.recordId = ?1")
+    public void updateRecordImportStatus(UUID recordId, ImportMetadata.RecordImportStatus status);
 
     @Query("select d from ImportMetadata d where d.recordId = ?1 and d.version = ?2")
     public ImportMetadata retrieveByIDAndVersion(UUID id, int version);
@@ -39,7 +38,7 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     public ImportMetadata retrieveByInstanceID(UUID id);
 
     @Query("select d from ImportMetadata d where d.recordId = ?1")
-    public ImportMetadata retrieveByID(UUID id);
+    public ImportMetadata retrieveByRecordID(UUID id);
 
     @Modifying
     @Transactional
@@ -54,4 +53,9 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     @Modifying(clearAutomatically = true)
     @Query("update ImportMetadata i set version = version +1 where i.recordId = ?1")
     public void incrementVersion(UUID recordId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("update ImportMetadata i set instanceId= ?1 where i.recordId = ?2")
+    public void setInstanceIdForRecord(UUID newInstanceId, UUID recordId);
+
 }

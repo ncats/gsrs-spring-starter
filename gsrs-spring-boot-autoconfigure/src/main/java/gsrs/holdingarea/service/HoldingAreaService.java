@@ -48,7 +48,7 @@ public interface HoldingAreaService {
 
     MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
 
-    <T> String persistEntity(String instanceId);
+    //<T> String persistEntity(String instanceId);
 
     <T> T retrieveEntity(String entityType, String entityId);
 
@@ -56,7 +56,7 @@ public interface HoldingAreaService {
 
     <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity);
 
-    void updateRecordImportStatus(UUID instanceId, ImportMetadata.RecordImportStatus status);
+    void updateRecordImportStatus(UUID recordId, ImportMetadata.RecordImportStatus status);
 
     void fillCollectionsForMetadata(ImportMetadata metadata);
 

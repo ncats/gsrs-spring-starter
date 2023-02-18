@@ -561,6 +561,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         String cleanJson = AbstractImportSupportingGsrsEntityController.removeMetadataFromDomainObjectJson(jsonBefore);
         Assertions.assertFalse(cleanJson.contains("_metadata"));
         Assertions.assertTrue(cleanJson.length()<jsonBefore.length());
+        Assertions.assertFalse(cleanJson.contains("_metadata"));
     }
     @Test
     void updateImport() {
