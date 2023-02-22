@@ -153,10 +153,7 @@ public class ImportMetadataReindexer {
                                                             // TP: actually, for subunits you need to index them even though there is no controller
                                                             // however, you could argue there SHOULD be a controller for them
                                                             if (seen.add(keyString)) {
-                                                                //is this a good idea ?
-                                                                ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
-                                                                eventConsumer.accept(event);
-                                                                log.trace("submitted index event");
+                                                                indexOneItem(reindexId, eventConsumer, key, wrapped);
                                                             }
                                                         } catch (Throwable t) {
                                                             log.warn("indexing error handling:" + wrapped, t);
@@ -216,4 +213,11 @@ public class ImportMetadataReindexer {
         }
     }
 
+    public static void indexOneItem(UUID reindexId, Consumer<Object> eventConsumer, EntityUtils.Key key,
+                                    EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrappedEntity) {
+        log.trace("indexOneItem will process reindex of key {}",  key);
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrappedEntity));
+        eventConsumer.accept(event);
+        log.trace("submitted index event");
+    }
 }

@@ -50,7 +50,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
 
     private String oneTaskId;
 
-    private String originalFileName= "basicvalues.txt";
+    private final String originalFileName= "basicvalues.txt";
     @InjectMocks
     AbstractImportSupportingGsrsEntityController controller = new AbstractImportSupportingGsrsEntityController() {
         @Mock(name = "payloadService")

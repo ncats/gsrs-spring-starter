@@ -19,7 +19,7 @@ public interface HoldingAreaEntityService<T> {
 
     IndexValueMaker<T> createIVM(T t);
 
-    GsrsEntityService.ProcessResult<T> persistEntity(T t);
+    GsrsEntityService.ProcessResult<T> persistEntity(T t, boolean isNew);
 
     T retrieveEntity(String entityId);
 

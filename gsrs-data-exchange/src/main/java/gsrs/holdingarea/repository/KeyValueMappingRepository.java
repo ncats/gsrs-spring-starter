@@ -19,6 +19,9 @@ public interface KeyValueMappingRepository extends GsrsVersionedRepository<KeyVa
     @Query("select i from KeyValueMapping i where i.key = ?1 and i.value = ?2")
     List<KeyValueMapping> findMappingsByKeyAndValue(String key, String value);
 
+    @Query("select i from KeyValueMapping i where i.key = ?1 and i.value = ?2 and i.recordId != ?3")
+    List<KeyValueMapping> findMappingsByKeyAndValueExcludingRecord(String key, String value, UUID excludedRecordId);
+
     @Query("select k from KeyValueMapping k where k.recordId = ?1")
     List<KeyValueMapping> findRecordsByRecordId(UUID recordId);
 

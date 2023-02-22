@@ -42,6 +42,8 @@ public interface HoldingAreaService {
 
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
 
+    MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException;
+
     void setIndexer(TextIndexer indexer);
 
     <T> void registerEntityService(HoldingAreaEntityService<T> service);
@@ -54,7 +56,7 @@ public interface HoldingAreaService {
 
     <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException;
 
-    <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity);
+    <T> GsrsEntityService.ProcessResult<T> saveEntity(String entityType, T entity, boolean brandNew);
 
     void updateRecordImportStatus(UUID recordId, ImportMetadata.RecordImportStatus status);
 

@@ -23,7 +23,6 @@ import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,8 +33,6 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -402,8 +399,13 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
-        log.trace("in calculateMatchables");
-        return _entityServiceRegistry.get(object.getClass().getName()).extractKVM(object);
+        log.trace("in calculateMatchables of class {}", object.getClass().getName());
+        HoldingAreaEntityService entityService = getHoldingAreaEntityService(object.getClass());
+        if( entityService!=null) {
+            log.trace("found entity service");
+            return entityService.extractKVM(object);
+        }
+        return Collections.EMPTY_LIST;
     }
 
     @Override
@@ -480,6 +482,20 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
     @Override
+    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException {
+        log.trace("starting findMatches of ImportMetadata. Instance ID: {}", importMetadata.getInstanceId());
+        //first, retrieve the latest Object JSON
+        String jsonData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
+        log.trace("Got JSON {}", jsonData);
+        //deserialize
+        T domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
+        log.trace("deserialized");
+        List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
+        log.trace("got matchables");
+        return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples);
+    }
+
+    @Override
     public List<UUID> getInstancesForRecord(String recordId) {
         return importDataRepository.findInstancesForRecord(UUID.fromString(recordId));
     }
@@ -533,8 +549,8 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
     @Override
-    public <T> GsrsEntityService.ProcessResult<T> persistPermanentEntity(String entityType, T entity) {
-        return _entityServiceRegistry.get(entityType).persistEntity(entity);
+    public <T> GsrsEntityService.ProcessResult<T> saveEntity(String entityType, T entity, boolean brandNew) {
+        return _entityServiceRegistry.get(entityType).persistEntity(entity, brandNew);
     }
 
     @Override
@@ -754,4 +770,16 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         metadataRepository.incrementVersion(importMetadata.getRecordId());
         log.trace("called incrementVersion");
     }
+
+
+    private HoldingAreaEntityService<T> getHoldingAreaEntityService(Class objectClass) {
+        if(_entityServiceRegistry.containsKey(objectClass.getName())) {
+            return _entityServiceRegistry.get(objectClass.getName());
+        }
+        if( objectClass.getSuperclass() !=null){
+            return getHoldingAreaEntityService(objectClass.getSuperclass());
+        }
+        return null;
+    }
+
 }
