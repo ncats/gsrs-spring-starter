@@ -123,7 +123,8 @@ public class ImportMetadataReindexer {
                         tx.setReadOnly(true);
                         tx.executeWithoutResult(stat->{
                             List<ImportMetadata> blist=importMetadataRepository.findAll();
-                            //eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size()));
+                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size(), BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX,
+                                    Collections.singletonList(ImportMetadata.class)));
                             try(Stream<ImportMetadata> stream = blist.stream()){
                                 l.message("Initializing reindexing: beginning process");
 

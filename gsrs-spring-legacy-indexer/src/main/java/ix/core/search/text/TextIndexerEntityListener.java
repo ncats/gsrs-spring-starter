@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 
+import gsrs.events.ClearIndexByTypeEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -106,7 +107,17 @@ public class TextIndexerEntityListener {
             textIndexerFactory.getDefaultInstance().doneProcess();
         }
     }
-    
+
+    @EventListener
+    public void clearIndexByType(ClearIndexByTypeEvent event) {
+        autowireIfNeeded();
+        try {
+            textIndexerFactory.getDefaultInstance().removeAllType(event.getTypeToClear());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Async
     @TransactionalEventListener
