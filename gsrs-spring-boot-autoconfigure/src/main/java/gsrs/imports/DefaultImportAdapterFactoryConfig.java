@@ -7,6 +7,8 @@ import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.models.GinasCommonData;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @InheritanceTypeIdResolver.DefaultInstance
 @AllArgsConstructor
 @NoArgsConstructor
+@Slf4j
 public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryConfig {
 
     private Class importAdapterFactoryClass;
@@ -24,9 +27,9 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private List<String> extensions;
     private String adapterName;
     private Map<String, Object> parameters;
-    private Class holdingAreaServiceClass;
+    private String holdingAreaServiceClass;
     private List<Class> entityServices;
-    private Class entityServiceClass;
+    private String entityServiceClass;
 
     private String description;
 
@@ -121,12 +124,17 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
 
     @Override
     public Class getHoldingAreaServiceClass() {
-        return this.holdingAreaServiceClass;
+        try {
+            return (Class<T>) Class.forName(this.holdingAreaServiceClass);
+        } catch (ClassNotFoundException e) {
+            log.error("Class {} not found", this.holdingAreaServiceClass);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void setHoldingAreaServiceClass(Class clazz) {
-        this.holdingAreaServiceClass = clazz;
+        this.holdingAreaServiceClass = clazz.getName();
     }
 
     @Override
@@ -141,12 +149,17 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
 
     @Override
     public Class getEntityServiceClass() {
-        return entityServiceClass;
+        try {
+            return (Class<T>) Class.forName(this.entityServiceClass);
+        } catch (ClassNotFoundException e) {
+            log.error("Class {} not found", this.entityServiceClass);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void setEntityServiceClass(Class newClass) {
-        entityServiceClass= newClass;
+        entityServiceClass= newClass.getName();
     }
 
     @Override
