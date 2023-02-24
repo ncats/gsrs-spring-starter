@@ -109,11 +109,23 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Override
     public Class<T> getDefaultHoldingAreaService(String context) {
-        return gsrsFactoryConfiguration.getDefaultHoldingAreaServiceClass().get(context);
+        String clsName= gsrsFactoryConfiguration.getDefaultHoldingAreaServiceClass().get(context);
+        try {
+            return (Class<T>) Class.forName(clsName);
+        } catch (ClassNotFoundException e) {
+            log.error("Class {} not found", clsName);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Class<T> getDefaultHoldingAreaEntityService(String context) {
-        return gsrsFactoryConfiguration.getDefaultHoldingAreaEntityService().get(context);
+        String clsName= gsrsFactoryConfiguration.getDefaultHoldingAreaEntityService().get(context);
+        try {
+            return (Class<T>) Class.forName(clsName);
+        } catch (ClassNotFoundException e) {
+            log.error("Class {} not found", clsName);
+            throw new RuntimeException(e);
+        }
     }
 }

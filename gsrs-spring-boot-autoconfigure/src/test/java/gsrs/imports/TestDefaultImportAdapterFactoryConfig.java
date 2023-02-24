@@ -19,12 +19,12 @@ public class TestDefaultImportAdapterFactoryConfig {
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         String substanceContext="substances";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
-        Map<String, Class> holdingAreaService = new HashMap<>();
-        holdingAreaService.put("substances", DefaultHoldingAreaService.class);
+        Map<String, String> holdingAreaService = new HashMap<>();
+        holdingAreaService.put("substances", "gsrs.holdingarea.service.DefaultHoldingAreaService");
         config.setDefaultHoldingAreaEntityService(holdingAreaService);
 
-        Map<String, Class> entityService = new HashMap<>();
-        entityService.put("substances", HoldingAreaEntityService.class);
+        Map<String, String> entityService = new HashMap<>();
+        entityService.put("substances", "gsrs.holdingarea.service.HoldingAreaEntityService");
         config.setDefaultHoldingAreaEntityService(entityService);
 
         Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();
