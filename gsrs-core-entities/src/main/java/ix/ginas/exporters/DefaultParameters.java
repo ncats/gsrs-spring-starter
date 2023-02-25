@@ -22,6 +22,8 @@ public class DefaultParameters implements ExporterFactory.Parameters {
             this.publicOnly = publicOnly;
         }
 
+    // publicOnly is deprecated; rely on scrubber instead.
+
     public DefaultParameters(OutputFormat format, boolean publicOnly, JsonNode detailedParameters) {
         Objects.requireNonNull(format);
         this.format = format;

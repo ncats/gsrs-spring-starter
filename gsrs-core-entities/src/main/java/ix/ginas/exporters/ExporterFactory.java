@@ -32,6 +32,7 @@ public interface ExporterFactory<T> {
             return false;
         }
 
+        // publicOnly is deprecated; rely on scrubber instead.
         default boolean publicOnly(){ return false;}
 
         default JsonNode detailedParameters() {
