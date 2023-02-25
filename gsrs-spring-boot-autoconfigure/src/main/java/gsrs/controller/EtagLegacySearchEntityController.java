@@ -172,6 +172,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
     public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
                                                @PathVariable("format") String format,
+                                               // !!!!
+                                               // Param publicOnly is deprecated in backend export factories;
+                                               // we now use data scrubbers. It is no longer an option
+                                               // when launching exports from the frontend UI.
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
                                                @RequestParam(value ="filename", required= false) String fileName,
                                                @RequestParam(value="exportConfigId", required = false) String exportConfigId,
