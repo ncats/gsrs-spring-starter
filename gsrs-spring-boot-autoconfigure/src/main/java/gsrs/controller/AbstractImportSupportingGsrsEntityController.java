@@ -352,7 +352,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return _holdingAreaService;
     }
 
-    private HoldingAreaService getDefaultHoldingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    protected HoldingAreaService getDefaultHoldingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         log.trace("starting in getDefaultHoldingAreaService");
         Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaService(getEntityService().getContext());
         if( holdingAreaServiceClass== null){
