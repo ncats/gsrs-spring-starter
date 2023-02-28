@@ -19,6 +19,8 @@ import java.util.UUID;
 @Data
 public class KeyValueMapping {
 
+    public static final int MAX_VALUE_LENGTH = 512;
+
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")

@@ -30,6 +30,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
+import javax.print.DocFlavor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -316,10 +317,15 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         if( importDataList==null || importDataList.isEmpty()){
 
             log.trace("no ImportData found by recordId; looking by instanceId");
-            ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
-            if( dataItem!=null) {
-                importDataList = new ArrayList<>();
-                importDataList.add(dataItem);
+            try {
+                ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
+                if (dataItem != null) {
+                    importDataList = new ArrayList<>();
+                    importDataList.add(dataItem);
+                }
+            } catch (NoSuchMethodError error) {
+                //have observed this error several times when attempting to retrieve a non-existent ID
+                log.warn("error retrieving ImportData");
             }
         }
 
@@ -628,7 +634,11 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
             KeyValueMapping mapping = new KeyValueMapping();
             mapping.setKey(kv.getKey());
-            mapping.setValue(kv.getValue());
+            String valueToStore = kv.getValue();
+            if( valueToStore !=null && valueToStore.length()> KeyValueMapping.MAX_VALUE_LENGTH) {
+                valueToStore = valueToStore.substring(0, KeyValueMapping.MAX_VALUE_LENGTH-1);
+            }
+            mapping.setValue(valueToStore);
             mapping.setInstanceId(instanceId);
             mapping.setRecordId(recordId);
             mapping.setEntityClass(matchedEntityClass);
