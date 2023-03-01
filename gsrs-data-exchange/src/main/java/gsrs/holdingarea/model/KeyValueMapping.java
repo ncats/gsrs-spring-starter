@@ -1,5 +1,6 @@
 package gsrs.holdingarea.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
 import lombok.Data;
@@ -11,6 +12,7 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "key"),
         @Index(name="idx_ix_import_mapping_value", columnList = "value"),
         @Index(name="idx_ix_import_mapping_instance_id", columnList = "instance_Id")})

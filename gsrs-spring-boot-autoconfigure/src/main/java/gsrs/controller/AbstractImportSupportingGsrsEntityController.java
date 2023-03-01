@@ -603,7 +603,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 log.trace("yes, an ObjectNode");
                 enhanceWithMetadata((ObjectNode) realData, matchingMetadata, service);
             }
-            log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
+            //log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
         }
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();

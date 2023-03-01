@@ -48,6 +48,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 }
                 log.trace("looking for a holding area service for context {}", contextName);
                 holdingAreaService=AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal(contextName);
+                log.trace("got service {{}", holdingAreaService);
             } catch (Exception e) {
                 log.error("Error obtaining holding area service", e);
                 throw new RuntimeException(e);
@@ -60,7 +61,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 Object dataObject= holdingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
                 log.trace("deserialized object");
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
-                log.trace("instantiated rawMaker");
+                log.trace("instantiated IndexValueMaker");
                 rawMaker.createIndexableValues(dataObject,consumer);
                 log.trace("called createIndexableValues");
             } else {

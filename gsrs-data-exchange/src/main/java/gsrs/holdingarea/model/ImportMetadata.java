@@ -1,6 +1,7 @@
 package gsrs.holdingarea.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.EntityMapperOptions;
 import ix.core.models.*;
@@ -22,6 +23,7 @@ import java.util.*;
 
 @Backup
 @Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_Class_Name")})
 @Slf4j
 @IndexableRoot
