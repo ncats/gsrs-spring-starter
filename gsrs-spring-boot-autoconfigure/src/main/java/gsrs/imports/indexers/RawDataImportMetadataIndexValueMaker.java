@@ -12,9 +12,7 @@ import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 @Slf4j
 public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<ImportMetadata> {
@@ -54,7 +52,6 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 throw new RuntimeException(e);
             }
         }
-        log.trace("");
         try {
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
             if( objectJson != null && objectJson.length()>0) {

@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class MetadataSourceIndexValueMaker implements IndexValueMaker<ImportMetadata> {
 
-    public final static String IMPORT_METADATA_SOURCE_FACET="root_importmetadata_source";
+    public final static String IMPORT_METADATA_SOURCE_FACET="Source";
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
