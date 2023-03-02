@@ -1,43 +1,38 @@
 package ix.core.models;
 
-import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "ix_core_user_bulk_search_result", 
-	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id"})})
+@Table(name = "ix_core_key_user_list", 
+	uniqueConstraints={@UniqueConstraint(columnNames={"key","list_name","user_id"})})
 @Indexable(indexed = false)
-public class UserBulkSearchResult {
+public class KeyUserList {
 	
 	@Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
+	
+	public String key;	
 	
 	@ManyToOne    
     @JoinColumn(name="user_id", nullable = false)	
     public Principal principal;
 
 	@Column(nullable=false)
-	public String name; 
+	public String list_name; 	
 	
-	@Lob
-    @Basic(fetch= FetchType.EAGER)	
-	public String list;	
 	
-	public UserBulkSearchResult(Principal user, String name, String list) {
+	public KeyUserList(String key, Principal user, String name) {
+		this.key = key;
         this.principal = user;
-        this.name = name;
-        this.list = list;
-    }
-	
+        this.list_name = name;        
+    }	
 }

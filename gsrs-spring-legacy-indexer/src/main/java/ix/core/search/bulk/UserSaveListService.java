@@ -10,21 +10,21 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import gsrs.repository.BulkSearchResultKeyRepository;
+import gsrs.repository.KeyUserListRepository;
 import gsrs.repository.PrincipalRepository;
-import gsrs.repository.UserBulkSearchResultRepository;
-import ix.core.models.BulkSearchResultKey;
+import gsrs.repository.UserSavedListRepository;
+import ix.core.models.KeyUserList;
 import ix.core.models.Principal;
-import ix.core.models.UserBulkSearchResult;
+import ix.core.models.UserSavedList;
 
 @Service
-public class BulkSearchResultService {
+public class UserSaveListService {
 	
 	@Autowired
-	public UserBulkSearchResultRepository userBulkSearchResultRepository;
+	public UserSavedListRepository userSavedListRepository;
 	
 	@Autowired
-	public BulkSearchResultKeyRepository bulkSearchResultKeyRepository;
+	public KeyUserListRepository keyUserListRepository;
 	
 	@Autowired
 	public PrincipalRepository principalRepository;
@@ -43,20 +43,20 @@ public class BulkSearchResultService {
 	} 
 	
 	public List<String> getUserSearchResultLists(Long userId){
-		return 	userBulkSearchResultRepository.getUserSearchResultListsByUserId(userId);
+		return 	userSavedListRepository.getUserSearchResultListsByUserId(userId);
 	} 
 	
 	public List<String> getAllUserSearchResultLists(){
-		return 	userBulkSearchResultRepository.getAllUserSearchResultLists();
+		return 	userSavedListRepository.getAllUserSearchResultLists();
 	}
 	
 	public List<String> getListNamesByKey(String key, Long userId){
-		return bulkSearchResultKeyRepository.getAllListNamesFromKey(key, userId);
+		return keyUserListRepository.getAllListNamesFromKey(key, userId);
 	}
 	
 	public void removeUserSearchResultList(Long userId, String listName) {
-		userBulkSearchResultRepository.removeUserSearchResultList(userId, listName);
-		bulkSearchResultKeyRepository.removeList(userId, listName);
+		userSavedListRepository.removeUserSearchResultList(userId, listName);
+		keyUserListRepository.removeList(userId, listName);
 	}
 	
 	
@@ -71,7 +71,7 @@ public class BulkSearchResultService {
 	
 	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, int top, int skip){
 		List<String> keyList = new ArrayList<String>();
-		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
 		
 		if(listString == null || listString.trim().isEmpty())
 			return keyList;
@@ -98,7 +98,7 @@ public class BulkSearchResultService {
 		
 	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName){
 		List<String> keyList = new ArrayList<String>();
-		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
 		if(listString == null || listString.trim().isEmpty())
 			return keyList;
 		
@@ -119,12 +119,12 @@ public class BulkSearchResultService {
 		String listString = processedList.stream()				
 				.reduce("", (substring, key)-> substring.concat(","+key));
 		listString = listString.substring(listString.indexOf(",")+1);
-		UserBulkSearchResult record = new UserBulkSearchResult(user, listName, listString);
-		userBulkSearchResultRepository.saveAndFlush(record);
+		UserSavedList record = new UserSavedList(user, listName, listString);
+		userSavedListRepository.saveAndFlush(record);
 		
 		//todo: use batch insert here
 		for(String key: processedList)	{		
-			bulkSearchResultKeyRepository.saveAndFlush(new BulkSearchResultKey(key, user, listName));
+			keyUserListRepository.saveAndFlush(new KeyUserList(key, user, listName));
 		}		
 	}	
 	
@@ -133,15 +133,15 @@ public class BulkSearchResultService {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null)
 			return; 
-		userBulkSearchResultRepository.removeUserSearchResultList(user.id, listName);
+		userSavedListRepository.removeUserSearchResultList(user.id, listName);
 				
-		bulkSearchResultKeyRepository.removeList(user.id, listName);
+		keyUserListRepository.removeList(user.id, listName);
 	}
 	
 	public List<String> updateBulkSearchResultList(Long userId, String listName, List<String> keyList, Operation operation) {
 		List<String> list;
 		List<String> changeSet = new ArrayList<>();
-		String listString = userBulkSearchResultRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
 		if(listString == null || listString.trim().isEmpty())
 			return changeSet;
 		list = Arrays.asList(listString.split(","));
@@ -173,7 +173,7 @@ public class BulkSearchResultService {
 		List<String> sortedList = new ArrayList<>(sortedSet);
 	    String resultString = sortedList.stream().reduce("", (substring, key)-> substring.concat(","+key));
 	    resultString = resultString.substring(resultString.indexOf(",")+1);
-	    userBulkSearchResultRepository.updateUserSavedBulkSearchResult(userId, listName, resultString);	
+	    userSavedListRepository.updateUserSavedBulkSearchResult(userId, listName, resultString);	
 	    
 	    return changeSet; 
 	    	    
@@ -184,12 +184,12 @@ public class BulkSearchResultService {
 		switch(operation) {
 		case ADD:
 			for(String string: changeSet) {
-				bulkSearchResultKeyRepository.saveAndFlush(new BulkSearchResultKey(string, user, listName));
+				keyUserListRepository.saveAndFlush(new KeyUserList(string, user, listName));
 			}
 			break;
 		case REMOVE:
 			for(String string: changeSet) {
-				bulkSearchResultKeyRepository.removeKey(string, user.id, listName);
+				keyUserListRepository.removeKey(string, user.id, listName);
 			}
 			break;	
 		default:

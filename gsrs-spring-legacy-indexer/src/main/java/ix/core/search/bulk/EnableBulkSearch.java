@@ -10,6 +10,6 @@ import org.springframework.context.annotation.Import;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import( { BulkSearchServiceSelector.class, BulkSearchResultServiceSelector.class})
+@Import( { BulkSearchServiceSelector.class, UserSavedListServiceSelector.class})
 public @interface EnableBulkSearch {
 }
