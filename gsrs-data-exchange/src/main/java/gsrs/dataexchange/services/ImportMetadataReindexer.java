@@ -217,7 +217,7 @@ public class ImportMetadataReindexer {
     public static void indexOneItem(UUID reindexId, Consumer<Object> eventConsumer, EntityUtils.Key key,
                                     EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrappedEntity) {
         log.trace("indexOneItem will process reindex of key {}",  key);
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrappedEntity));
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrappedEntity), true);
         eventConsumer.accept(event);
         log.trace("submitted index event");
     }

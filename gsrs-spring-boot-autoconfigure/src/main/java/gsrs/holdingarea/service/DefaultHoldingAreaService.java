@@ -458,31 +458,29 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
         //todo: test this
         recordMatchables.forEach(m -> {
             List<KeyValueMapping> mappings = keyValueMappingRepository.findMappingsByKeyAndValue(m.getKey(), m.getValue());
-            log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
-            if (m.getValue() == null || m.getValue().length() == 0) {
-                log.trace("skipping matchable without value");
-                return;
-            }
-            List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
-                    .map(ma ->{
-                        MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder= MatchedKeyValue.MatchingRecordReference.builder();
-                        builder
-                                .sourceName(ma.getDataLocation())
-                                .matchedKey(m.getKey());
-                        if(ma.getRecordId()!=null ) {
-                            builder.recordId(EntityUtils.Key.of(objectClass, ma.getRecordId()));
-                        } else {
-                            log.trace("skipping item without an recordID");
-                        }
-                        return builder.build();
-                    } )
-                    .collect(Collectors.toList());
+            if (m.getValue() != null && m.getValue().length() > 0) {
+                log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
+                List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
+                        .map(ma -> {
+                            MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
+                            builder
+                                    .sourceName(ma.getDataLocation())
+                                    .matchedKey(m.getKey());
+                            if (ma.getRecordId() != null) {
+                                builder.recordId(EntityUtils.Key.of(objectClass, ma.getRecordId()));
+                            } else {
+                                log.trace("skipping item without an recordID");
+                            }
+                            return builder.build();
+                        })
+                        .collect(Collectors.toList());
 
-            MatchedKeyValue match = MatchedKeyValue.builder()
-                    .tupleUsedInMatching(m)
-                    .matchingRecords(matches)
-                    .build();
-            summary.getMatches().add(match);
+                MatchedKeyValue match = MatchedKeyValue.builder()
+                        .tupleUsedInMatching(m)
+                        .matchingRecords(matches)
+                        .build();
+                summary.getMatches().add(match);
+            }
         });
         return summary;
     }
@@ -491,13 +489,17 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException {
         log.trace("starting findMatches of ImportMetadata. Instance ID: {}", importMetadata.getInstanceId());
         //first, retrieve the latest Object JSON
-        String jsonData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
-        log.trace("Got JSON {}", jsonData);
+        List<ImportData> importDataList = importDataRepository.retrieveDataForRecord(importMetadata.getRecordId());
+        ImportData latestExisting = importDataList.stream().max(Comparator.comparing(ImportData::getVersion)).get();
+
+        String jsonData= latestExisting.getData();
+        log.trace("Got JSON for metadata with {}", importMetadata.getRecordId());
         //deserialize
         T domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
         log.trace("deserialized");
         List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
-        log.trace("got matchables");
+        log.trace("calculated latest matchables");
+        matchableKeyValueTuples.forEach(m-> log.trace("key: {} = value: {}", m.getKey(), m.getValue()));
         return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples);
     }
 

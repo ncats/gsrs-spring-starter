@@ -56,7 +56,10 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
             if( objectJson != null && objectJson.length()>0) {
                 Object dataObject= holdingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
-                log.trace("deserialized object");
+                if(dataObject== null){
+                    log.warn("deserialized object is null! (importMetadata.getInstanceId(): {}", importMetadata.getInstanceId());
+                    return;
+                }
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
                 log.trace("instantiated IndexValueMaker");
                 rawMaker.createIndexableValues(dataObject,consumer);

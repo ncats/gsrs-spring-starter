@@ -89,8 +89,10 @@ public class TextIndexerEntityListener {
         
         if(opt.isPresent()){
         	if(event.isRequiresDelete()) {
+                log.trace("updating");
         		textIndexerFactory.getDefaultInstance().update(opt.get());
         	}else {
+                log.trace("adding");
         		textIndexerFactory.getDefaultInstance().add(opt.get());	
         	}
             

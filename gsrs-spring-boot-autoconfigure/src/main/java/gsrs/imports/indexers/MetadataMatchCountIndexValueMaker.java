@@ -1,5 +1,6 @@
 package gsrs.imports.indexers;
 
+import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.holdingarea.model.ImportMetadata;
 import gsrs.holdingarea.model.MatchedRecordSummary;
 import gsrs.holdingarea.repository.ImportDataRepository;
@@ -9,6 +10,7 @@ import ix.core.search.text.IndexableValue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -20,12 +22,11 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
     @Autowired
     ImportDataRepository importDataRepository;
 
-    @Autowired
     HoldingAreaService holdingAreaService;
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
-        return null;
+        return ImportMetadata.class;
     }
 
     private final static String USED_SOURCE= "GSRS";
@@ -33,6 +34,14 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
         log.trace("In createIndexableValues");
+        if(holdingAreaService==null) {
+            try {
+                holdingAreaService= AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal("substances");
+            } catch (NoSuchMethodException |InvocationTargetException  | InstantiationException | IllegalAccessException e) {
+                log.error("Error creating holding area service!");
+                throw new RuntimeException(e);
+            }
+        }
         String instanceData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
         MatchedRecordSummary matchedRecordSummary = holdingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData);
         long matchCount= matchedRecordSummary.getMatches().stream()
