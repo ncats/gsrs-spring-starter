@@ -12,18 +12,19 @@ import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "ix_core_key_user_list", 
-	uniqueConstraints={@UniqueConstraint(columnNames={"key","list_name","user_id"})})
+	uniqueConstraints={@UniqueConstraint(columnNames={"entity_key","list_name","user_id"})})
 @Indexable(indexed = false)
 public class KeyUserList {
 	
 	@Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Long id;
+	@Column(unique = true)
+	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+    public Long id;		
 	
-	public String key;	
+	public String entity_key;	
 	
 	@ManyToOne    
-    @JoinColumn(name="user_id", nullable = false)	
+    @JoinColumn(name="user_id")	
     public Principal principal;
 
 	@Column(nullable=false)
@@ -31,7 +32,7 @@ public class KeyUserList {
 	
 	
 	public KeyUserList(String key, Principal user, String name) {
-		this.key = key;
+		this.entity_key = key;
         this.principal = user;
         this.list_name = name;        
     }	

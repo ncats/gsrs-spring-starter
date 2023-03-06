@@ -20,11 +20,12 @@ import javax.persistence.UniqueConstraint;
 public class UserSavedList {
 	
 	@Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+	@Column(unique = true)
+	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
     private Long id;
 	
 	@ManyToOne    
-    @JoinColumn(name="user_id", nullable = false)	
+    @JoinColumn(name="user_id")	
     public Principal principal;
 
 	@Column(nullable=false)
