@@ -11,10 +11,10 @@ public class DefinitionalValue {
     @Indexable(name="Id")
     private String id;
 
-    @Indexable(name="Key")
+    @Indexable(name="DefinitionalKey")
     private String key;
 
-    @Indexable(name="Value")
+    @Indexable(name="DefinitionalValue")
     private String value;
 
     @Indexable(name="Qualifier")

@@ -13,8 +13,8 @@ import java.util.UUID;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "key"),
-        @Index(name="idx_ix_import_mapping_value", columnList = "value"),
+@Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "Mapping_Key"),
+        @Index(name="idx_ix_import_mapping_value", columnList = "mapping_value"),
         @Index(name="idx_ix_import_mapping_instance_id", columnList = "instance_Id")})
 @Slf4j
 @IndexableRoot
@@ -39,11 +39,12 @@ public class KeyValueMapping {
     @Column(length =40, updatable = false, unique = false)
     private UUID recordId;
 
-    @Indexable(name = "Key", suggest = true)
+    @Indexable(name = "Mapping_Key", suggest = true)
+    @Column(name = "mapping_key")
     private String key;
 
-    @Indexable(name = "Value", suggest = true)
-    @Column(length = 512)
+    @Indexable(name = "Mapping_Value", suggest = true)
+    @Column(length = 512, name = "mapping_value")
     private String value;
 
     @Indexable(name = "Qualifier", suggest = true)
