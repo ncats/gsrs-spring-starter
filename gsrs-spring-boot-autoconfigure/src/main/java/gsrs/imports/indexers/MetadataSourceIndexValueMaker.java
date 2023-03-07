@@ -1,6 +1,6 @@
 package gsrs.imports.indexers;
 
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.ImportMetadata;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.extern.slf4j.Slf4j;

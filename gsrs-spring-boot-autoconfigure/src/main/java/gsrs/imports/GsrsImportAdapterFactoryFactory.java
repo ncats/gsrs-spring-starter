@@ -15,7 +15,7 @@ public interface GsrsImportAdapterFactoryFactory {
 
     <T> List<ClientFriendlyImportAdapterConfig> getConfiguredAdapters(String context, Class <T> clazz);
 
-    Class<T> getDefaultHoldingAreaService(String context);
+    Class<T> getDefaultStagingAreaService(String context);
 
-    Class<T> getDefaultHoldingAreaEntityService(String context);
+    Class<T> getDefaultStagingAreaEntityService(String context);
 }

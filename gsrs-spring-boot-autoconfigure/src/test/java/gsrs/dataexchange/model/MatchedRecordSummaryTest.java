@@ -1,8 +1,8 @@
 package gsrs.dataexchange.model;
 
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.model.MatchedKeyValue;
-import gsrs.holdingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.model.MatchedKeyValue;
+import gsrs.stagingarea.model.MatchedRecordSummary;
 import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;

@@ -33,8 +33,8 @@ public interface ImportAdapterFactoryConfig {
 
     ImportAdapterFactory newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
 
-    Class getHoldingAreaServiceClass();
-    void setHoldingAreaServiceClass(Class holdingServiceClass);
+    Class getStagingAreaServiceClass();
+    void setStagingAreaServiceClass(Class stagingServiceClass);
 
     List<Class> getEntityServices();
     void setEntityServices(List<Class> entityServices);

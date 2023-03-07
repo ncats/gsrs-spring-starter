@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /*
-Something that the user does to a record in the holding area
+Something that the user does to a record in the staging area
  */
 public interface ProcessingAction<T> {
 

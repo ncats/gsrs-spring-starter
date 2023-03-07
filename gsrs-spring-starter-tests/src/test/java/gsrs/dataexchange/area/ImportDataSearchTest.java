@@ -1,7 +1,7 @@
 package gsrs.dataexchange.area;
 
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.GsrsSpringApplication;
@@ -34,7 +34,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
 
     private TextIndexer indexer;
 
-    private String objectName="gsrs.holdingarea.model.ImportMetadata";
+    private String objectName="gsrs.stagingarea.model.ImportMetadata";
     @BeforeEach
     public void setup() throws Exception {
         indexer = tif.getDefaultInstance();

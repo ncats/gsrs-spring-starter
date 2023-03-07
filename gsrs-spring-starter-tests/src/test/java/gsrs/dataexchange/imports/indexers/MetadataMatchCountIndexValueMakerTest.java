@@ -1,11 +1,11 @@
 package gsrs.dataexchange.imports.indexers;
 
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.model.MatchedKeyValue;
-import gsrs.holdingarea.model.MatchedRecordSummary;
-import gsrs.holdingarea.repository.ImportDataRepository;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.model.MatchedKeyValue;
+import gsrs.stagingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.repository.ImportDataRepository;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.imports.indexers.MetadataMatchCountIndexValueMaker;
 import ix.core.models.Group;
 import ix.core.search.text.IndexableValue;
@@ -36,7 +36,7 @@ public class MetadataMatchCountIndexValueMakerTest {
         metadata.setEntityClassName("ix.ginas.models.v1.Substance");
         
         String record1Id = UUID.randomUUID().toString();
-        HoldingAreaService holdingAreaService = mock(HoldingAreaService.class);
+        StagingAreaService stagingAreaService = mock(StagingAreaService.class);
         ImportDataRepository importDataRepository = mock(ImportDataRepository.class);
         MatchedRecordSummary matchedRecordSummary = new MatchedRecordSummary();
         List<MatchedKeyValue> matchedKeyValues = new ArrayList<>();
@@ -69,17 +69,17 @@ public class MetadataMatchCountIndexValueMakerTest {
         query.add(tuple2);
         matchedRecordSummary.setQuery(query);
         String recordJson = "";
-        when(holdingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson)).thenReturn(matchedRecordSummary);
         when(importDataRepository.retrieveByInstanceID(metadata.getInstanceId())).thenReturn(recordJson);
 
         List<IndexableValue> indexedValues = new ArrayList<>();
         MetadataMatchCountIndexValueMaker indexValueMaker1 = new MetadataMatchCountIndexValueMaker();
         Field repoField = indexValueMaker1.getClass().getDeclaredField("importDataRepository");
         repoField.setAccessible(true);
-        Field serviceField = indexValueMaker1.getClass().getDeclaredField("holdingAreaService");
+        Field serviceField = indexValueMaker1.getClass().getDeclaredField("stagingAreaService");
         serviceField.setAccessible(true);
         repoField.set(indexValueMaker1, importDataRepository);
-        serviceField.set(indexValueMaker1, holdingAreaService);;
+        serviceField.set(indexValueMaker1, stagingAreaService);;
         indexValueMaker1.createIndexableValues(metadata, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_COUNT_FACET)
                 && ((long)i.value()== 2)));

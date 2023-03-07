@@ -29,9 +29,9 @@ public class GsrsFactoryConfiguration {
 
     private boolean createUnknownUsers = false;
 
-    private Map<String, String> defaultHoldingAreaServiceClass;
+    private Map<String, String> defaultStagingAreaServiceClass;
 
-    private Map<String, String> defaultHoldingAreaEntityService;
+    private Map<String, String> defaultStagingAreaEntityService;
 
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();

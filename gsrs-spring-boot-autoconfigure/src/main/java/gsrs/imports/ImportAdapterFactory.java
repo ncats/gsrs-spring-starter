@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 
 /*
 Creates a class that can process data from a file and convert it into domain objects
@@ -75,15 +74,15 @@ public interface ImportAdapterFactory<T> {
     }
 
     /**
-     * Returns the name of the holding service class to be called at the end of the import process
+     * Returns the name of the staging service class to be called at the end of the import process
      *
-     * @return "Key" name of holding service class (that implements interface HoldingService
+     * @return "Key" name of staging service class (that implements interface StagingAreaService
      */
-    Class getHoldingAreaService();
-    void setHoldingAreaService(Class holdingService);
+    Class getStagingAreaService();
+    void setStagingAreaService(Class stagingService);
 
-    Class getHoldingAreaEntityService();
-    void setHoldingAreaEntityService(Class holdingAreaEntityService);
+    Class getStagingAreaEntityService();
+    void setStagingAreaEntityService(Class stagingAreaEntityService);
 
     List<Class> getEntityServices();
 

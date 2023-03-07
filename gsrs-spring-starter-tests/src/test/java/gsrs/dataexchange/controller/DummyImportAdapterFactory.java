@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class DummyImportAdapterFactory implements ImportAdapterFactory<GinasCommonData> {
 
     private String fileName;
-    private Class holdingAreaServiceClass;
+    private Class stagingAreaServiceClass;
     private List<Class> services;
     private Class serviceClass;
 
@@ -87,22 +87,22 @@ public class DummyImportAdapterFactory implements ImportAdapterFactory<GinasComm
     }
 
     @Override
-    public Class getHoldingAreaService() {
-        return this.holdingAreaServiceClass;
+    public Class getStagingAreaService() {
+        return this.stagingAreaServiceClass;
     }
 
     @Override
-    public void setHoldingAreaService(Class holdingAreaService){
-        this.holdingAreaServiceClass = holdingAreaService;
+    public void setStagingAreaService(Class stagingService){
+        this.stagingAreaServiceClass = stagingService;
     }
 
     @Override
-    public Class getHoldingAreaEntityService() {
+    public Class getStagingAreaEntityService() {
         return null;
     }
 
     @Override
-    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+    public void setStagingAreaEntityService(Class stagingAreaEntityService) {
 
     }
 

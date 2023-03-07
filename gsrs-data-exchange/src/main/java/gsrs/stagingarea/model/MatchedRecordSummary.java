@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.stagingarea.model;
 
 import gov.nih.ncats.common.Tuple;
 import ix.core.util.EntityUtils;
@@ -52,7 +52,7 @@ public class MatchedRecordSummary {
     }
     public List<String> getUniqueMatchingKeys(){
         return query.stream()
-                .map(gsrs.holdingarea.model.MatchableKeyValueTuple::getKey)
+                .map(gsrs.stagingarea.model.MatchableKeyValueTuple::getKey)
                 .distinct()
                 .collect(Collectors.toList());
     }

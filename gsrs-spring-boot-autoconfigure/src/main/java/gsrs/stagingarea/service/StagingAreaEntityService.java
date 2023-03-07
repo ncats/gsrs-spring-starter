@@ -1,14 +1,14 @@
-package gsrs.holdingarea.service;
+package gsrs.stagingarea.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
 import java.util.List;
 
-public interface HoldingAreaEntityService<T> {
+public interface StagingAreaEntityService<T> {
     Class<T> getEntityClass();
 
     T parse(JsonNode json);

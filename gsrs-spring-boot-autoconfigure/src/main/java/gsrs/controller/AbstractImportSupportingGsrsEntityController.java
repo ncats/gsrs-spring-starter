@@ -12,9 +12,9 @@ import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
-import gsrs.holdingarea.model.*;
-import gsrs.holdingarea.service.HoldingAreaEntityService;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.*;
+import gsrs.stagingarea.service.StagingAreaEntityService;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.imports.*;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
@@ -117,7 +117,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         private String mimeType;
         private String fileEncoding;
 
-        private String holdingAreaRecordId;
+        private String stagingAreaRecordId;
         private String entityType;
 
         private JsonNode inputSettings;
@@ -207,18 +207,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
         log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
-        log.trace("in fetchAdapterFactory, holding area service: {}", adaptFac.getHoldingAreaService().getName());
+        log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
         adaptFac.setFileName(task.filename);
         return adaptFac;
     }
 
 
-    private HoldingAreaService getHoldingAreaService(ImportTaskMetaData<T> task) throws Exception {
+    private StagingAreaService getStagingAreaService(ImportTaskMetaData<T> task) throws Exception {
         Objects.requireNonNull(task.adapter, "Cannot predict settings with null import adapter");
-        return getHoldingAreaService(task.getAdapter());
+        return getStagingAreaService(task.getAdapter());
     }
 
-    protected HoldingAreaService getHoldingAreaService(String adapterName) throws Exception {
+    protected StagingAreaService getStagingAreaService(String adapterName) throws Exception {
         ImportAdapterFactory<T> adaptFac =
                 getImportAdapterFactory(adapterName)
                         .orElse(null);
@@ -231,21 +231,21 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             throw new IOException(message);
         }
-        Class<T> c = adaptFac.getHoldingAreaService();
-        log.trace("in getHoldingAreaService, instantiating HoldingAreaService: {}", c.getName());
+        Class<T> c = adaptFac.getStagingAreaService();
+        log.trace("in getStagingAreaService, instantiating StagingAreaService: {}", c.getName());
         Constructor<T> constructor = c.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
-        HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
+        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
         if (adaptFac.getEntityServiceClass() != null) {
             Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
-            HoldingAreaEntityService<T> entityService = (HoldingAreaEntityService) entityServiceConstructor.newInstance();
+            StagingAreaEntityService<T> entityService = (StagingAreaEntityService) entityServiceConstructor.newInstance();
             entityService = AutowireHelper.getInstance().autowireAndProxy(entityService);
             service.registerEntityService(entityService);
             log.trace("called registerEntityService with {}", entityService.getClass().getName());
         } else {
             log.warn("No entity service found.  Import won't get far.");
         }
-        _holdingAreaService = service;
+        _stagingAreaService = service;
         return service;
     }
 
@@ -325,61 +325,61 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //todo: cleaner implementation:
-    static protected HoldingAreaService _holdingAreaService = null;
+    static protected StagingAreaService _stagingAreaService = null;
 
-    static public HoldingAreaService getHoldingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        log.trace("in getHoldingAreaServiceForExternal");
-        if (_holdingAreaService == null) {
+    static public StagingAreaService getStagingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("in getStagingAreaServiceForExternal");
+        if (_stagingAreaService == null) {
             GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory1 = new ConfigBasedGsrsImportAdapterFactoryFactory();
-            Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultHoldingAreaService(contextName);
-            if (holdingAreaServiceClass == null) {
+            Class stagingAreaServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultStagingAreaService(contextName);
+            if (stagingAreaServiceClass == null) {
                 log.error("Error retrieving !");
                 return null;
             }
-            log.trace("got class {}", holdingAreaServiceClass.getName());
-            Constructor constructor = holdingAreaServiceClass.getConstructor(String.class);
+            log.trace("got class {}", stagingAreaServiceClass.getName());
+            Constructor constructor = stagingAreaServiceClass.getConstructor(String.class);
             Object o = constructor.newInstance(contextName);
-            HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
+            StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
             log.trace("instantiated service");
 
-            Class holdingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultHoldingAreaEntityService(contextName);
-            log.trace("going entity service class: {}", holdingAreaEntityServiceClass.getName());
-            Constructor constructorEntityService = holdingAreaEntityServiceClass.getConstructor();
+            Class stagingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultStagingAreaEntityService(contextName);
+            log.trace("going entity service class: {}", stagingAreaEntityServiceClass.getName());
+            Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
             Object o2 = constructorEntityService.newInstance();
             log.trace("instantiated entity service");
-            HoldingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaEntityService) o2);
+            StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
             service.registerEntityService(entityService);
             log.trace("called registerEntityService with {}", entityService.getClass().getName());
-            log.trace("finished in getDefaultHoldingAreaService");
-            _holdingAreaService = service;
+            log.trace("finished in getDefaultStagingAreaService");
+            _stagingAreaService = service;
             return service;
         }
-        return _holdingAreaService;
+        return _stagingAreaService;
     }
 
-    protected HoldingAreaService getDefaultHoldingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        log.trace("starting in getDefaultHoldingAreaService");
-        Class holdingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaService(getEntityService().getContext());
-        if (holdingAreaServiceClass == null) {
+    protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("starting in getDefaultStagingAreaService");
+        Class stagingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultStagingAreaService(getEntityService().getContext());
+        if (stagingAreaServiceClass == null) {
             log.error("Error retrieving !");
             return null;
         }
-        log.trace("got class {}", holdingAreaServiceClass.getName());
-        Constructor constructor = holdingAreaServiceClass.getConstructor(String.class);
+        log.trace("got class {}", stagingAreaServiceClass.getName());
+        Constructor constructor = stagingAreaServiceClass.getConstructor(String.class);
         Object o = constructor.newInstance(this.getEntityService().getContext());
-        HoldingAreaService service = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaService) o);
+        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
         log.trace("instantiated service");
 
-        Class holdingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory.getDefaultHoldingAreaEntityService(getEntityService().getContext());
-        log.trace("going entity service class: {}", holdingAreaEntityServiceClass.getName());
-        Constructor constructorEntityService = holdingAreaEntityServiceClass.getConstructor();
+        Class stagingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory.getDefaultStagingAreaEntityService(getEntityService().getContext());
+        log.trace("going entity service class: {}", stagingAreaEntityServiceClass.getName());
+        Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
         Object o2 = constructorEntityService.newInstance();
         log.trace("instantiated entity service");
-        HoldingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((HoldingAreaEntityService) o2);
+        StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
         service.registerEntityService(entityService);
         log.trace("called registerEntityService with {}", entityService.getClass().getName());
-        log.trace("finished in getDefaultHoldingAreaService");
-        _holdingAreaService = service;
+        log.trace("finished in getDefaultStagingAreaService");
+        _stagingAreaService = service;
         return service;
     }
 
@@ -499,7 +499,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting getImportData");
         log.trace("id: {} version: {}", id, version);
-        HoldingAreaService service = getDefaultHoldingAreaService();
+        StagingAreaService service = getDefaultStagingAreaService();
         List<ImportData> importDataList = service.getImportData(id);
         log.trace("getDataForRecord returned {}", importDataList.size());
         Optional<ImportData> foundData;
@@ -521,7 +521,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                     @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting getImportMetadata");
         log.trace("id: {}", id);
-        HoldingAreaService service = getDefaultHoldingAreaService();
+        StagingAreaService service = getDefaultStagingAreaService();
         ImportMetadata importMetadata = service.getImportMetaData(id);
         log.trace("getDataForRecord returned {}", importMetadata == null ? "null" : "one record");
 
@@ -556,14 +556,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         int version = 0;
 
-        HoldingAreaService service;
+        StagingAreaService service;
         try {
-            service = getDefaultHoldingAreaService();
+            service = getDefaultStagingAreaService();
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
-            log.error("error setting up holding area service", e);
+            log.error("error setting up staging area service", e);
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-            messageNode.put("Message", "Unable to obtain holding area service");
+            messageNode.put("Message", "Unable to obtain staging area service");
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.NOT_FOUND);
         }
 
@@ -672,7 +672,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             log.trace("retrieved ImportTaskMetaData");
             //TODO: make async and do other stuff:
             ImportTaskMetaData retrievedTask = obj.get();
-            HoldingAreaService service;
+            StagingAreaService service;
             ImportTaskMetaData usableTask;
             if (updatedJson != null && updatedJson.size() > 0) {
                 ObjectMapper om = new ObjectMapper();
@@ -682,12 +682,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 }
                 log.trace("generating preview data using latest data");
                 objectStream = generateObjects(taskFromInput, queryParameters);
-                service = getHoldingAreaService(taskFromInput);
+                service = getStagingAreaService(taskFromInput);
                 usableTask = taskFromInput;
             } else {
                 log.trace("generating preview data using earlier data");
                 objectStream = generateObjects(retrievedTask, queryParameters);
-                service = getHoldingAreaService(retrievedTask);
+                service = getStagingAreaService(retrievedTask);
                 usableTask = retrievedTask;
             }
 
@@ -760,8 +760,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("executeValidate.  id: " + id);
 
         String adapterName = queryParameters.get("adapter");
-        HoldingAreaService holdingAreaService = getDefaultHoldingAreaService();
-        Object response = holdingAreaService.validateInstance(id);
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        Object response = stagingAreaService.validateInstance(id);
         if (response == null) {
             ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
             String message = "an error occurred while performing validation. Check the instanceId. Check the server logs";
@@ -787,7 +787,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("adapterName: " + adapterName);
         log.trace("entityType: " + entityType);
         log.trace("entityJson.toString(): " + entityJson.toString());
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        StagingAreaService service = getStagingAreaService(adapterName);
         log.trace("retrieved service");
         //findMatches
         MatchedRecordSummary summary = service.findMatchesForJson(entityType, entityJson.toString());
@@ -811,7 +811,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        StagingAreaService service = getStagingAreaService(adapterName);
         log.trace("retrieved service");
         int version = 0;//todo: retrieve from parameters
         if (queryParameters.get("version") != null) {
@@ -837,9 +837,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service;
+        StagingAreaService service;
         try {
-            service = getHoldingAreaService(adapterName);
+            service = getStagingAreaService(adapterName);
         } catch (IOException ex) {
             Map<String, String> messages = new HashMap<>();
             messages.put("message", ex.getMessage());
@@ -862,7 +862,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service = getHoldingAreaService(adapterName);
+        StagingAreaService service = getStagingAreaService(adapterName);
         log.trace("retrieved service");
         List<ImportData> data = service.getImportData(recordId);
         log.trace("retrieved data for record");
@@ -880,9 +880,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (adapterName == null || adapterName.length() == 0) {
             return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
         }
-        HoldingAreaService service;
+        StagingAreaService service;
         try {
-            service = getHoldingAreaService(adapterName);
+            service = getStagingAreaService(adapterName);
         } catch (IOException ex) {
             Map<String, String> messages = new HashMap<>();
             messages.put("message", ex.getMessage());
@@ -893,7 +893,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
 
-    private String saveHoldingAreaRecord(HoldingAreaService service, String json, ImportTaskMetaData importTaskMetaData) {
+    private String saveStagingAreaRecord(StagingAreaService service, String json, ImportTaskMetaData importTaskMetaData) {
         ImportRecordParameters parameters = ImportRecordParameters.builder()
                 .jsonData(json)
                 .entityClassName(importTaskMetaData.getEntityType())
@@ -912,7 +912,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in updateImportData. json:");
-        HoldingAreaService service = getDefaultHoldingAreaService();
+        StagingAreaService service = getDefaultStagingAreaService();
         String cleanUpdatedJson = removeMetadataFromDomainObjectJson(updatedJson);
         log.trace(cleanUpdatedJson);
         String result = service.updateRecord(recordId, cleanUpdatedJson);
@@ -942,7 +942,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
             Stream<T> objectStream = generateObjects(itmd, queryParameters);
 
-            HoldingAreaService service = getHoldingAreaService(itmd);
+            StagingAreaService service = getStagingAreaService(itmd);
             ObjectMapper mapper = new ObjectMapper();
             AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
             AtomicInteger recordCount = new AtomicInteger(0);
@@ -951,10 +951,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
             objectStream.forEach(object -> {
                 recordCount.incrementAndGet();
-                log.trace("going to call saveHoldingAreaRecord with data of type {}", object.getClass().getName());
+                log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
                 log.trace(object.toString());
                 try {
-                    importDataRecordIds.add(saveHoldingAreaRecord(service, mapper.writeValueAsString(object), itmd));
+                    importDataRecordIds.add(saveStagingAreaRecord(service, mapper.writeValueAsString(object), itmd));
                     if (recordCount.get() < limit) {
                         if (object instanceof Supplier) {
                             log.trace("going to invoke supplier on object");
@@ -1001,53 +1001,53 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @hasAdminRole
     @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@act", "/import/{id}/{version}/@act"})
-    public ResponseEntity<Object> executeAct(@PathVariable("id") String holdingRecordId,
+    public ResponseEntity<Object> executeAct(@PathVariable("id") String stagingRecordId,
                                              @PathVariable("version") int version,
                                              @RequestBody String processingJson,
                                              @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting executeAct");
         String matchedEntityId = queryParameters.get("matchedEntityId");
         String persist = queryParameters.get("persistChangedObject");
-        HoldingAreaService holdingAreaService = getDefaultHoldingAreaService();
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         String objectJson = "";
         String objectClass = "";
-        assert holdingAreaService != null;
-        ImportData importData = holdingAreaService.getImportDataByInstanceIdOrRecordId(holdingRecordId, version);
+        assert stagingAreaService != null;
+        ImportData importData = stagingAreaService.getImportDataByInstanceIdOrRecordId(stagingRecordId, version);
         UUID recordId = null;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
 
         if (importData != null) {
-            log.trace("Data for id {} retrieved", holdingRecordId);
+            log.trace("Data for id {} retrieved", stagingRecordId);
             objectJson = importData.getData();
             objectClass = importData.getEntityClassName();
             recordId = importData.getRecordId();
             log.trace("looking for data for record id {} - instance id {}", importData.getRecordId(),
                     importData.getInstanceId());
-            ImportMetadata metadata = holdingAreaService.getImportMetaData(recordId.toString(), 0);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
             //todo: figure out whether to do the same for records marked 'merged'
             if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
-                        holdingRecordId));
+                        stagingRecordId));
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
             }
         }
         log.trace("objectJson: {}", objectJson);
         if (objectJson == null || objectJson.length() == 0) {
             messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
-                    objectClass, holdingRecordId));
+                    objectClass, stagingRecordId));
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
 
-        //make sure class type is the same as the holdingAreaService's entity name!
+        //make sure class type is the same as the stagingAreaService's entity name!
         log.trace("going to retrieve existing object of type {} with ID {}", objectClass, matchedEntityId);
-        T baseObject = holdingAreaService.retrieveEntity(objectClass, matchedEntityId);
+        T baseObject = stagingAreaService.retrieveEntity(objectClass, matchedEntityId);
         if (baseObject == null) {
             messageNode.put("message", String.format("Error retrieving base object of type %s with ID %s",
                     objectClass, matchedEntityId));
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
 
-        T currentObject = holdingAreaService.deserializeObject(objectClass, objectJson);
+        T currentObject = stagingAreaService.deserializeObject(objectClass, objectJson);
         if (currentObject == null) {
             messageNode.put("message", String.format("Error retrieving imported object of type %s with ID %s",
                     objectClass, matchedEntityId));
@@ -1081,7 +1081,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace(whatHappened.toString());
 
         if (persist != null && persist.equalsIgnoreCase("TRUE") && isSaveNecessary(recordImportStatus)) {
-            GsrsEntityService.ProcessResult<T> result = holdingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
+            GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
             if (!result.isSaved()) {
                 log.error("Error! Saved object is null");
                 messageNode.put("Message", "Object failed to save");
@@ -1090,9 +1090,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             currentObject = result.getEntity();
             log.trace("saved new or updated entity");
-            holdingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
+            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
             UUID indexingEventId= UUID.randomUUID();
-            ImportMetadata metadata = holdingAreaService.getImportMetaData(recordId.toString(), 0);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
             EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
             ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
                     EntityUtils.EntityWrapper.of(wrappedObject));
@@ -1105,41 +1105,41 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @hasAdminRole
     @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@create", "/import/{id}/{version}/@create"})
-    public ResponseEntity<Object> executeCreate(@PathVariable("id") String holdingRecordId,
+    public ResponseEntity<Object> executeCreate(@PathVariable("id") String stagingRecordId,
                                                 @PathVariable("version") int version,
                                                 @RequestBody String processingJson,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting executeAct");
-        HoldingAreaService holdingAreaService = getDefaultHoldingAreaService();
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         String objectJson = "";
         String objectClass = "";
-        assert holdingAreaService != null;
-        ImportData importData = holdingAreaService.getImportDataByInstanceIdOrRecordId(holdingRecordId, version);
+        assert stagingAreaService != null;
+        ImportData importData = stagingAreaService.getImportDataByInstanceIdOrRecordId(stagingRecordId, version);
         UUID recordId = null;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
 
         if (importData != null) {
-            log.trace("Data for id {} retrieved", holdingRecordId);
+            log.trace("Data for id {} retrieved", stagingRecordId);
             objectJson = importData.getData();
             objectClass = importData.getEntityClassName();
             recordId = importData.getRecordId();
             log.trace("looking for data for record id {} - instance id {}", importData.getRecordId(),
                     importData.getInstanceId());
-            ImportMetadata metadata = holdingAreaService.getImportMetaData(recordId.toString(), 0);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
             //todo: figure out whether to do the same for records marked 'merged'
             if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
-                        holdingRecordId));
+                        stagingRecordId));
                 return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
             }
         }
         log.trace("objectJson: {}", objectJson);
         if (objectJson == null || objectJson.length() == 0) {
             messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
-                    objectClass, holdingRecordId));
+                    objectClass, stagingRecordId));
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
-        T currentObject = holdingAreaService.deserializeObject(objectClass, objectJson);
+        T currentObject = stagingAreaService.deserializeObject(objectClass, objectJson);
         StringBuilder whatHappened = new StringBuilder();
         whatHappened.append("Processing record: ");
         ObjectMapper mapper = new ObjectMapper();
@@ -1160,8 +1160,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
 
         log.trace(whatHappened.toString());
-        holdingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
-        GsrsEntityService.ProcessResult<T> result = holdingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
+        stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
+        GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
         if (!result.isSaved()) {
             log.error("Error! Saved object is null");
             messageNode.put("Message", "Object failed to save");
@@ -1248,7 +1248,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam Map<String, String> queryParameters) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
 
         log.trace("starting page");
-        HoldingAreaService service = getDefaultHoldingAreaService();
+        StagingAreaService service = getDefaultStagingAreaService();
         Page<T> page = service.page(new OffsetBasedPageRequest(skip, top, parseSortFromOrderParam(order)));
 
         String view = queryParameters.get("view");
@@ -1259,7 +1259,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
     }
 
-    private void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, HoldingAreaService service) {
+    private void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
         ObjectMapper mapper = new ObjectMapper();
         if (metadata != null) {
             String metadataAsString = null;

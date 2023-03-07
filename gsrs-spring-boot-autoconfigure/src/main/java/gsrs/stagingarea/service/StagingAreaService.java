@@ -1,7 +1,7 @@
-package gsrs.holdingarea.service;
+package gsrs.stagingarea.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import gsrs.holdingarea.model.*;
+import gsrs.stagingarea.model.*;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -13,7 +13,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
 
-public interface HoldingAreaService {
+public interface StagingAreaService {
     String createRecord(ImportRecordParameters parameters);
 
     String updateRecord(String recordId, String jsonData);
@@ -38,15 +38,15 @@ public interface HoldingAreaService {
 
     <T> ValidationResponse<T> validateInstance(String instanceId);
 
-    <T> List<gsrs.holdingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
+    <T> List<gsrs.stagingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 
-    MatchedRecordSummary findMatches(String entityClass, List<gsrs.holdingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
+    MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
 
     MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException;
 
     void setIndexer(TextIndexer indexer);
 
-    <T> void registerEntityService(HoldingAreaEntityService<T> service);
+    <T> void registerEntityService(StagingAreaEntityService<T> service);
 
     MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
 

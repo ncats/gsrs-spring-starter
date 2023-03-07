@@ -27,7 +27,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private List<String> extensions;
     private String adapterName;
     private Map<String, Object> parameters;
-    private String holdingAreaServiceClass;
+    private String stagingAreaServiceClass;
     private List<Class> entityServices;
     private String entityServiceClass;
 
@@ -123,18 +123,18 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public Class getHoldingAreaServiceClass() {
+    public Class getStagingAreaServiceClass() {
         try {
-            return (Class<T>) Class.forName(this.holdingAreaServiceClass);
+            return (Class<T>) Class.forName(this.stagingAreaServiceClass);
         } catch (ClassNotFoundException e) {
-            log.error("Class {} not found", this.holdingAreaServiceClass);
+            log.error("Class {} not found", this.stagingAreaServiceClass);
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void setHoldingAreaServiceClass(Class clazz) {
-        this.holdingAreaServiceClass = clazz.getName();
+    public void setStagingAreaServiceClass(Class stagingServiceClass) {
+        this.stagingAreaServiceClass = stagingServiceClass.getName();
     }
 
     @Override

@@ -1,14 +1,13 @@
 package gsrs.imports.indexers;
 
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
@@ -19,7 +18,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     public final static String IMPORT_METADATA_VALIDATION_MESSAGE_FACET="Validation Message";
 
     //@Autowired
-    HoldingAreaService holdingAreaService;
+    StagingAreaService stagingAreaService;
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
@@ -29,11 +28,11 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
         log.trace("In createIndexableValues");
-        if(holdingAreaService==null) {
+        if(stagingAreaService ==null) {
             try {
-                holdingAreaService= AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal("substances");
+                stagingAreaService = AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal("substances");
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                log.error("Error creating holding area service!");
+                log.error("Error creating staging area service!");
                 throw new RuntimeException(e);
             }
         }
@@ -42,7 +41,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
             return;
         }
         log.trace("importMetadata.getInstanceId(): {}; importMetadata.getRecordId()", importMetadata.getInstanceId(), importMetadata.getRecordId());
-        ValidationResponse validationResponse= holdingAreaService.validateInstance(importMetadata.getInstanceId().toString());
+        ValidationResponse validationResponse= stagingAreaService.validateInstance(importMetadata.getInstanceId().toString());
         validationResponse.getValidationMessages().forEach(vm->{
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
                     String.valueOf(((ValidationMessage)vm).getMessageType())));

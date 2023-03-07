@@ -1,7 +1,7 @@
 package gsrs.dataexchange.imports.indexers;
 
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.imports.indexers.MetadataValidationIndexValueMaker;
 import ix.core.models.Group;
 import ix.core.search.text.IndexableValue;
@@ -30,9 +30,9 @@ public class MetadataValidationIndexValueMakerTest {
         metadata.setInstanceId(UUID.randomUUID());
         metadata.setEntityClassName("ix.ginas.models.v1.Substance");
         MetadataValidationIndexValueMaker indexValueMaker1 = new MetadataValidationIndexValueMaker();
-        Field serviceField = indexValueMaker1.getClass().getDeclaredField("holdingAreaService");
+        Field serviceField = indexValueMaker1.getClass().getDeclaredField("stagingAreaService");
         serviceField.setAccessible(true);
-        HoldingAreaService holdingAreaService = mock(HoldingAreaService.class);
+        StagingAreaService stagingAreaService = mock(StagingAreaService.class);
 
         String tooManyAtomsMessage = "Warning! The structure contains too many atoms";
         ValidationResponse vr = new ValidationResponse();
@@ -48,8 +48,8 @@ public class MetadataValidationIndexValueMakerTest {
             }
         };
         vr.addValidationMessage(vm);
-        when(holdingAreaService.validateInstance(metadata.getInstanceId().toString())).thenReturn(vr);
-        serviceField.set(indexValueMaker1, holdingAreaService);
+        when(stagingAreaService.validateInstance(metadata.getInstanceId().toString())).thenReturn(vr);
+        serviceField.set(indexValueMaker1, stagingAreaService);
         List<IndexableValue> indexedValues = new ArrayList<>();
         indexValueMaker1.createIndexableValues(metadata, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataValidationIndexValueMaker.IMPORT_METADATA_VALIDATION_TYPE_FACET)

@@ -2,9 +2,9 @@ package gsrs.imports.indexers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.repository.ImportDataRepository;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.repository.ImportDataRepository;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.indexer.IndexValueMakerFactory;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
@@ -21,7 +21,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     @Autowired
     IndexValueMakerFactory realFactory;
 
-    HoldingAreaService holdingAreaService= null;
+    StagingAreaService stagingAreaService = null;
 
     @Autowired
     ImportDataRepository importDataRepository;
@@ -36,7 +36,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
 
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
-        if( holdingAreaService == null) {
+        if( stagingAreaService == null) {
             try {
                 String contextName = importMetadata.getEntityClassName();
                 //hack!
@@ -44,18 +44,18 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                     String[] parts =contextName.split("\\.");
                     contextName = parts[parts.length-1].toLowerCase() + "s";
                 }
-                log.trace("looking for a holding area service for context {}", contextName);
-                holdingAreaService=AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal(contextName);
-                log.trace("got service {{}", holdingAreaService);
+                log.trace("looking for a staging area service for context {}", contextName);
+                stagingAreaService =AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
+                log.trace("got service {{}", stagingAreaService);
             } catch (Exception e) {
-                log.error("Error obtaining holding area service", e);
+                log.error("Error obtaining staging area service", e);
                 throw new RuntimeException(e);
             }
         }
         try {
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
             if( objectJson != null && objectJson.length()>0) {
-                Object dataObject= holdingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
+                Object dataObject= stagingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
                 if(dataObject== null){
                     log.warn("deserialized object is null! (importMetadata.getInstanceId(): {}", importMetadata.getInstanceId());
                     return;

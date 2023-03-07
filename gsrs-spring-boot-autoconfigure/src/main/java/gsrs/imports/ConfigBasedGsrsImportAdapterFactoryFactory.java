@@ -26,9 +26,9 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 {
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
-                        log.trace("c.getHoldingServiceClass(): {}", c.getHoldingAreaServiceClass()==null ? "null!!" :
-                                c.getHoldingAreaServiceClass().getName());
-                        iaf.setHoldingAreaService(c.getHoldingAreaServiceClass());
+                        log.trace("c.getStagingServiceClass(): {}", c.getStagingAreaServiceClass()==null ? "null!!" :
+                                c.getStagingAreaServiceClass().getName());
+                        iaf.setStagingAreaService(c.getStagingAreaServiceClass());
                         log.trace("entity services:");
                         //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
                         //iaf.setEntityServices(c.getEntityServices());
@@ -75,7 +75,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
                         log.trace("c.getAdapterName(): {}", c.getAdapterName() );
-                        iaf.setHoldingAreaService(c.getHoldingAreaServiceClass());
+                        iaf.setStagingAreaService(c.getStagingAreaServiceClass());
                         log.trace("entity services:");
                         //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
                         //iaf.setEntityServices(c.getEntityServices());
@@ -108,8 +108,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     }
 
     @Override
-    public Class<T> getDefaultHoldingAreaService(String context) {
-        String clsName= gsrsFactoryConfiguration.getDefaultHoldingAreaServiceClass().get(context);
+    public Class<T> getDefaultStagingAreaService(String context) {
+        String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaServiceClass().get(context);
         try {
             return (Class<T>) Class.forName(clsName);
         } catch (ClassNotFoundException e) {
@@ -119,8 +119,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     }
 
     @Override
-    public Class<T> getDefaultHoldingAreaEntityService(String context) {
-        String clsName= gsrsFactoryConfiguration.getDefaultHoldingAreaEntityService().get(context);
+    public Class<T> getDefaultStagingAreaEntityService(String context) {
+        String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
         try {
             return (Class<T>) Class.forName(clsName);
         } catch (ClassNotFoundException e) {

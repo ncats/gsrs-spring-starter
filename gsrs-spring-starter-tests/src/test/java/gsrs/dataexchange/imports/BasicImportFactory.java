@@ -1,8 +1,6 @@
 package gsrs.dataexchange.imports;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
@@ -15,12 +13,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData> {
     private String fileName;
-    private Class holdingAreaService;
+    private Class stagingAreaService;
     private List<Class> services;
     private Class serviceClass;
 
@@ -75,23 +72,23 @@ public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData>
     }
 
     @Override
-    public void setHoldingAreaService(Class newClass) {
-        this.holdingAreaService= newClass;
+    public void setStagingAreaService(Class stagingService) {
+        this.stagingAreaService = stagingService;
     }
 
     @Override
-    public Class getHoldingAreaEntityService() {
+    public Class getStagingAreaEntityService() {
         return null;
     }
 
     @Override
-    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+    public void setStagingAreaEntityService(Class stagingAreaEntityService) {
 
     }
 
     @Override
-    public Class getHoldingAreaService(){
-        return this.holdingAreaService;
+    public Class getStagingAreaService(){
+        return this.stagingAreaService;
     }
 
     public static List<MappingAction<GinasCommonData, TextRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {

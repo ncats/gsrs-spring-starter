@@ -1,10 +1,10 @@
 package gsrs.imports.indexers;
 
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.model.MatchedRecordSummary;
-import gsrs.holdingarea.repository.ImportDataRepository;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.repository.ImportDataRepository;
+import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
     @Autowired
     ImportDataRepository importDataRepository;
 
-    HoldingAreaService holdingAreaService;
+    StagingAreaService stagingAreaService;
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
@@ -34,16 +34,16 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
         log.trace("In createIndexableValues");
-        if(holdingAreaService==null) {
+        if(stagingAreaService ==null) {
             try {
-                holdingAreaService= AbstractImportSupportingGsrsEntityController.getHoldingAreaServiceForExternal("substances");
+                stagingAreaService = AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal("substances");
             } catch (NoSuchMethodException |InvocationTargetException  | InstantiationException | IllegalAccessException e) {
-                log.error("Error creating holding area service!");
+                log.error("Error creating staging area service!");
                 throw new RuntimeException(e);
             }
         }
         String instanceData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
-        MatchedRecordSummary matchedRecordSummary = holdingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData);
+        MatchedRecordSummary matchedRecordSummary = stagingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData);
         long matchCount= matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                                 .count();

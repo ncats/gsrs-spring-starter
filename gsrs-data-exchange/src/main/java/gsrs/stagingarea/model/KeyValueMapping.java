@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.stagingarea.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ix.core.models.Indexable;

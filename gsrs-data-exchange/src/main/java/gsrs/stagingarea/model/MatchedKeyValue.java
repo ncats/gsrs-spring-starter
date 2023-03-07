@@ -1,6 +1,5 @@
-package gsrs.holdingarea.model;
+package gsrs.stagingarea.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.util.EntityUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +17,7 @@ a  key/value pair that has located one or more records in a Staging Area or perm
 @Builder
 public class MatchedKeyValue {
 
-    private gsrs.holdingarea.model.MatchableKeyValueTuple tupleUsedInMatching;
+    private gsrs.stagingarea.model.MatchableKeyValueTuple tupleUsedInMatching;
     private List<MatchingRecordReference> matchingRecords;
 
     @Data

@@ -1,7 +1,7 @@
 package gsrs.dataexchange.imports.indexers;
 
 import gsrs.imports.indexers.MetadataSourceIndexValueMaker;
-import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.ImportMetadata;
 import ix.core.models.Group;
 import ix.core.search.text.IndexableValue;
 import org.junit.jupiter.api.Assertions;

@@ -1,20 +1,16 @@
 package gsrs.dataexchange.repository;
 
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.holdingarea.model.KeyValueMapping;
-import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.stagingarea.model.KeyValueMapping;
+import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.UUID;
 

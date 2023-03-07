@@ -1,12 +1,7 @@
 package gsrs.imports;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.holdingarea.service.DefaultHoldingAreaService;
-import gsrs.holdingarea.service.HoldingAreaEntityService;
 import ix.ginas.models.GinasCommonData;
-import org.checkerframework.checker.units.qual.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -19,13 +14,13 @@ public class TestDefaultImportAdapterFactoryConfig {
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         String substanceContext="substances";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
-        Map<String, String> holdingAreaService = new HashMap<>();
-        holdingAreaService.put("substances", "gsrs.holdingarea.service.DefaultHoldingAreaService");
-        config.setDefaultHoldingAreaEntityService(holdingAreaService);
+        Map<String, String> stagingAreaService = new HashMap<>();
+        stagingAreaService.put("substances", "gsrs.stagingarea.service.DefaultStagingAreaService");
+        config.setDefaultStagingAreaEntityService(stagingAreaService);
 
         Map<String, String> entityService = new HashMap<>();
-        entityService.put("substances", "gsrs.holdingarea.service.HoldingAreaEntityService");
-        config.setDefaultHoldingAreaEntityService(entityService);
+        entityService.put("substances", "gsrs.stagingarea.service.StagingAreaEntityService");
+        config.setDefaultStagingAreaEntityService(entityService);
 
         Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();
         Map<String,Object> oneAdapter = new HashMap<>();

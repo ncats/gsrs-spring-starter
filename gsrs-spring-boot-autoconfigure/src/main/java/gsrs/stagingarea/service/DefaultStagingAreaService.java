@@ -1,11 +1,11 @@
-package gsrs.holdingarea.service;
+package gsrs.stagingarea.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.events.ReindexEntityEvent;
-import gsrs.holdingarea.model.*;
-import gsrs.holdingarea.repository.*;
+import gsrs.stagingarea.model.*;
+import gsrs.stagingarea.repository.*;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
@@ -30,7 +30,6 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
-import javax.print.DocFlavor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,11 +37,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DefaultHoldingAreaService<T> implements HoldingAreaService {
+public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     public static String IMPORT_FAILURE = "ERROR";
 
-    public static String HOLDING_AREA_LOCATION = "Staging Area";
+    public static String STAGING_AREA_LOCATION = "Staging Area";
 
     @Autowired
     ImportMetadataRepository metadataRepository;
@@ -85,14 +84,14 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
 
     private MatchableCalculationConfig matchableCalculationConfig;
 
-    //public final static String CURRENT_SOURCE = "Holding Area";
+    //public final static String CURRENT_SOURCE = "Staging Area";
 
-    private Map<String, HoldingAreaEntityService> _entityServiceRegistry = new HashMap<>();
+    private Map<String, StagingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public DefaultHoldingAreaService(String context) {
+    public DefaultStagingAreaService(String context) {
         this.context = Objects.requireNonNull(context, "context can not be null");
     }
 
@@ -397,7 +396,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
     @Override
-    public <T> void registerEntityService(HoldingAreaEntityService<T> service) {
+    public <T> void registerEntityService(StagingAreaEntityService<T> service) {
         log.trace("registered entity service class {} for entity class {}", service.getClass().getName(),
                 service.getEntityClass().getName());
         _entityServiceRegistry.put(service.getEntityClass().getName(), service);
@@ -406,7 +405,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
         log.trace("in calculateMatchables of class {}", object.getClass().getName());
-        HoldingAreaEntityService entityService = getHoldingAreaEntityService(object.getClass());
+        StagingAreaEntityService entityService = getStagingAreaEntityService(object.getClass());
         if( entityService!=null) {
             log.trace("found entity service");
             return entityService.extractKVM(object);
@@ -644,7 +643,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
             mapping.setInstanceId(instanceId);
             mapping.setRecordId(recordId);
             mapping.setEntityClass(matchedEntityClass);
-            mapping.setDataLocation(HOLDING_AREA_LOCATION);
+            mapping.setDataLocation(STAGING_AREA_LOCATION);
             keyValueMappingRepository.saveAndFlush(mapping);
             //index for searching
             EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
@@ -751,7 +750,7 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
     /*
-    After a domain entity within the holding area is updated, we rerun validation and matching and store the results
+    After a domain entity within the staging area is updated, we rerun validation and matching and store the results
     call this method inside a transaction
      */
     public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
@@ -784,12 +783,12 @@ public class DefaultHoldingAreaService<T> implements HoldingAreaService {
     }
 
 
-    private HoldingAreaEntityService<T> getHoldingAreaEntityService(Class objectClass) {
+    private StagingAreaEntityService<T> getStagingAreaEntityService(Class objectClass) {
         if(_entityServiceRegistry.containsKey(objectClass.getName())) {
             return _entityServiceRegistry.get(objectClass.getName());
         }
         if( objectClass.getSuperclass() !=null){
-            return getHoldingAreaEntityService(objectClass.getSuperclass());
+            return getStagingAreaEntityService(objectClass.getSuperclass());
         }
         return null;
     }

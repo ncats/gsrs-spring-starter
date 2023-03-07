@@ -1,4 +1,4 @@
-package gsrs.holdingarea.model;
+package gsrs.stagingarea.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
