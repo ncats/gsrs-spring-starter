@@ -41,7 +41,6 @@ public class MatchedRecordSummary {
                 .map(i->{
                     long count= matches.stream().filter(mi->mi.getTupleUsedInMatching().getKey().equals(i)).count();
                     log.trace("in lambda, count: {} (log)", count);
-                    System.out.println("in lambda, count: " + count);
                     return Tuple.of(i, count);
                 })
                 .filter(t->t.v()>1)

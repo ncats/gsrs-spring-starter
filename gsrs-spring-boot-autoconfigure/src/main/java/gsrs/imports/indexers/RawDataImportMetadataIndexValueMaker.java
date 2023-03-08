@@ -36,6 +36,11 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
 
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
+        if(importMetadata.getImportStatus()== ImportMetadata.RecordImportStatus.imported){
+            log.trace("skipping processing of ImportMetadata object that has been imported.");
+            //todo: consider removing the substance from the list of things indexed for the staging area
+            return;
+        }
         if( stagingAreaService == null) {
             try {
                 String contextName = importMetadata.getEntityClassName();

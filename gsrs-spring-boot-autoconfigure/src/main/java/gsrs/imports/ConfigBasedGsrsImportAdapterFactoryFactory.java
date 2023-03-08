@@ -3,6 +3,7 @@ package gsrs.imports;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.stagingarea.service.DefaultStagingAreaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +111,9 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Override
     public Class<T> getDefaultStagingAreaService(String context) {
         String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaServiceClass().get(context);
+        if(clsName==null || clsName.length()==0) {
+            clsName="gsrs.stagingarea.service.DefaultStagingAreaService";
+        }
         try {
             return (Class<T>) Class.forName(clsName);
         } catch (ClassNotFoundException e) {

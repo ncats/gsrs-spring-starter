@@ -1211,7 +1211,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);
-        List results = (List) transactionTemplate.execute(stauts -> {
+        List results = (List) transactionTemplate.execute(stats -> {
             //the top and skip settings  look wrong, because we're not skipping
             //anything, but it's actually right,
             //because the original request did the skipping.
