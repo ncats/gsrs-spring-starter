@@ -1,5 +1,11 @@
 package gsrs.importer;
-import java.util.*;
+
+import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
 
 /*
 Representation of a set of data records read from a file that's being imported.
@@ -41,4 +47,3 @@ public class DefaultPropertyBasedRecordContext implements PropertyBasedDataRecor
         return Optional.empty();
     }
 }
-

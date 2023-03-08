@@ -72,6 +72,7 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
             <version>${gsrs.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

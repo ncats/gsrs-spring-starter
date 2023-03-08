@@ -94,7 +94,6 @@ public class PayloadController{
                 }
             }
         }
-        System.out.println("mimeType" + mimeType);
         if(mimeType==null) {
             mimeType = defMime;
         }
