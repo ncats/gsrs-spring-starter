@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -35,15 +37,20 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.repository.ETagRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
+import gsrs.service.EtagExportGenerator;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.models.ETag;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
@@ -84,6 +91,12 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    }
     @Autowired
     private PlatformTransactionManager transactionManager;
+    
+    @Autowired
+    private ETagRepository eTagRepository;
+    
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+    private EntityManager localEntityManager;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);
     
@@ -854,7 +867,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     
     // if the user list exists, it will fail
-    @PostGsrsRestApiMapping(value="/@userList")  //change to user list
+    @PostGsrsRestApiMapping(value="/@userList/keys")  //change to user list
     public ResponseEntity<String> saveUserListWithKeys(  											
     										   @RequestParam String listName,
     										   @RequestBody String keys){ //take an etag and get all the keys 
@@ -883,34 +896,42 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	log.warn("testing ");
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
-    
-    @PostGsrsRestApiMapping(value="/@userList/{etagId}")  //change to user list
-    public ResponseEntity<String> saveUserListWithE(  											
-    										   @RequestParam String listName,
-    										   @PathVariable("etagId") String etagId){ //take an etag and get all the keys 
+    //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
+    @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
+    public ResponseEntity<String> saveUserListWithEtag(  											
+    										   @RequestParam(value="listName",required=true) String listName,
+    										   @PathVariable("etagId") String etagId,
+    										   HttpServletRequest request){ //take an etag and get all the keys
     	
     	
-//    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-//    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
-//    	
-//    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-//    	   	
-//    	if(!validStringParamater(listName) || !validStringParamater(keys)) {
-//    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
-//    	   	
-//    	
-//    	List<String> keyList = Arrays.asList(keys.split(","));
-//    	    	
-//    	List<String> list = keyList.stream().map(key->key.trim())
-//    										.filter(key->!key.isEmpty())
-//    										.collect(Collectors.toList());
-//    	
-//    	if(list.size() ==0)
-//    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-//    		
-//    	userSaveListService.saveBulkSearchResultList(userName, listName, list);    
-//    	reIndexWithKeys(list);
-//    	log.warn("testing ");
+    	log.error("in saveUserListWithEtag");
+    	Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
+    	if(!etagObj.isPresent()) {
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
+    	EtagExportGenerator<T> etagExporter = new EtagExportGenerator<T>(localEntityManager, transactionManager, HttpRequestHolder.fromRequest(request));
+    	List<Key> keys = etagExporter.getKeysFromUri(etagObj.get(), getEntityService().getContext());
+    	
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	   	
+    	if(!validStringParamater(listName) ) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
+    	   	
+    	List<String> keyList = keys.stream()
+    			.map(key->key.getIdString())
+    			.map(key->key.trim())
+    			.filter(key->!key.isEmpty())
+    			.collect(Collectors.toList());
+   	
+    	if(keyList.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    		
+    	userSaveListService.saveBulkSearchResultList(userName, listName, keyList);    
+    	reIndexWithKeys(keyList);
+
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
         
@@ -987,6 +1008,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
+    @hasAdminRole
     @PutGsrsRestApiMapping(value="/@userList/otherUser")
     public ResponseEntity<String> updateOtherUserSavedList(   		
     										   @RequestParam String userName, 	
@@ -1032,7 +1054,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	for(String key: keys) {    		
     		try {
     			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key);
-    			getlegacyGsrsSearchService().reindex(obj.get(), true);
+    			if(obj.isPresent()) {
+    				getlegacyGsrsSearchService().reindex(obj.get(), true);
+    			}
 			
     		}catch(Exception e) {
     			log.warn("trouble reindexing id: " + key, e);

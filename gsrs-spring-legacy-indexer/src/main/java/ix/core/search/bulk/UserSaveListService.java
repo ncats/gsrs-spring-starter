@@ -215,6 +215,15 @@ public class UserSaveListService {
 		return userName+":"+listName;	
 	}
 	
+	public static String getUserNameFromIndexedValue(String value) {
+		if(!value.contains(":"))
+			return "";
+		String [] values = value.split(":");
+		if(values.length!=2)
+			return "";
+		return values[0];
+	}
+	
 	
 	public static String getUserListName(String indexedValue, String userName) {
 		if(!indexedValue.contains(":"))

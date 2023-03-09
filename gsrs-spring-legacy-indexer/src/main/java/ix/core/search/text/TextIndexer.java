@@ -149,6 +149,7 @@ import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.TextService;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
@@ -163,6 +164,7 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.search.SearchResult;
 import ix.core.search.SuggestResult;
+import ix.core.search.bulk.UserSaveListService;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -435,6 +437,13 @@ public class TextIndexer implements Closeable, ProcessListener {
                 filt = getPredicate(parser.parse(filter));
             }
 
+            String userName;
+            Optional<String> nameOptional = GsrsSecurityUtils.getCurrentUsername();
+            if(nameOptional.isPresent()) {
+            	userName = nameOptional.get();
+            }else {
+            	userName="";
+            }
 
             terms.entrySet()
                 .stream()
@@ -442,14 +451,21 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
                 .filter(filt)
                 .map(t->new FV(fac,t.k(),t.v()))
-//                .filter(fv->{
-//                	if(field.equalsIgnoreCase("User List")) {
-//                		// check the current user
-//                		fv.getLabel().startsWith(username)
-//                	}else {
-//                		return true;
-//                	}                		
-//                })
+                .filter(fv->{
+                	if(field.equalsIgnoreCase("User List")) {
+                		// check the current user, filter facet by user name 
+                		String nameInLabel = UserSaveListService.getUserNameFromIndexedValue(fv.getLabel());
+                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
+                		if(userName.isEmpty())
+                			return false;
+                		else if(userName.equalsIgnoreCase(nameInLabel))
+                			return true;
+                		else
+                			return false;
+                	}else {
+                		return true;
+                	}                		
+                })
                 .collect(StreamUtil.maxElements(top+skip, FacetImpl.Comparators.COUNT_SORTER_DESC))
                 .skip(skip)
                 .limit(top)
@@ -1947,12 +1963,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 
 				for(LabelAndValue lv:result.labelValues){
-//					if(result.dim.equalsIgnoreCase("User List")) {
-//						// get and check name						
-//					}else {
-//						fac.add(lv.label, lv.value.intValue());
-//					}
-					fac.add(lv.label, lv.value.intValue());					
+					if(result.dim.equalsIgnoreCase("User List")) {
+						String userName = UserSaveListService.getUserNameFromIndexedValue(lv.label);
+						log.error("facet user name: " + userName + " reqeust user name: "+sr.getUserName());
+						if(userName.equalsIgnoreCase(sr.getUserName())) {
+							fac.add(lv.label, lv.value.intValue());
+						}											
+					}else {
+						fac.add(lv.label, lv.value.intValue());
+					}
+									
 				}
 
 				fac.getMissingSelections().stream().forEach(l->{
