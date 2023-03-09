@@ -233,8 +233,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         Class<T> c = adaptFac.getStagingAreaService();
         log.trace("in getStagingAreaService, instantiating StagingAreaService: {}", c.getName());
-        Constructor<T> constructor = c.getConstructor(String.class);
-        Object o = constructor.newInstance(this.getEntityService().getContext());
+        Constructor<T> constructor = c.getConstructor();
+        Object o = constructor.newInstance();
         StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
         if (adaptFac.getEntityServiceClass() != null) {
             Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
@@ -327,38 +327,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     //todo: cleaner implementation:
     static protected StagingAreaService _stagingAreaService = null;
 
-    static public StagingAreaService getStagingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        log.trace("in getStagingAreaServiceForExternal");
-        /*if (_stagingAreaService == null) {
-            return service;
-        }*/
-        return _stagingAreaService;
-    }
-
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        log.trace("starting in getDefaultStagingAreaService");
-        Class stagingAreaServiceClass = gsrsImportAdapterFactoryFactory.getDefaultStagingAreaService(getEntityService().getContext());
-        if (stagingAreaServiceClass == null) {
-            log.error("Error retrieving !");
-            return null;
-        }
-        log.trace("got class {}", stagingAreaServiceClass.getName());
-        Constructor constructor = stagingAreaServiceClass.getConstructor(String.class);
-        Object o = constructor.newInstance(this.getEntityService().getContext());
-        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
-        log.trace("instantiated service");
-
-        Class stagingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory.getDefaultStagingAreaEntityService(getEntityService().getContext());
-        log.trace("going entity service class: {}", stagingAreaEntityServiceClass.getName());
-        Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
-        Object o2 = constructorEntityService.newInstance();
-        log.trace("instantiated entity service");
-        StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
-        service.registerEntityService(entityService);
-        log.trace("called registerEntityService with {}", entityService.getClass().getName());
-        log.trace("finished in getDefaultStagingAreaService");
-        _stagingAreaService = service;
-        return service;
+        return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
     }
 
     //STEP 0: list adapter classes

@@ -143,8 +143,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     public StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         log.trace("in getStagingAreaService for context {}", context);
         Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
-        Constructor constructor = stagingAreaServiceClass.getConstructor(String.class);
-        Object o = constructor.newInstance(context);
+        Constructor constructor = stagingAreaServiceClass.getConstructor();
+        Object o = constructor.newInstance();
         StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
         log.trace("instantiated service");
         Class stagingAreaEntityServiceClass = getDefaultStagingAreaEntityService(context);
