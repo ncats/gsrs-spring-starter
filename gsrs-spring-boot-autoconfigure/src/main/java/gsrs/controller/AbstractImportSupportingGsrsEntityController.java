@@ -329,31 +329,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     static public StagingAreaService getStagingAreaServiceForExternal(String contextName) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         log.trace("in getStagingAreaServiceForExternal");
-        if (_stagingAreaService == null) {
-            GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory1 = new ConfigBasedGsrsImportAdapterFactoryFactory();
-            Class stagingAreaServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultStagingAreaService(contextName);
-            if (stagingAreaServiceClass == null) {
-                log.error("Error retrieving !");
-                return null;
-            }
-            log.trace("got class {}", stagingAreaServiceClass.getName());
-            Constructor constructor = stagingAreaServiceClass.getConstructor(String.class);
-            Object o = constructor.newInstance(contextName);
-            StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
-            log.trace("instantiated service");
-
-            Class stagingAreaEntityServiceClass = gsrsImportAdapterFactoryFactory1.getDefaultStagingAreaEntityService(contextName);
-            log.trace("going entity service class: {}", stagingAreaEntityServiceClass.getName());
-            Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
-            Object o2 = constructorEntityService.newInstance();
-            log.trace("instantiated entity service");
-            StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
-            service.registerEntityService(entityService);
-            log.trace("called registerEntityService with {}", entityService.getClass().getName());
-            log.trace("finished in getDefaultStagingAreaService");
-            _stagingAreaService = service;
+        /*if (_stagingAreaService == null) {
             return service;
-        }
+        }*/
         return _stagingAreaService;
     }
 
