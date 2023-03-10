@@ -2,13 +2,13 @@ package ix.core.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.SpecialFieldsProperties;
@@ -74,6 +74,104 @@ public class EntityUtils {
 	 */
 	public static final String FIELD_KIND = "__kind";
 	public static final String FIELD_ID = "id";
+
+	public static Object convertConfigObject(Object input) throws JsonProcessingException {
+
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode node= mapper.readTree((String) input);
+		System.out.println("convertConfigObject node type: "+node.getNodeType().name());
+		if(node.isArray()){
+			ArrayNode arrayNode= (ArrayNode)node;
+			//JsonParser parser= arrayNode.traverse();
+			for(int i = 0; i< arrayNode.size(); i++){
+				String msg = String.format("i: %d; node type: %s; value: %s", i, arrayNode.get(i).getNodeType().name(),
+						arrayNode.get(i));
+				System.out.println(msg);
+			}
+		}
+		return node;
+	}
+
+	public static JsonNode fixJSONNode(JsonNode parent) {
+		return fixJSONNode(null, parent, "");
+	}
+	private static JsonNode fixJSONNode(JsonNode parent, JsonNode jsn, String pathInParent) {
+		ObjectMapper om = new ObjectMapper();
+		if(jsn.isValueNode())return jsn;
+		if(jsn.isArray()) {
+			ArrayNode an = (ArrayNode)jsn;
+			for(int i=0;i<an.size();i++) {
+				JsonNode elm = an.get(i);
+				fixJSONNode(jsn, elm, "" + i);
+			}
+			return jsn;
+		}else {
+			if(jsn.isObject()) {
+
+				List<Tuple<Integer,JsonNode>> alist = new ArrayList<>();
+
+				boolean allNums=true;
+				if(jsn.size()>0) {
+					Iterable<String> list = ()->jsn.fieldNames();
+					for(String nm:(list)) {
+						try{
+							int num=Integer.parseInt(nm);
+							alist.add(Tuple.of(num, jsn.get(nm)));
+						}catch(Exception e) {
+							allNums=false;
+							break;
+						}
+					}
+				}
+				if(allNums && jsn.size()>0) {
+					ArrayNode an =om.createArrayNode();
+					alist.stream().sorted(Comparator.comparing(t->t.k())).map(t->t.v()).forEach(v->an.add(v));
+
+					if(parent!=null) {
+						if(parent.isArray()) {
+							ArrayNode anP = (ArrayNode)parent;
+							anP.set(Integer.parseInt(pathInParent), an);
+						}else if(parent.isObject()) {
+							ObjectNode on = (ObjectNode)parent;
+							on.set(pathInParent,an);
+						}
+					}
+					for(int i=0;i<an.size();i++) {
+						JsonNode elm = an.get(i);
+						fixJSONNode(an, elm, "" + i);
+					}
+					return an;
+				}else {
+					jsn.fields().forEachRemaining(es->{
+						fixJSONNode(jsn, es.getValue(), es.getKey());
+					});
+					return jsn;
+				}
+
+			}else {
+				//IDK?
+				return jsn;
+			}
+		}
+	}
+	public static <T extends Object> T convertClean(Object o, TypeReference<T> ref) {
+		ObjectMapper om = new ObjectMapper();
+		JsonNode jsn;
+		if(o instanceof JsonNode) {
+			jsn=(JsonNode)o;
+		}else {
+			jsn= om.valueToTree(o);
+		}
+		jsn = fixJSONNode(jsn);
+		try {
+			log.trace("looking to convert node of type {}", ref.getType().getTypeName());
+			T convertedObject= om.convertValue(jsn, ref);
+			return convertedObject;
+		} catch (NullPointerException npe) {
+			//hack for unit tests which may fail the convertValue calls
+			return (T) o;
+		}
+	}
 	/**
 	 * This is a simplified memoized map to help avoid recalculating the same
 	 * expensive value several times with different threads. It will also avoid

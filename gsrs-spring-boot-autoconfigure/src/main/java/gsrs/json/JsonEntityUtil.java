@@ -3,6 +3,7 @@ package gsrs.json;
 import gov.nih.ncats.common.sneak.Sneak;
 import ix.core.models.ParentReference;
 import ix.core.util.EntityUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.implementation.bytecode.Throw;
 
 import java.lang.reflect.Field;
@@ -11,6 +12,7 @@ import java.lang.reflect.Method;
 /**
  * Utility class for working on entity objects that have been deserialized from JSON.
  */
+@Slf4j
 public final class JsonEntityUtil {
 
     private JsonEntityUtil(){
@@ -47,7 +49,6 @@ public final class JsonEntityUtil {
                 } catch (Throwable e) {
                     Sneak.sneakyThrow(e);
                 }
-                found=true;
             }
         }
         if(!found) {
