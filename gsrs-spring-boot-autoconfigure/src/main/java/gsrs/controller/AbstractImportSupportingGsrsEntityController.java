@@ -219,6 +219,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     protected StagingAreaService getStagingAreaService(String adapterName) throws Exception {
+        log.trace("starting getStagingAreaService with adapterName {}", adapterName);
         ImportAdapterFactory<T> adaptFac =
                 getImportAdapterFactory(adapterName)
                         .orElse(null);
@@ -236,6 +237,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Constructor<T> constructor = c.getConstructor();
         Object o = constructor.newInstance();
         StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
+        log.trace("adaptFac.getEntityServiceClass(): {}", adaptFac.getEntityServiceClass());
         if (adaptFac.getEntityServiceClass() != null) {
             Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
             StagingAreaEntityService<T> entityService = (StagingAreaEntityService) entityServiceConstructor.newInstance();
@@ -243,7 +245,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             service.registerEntityService(entityService);
             log.trace("called registerEntityService with {}", entityService.getClass().getName());
         } else {
-            log.warn("No entity service found.  Import won't get far.");
+            log.warn("No entity service found.  using alternative strategy.");
+            _stagingAreaService=gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());;
+            return _stagingAreaService;
         }
         _stagingAreaService = service;
         return service;
@@ -312,14 +316,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
-        log.trace(String.format("In getImportAdapterFactory, looking for adapter with name %s among %d", name, getImportAdapters().size()));
+        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", name, getImportAdapters().size());
         if (getImportAdapters() != null) {
-            getImportAdapters().forEach(a -> log.trace("adapter with name: {}, key: {}", a.getAdapterName(), a.getAdapterKey()));
+            getImportAdapters().forEach(a -> log.trace("adapter with name: '{}', key: '{}'", a.getAdapterName(), a.getAdapterKey()));
         }
         Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
         if (!adapterFactory.isPresent()) {
             log.trace("searching for adapter by name failed; using key");
             adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+            log.trace("success? {}", adapterFactory.isPresent());
         }
         return adapterFactory;
     }
