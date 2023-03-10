@@ -9,12 +9,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.security.core.parameters.P;
 
 import java.io.IOException;
 
 @JsonComponent
+@Slf4j
 public class PrincipalDeserializer extends JsonDeserializer<Principal> {
 
     @Autowired
@@ -27,9 +30,15 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
     }
 
     private synchronized  void initIfNeeded(){
-        if(principalService ==null) {
-            AutowireHelper.getInstance().autowire(this);
-        }
+
+        if (principalService == null) {
+            try {
+                AutowireHelper.getInstance().autowire(this);
+                } catch(Exception ex) {
+                    log.error("Failure to autowire PrincipalService " , ex);
+                }
+            }
+
     }
     public PrincipalDeserializer(PrincipalService principalRepository) {
         this.principalService = principalRepository;
@@ -49,7 +58,16 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
         }
         else { // JsonToken.VALUE_STRING:
             String username = jsonParser.getValueAsString();
-            return principalService.registerIfAbsent(username);
+            if(principalService==null){
+                //note: this will be a detached principal object that may lead to errors when entity is saved
+                return new Principal(username,null);
+            }
+            try {
+                return principalService.registerIfAbsent(username);
+            }
+            catch (Exception ex) {
+                return new Principal(username,null);
+            }
         }
     }
 }

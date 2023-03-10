@@ -6,6 +6,7 @@ import gsrs.controller.hateoas.LoopbackWebRequestHelper;
 import gsrs.entityProcessor.BasicEntityProcessorConfiguration;
 import gsrs.entityProcessor.ConfigBasedEntityProcessorConfiguration;
 import gsrs.events.listeners.ReindexEventListener;
+import gsrs.imports.ConfigBasedImportAdapterFactoryFactoryConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
@@ -25,7 +26,6 @@ import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +90,8 @@ public class GsrsApiSelector implements ImportSelector {
 
         EnableGsrsApi.EntityProcessorDetector entityProcessorDetector = attributes.getEnum("entityProcessorDetector");
 
-
+        //TODO: need a clean way to put this bean in scope.
+        //componentsToInclude.add(DefaultStagingAreaService.class);
         switch(entityProcessorDetector){
             case COMPONENT_SCAN:
                 componentsToInclude.add(BasicEntityProcessorConfiguration.class);
@@ -104,6 +105,7 @@ public class GsrsApiSelector implements ImportSelector {
         //TODO make something other than CONF based validator?
         componentsToInclude.add(ValidatorConfigConverter.class);
         componentsToInclude.add(ConfigBasedValidatorFactoryConfiguration.class);
+        componentsToInclude.add(ConfigBasedImportAdapterFactoryFactoryConfiguration.class);
         componentsToInclude.add(URIPojoPointerParser.class);
         componentsToInclude.add(LambdaParseRegistry.class);
         componentsToInclude.add(RegisteredFunctionProperties.class);

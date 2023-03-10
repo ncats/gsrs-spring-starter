@@ -13,7 +13,7 @@ public final class GsrsUtils {
     }
     /**
      * Create a BiFunction from a lambda String.  This method will compile the lambda String using the given type information
-     * and any additional imports that are required for the lambda to compile aside from the default java imports.
+     * and any additional gsrs.startertests.imports that are required for the lambda to compile aside from the default java gsrs.startertests.imports.
      * <br/>
      *
      * Examples:
@@ -79,7 +79,7 @@ public final class GsrsUtils {
 
     /**
      * Create a Function from a lambda String.  This method will compile the lambda String using the given type information
-     * and any additional imports that are required for the lambda to compile aside from the default java imports.
+     * and any additional gsrs.startertests.imports that are required for the lambda to compile aside from the default java gsrs.startertests.imports.
      * <br/>
      *
      * Examples:

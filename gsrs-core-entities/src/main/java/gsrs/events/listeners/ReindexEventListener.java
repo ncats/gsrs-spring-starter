@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import gsrs.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -12,11 +13,6 @@ import org.springframework.stereotype.Service;
 
 import gov.nih.ncats.common.util.SingleThreadCounter;
 import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.events.BeginReindexEvent;
-import gsrs.events.EndReindexEvent;
-import gsrs.events.IncrementReindexEvent;
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -42,12 +38,20 @@ public class ReindexEventListener {
         long expected=event.getNumberOfExpectedRecord();
         reindexCounts.put(event.getId(), new SingleThreadCounter(expected));
         reindexTimes.put(event.getId(), TimeUtil.getCurrentTimeMillis());
-        if(!inMaintenanceMode){
+
+        //todo: extract the concept of MaintenanceMode from the index maintenance
+        if(event.getIndexBehavior()== BeginReindexEvent.IndexBehavior.WIPE_ALL_INDEXES && !inMaintenanceMode){
             inMaintenanceMode=true;
             //was not in maintenanceMode mode before and now it is
             applicationEventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
         }
-        
+
+        if( event.getIndexBehavior() == BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX){
+            //iterate through classes
+            event.getClassesToRemoveFromIndex().forEach(c->{
+                applicationEventPublisher.publishEvent(new ClearIndexByTypeEvent(c));
+            });
+        }
         if (expected == 0L) {
             finishReindexEvent(event.getId());
         }
