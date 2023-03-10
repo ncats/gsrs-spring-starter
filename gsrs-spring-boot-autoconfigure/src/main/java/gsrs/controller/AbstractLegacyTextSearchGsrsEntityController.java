@@ -829,7 +829,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return baseNode.toPrettyString();
     }
     
-    @GetGsrsRestApiMapping(value="/@userLists/{list}")
+    @GetGsrsRestApiMapping(value="/@userList/{list}")
     public ResponseEntity<String> getCurrentUserSavedtListContent(@PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
@@ -848,7 +848,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @hasAdminRole
-    @GetGsrsRestApiMapping(value="/@userLists/{user}/{list}")
+    @GetGsrsRestApiMapping(value="/@userList/{user}/{list}")
     public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable String name,
     										   @PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
@@ -1050,10 +1050,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return true;
     }
     
-    private void reIndexWithKeys(List<String> keys) { //change keys to keyIds
-    	for(String key: keys) {    		
+    private void reIndexWithKeys(List<String> keyIds) { 
+    	for(String key: keyIds) {    		
     		try {
-    			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key);
+    			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key); // use get()
     			if(obj.isPresent()) {
     				getlegacyGsrsSearchService().reindex(obj.get(), true);
     			}
