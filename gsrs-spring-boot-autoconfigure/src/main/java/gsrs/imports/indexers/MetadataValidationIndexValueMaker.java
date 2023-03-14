@@ -1,6 +1,6 @@
 package gsrs.imports.indexers;
 
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.search.text.IndexValueMaker;
@@ -8,6 +8,7 @@ import ix.core.search.text.IndexableValue;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
@@ -20,6 +21,9 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     //@Autowired
     StagingAreaService stagingAreaService;
 
+    @Autowired
+    private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
+
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
         return ImportMetadata.class;
@@ -30,7 +34,13 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
         log.trace("In createIndexableValues");
         if(stagingAreaService ==null) {
             try {
-                stagingAreaService = AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal("substances");
+                String contextName = importMetadata.getEntityClassName();
+                //hack!
+                if(contextName.contains(".")) {
+                    String[] parts =contextName.split("\\.");
+                    contextName = parts[parts.length-1].toLowerCase() + "s";
+                }
+                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
                 log.error("Error creating staging area service!");
                 throw new RuntimeException(e);
@@ -40,7 +50,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
             log.warn("importMetadata.getInstanceId() null! ");
             return;
         }
-        log.trace("importMetadata.getInstanceId(): {}; importMetadata.getRecordId()", importMetadata.getInstanceId(), importMetadata.getRecordId());
+        log.trace("importMetadata.getInstanceId(): {}; importMetadata.getRecordId(): {}", importMetadata.getInstanceId(), importMetadata.getRecordId());
         ValidationResponse validationResponse= stagingAreaService.validateInstance(importMetadata.getInstanceId().toString());
         validationResponse.getValidationMessages().forEach(vm->{
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,

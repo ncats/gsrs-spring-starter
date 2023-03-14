@@ -80,8 +80,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     private TextIndexer indexer;
 
-    private final String context;
-
     private MatchableCalculationConfig matchableCalculationConfig;
 
     //public final static String CURRENT_SOURCE = "Staging Area";
@@ -90,10 +88,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
-
-    public DefaultStagingAreaService(String context) {
-        this.context = Objects.requireNonNull(context, "context can not be null");
-    }
 
     @PostConstruct
     public void setupIndexer() {
@@ -595,10 +589,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
         MatchedRecordSummary matches = findMatches(qualifiedEntityType, definitionalValueTuples);
         return matches;
-    }
-
-    public String getContext() {
-        return context;
     }
 
     public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {

@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
+import gsrs.stagingarea.service.StagingAreaEntityService;
+import gsrs.stagingarea.service.StagingAreaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -122,6 +126,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
         }
     }
 
+
+
     @Override
     public Class<T> getDefaultStagingAreaEntityService(String context) {
         String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
@@ -131,5 +137,25 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
             log.error("Class {} not found", clsName);
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        log.trace("in getStagingAreaService for context {}", context);
+        Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
+        Constructor constructor = stagingAreaServiceClass.getConstructor();
+        Object o = constructor.newInstance();
+        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
+        log.trace("instantiated service");
+        Class stagingAreaEntityServiceClass = getDefaultStagingAreaEntityService(context);
+        log.trace("going entity service class: {}", stagingAreaEntityServiceClass.getName());
+        Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
+        Object o2 = constructorEntityService.newInstance();
+        log.trace("instantiated entity service");
+        StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
+        service.registerEntityService(entityService);
+        log.trace("called registerEntityService with {}", entityService.getClass().getName());
+
+        return service;
     }
 }
