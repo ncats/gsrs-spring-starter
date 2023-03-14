@@ -42,8 +42,8 @@ public class MetadataMatchCountIndexValueMakerTest {
         List<MatchedKeyValue> matchedKeyValues = new ArrayList<>();
         List<MatchedKeyValue.MatchingRecordReference> matchingRecords = new ArrayList<>();
         MatchedKeyValue.MatchingRecordReference match1= new MatchedKeyValue.MatchingRecordReference();
-        match1.setMatchedKey("Key 1");
-        match1.setSourceName("Database");
+        match1.setMatchedKey("Factor 1");
+        match1.setSourceName("GSRS");
         EntityUtils.Key recordId=EntityUtils.Key.of(ImportMetadata.class, record1Id);
         match1.setRecordId( recordId);
         matchingRecords.add(match1);
@@ -84,6 +84,6 @@ public class MetadataMatchCountIndexValueMakerTest {
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_COUNT_FACET)
                 && ((long)i.value()== 2)));
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_KEY_FACET)
-        && i.value().equals("Factor 2")));
+        && i.value().equals("Factor 1")));
     }
 }

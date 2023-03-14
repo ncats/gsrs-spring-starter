@@ -1,7 +1,7 @@
 package gsrs.imports.indexers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.repository.ImportDataRepository;
 import gsrs.stagingarea.service.StagingAreaService;
@@ -25,6 +25,9 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
 
     @Autowired
     ImportDataRepository importDataRepository;
+
+    @Autowired
+    private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
@@ -50,7 +53,8 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                     contextName = parts[parts.length-1].toLowerCase() + "s";
                 }
                 log.trace("looking for a staging area service for context {}", contextName);
-                stagingAreaService =AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
+                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
+                        //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
                 log.trace("got service {{}", stagingAreaService);
             } catch (Exception e) {
                 log.error("Error obtaining staging area service", e);

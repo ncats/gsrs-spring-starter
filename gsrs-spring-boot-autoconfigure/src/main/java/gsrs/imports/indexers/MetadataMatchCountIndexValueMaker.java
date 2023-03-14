@@ -1,6 +1,7 @@
 package gsrs.imports.indexers;
 
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportDataRepository;
@@ -19,8 +20,12 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
     public final static String IMPORT_METADATA_MATCH_COUNT_FACET="Match Count";
 
     public final static String IMPORT_METADATA_MATCH_KEY_FACET="Match Key";
+
     @Autowired
     ImportDataRepository importDataRepository;
+
+    @Autowired
+    private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
 
     StagingAreaService stagingAreaService;
 
@@ -36,7 +41,13 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
         log.trace("In createIndexableValues");
         if(stagingAreaService ==null) {
             try {
-                stagingAreaService = AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal("substances");
+                String contextName = importMetadata.getEntityClassName();
+                //hack!
+                if(contextName.contains(".")) {
+                    String[] parts =contextName.split("\\.");
+                    contextName = parts[parts.length-1].toLowerCase() + "s";
+                }
+                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
             } catch (NoSuchMethodException |InvocationTargetException  | InstantiationException | IllegalAccessException e) {
                 log.error("Error creating staging area service!");
                 throw new RuntimeException(e);
