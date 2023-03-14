@@ -1,10 +1,10 @@
 package gsrs.startertests.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.service.GsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,9 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDate;

@@ -5,11 +5,23 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.0.3-SNAPSHOT</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-spring-starter-tests</artifactId>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <!--configuration>
+                    <source>9</source>
+                    <target>9</target>
+                </configuration-->
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -49,7 +61,11 @@
             <artifactId>gsrs-core-test</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -68,6 +84,10 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>3.8.6</version>
+        </dependency>
     </dependencies>
 </project>

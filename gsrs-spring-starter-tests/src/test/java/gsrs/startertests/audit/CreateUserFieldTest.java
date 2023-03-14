@@ -1,6 +1,7 @@
 package gsrs.startertests.audit;
 
 import gsrs.AuditConfig;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.model.AbstractGsrsEntity;
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;

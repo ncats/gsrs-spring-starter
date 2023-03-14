@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +45,7 @@ import ix.core.util.EntityUtils.EntityWrapper;
  * to fetch the entities.
  * @param <T>
  */
+@Slf4j
 public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
 
     private static final Pattern removeTopPattern = Pattern.compile("(&top=\\d+)");
@@ -159,7 +161,7 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
         cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
         cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
-        //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of pagged results
+        //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of paged results
         if (cleanedUri.indexOf('?') > 0) {
             //has parameters so append
             cleanedUri += "&view=key&top=" + top + "&skip=" + skip + "&fdim=0";
@@ -167,6 +169,7 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
             //doesn't have parameters
             cleanedUri += "?view=key&top=" + top + "&skip=" + skip + "&fdim=0";
         }
+        cleanedUri+="&format=json";
 
         //TODO consider using RestTemplateBuilder in configuration?
         RestTemplate restTemplate = new RestTemplate();
@@ -184,7 +187,8 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
         try {
             return mapper.readTree(response.getBody());
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            log.error("error converting output ({}) ", response.getBody(), e);
+            //e.printStackTrace();
             throw new IllegalStateException(e);
         }
 

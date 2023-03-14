@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import javax.activation.MimetypesFileTypeMap;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -45,6 +46,7 @@ import ix.core.models.Payload;
 @ExposesResourceFor(Payload.class)
 //not plural so it matches context from GSRS 2.x
 @GsrsRestApiController(context="payload")
+@Slf4j
 public class PayloadController{
 
     @Autowired
@@ -69,6 +71,7 @@ public class PayloadController{
     }
     
     public static String predictMimeTypeFromFile(MultipartFile file) {
+        log.trace("predictMimeTypeFromFile");
         String defMime = "application/octet-stream";
         String ofname = file.getOriginalFilename();
         
