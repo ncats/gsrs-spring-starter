@@ -46,6 +46,11 @@ public class MetadataValidationIndexValueMakerTest {
             public MESSAGE_TYPE getMessageType() {
                 return MESSAGE_TYPE.WARNING;
             }
+
+            @Override
+            public String getMessageId() {
+                return "V000000";
+            }
         };
         vr.addValidationMessage(vm);
         when(stagingAreaService.validateInstance(metadata.getInstanceId().toString())).thenReturn(vr);
