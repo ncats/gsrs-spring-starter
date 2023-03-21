@@ -49,7 +49,7 @@ public class MetadataValidationIndexValueMakerTest {
 
             @Override
             public String getMessageId() {
-                return "V000000";
+                return "W000000";
             }
         };
         vr.addValidationMessage(vm);
