@@ -50,6 +50,7 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.EtagExportGenerator;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.EntityFetcher;
 import ix.core.models.ETag;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
@@ -98,7 +99,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager localEntityManager;
 
-    private final static ExecutorService executor = Executors.newFixedThreadPool(1);
+    private final static ExecutorService executor = Executors.newFixedThreadPool(1);    
     
     @Data
     private class ReindexStatus{
@@ -112,6 +113,15 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	private long finshed;
     	private List<String> ids;
     	private String _self;
+    }
+    
+    @Data
+    private class UserListStatus{
+    	private UUID statusID;
+    	private String status;
+    	private int total;
+    	private int processed;    	
+    	private boolean done;    	   	
     }
     
     @Data
@@ -202,16 +212,23 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	
     	executor.execute(()->{
     		int[] r = new int[] {0};
-    		stat.ids.forEach(i->{
+    		stat.ids.forEach(id->{
     			r[0]++;
     			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
     			//TODO: Should change how this works probably to not use REST endpoint
     			try {
-    				Optional<T> obj = getEntityService().getEntityBySomeIdentifier(i);
-    				getlegacyGsrsSearchService().reindex(obj.get(), true);
-    				stat.indexed++;
+//    				Optional<T> obj = getEntityService().getEntityBySomeIdentifier(i);
+//    				getlegacyGsrsSearchService().reindex(obj.get(), true);
+//    				stat.indexed++;
+    				
+    				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
+    				Class eclass = getEntityService().getEntityClass();
+    				Key k = Key.ofStringId(eclass, entityID.get());
+    				Object o = EntityFetcher.of(k).findObject();
+        			getlegacyGsrsSearchService().reindex(o, true);
+        			stat.indexed++;  			
     			}catch(Exception e) {
-				log.warn("trouble reindexing id: " + i, e);
+				log.warn("trouble reindexing id: " + id, e);
     				stat.failed++;
     			}   
     			
@@ -830,7 +847,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @GetGsrsRestApiMapping(value="/@userList/{list}")
-    public ResponseEntity<String> getCurrentUserSavedtListContent(@PathVariable String list,
+    public ResponseEntity<String> getCurrentUserSavedListContent(@PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -865,12 +882,20 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     }
     
+    private UserListStatus createUserListStatus() {
+    	UserListStatus listStatus = new UserListStatus();
+    	listStatus.statusID = UUID.randomUUID();
+    	listStatus.done=false;
+    	listStatus.status="Initializing...";    	 
+    	listStatus.processed = 0;
+    	return listStatus;
+    }
     
     // if the user list exists, it will fail
-    @PostGsrsRestApiMapping(value="/@userList/keys")  //change to user list
+    @PostGsrsRestApiMapping(value="/@userList/keys")  
     public ResponseEntity<String> saveUserListWithKeys(  											
     										   @RequestParam String listName,
-    										   @RequestBody String keys){ //take an etag and get all the keys 
+    										   @RequestBody String keys){ 
     	
     	
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
@@ -882,19 +907,58 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
     	   	
     	
-    	List<String> keyList = Arrays.asList(keys.split(","));
+    	List<String> keyIdList = Arrays.asList(keys.split(","));
     	    	
-    	List<String> list = keyList.stream().map(key->key.trim())
+    	List<String> list = keyIdList.stream().map(key->key.trim())
     										.filter(key->!key.isEmpty())
     										.collect(Collectors.toList());
     	
     	if(list.size() ==0)
-    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	
+    	
+    	UserListStatus status = createUserListStatus(); 
+    	status.total=list.size();
+    	
+    	userSaveListService.saveBulkSearchResultList(userName, listName, list); 
+    	executor.execute(()->{      
+    		reIndexWithKeys(status,list);
+//    		int total = status.getTotal();
+//        	for(String id: list) {    		
+//        		try {
+//
+//        			Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
+//        			
+//        			if(entityID.isPresent()) {
+//        				
+//        				Class eclass = getEntityService().getEntityClass();
+//                        Key k = Key.ofStringId(eclass, entityID.get());
+//                        Object o = EntityFetcher.of(k).call();
+//        				getlegacyGsrsSearchService().reindex(o, true);
+//
+//        				log.error("reindexing......");
+//        			}else {
+//        				log.error("Cannot get the object.");
+//        			}    			
+//        			status.processed ++;    			
+//        			if(status.processed < total) {
+//        				status.status = "Processing " + status.processed + " of " + status.total + ".";
+//        			}else {
+//        				status.status = "Completed.";
+//        				status.done = true;
+//        			}
+//        			log.error("set user saved list status: "+ status.getStatus() + " processed " + status.getProcessed());
+//        			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
+//    			
+//        		}catch(Exception e) {
+//        			log.warn("trouble reindexing id: " + id, e);
+//    			
+//        		}   
+//        	}
     		
-    	userSaveListService.saveBulkSearchResultList(userName, listName, list);    
-    	reIndexWithKeys(list);
+    	});
+    	
     	log.warn("testing ");
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);	
     }
     //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
@@ -928,11 +992,16 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
    	
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    		
-    	userSaveListService.saveBulkSearchResultList(userName, listName, keyList);    
-    	reIndexWithKeys(keyList);
+    	
+    	UserListStatus listStatus = createUserListStatus();  
+    	listStatus.total=keyList.size();
+    	
+    	executor.execute(()->{   
+    		userSaveListService.saveBulkSearchResultList(userName, listName, keyList);       	
+    		reIndexWithKeys(listStatus,keyList);
+    	});    	
 
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
     }
         
     
@@ -951,9 +1020,17 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
     	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	userSaveListService.deleteBulkSearchResultList(userName, listName);    	
-    	reIndexWithKeys(keys);    	    	
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	
+    	UserListStatus listStatus = createUserListStatus();  
+    	listStatus.total=keys.size();
+    	
+    	executor.execute(()->{  
+    		userSaveListService.deleteBulkSearchResultList(userName, listName);    	
+    		reIndexWithKeys(listStatus,keys);
+    	});
+    	
+    	
+    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
     }
     
     @hasAdminRole
@@ -966,9 +1043,16 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	} 
     	
     	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	userSaveListService.deleteBulkSearchResultList(userName, listName);
-    	reIndexWithKeys(keys);
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	
+    	UserListStatus listStatus = createUserListStatus();  
+    	listStatus.total=keys.size();
+    	
+    	executor.execute(()->{  
+    		userSaveListService.deleteBulkSearchResultList(userName, listName);  	
+    		reIndexWithKeys(listStatus,keys);
+    	});    	
+    	
+    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
     }
     
     @PutGsrsRestApiMapping(value="/@userList/currentUser") // change to userlist
@@ -1000,12 +1084,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	if(list.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    	
-    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, list, op);
-    	if(updated)
-    		reIndexWithKeys(list);
     	    	
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, list, op);
+    	if(updated) {
+    		UserListStatus listStatus = createUserListStatus();  
+        	listStatus.total=list.size();
+    		executor.execute(()->{   			  	
+    			reIndexWithKeys(listStatus,list);    			
+    		});    		
+    		return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	}else {
+    		return new ResponseEntity<>(HttpStatus.OK);    		
+    	}    		
     }
     
     @hasAdminRole
@@ -1036,10 +1126,33 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
     	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, list, op);
-    	if(updated)
-    		reIndexWithKeys(list);
-    	    	
-    	return new ResponseEntity<>(HttpStatus.OK);	
+    	
+    	if(updated) {
+    		UserListStatus listStatus = createUserListStatus();  
+    		listStatus.total=list.size();
+    		executor.execute(()->{   			  	
+    			reIndexWithKeys(listStatus,list);    			
+    		});    		
+    		return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	}else {
+    		return new ResponseEntity<>(HttpStatus.OK);    		
+    	}    	
+    }
+    
+    @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
+    public ResponseEntity<String> getSaveUserListStatus(@PathVariable("id") String id){
+    	
+    	log.error("Trying to get user list status with ID: "+id);
+    	
+    	UserListStatus status = (UserListStatus)gsrscache.getRaw("UserSavedList/" + id);
+    	if(status ==null){
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
+    	ObjectMapper mapper = new ObjectMapper();
+    	ObjectNode node = mapper.createObjectNode();   	
+    	node.put("id", id);
+    	node.put("status", status.getStatus());    	
+    	return new ResponseEntity<>(node.toPrettyString(), HttpStatus.OK);
     }
     
     boolean validStringParamater(String param) {
@@ -1050,19 +1163,48 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return true;
     }
     
-    private void reIndexWithKeys(List<String> keyIds) { 
-    	for(String key: keyIds) {    		
+    private void reIndexWithKeys(UserListStatus status, List<String> keyIds) { 
+    	
+    	int total = status.getTotal();
+    	for(String id: keyIds) {    		
     		try {
-    			Optional<T> obj = getEntityService().getEntityBySomeIdentifier(key); // use get()
-    			if(obj.isPresent()) {
-    				getlegacyGsrsSearchService().reindex(obj.get(), true);
+
+    			Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
+    			
+    			if(entityID.isPresent()) {
+    				
+    				Class eclass = getEntityService().getEntityClass();
+                    Key k = Key.ofStringId(eclass, entityID.get());
+                    Object o = EntityFetcher.of(k).call();
+    				getlegacyGsrsSearchService().reindex(o, true);
+
+    				log.error("reindexing......");
+    			}else {
+    				log.error("Cannot get the object.");
+    			}    			
+    			status.processed ++;    			
+    			if(status.processed < total) {
+    				status.status = "Processing " + status.processed + " of " + status.total + ".";
+    			}else {
+    				status.status = "Completed.";
+    				status.done = true;
     			}
+    			log.error("set user saved list status: "+ status.getStatus() + " processed " + status.getProcessed());
+    			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
 			
     		}catch(Exception e) {
-    			log.warn("trouble reindexing id: " + key, e);
+    			log.warn("trouble reindexing id: " + id, e);
 			
     		}   
     	}
+		
     	
+    }
+    
+    private String generateResultIDJson(String id) {
+    	ObjectMapper mapper = new ObjectMapper();
+    	ObjectNode node = mapper.createObjectNode();   	
+    	node.put("id", id);
+    	return node.toPrettyString();    	
     }
 }

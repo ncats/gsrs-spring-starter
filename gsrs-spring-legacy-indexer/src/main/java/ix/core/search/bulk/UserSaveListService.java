@@ -106,6 +106,8 @@ public class UserSaveListService {
 		return keyList;
 	}
 	
+	
+	//todo: add check for existing list with the same name
 	public void saveBulkSearchResultList(String userName, String listName, List<String> keyList ) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null)
