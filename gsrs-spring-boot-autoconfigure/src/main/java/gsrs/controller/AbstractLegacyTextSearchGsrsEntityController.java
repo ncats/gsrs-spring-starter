@@ -921,40 +921,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	userSaveListService.saveBulkSearchResultList(userName, listName, list); 
     	executor.execute(()->{      
-    		reIndexWithKeys(status,list);
-//    		int total = status.getTotal();
-//        	for(String id: list) {    		
-//        		try {
-//
-//        			Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
-//        			
-//        			if(entityID.isPresent()) {
-//        				
-//        				Class eclass = getEntityService().getEntityClass();
-//                        Key k = Key.ofStringId(eclass, entityID.get());
-//                        Object o = EntityFetcher.of(k).call();
-//        				getlegacyGsrsSearchService().reindex(o, true);
-//
-//        				log.error("reindexing......");
-//        			}else {
-//        				log.error("Cannot get the object.");
-//        			}    			
-//        			status.processed ++;    			
-//        			if(status.processed < total) {
-//        				status.status = "Processing " + status.processed + " of " + status.total + ".";
-//        			}else {
-//        				status.status = "Completed.";
-//        				status.done = true;
-//        			}
-//        			log.error("set user saved list status: "+ status.getStatus() + " processed " + status.getProcessed());
-//        			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
-//    			
-//        		}catch(Exception e) {
-//        			log.warn("trouble reindexing id: " + id, e);
-//    			
-//        		}   
-//        	}
-    		
+    		reIndexWithKeys(status,list);    		
     	});
     	
     	log.warn("testing ");
