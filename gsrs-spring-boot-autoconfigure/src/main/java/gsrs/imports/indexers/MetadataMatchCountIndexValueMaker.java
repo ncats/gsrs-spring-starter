@@ -54,7 +54,8 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
             }
         }
         String instanceData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
-        MatchedRecordSummary matchedRecordSummary = stagingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData);
+        MatchedRecordSummary matchedRecordSummary = stagingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData,
+                importMetadata.getRecordId().toString());
         long matchCount= matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                                 .count();

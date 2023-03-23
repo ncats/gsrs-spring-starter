@@ -3,7 +3,6 @@ package gsrs.imports;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.stagingarea.service.StagingAreaService;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
+    private static Map<String, Class<T>> serviceMap = new HashMap<>();
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
@@ -130,17 +133,21 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Override
     public Class<T> getDefaultStagingAreaEntityService(String context) {
-        String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
-        try {
-            return (Class<T>) Class.forName(clsName);
-        } catch (ClassNotFoundException e) {
-            log.error("Class {} not found", clsName);
-            throw new RuntimeException(e);
-        }
+        return serviceMap.computeIfAbsent(context, (c)->{
+            log.trace("instantiating a staging area for context {}",context);
+            String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
+            try {
+                return (Class<T>) Class.forName(clsName);
+            } catch (ClassNotFoundException e) {
+                log.error("Class {} not found", clsName);
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
     public StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        //todo: cache instances of staging areas in hashmap
         log.trace("in getStagingAreaService for context {}", context);
         Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
         Constructor constructor = stagingAreaServiceClass.getConstructor();

@@ -215,7 +215,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         // will
         //todo: run duplicate check
         try {
-            MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples);
+            MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
             log.trace("Matches: ");
             summary.getMatches().forEach(m -> {
                 log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
@@ -318,7 +318,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 }
             } catch (NoSuchMethodError error) {
                 //have observed this error several times when attempting to retrieve a non-existent ID
-                log.warn("error retrieving ImportData");
+                log.warn("error retrieving ImportData for id {}", id);
             }
         }
 
@@ -443,7 +443,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException {
+    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables,
+                                            String startingRecordId) throws ClassNotFoundException {
         log.trace("in findMatches, entityClass: {}", entityClass);
         Class objectClass = Class.forName(entityClass);
         MatchedRecordSummary summary = new MatchedRecordSummary();
@@ -454,6 +455,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             if (m.getValue() != null && m.getValue().length() > 0) {
                 log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
                 List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
+                        .filter(ma->startingRecordId==null || !ma.getRecordId().toString().equals(startingRecordId))
                         .map(ma -> {
                             MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
                             builder
@@ -493,7 +495,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
         log.trace("calculated latest matchables");
         matchableKeyValueTuples.forEach(m-> log.trace("key: {} = value: {}", m.getKey(), m.getValue()));
-        return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples);
+        return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples, importMetadata.getRecordId().toString());
     }
 
     @Override
@@ -569,7 +571,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @SneakyThrows
     @Override
-    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson) {
+    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId) {
         log.trace("starting findMatchesForJson with {}", qualifiedEntityType);
         Object domainObject;
         try {
@@ -587,7 +589,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
         //TODO: extend this to other types of objects
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-        MatchedRecordSummary matches = findMatches(qualifiedEntityType, definitionalValueTuples);
+        MatchedRecordSummary matches = findMatches(qualifiedEntityType, definitionalValueTuples, startingRecordId);
         return matches;
     }
 

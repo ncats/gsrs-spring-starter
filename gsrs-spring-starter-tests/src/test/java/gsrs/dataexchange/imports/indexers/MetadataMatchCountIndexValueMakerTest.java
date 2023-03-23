@@ -69,7 +69,7 @@ public class MetadataMatchCountIndexValueMakerTest {
         query.add(tuple2);
         matchedRecordSummary.setQuery(query);
         String recordJson = "";
-        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson, null)).thenReturn(matchedRecordSummary);
         when(importDataRepository.retrieveByInstanceID(metadata.getInstanceId())).thenReturn(recordJson);
 
         List<IndexableValue> indexedValues = new ArrayList<>();

@@ -1,11 +1,16 @@
 package gsrs.dataexchange.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.imports.ClientFriendlyImportAdapterConfig;
 import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.ImportUtilities;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
@@ -16,6 +21,7 @@ import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.controller.MyEntityService;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Payload;
+import ix.core.models.Text;
 import ix.core.search.SearchResult;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
@@ -558,10 +564,18 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
                 "\t}\n" +
                 "}";
 
-        String cleanJson = AbstractImportSupportingGsrsEntityController.removeMetadataFromDomainObjectJson(jsonBefore);
+        String cleanJson = ImportUtilities.removeMetadataFromDomainObjectJson(jsonBefore);
         Assertions.assertFalse(cleanJson.contains("_metadata"));
         Assertions.assertTrue(cleanJson.length()<jsonBefore.length());
         Assertions.assertFalse(cleanJson.contains("_metadata"));
+    }
+
+    @Test
+    public void testFromText() throws JsonProcessingException {
+        Text text = new Text();
+        text.setValue(createSimpleConfig());
+        AbstractImportSupportingGsrsEntityController.ImportTaskMetaData recreatedMetadata = AbstractImportSupportingGsrsEntityController.ImportTaskMetaData.fromText(text);
+        Assertions.assertNotNull(recreatedMetadata);
     }
     @Test
     void updateImport() {
@@ -601,5 +615,35 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
 
     @Test
     void executeImport() {
+    }
+
+    private String createSimpleConfig()  {
+        AbstractImportSupportingGsrsEntityController.ImportTaskMetaData metaData =new AbstractImportSupportingGsrsEntityController.ImportTaskMetaData();
+        metaData.setId(UUID.randomUUID().toString());
+        metaData.setEntityType("Substance");
+        metaData.setAdapter("SDF Importer");
+        metaData.setMimeType("chemical/x-mdl-sdfile");
+        ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
+        ArrayNode actions = JsonNodeFactory.instance.arrayNode();
+        ObjectNode action1 = JsonNodeFactory.instance.objectNode();
+        action1.put("actionName", "structure_and_moieties");
+        ObjectNode parameterNode = JsonNodeFactory.instance.objectNode();
+        parameterNode.put("molfile", "{{molfile}}");
+        ArrayNode refArray = JsonNodeFactory.instance.arrayNode();
+        refArray.add("[[UUID_1]]");
+        parameterNode.set("referenceUUIDs", refArray);
+        action1.set("actionParameters", parameterNode);
+        action1.put("label", "Import Structure Action");
+        actions.add(action1);
+        adapterSettings.set("actions", actions);
+        metaData.setAdapterSettings(adapterSettings);
+        metaData.setAdapterSchema(JsonNodeFactory.instance.objectNode());
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(metaData);
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing ImportTaskMetaData", e);
+            throw new RuntimeException(e);
+        }
     }
 }
