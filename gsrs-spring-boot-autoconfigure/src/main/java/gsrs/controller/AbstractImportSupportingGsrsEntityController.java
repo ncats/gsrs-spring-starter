@@ -1344,7 +1344,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
 
             ObjectMapper mapper = new ObjectMapper();
-            objectStream.limit(limit-1).forEach(object -> {
+            objectStream.limit(limit).forEach(object -> {
                 try {
                     ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
                     JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
