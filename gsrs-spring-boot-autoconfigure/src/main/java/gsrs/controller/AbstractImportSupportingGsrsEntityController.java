@@ -1333,14 +1333,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 usableTask = retrievedTask;
             }
 
-            //todo: increase limit -- 10 will not work for most imports!
-            long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            long limit = 10;
+            try{
+                limit =Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            } catch (NumberFormatException nfe) {
+                log.warn("input for limit ({}) failed to parse.  Using default value", queryParameters.get("limit"));
+            }
             log.trace("limit: {}", limit);
 
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
 
             ObjectMapper mapper = new ObjectMapper();
-            objectStream.forEach(object -> {
+            objectStream.limit(limit-1).forEach(object -> {
                 try {
                     ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
                     JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
