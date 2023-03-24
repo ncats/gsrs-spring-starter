@@ -224,7 +224,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
     				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
-    				Object o = EntityFetcher.of(k).findObject();
+    				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true);
         			stat.indexed++;  			
     			}catch(Exception e) {
