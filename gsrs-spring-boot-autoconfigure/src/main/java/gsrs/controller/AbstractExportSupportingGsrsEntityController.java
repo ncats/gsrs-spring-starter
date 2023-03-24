@@ -273,7 +273,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     boolean doesExporterKeyExist(String exporterKey) {
         Class entityClass = getEntityService().getEntityClass();
-        Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
+        Objects.requireNonNull(entityClass, "Must be able to resolve the entity class");
         
         
         String label = SpecificExporterSettings.getEntityKeyFromClass(entityClass.getName());
