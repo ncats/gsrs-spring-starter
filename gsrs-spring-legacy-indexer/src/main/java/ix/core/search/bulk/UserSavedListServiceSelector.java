@@ -7,7 +7,7 @@ public class UserSavedListServiceSelector implements ImportSelector {
     @Override
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         return new String[]{
-        		UserSaveListService.class.getName()
+        		UserSavedListService.class.getName()
         		};
     }
 }

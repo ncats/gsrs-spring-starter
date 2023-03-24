@@ -18,7 +18,7 @@ import ix.core.models.Principal;
 import ix.core.models.UserSavedList;
 
 @Service
-public class UserSaveListService {
+public class UserSavedListService {
 	
 	@Autowired
 	public UserSavedListRepository userSavedListRepository;

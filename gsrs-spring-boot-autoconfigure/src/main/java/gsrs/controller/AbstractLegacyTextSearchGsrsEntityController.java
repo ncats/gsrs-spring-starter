@@ -57,7 +57,7 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.core.search.bulk.UserSaveListService;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.ResultListRecord;
@@ -147,7 +147,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     protected EntityLinks entityLinks;
     
     @Autowired
-    protected UserSaveListService userSaveListService;
+    protected UserSavedListService userSaveListService;
     
     
     //should maybe use cache
@@ -1033,7 +1033,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}    	
     	
-    	UserSaveListService.Operation op = UserSaveListService.Operation.valueOf(operation.trim().toUpperCase());
+    	UserSavedListService.Operation op = UserSavedListService.Operation.valueOf(operation.trim().toUpperCase());
     	if(op == null) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}
@@ -1078,7 +1078,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}    	
     	
-    	UserSaveListService.Operation op = UserSaveListService.Operation.valueOf(operation.trim().toUpperCase());
+    	UserSavedListService.Operation op = UserSavedListService.Operation.valueOf(operation.trim().toUpperCase());
     	if(op == null) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}

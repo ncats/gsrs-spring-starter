@@ -164,7 +164,7 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.search.SearchResult;
 import ix.core.search.SuggestResult;
-import ix.core.search.bulk.UserSaveListService;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -454,7 +454,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .filter(fv->{
                 	if(field.equalsIgnoreCase("User List")) {
                 		// check the current user, filter facet by user name 
-                		String nameInLabel = UserSaveListService.getUserNameFromIndexedValue(fv.getLabel());
+                		String nameInLabel = UserSavedListService.getUserNameFromIndexedValue(fv.getLabel());
                 		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
                 		if(userName.isEmpty())
                 			return false;
@@ -1964,7 +1964,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 				for(LabelAndValue lv:result.labelValues){
 					if(result.dim.equalsIgnoreCase("User List")) {
-						String userName = UserSaveListService.getUserNameFromIndexedValue(lv.label);						
+						String userName = UserSavedListService.getUserNameFromIndexedValue(lv.label);						
 						if(userName.equalsIgnoreCase(sr.getUserName())) {
 							fac.add(lv.label, lv.value.intValue());
 						}											
