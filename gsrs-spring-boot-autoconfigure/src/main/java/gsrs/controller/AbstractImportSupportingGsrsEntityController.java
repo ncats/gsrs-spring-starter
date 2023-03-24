@@ -69,7 +69,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public PayloadService payloadService;
 
     @Autowired
-    public PayloadRepository payloadRepository;
+    private PayloadRepository payloadRepository;
 
     @Autowired
     protected PlatformTransactionManager platformTransactionManager;
