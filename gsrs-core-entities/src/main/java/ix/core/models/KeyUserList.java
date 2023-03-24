@@ -21,19 +21,21 @@ public class KeyUserList {
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
     public Long id;		
 	
-	public String entity_key;	
+	@Column(name = "entity_key")
+	public String entityKey;	
 	
 	@ManyToOne    
-    @JoinColumn(name="user_id")	
+    @JoinColumn(name = "user_id")	
     public Principal principal;
 
-	@Column(nullable=false)
-	public String list_name; 	
+	@Column(nullable = false, name = "list_name")
+	public String listName;	
 	
+	public KeyUserList() {}
 	
 	public KeyUserList(String key, Principal user, String name) {
-		this.entity_key = key;
+		this.entityKey = key;
         this.principal = user;
-        this.list_name = name;        
-    }	
+        this.listName = name;        
+    }		
 }

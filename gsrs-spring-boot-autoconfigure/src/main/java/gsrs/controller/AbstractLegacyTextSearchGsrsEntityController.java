@@ -1108,9 +1108,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
     public ResponseEntity<String> getSaveUserListStatus(@PathVariable("id") String id){
-    	
-    	log.error("Trying to get user list status with ID: "+id);
-    	
+    	    	
     	UserListStatus status = (UserListStatus)gsrscache.getRaw("UserSavedList/" + id);
     	if(status ==null){
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -1144,10 +1142,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                     Key k = Key.ofStringId(eclass, entityID.get());
                     Object o = EntityFetcher.of(k).call();
     				getlegacyGsrsSearchService().reindex(o, true);
-
-    				log.error("reindexing......");
+    			
     			}else {
-    				log.error("Cannot get the object.");
+    				log.warn("Cannot get the object during reindexing id: " + id);
     			}    			
     			status.processed ++;    			
     			if(status.processed < total) {
@@ -1156,7 +1153,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     				status.status = "Completed.";
     				status.done = true;
     			}
-    			log.error("set user saved list status: "+ status.getStatus() + " processed " + status.getProcessed());
+    			
     			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
 			
     		}catch(Exception e) {

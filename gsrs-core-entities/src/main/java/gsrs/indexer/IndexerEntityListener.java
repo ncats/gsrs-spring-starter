@@ -62,7 +62,7 @@ public class IndexerEntityListener {
         if(ew.shouldIndex()) {
             IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
             if(indexerFactoryFor !=null) {
-            	log.error("ew before publishing event :" + ew.toString());
+//            	log.error("ew before publishing event :" + ew.toString());
                 applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst));
                 
             }

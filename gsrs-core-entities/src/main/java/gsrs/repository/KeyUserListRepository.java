@@ -10,18 +10,22 @@ import ix.core.models.KeyUserList;
 
 public interface KeyUserListRepository extends GsrsRepository<KeyUserList, Long> {
 			
-	@Query("select distinct list_name from KeyUserList where entity_key = ?1 and user_id = ?2 order by list_name")	
+	@Query("select distinct listName from KeyUserList where entityKey = ?1 and user_id = ?2 order by listName")	
 	public List<String> getAllListNamesFromKey(String key, Long userId);
+	
+	@Query("select list from KeyUserList list where list.entityKey = ?1 order by list.listName")	
+	public List<KeyUserList> getAllListNamesFromKey(String key);
 			
 	@Modifying
     @Transactional
-    @Query("delete from KeyUserList ubsr where entity_key = ?1 and user_id = ?2 and list_name = ?3")
+    @Query("delete from KeyUserList where entityKey = ?1 and user_id = ?2 and listName = ?3")
     public void removeKey(String key, Long userId, String listName);
 	
 	@Modifying
     @Transactional
-    @Query("delete from KeyUserList ubsr where user_id = ?1 and list_name = ?2")
+    @Query("delete from KeyUserList where user_id = ?1 and listName = ?2")
     public void removeList(Long userId, String listName);
+	
 	
 
 }

@@ -1964,8 +1964,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 				for(LabelAndValue lv:result.labelValues){
 					if(result.dim.equalsIgnoreCase("User List")) {
-						String userName = UserSaveListService.getUserNameFromIndexedValue(lv.label);
-						log.error("facet user name: " + userName + " reqeust user name: "+sr.getUserName());
+						String userName = UserSaveListService.getUserNameFromIndexedValue(lv.label);						
 						if(userName.equalsIgnoreCase(sr.getUserName())) {
 							fac.add(lv.label, lv.value.intValue());
 						}											
@@ -3300,7 +3299,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
+//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
+//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 				this.instrumentIndexableValue(ix, iv);
 			});
 			ix.fields.add(IndexedField.builder()

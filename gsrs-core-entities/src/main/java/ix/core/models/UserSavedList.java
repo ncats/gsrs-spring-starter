@@ -35,6 +35,8 @@ public class UserSavedList {
     @Basic(fetch= FetchType.EAGER)	
 	public String list;	
 	
+	public UserSavedList() {}
+	
 	public UserSavedList(Principal user, String name, String list) {
         this.principal = user;
         this.name = name;
