@@ -69,7 +69,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public PayloadService payloadService;
 
     @Autowired
-    private PayloadRepository payloadRepository;
+    public PayloadRepository payloadRepository;
 
     @Autowired
     protected PlatformTransactionManager platformTransactionManager;
@@ -472,7 +472,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             itmd = saveImportTaskToCache(itmd).get();
 
             if (itmd != null && itmd.adapterSettings != null) {
-                log.trace("itmd.adapterSettings: {}", itmd.adapterSettings.toPrettyString());
+                //log.trace("itmd.adapterSettings: {}", itmd.adapterSettings.toPrettyString());
             } else {
                 log.warn("itmd.adapterSettings null");
             }
@@ -925,12 +925,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
             errorRecords.forEach(problemRecords::add);
             returnNode.set("recordsWithProcessingErrors", problemRecords);
-            ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
-            limitInfoNode.put("limit", limit);
-            previewNode.add(limitInfoNode);
             returnNode.put("fileName", itmd.getFilename());
             returnNode.put("adapter", itmd.getAdapter());
-
+            returnNode.put("limit", limit);
+            log.trace("Attached limit to returnNode");
             returnNode.set("dataPreview", previewNode);
 
             /*log.trace("queryParameters:");
@@ -1307,7 +1305,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     public JsonNode handlePreview(String id, JsonNode updatedJson, Map<String, String> queryParameters) throws Exception {
-        log.trace("executePreview.  id: " + id);
+        log.trace("handlePreview; id: " + id);
         Optional<ImportTaskMetaData<T>> obj = getImportTask(UUID.fromString(id));
         Stream<T> objectStream;
         if (obj.isPresent()) {
@@ -1364,11 +1362,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
             returnNode.put("completeSuccess", objectProcessingOK.get());
-            ObjectNode limitInfoNode = JsonNodeFactory.instance.objectNode();
-            limitInfoNode.put("limit", limit);
-            previewNode.add(limitInfoNode);
             returnNode.set("dataPreview", previewNode);
-
+            returnNode.put("limit", limit);
             return returnNode;
         }
         return JsonNodeFactory.instance.textNode("No import data found using input");
