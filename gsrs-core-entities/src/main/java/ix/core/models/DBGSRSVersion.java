@@ -15,8 +15,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
 import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.GsrsDateSerializer;
+import lombok.Data;
 
 @Entity
+@Data
 @Table(name = "ix_core_DB_GSRS_version")
 @Indexable(indexed = false)
 public class DBGSRSVersion {
