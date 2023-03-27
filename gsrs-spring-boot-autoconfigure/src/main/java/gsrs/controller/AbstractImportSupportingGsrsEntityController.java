@@ -2,6 +2,7 @@ package gsrs.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -32,6 +33,7 @@ import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.description.method.MethodDescription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -939,8 +941,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@act", "/import/{id}/{version}/@act", "/stagingArea({id})/@act",
-            "/stagingArea/{id}/@act"})
+    @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@act", "/import/{id}/{version}/@act"})
     public ResponseEntity<Object> executeAct(@PathVariable("id") String stagingRecordId,
                                              @PathVariable("version") int version,
                                              @RequestBody String processingJson,
@@ -949,111 +950,83 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         String matchedEntityId = queryParameters.get("matchedEntityId");
         String persist = queryParameters.get("persistChangedObject");
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
-        String objectJson = "";
-        String objectClass = "";
-        assert stagingAreaService != null;
-        ImportData importData = stagingAreaService.getImportDataByInstanceIdOrRecordId(stagingRecordId, version);
-        UUID recordId = null;
-        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-
-        if (importData != null) {
-            log.trace("Data for id {} retrieved", stagingRecordId);
-            objectJson = importData.getData();
-            objectClass = importData.getEntityClassName();
-            recordId = importData.getRecordId();
-            log.trace("looking for data for record id {} - instance id {}", importData.getRecordId(),
-                    importData.getInstanceId());
-            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
-            //todo: figure out whether to do the same for records marked 'merged'
-            if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
-                messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
-                        stagingRecordId));
-                return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
-            }
-        }
-        log.trace("objectJson: {}", objectJson);
-        if (objectJson == null || objectJson.length() == 0) {
-            messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
-                    objectClass, stagingRecordId));
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-
-        //make sure class type is the same as the stagingAreaService's entity name!
-        log.trace("going to retrieve existing object of type {} with ID {}", objectClass, matchedEntityId);
-        T baseObject = null;
-        if(matchedEntityId!=null && matchedEntityId.length()>0) {
-            baseObject = stagingAreaService.retrieveEntity(objectClass, matchedEntityId);
-            /*if (baseObject == null) {
-                log.error("Error retrieving object with ID {}", matchedEntityId);
-                messageNode.put("message", String.format("Error retrieving base object of type %s with ID %s",
-                        objectClass, matchedEntityId));
-                return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
-            }*/
-        }
-
-
-        T currentObject = stagingAreaService.deserializeObject(objectClass, objectJson);
-        if (currentObject == null) {
-            messageNode.put("message", String.format("Error retrieving imported object of type %s with ID %s",
-                    objectClass, matchedEntityId));
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-
-        StringBuilder whatHappened = new StringBuilder();
-        whatHappened.append("Processing record: ");
-        ObjectMapper mapper = new ObjectMapper();
-        ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
-        ImportMetadata.RecordImportStatus recordImportStatus = ImportMetadata.RecordImportStatus.staged;
-        boolean savingNewItem = false;
-        for (ProcessingActionConfig configItem : configSet.getProcessingActions()) {
-            ProcessingAction action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
-            log.trace("going to call action {}", action.getClass().getName());
-            currentObject = (T) action.process(currentObject, baseObject, configItem.getParameters(), whatHappened::append);
-            //todo: check this logic
-            if (action.getClass().getName().toUpperCase().contains("MERGE") ||
-                    action.getClass().getName().toUpperCase().contains("CREATEBATCH")) {
-                recordImportStatus = ImportMetadata.RecordImportStatus.merged;
-            } else if (action.getClass().getName().toUpperCase().contains("REPLACE")
-                    || action.getClass().getName().toUpperCase().contains("CREATE")) {
-                savingNewItem = true;
-                recordImportStatus = ImportMetadata.RecordImportStatus.imported;
-            } else if (action.getClass().getName().toUpperCase().contains("IGNORE")
-                    || action.getClass().getName().toUpperCase().contains("REJECT")) {
-                recordImportStatus = ImportMetadata.RecordImportStatus.rejected;
-            }
-        }
-        log.trace(whatHappened.toString());
-        if (persist != null && persist.equalsIgnoreCase("TRUE") && isSaveNecessary(recordImportStatus)) {
-            //check whether we have something to save... otherwise, skip to the next step in the processing
-            if(currentObject!=null ) {
-                GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
-                if (!result.isSaved()) {
-                    log.error("Error! Saved object is null");
-                    messageNode.put("Message", "Object failed to save");
-                    messageNode.put("Error", result.getThrowable().getMessage());
-                    return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.INTERNAL_SERVER_ERROR);
-                }
-                currentObject = result.getEntity();
-                log.trace("saved new or updated entity");
-
-            }
-            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
-            UUID indexingEventId = UUID.randomUUID();
-            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
-            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                    EntityUtils.EntityWrapper.of(wrappedObject));
-            log.trace("reindexing importmetadata object");
+        ImportUtilities<T> importUtilities = new ImportUtilities<>();
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
+        ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
+                persist, processingJson);
+        log.trace("received return from importUtilities.handleAction");
+        HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
+        log.trace("resolved status: {}", returnStatus);
+        if( resultNode.hasNonNull("object")) {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
         } else {
-            log.trace("skipped saving/processing");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), returnStatus);
         }
-        if( currentObject!=null) {
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(currentObject, queryParameters), HttpStatus.OK);
-        }else{
-            messageNode.put("Message", "Import record processed successfully");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.OK);
-        }
+    }
 
+    @hasAdminRole
+    @PutGsrsRestApiMapping(value = { "/stagingArea({id})/@act",
+            "/stagingArea/{id}/@act"})
+    public ResponseEntity<Object> executeAct2(@PathVariable("id") String stagingRecordId,
+                                             @RequestBody String processingJson,
+                                             @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting executeAct");
+        String matchedEntityId = queryParameters.get("matchedEntityId");
+        String persist = queryParameters.get("persistChangedObject");
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportUtilities<T> importUtilities = new ImportUtilities<>();
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
+        int version=0;//use last
+        ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
+                persist, processingJson);
+        log.trace("received return from importUtilities.handleAction");
+        HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
+        log.trace("resolved status: {}", returnStatus);
+        if( resultNode.hasNonNull("object")) {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
+        } else {
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), returnStatus);
+        }
+    }
+
+    @hasAdminRole
+    @PutGsrsRestApiMapping(value = { "/stagingArea/@multiact"})
+    public ResponseEntity<Object> executeActMulti(
+                                              @RequestBody String processingJson,
+                                              @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting executeAct");
+        String persist = queryParameters.get("persistChangedObject");
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportUtilities<T> importUtilities = new ImportUtilities<>();
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
+        int version=0;//use last
+        List<ObjectNode> resultNode = importUtilities.handleActions(stagingAreaService, 0,
+                persist, processingJson);
+        HttpStatus returnStatus;
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        if( resultNode.stream().map(r->r.get("httpStatus").asInt()).allMatch(s->s.equals(HttpStatus.OK.value()))) {
+            returnStatus= HttpStatus.OK;
+            messageNode.put("message", "all succeeded");
+        } else if(resultNode.stream().map(r->r.get("httpStatus").asInt()).allMatch(s->s.equals(HttpStatus.BAD_REQUEST.value()))) {
+            returnStatus= HttpStatus.BAD_REQUEST;
+            messageNode.put("message", "input error; please see the logs");
+        } else if(resultNode.stream().map(r->r.get("httpStatus").asInt()).allMatch(s->s.equals(HttpStatus.INTERNAL_SERVER_ERROR.value()))) {
+            returnStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            messageNode.put("message", "internal processing error; please see the logs");
+        } else {
+            returnStatus = HttpStatus.MULTI_STATUS;
+            messageNode.put("message", "some success/some errors; please see the logs");
+        }
+        log.trace("received return from importUtilities.handleAction");
+        log.trace("resolved status: {}", returnStatus);
+
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), returnStatus);
     }
 
     @hasAdminRole
@@ -1101,7 +1074,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         boolean savingNewItem = false;
         T baseObject = null;
         for (ProcessingActionConfig configItem : configSet.getProcessingActions()) {
-            ProcessingAction action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
+            ProcessingAction<T> action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
             log.trace("going to call action {}", action.getClass().getName());
             currentObject = (T) action.process(currentObject, baseObject, configItem.getParameters(), whatHappened::append);
             //todo: check this logic
@@ -1128,9 +1101,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(currentObject, queryParameters), HttpStatus.OK);
     }
 
-    private boolean isSaveNecessary(ImportMetadata.RecordImportStatus status) {
-        return status == ImportMetadata.RecordImportStatus.imported || status == ImportMetadata.RecordImportStatus.merged;
-    }
 
     @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/importdata/search", "/stagingArea/search"}, apiVersions = 1)
