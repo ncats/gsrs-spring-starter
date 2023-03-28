@@ -173,9 +173,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      * @param wipeIndex should the whole index be deleted before re-index begins;
      *                  defaults to {@code false}.
      * @return
-     */
-    
-
+     */    
+    @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
     public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
         getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
