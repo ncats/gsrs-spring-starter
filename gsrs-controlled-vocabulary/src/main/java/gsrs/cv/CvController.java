@@ -38,12 +38,6 @@ public class CvController extends EtagLegacySearchEntityController<CvController,
     @Autowired
     private ControlledVocabularyEntityService entityService;
 
-
-    @Override
-    public ResultListRecordGenerator getResultListRecordGenerator() {
-    	return null;
-    }
-
     @Override
     protected CvLegacySearchService getlegacyGsrsSearchService() {
         return cvLegacySearchService;

@@ -34,12 +34,8 @@ public class EtagLegacySearchEntityControllerTest {
             @Override
             protected GsrsEntityService getEntityService() {
                 return null;
-            }
-            
-            @Override
-            public  ResultListRecordGenerator getResultListRecordGenerator() {
-            	return null;
-            }
+            } 
+
         };
         Method[] listOfMethods = controller.getClass().getDeclaredMethods();
         for( Method method : listOfMethods){

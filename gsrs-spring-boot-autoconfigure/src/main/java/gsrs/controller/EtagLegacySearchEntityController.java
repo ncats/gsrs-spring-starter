@@ -49,6 +49,7 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -95,6 +96,12 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
+    
+    public EtagLegacySearchEntityController() {super();}
+    
+    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
+    	super(resultListRecordGenerator);
+    }
 
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {

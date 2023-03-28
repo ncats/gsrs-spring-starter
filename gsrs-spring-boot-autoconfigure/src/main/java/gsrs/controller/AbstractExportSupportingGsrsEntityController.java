@@ -30,6 +30,7 @@ import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.repository.TextRepository;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Text;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultRecordExpanderFactory;
 import ix.ginas.exporters.NoOpRecordScrubberFactory;
 import ix.ginas.exporters.RecordExpanderFactory;
@@ -60,6 +61,12 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     	
     	return tlist;
     });
+    
+    public AbstractExportSupportingGsrsEntityController() {super();}
+    
+    public AbstractExportSupportingGsrsEntityController(ResultListRecordGenerator resultListRecordGenerator) {
+    	super(resultListRecordGenerator);
+    }
 
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,

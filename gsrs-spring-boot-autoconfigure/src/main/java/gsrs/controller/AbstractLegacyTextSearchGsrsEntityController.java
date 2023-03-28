@@ -101,6 +101,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);    
     
+    private ResultListRecordGenerator resultListRecordGenerator;
+    
     @Data
     private class ReindexStatus{
     	private UUID statusID;
@@ -157,11 +159,15 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     private final int BULK_SEARCH_DEFAULT_TOP = 1000;
     
     private final int BULK_SEARCH_DEFAULT_SKIP = 0;
-        
-    public abstract ResultListRecordGenerator getResultListRecordGenerator();
     
-
+    public AbstractLegacyTextSearchGsrsEntityController() {}
     
+    @Autowired
+    public AbstractLegacyTextSearchGsrsEntityController(ResultListRecordGenerator generator) {
+    	this.resultListRecordGenerator = generator;
+    }
+    
+   
     /**
      * Force a reindex of all entities of this entity type.
      * @param wipeIndex should the whole index be deleted before re-index begins;
@@ -813,10 +819,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	baseNode.put("skip", skip);    	
     	ArrayNode listNode = baseNode.putArray("lists");
     	
-    	ResultListRecordGenerator generator = getResultListRecordGenerator();
-    	
-    	for(String key: list) {
-    		ResultListRecord record = generator.generate(key);  
+//    	ResultListRecordGenerator generator = resultListRecordGenerator;
+    	    	
+    	for(String key: topList) {
+    		ResultListRecord record = resultListRecordGenerator.generate(key);  
     		
     		ObjectNode node = mapper.createObjectNode();
     		node.put("key", key);
