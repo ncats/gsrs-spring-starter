@@ -19,4 +19,6 @@ public interface ProcessingAction<T> {
         }
         return (parameters.get(parameterName).toString().equalsIgnoreCase("true"));
     }
+
+    String getActionName();
 }

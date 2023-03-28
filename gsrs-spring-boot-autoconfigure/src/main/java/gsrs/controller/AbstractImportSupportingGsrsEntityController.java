@@ -12,7 +12,6 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
-import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.service.StagingAreaEntityService;
@@ -33,7 +32,6 @@ import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.description.method.MethodDescription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -221,8 +219,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
 
         public Text asText() {
-            Text txt = new Text(getEntityKeyFromClass(entityType), EntityUtils.EntityWrapper.of(this).toInternalJson());
-            return txt;
+            return new Text(getEntityKeyFromClass(entityType), EntityUtils.EntityWrapper.of(this).toInternalJson());
         }
 
         public static String getEntityKeyFromClass(String className) {
@@ -299,7 +296,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         } else {
             log.warn("No entity service found.  using alternative strategy.");
             _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-            ;
             return _stagingAreaService;
         }
         _stagingAreaService = service;
@@ -328,7 +324,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     public ImportTaskMetaData<T> from(Payload p) {
-        ImportTaskMetaData<T> task = new ImportTaskMetaData();
+        ImportTaskMetaData<T> task = new ImportTaskMetaData<>();
         task.internalUuid = UUID.randomUUID();
         task.payloadID = p.id;
         task.size = p.size;
@@ -346,7 +342,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return Optional.ofNullable(importTaskCache.get(id));
     }
 
-    private Optional<ImportTaskMetaData> saveImportTaskToCache(ImportTaskMetaData importTask) {
+    private Optional<ImportTaskMetaData<T>> saveImportTaskToCache(ImportTaskMetaData importTask) {
         if (importTask.internalUuid == null) {
             importTask.internalUuid = UUID.randomUUID();
         }
@@ -657,7 +653,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         //TODO: validation
         //override any existing task version
-        Optional<ImportTaskMetaData> taskHolder = saveImportTaskToCache(itmd);
+        Optional<ImportTaskMetaData<T>> taskHolder = saveImportTaskToCache(itmd);
         if (taskHolder.isPresent()) {
             itmd = saveImportTaskToCache(itmd).get();
         } else {
@@ -953,7 +949,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportUtilities<T> importUtilities = new ImportUtilities<>();
         importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
         ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
-                persist, processingJson);
+                persist, processingJson, getEntityService().getContext());
         log.trace("received return from importUtilities.handleAction");
         HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
         log.trace("resolved status: {}", returnStatus);
@@ -981,7 +977,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
         int version=0;//use last
         ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
-                persist, processingJson);
+                persist, processingJson, getEntityService().getContext());
         log.trace("received return from importUtilities.handleAction");
         HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
         log.trace("resolved status: {}", returnStatus);
@@ -1007,7 +1003,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
         int version=0;//use last
         List<ObjectNode> resultNode = importUtilities.handleActions(stagingAreaService, 0,
-                persist, processingJson);
+                persist, processingJson, getEntityService().getContext());
         HttpStatus returnStatus;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if( resultNode.stream().map(r->r.get("httpStatus").asInt()).allMatch(s->s.equals(HttpStatus.OK.value()))) {
@@ -1074,7 +1070,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         boolean savingNewItem = false;
         T baseObject = null;
         for (ProcessingActionConfig configItem : configSet.getProcessingActions()) {
-            ProcessingAction<T> action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
+            ProcessingAction action = gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(getEntityService().getContext(),
+                    configItem.getProcessingActionName());
             log.trace("going to call action {}", action.getClass().getName());
             currentObject = (T) action.process(currentObject, baseObject, configItem.getParameters(), whatHappened::append);
             //todo: check this logic

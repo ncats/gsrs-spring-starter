@@ -2,6 +2,7 @@ package gsrs.imports;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.stagingarea.service.StagingAreaService;
@@ -11,10 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,6 +22,8 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     private static Map<String, Class<T>> serviceMap = new HashMap<>();
+
+    private static List<ProcessingAction> processingActionClasses =new ArrayList<>();
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
@@ -165,4 +165,34 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
         return service;
     }
+
+    @Override
+    public ProcessingAction<T> getMatchingProcessingAction(String context, String actionName) {
+        log.trace("in getMatchingProcessingAction");
+        if( processingActionClasses.isEmpty()) {
+            log.trace("instantiating list");
+            List<String> classNames= gsrsFactoryConfiguration.getAvailableProcessActions().get(context);
+            classNames.forEach(className->{
+                log.trace("class: {}", classNames);
+                try {
+                    Class<?> clazz = Class.forName(className);
+                    Constructor constructor =clazz.getConstructor();
+                    ProcessingAction<T> action= (ProcessingAction<T>) constructor.newInstance();
+                    processingActionClasses.add(action);
+                } catch (Exception e) {
+                    log.error("Class {} not found", className);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        for( ProcessingAction<T> action : processingActionClasses) {
+            if( action.getActionName().equalsIgnoreCase(actionName)) {
+                log.trace("found a match");
+                return action;
+            }
+        }
+        log.warn("found NO match for {}", actionName);
+        return null;
+    }
+
 }

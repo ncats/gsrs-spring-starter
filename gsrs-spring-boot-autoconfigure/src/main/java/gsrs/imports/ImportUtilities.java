@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.controller.GsrsControllerUtil;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
@@ -25,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,10 +38,13 @@ public class ImportUtilities<T> {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
+
     public static void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
         ObjectMapper mapper = new ObjectMapper();
         if (metadata != null) {
-            String metadataAsString = null;
+            String metadataAsString;
             try {
                 EntityUtils.EntityInfo<ImportMetadata> eics= EntityUtils.getEntityInfoFor(ImportMetadata.class);
                 if (metadata.validations == null || metadata.validations.isEmpty()) {
@@ -73,7 +74,7 @@ public class ImportUtilities<T> {
         }
     }
 
-    public static List<AbstractImportSupportingGsrsEntityController.ImportTaskMetaData> getAllImportTasks(Class entityClass, TextRepository textRepository) {
+    public static List<AbstractImportSupportingGsrsEntityController.ImportTaskMetaData> getAllImportTasks(Class<?> entityClass, TextRepository textRepository) {
         log.trace("getAllImportTasks");
         List<AbstractImportSupportingGsrsEntityController.ImportTaskMetaData> allImportConfigs = new ArrayList<>();
         Objects.requireNonNull(entityClass, "Must be able to resolve the entity class");
@@ -143,31 +144,35 @@ public class ImportUtilities<T> {
     }
 
     public ObjectNode handleAction(StagingAreaService stagingAreaService, String matchedEntityId, String stagingRecordId,
-                                        int version, String persist, String processingJson ) throws Exception {
+                                        int version, String persist, String processingJson, String contextName ) throws Exception {
         assert stagingAreaService != null;
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
-        return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions());
+        return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions(),
+                contextName);
     }
 
     public List<ObjectNode> handleActions(StagingAreaService stagingAreaService,
-                                   int version, String persist, String processingJson ) throws Exception {
+                                   int version, String persist, String processingJson, String contextName ) throws Exception {
         assert stagingAreaService != null;
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         List<ObjectNode> returnNodes = new ArrayList<>();
-        for(int r =0; r<configSet.getStagingAreaIds().size();r++) {
-            String stagingAreaId = configSet.getStagingAreaIds().get(r);
-            String databaseRecordId= configSet.getMatchingRecordIds().get(r);
+        for(int r =0; r<configSet.getMatchedIds().size();r++) {
+            String[] ids=configSet.getMatchedIds().get(r).split("\\|");
+            String stagingAreaId = ids[0];
+            String databaseRecordId= ids.length>1 ? ids[1] : null;
+            log.trace("matched ids {} and {}", stagingAreaId, databaseRecordId);
             ObjectNode singleReturn = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
-                    configSet.getProcessingActions());
+                    configSet.getProcessingActions(), contextName);
             returnNodes.add(singleReturn);
         }
         return returnNodes;
     }
 
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
-                                        int version, String persist, List<ProcessingActionConfig> processingActions) throws Exception {
+                                        int version, String persist, List<ProcessingActionConfig> processingActions,
+                                        String context) throws Exception {
         ImportData importData = stagingAreaService.getImportDataByInstanceIdOrRecordId(stagingRecordId, version);
         UUID recordId = null;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
@@ -219,7 +224,12 @@ public class ImportUtilities<T> {
         ImportMetadata.RecordImportStatus recordImportStatus = ImportMetadata.RecordImportStatus.staged;
         boolean savingNewItem = false;
         for (ProcessingActionConfig configItem : processingActions) {
-            ProcessingAction action = (ProcessingAction) configItem.getProcessingActionClass().getConstructor().newInstance();
+            ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(context, configItem.getProcessingActionName());
+            if(action == null ){
+                log.error("action {} not found!", configItem.getProcessingActionName());
+                continue;
+            }
+
             log.trace("going to call action {}", action.getClass().getName());
             currentObject = (T) action.process(currentObject, baseObject, configItem.getParameters(), whatHappened::append);
             //todo: check this logic
