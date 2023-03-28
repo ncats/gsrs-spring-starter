@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
@@ -12,6 +13,7 @@ import gsrs.dataexchange.model.ProcessingActionConfigSet;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.repository.TextRepository;
 import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
@@ -26,10 +28,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +43,26 @@ public class ImportUtilities<T> {
 
     @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
+
+    @Autowired
+    public PayloadService payloadService;
+
+    private String contextName ="";
+
+    private Class<T> entityClass;
+
+    private static final Pattern regExGuid= Pattern.compile("^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$");
+
+    private final static ExecutorService executor = Executors.newFixedThreadPool(1);
+
+
+    public ImportUtilities(String contextName, Class<T> entityClass) {
+        this.contextName=contextName;
+        this.entityClass=entityClass;
+    }
+    private final CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
+            = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.contextName,
+            entityClass));
 
     public static void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
         ObjectMapper mapper = new ObjectMapper();
@@ -125,7 +148,7 @@ public class ImportUtilities<T> {
         return Sort.by(Sort.Direction.ASC, order);
     }
 
-    public static boolean doesImporterKeyExist(String importerId, Class entityClass, TextRepository textRepository) {
+    public static boolean doesImporterKeyExist(String importerId, Class<?> entityClass, TextRepository textRepository) {
         log.trace("doesImporterKeyExist");
         Objects.requireNonNull(entityClass, "Must be able to resolve the entity class");
 
@@ -158,10 +181,9 @@ public class ImportUtilities<T> {
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         List<ObjectNode> returnNodes = new ArrayList<>();
-        for(int r =0; r<configSet.getMatchedIds().size();r++) {
-            String[] ids=configSet.getMatchedIds().get(r).split("\\|");
-            String stagingAreaId = ids[0];
-            String databaseRecordId= ids.length>1 ? ids[1] : null;
+        for(int r =0; r<configSet.getStagingAreaRecords().size();r++) {
+            String stagingAreaId = configSet.getStagingAreaRecords().get(r).getId();
+            String databaseRecordId= configSet.getStagingAreaRecords().get(r).getMatchingID();
             log.trace("matched ids {} and {}", stagingAreaId, databaseRecordId);
             ObjectNode singleReturn = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
                     configSet.getProcessingActions(), contextName);
@@ -173,9 +195,22 @@ public class ImportUtilities<T> {
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
                                         int version, String persist, List<ProcessingActionConfig> processingActions,
                                         String context) throws Exception {
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        if(stagingRecordId==null || stagingRecordId.length()==0){
+            messageNode.put("message", "blank input");
+            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            return messageNode;
+        }
+        Matcher matcher = regExGuid.matcher(stagingRecordId);
+        if(!matcher.find()){
+            messageNode.put("message", "input is not a valid id");
+            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            return messageNode;
+        }
+
         ImportData importData = stagingAreaService.getImportDataByInstanceIdOrRecordId(stagingRecordId, version);
         UUID recordId = null;
-        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+
         String objectJson = "";
         String objectClass = "";
 
@@ -191,7 +226,8 @@ public class ImportUtilities<T> {
             if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
                         stagingRecordId));
-                messageNode.put("httpStatus", HttpStatus.BAD_REQUEST.value());
+                messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+                messageNode.put("stagingAreaId", stagingRecordId);
                 return messageNode;
             }
         }
@@ -199,7 +235,8 @@ public class ImportUtilities<T> {
         if (objectJson == null || objectJson.length() == 0) {
             messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
                     objectClass, stagingRecordId));
-            messageNode.put("httpStatus", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("stagingAreaId", stagingRecordId);
             return messageNode;
         }
 
@@ -214,7 +251,8 @@ public class ImportUtilities<T> {
         if (currentObject == null) {
             messageNode.put("message", String.format("Error retrieving imported object of type %s with ID %s",
                     objectClass, matchedEntityId));
-            messageNode.put("httpStatus", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("stagingAreaId", stagingRecordId);
             return messageNode;
         }
 
@@ -252,9 +290,9 @@ public class ImportUtilities<T> {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
                 if (!result.isSaved()) {
                     log.error("Error! Saved object is null");
-                    messageNode.put("Message", "Object failed to save");
-                    messageNode.put("Error", result.getThrowable().getMessage());
-                    messageNode.put("httpStatus", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    messageNode.put("message", "Object failed to save");
+                    messageNode.put("error", result.getThrowable().getMessage());
+                    messageNode.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
                     return messageNode;
                 }
                 currentObject = result.getEntity();
@@ -273,19 +311,56 @@ public class ImportUtilities<T> {
         }
         ObjectMapper mapper = new ObjectMapper();
         if( currentObject!=null) {
-            messageNode.put("object", mapper.writeValueAsString(currentObject));
-            messageNode.put("httpStatus", HttpStatus.OK.value());
+            //messageNode.put("object", mapper.writeValueAsString(currentObject));
+            messageNode.put("message", "Import record processed successfully");
+            messageNode.put("stagingAreaId", stagingRecordId);
+            messageNode.put("status", HttpStatus.OK.value());
             return messageNode;
         }else{
-            messageNode.put("Message", "Import record processed successfully");
-            messageNode.put("httpStatus", HttpStatus.OK.value());
+            messageNode.put("message", "Import record processed successfully");
+            messageNode.put("stagingAreaId", stagingRecordId);
+            messageNode.put("status", HttpStatus.OK.value());
             return messageNode;
-
         }
     }
 
     public static boolean isSaveNecessary(ImportMetadata.RecordImportStatus status) {
         return status == ImportMetadata.RecordImportStatus.imported || status == ImportMetadata.RecordImportStatus.merged;
+    }
+
+    protected ImportAdapterFactory<T> fetchAdapterFactory(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task) throws Exception {
+        if (task.getAdapter() == null) {
+            throw new IOException("Cannot predict settings with null import adapter");
+        }
+        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task.getAdapter())
+                .orElse(null);
+        if (adaptFac == null) {
+            throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.getAdapter() + "\"");
+        }
+        log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
+        log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
+        log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
+        adaptFac.setFileName(task.getFilename());
+        return adaptFac;
+    }
+
+
+    public List<ImportAdapterFactory<T>> getImportAdapters() {
+        return importAdapterFactories.get();
+    }
+
+    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
+        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", name, getImportAdapters().size());
+        if (getImportAdapters() != null) {
+            getImportAdapters().forEach(a -> log.trace("adapter with name: '{}', key: '{}'", a.getAdapterName(), a.getAdapterKey()));
+        }
+        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        if (!adapterFactory.isPresent()) {
+            log.trace("searching for adapter by name failed; using key");
+            adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+            log.trace("success? {}", adapterFactory.isPresent());
+        }
+        return adapterFactory;
     }
 
 }

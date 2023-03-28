@@ -17,7 +17,7 @@ public class ProcessingActionConfigSet {
 
     List<ProcessingActionConfig> processingActions = new ArrayList<>();
 
-    List<String> matchedIds;
+    List<MatchedIDs> stagingAreaRecords;
 
     @JsonIgnore
     public void addAction(ProcessingActionConfig actionConfig) {
