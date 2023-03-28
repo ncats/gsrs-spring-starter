@@ -34,8 +34,9 @@ public class MetadataMatchCountIndexValueMakerTest {
         String sourceName = "Unique Data Source";
         metadata.setSourceName(sourceName);
         metadata.setEntityClassName("ix.ginas.models.v1.Substance");
-        
-        String record1Id = UUID.randomUUID().toString();
+        UUID record1IdValue = UUID.randomUUID();
+        String record1Id = record1IdValue.toString();
+        metadata.setRecordId(record1IdValue);
         StagingAreaService stagingAreaService = mock(StagingAreaService.class);
         ImportDataRepository importDataRepository = mock(ImportDataRepository.class);
         MatchedRecordSummary matchedRecordSummary = new MatchedRecordSummary();
@@ -69,7 +70,8 @@ public class MetadataMatchCountIndexValueMakerTest {
         query.add(tuple2);
         matchedRecordSummary.setQuery(query);
         String recordJson = "";
-        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson, null)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson, record1Id)).thenReturn(matchedRecordSummary);
         when(importDataRepository.retrieveByInstanceID(metadata.getInstanceId())).thenReturn(recordJson);
 
         List<IndexableValue> indexedValues = new ArrayList<>();

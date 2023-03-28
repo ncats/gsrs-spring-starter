@@ -15,6 +15,9 @@ public interface TextRepository extends GsrsRepository<Text, Long> {
     @Query("select t from Text t where t.label = ?1")
     public List<Text> findByLabel(String label);
 
+    @Query("select t from Text t where t.id = ?1")
+    public Text retrieveById(Long id);
+
     @Modifying
     @Transactional
     @Query("delete from Text t where t.id = ?1")

@@ -9,6 +9,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -44,7 +45,7 @@ public class KeyValueMapping {
     private String key;
 
     @Indexable(name = "Mapping_Value", suggest = true)
-    @Column(length = 512, name = "mapping_value")
+    @Column(length = MAX_VALUE_LENGTH, name = "mapping_value")
     private String value;
 
     @Indexable(name = "Qualifier", suggest = true)
@@ -56,4 +57,10 @@ public class KeyValueMapping {
     @Indexable
     private String entityClass;
 
+    @PrePersist
+    @PreUpdate
+    public void tidy() {
+        log.trace("tidy called");
+        value=value!=null && value.length()>0 ? value.substring(0, Math.min(value.length(), MAX_VALUE_LENGTH-1)) :"";
+    }
 }
