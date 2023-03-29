@@ -3,29 +3,39 @@ package gsrs.imports;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.Unchecked;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.dataexchange.model.ImportProcessingJob;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.repository.TextRepository;
+import gsrs.security.AdminService;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.repository.ImportProcessingJobRepository;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.models.Text;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
+import org.jcvi.jillion.core.util.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.util.*;
@@ -46,6 +56,15 @@ public class ImportUtilities<T> {
 
     @Autowired
     public PayloadService payloadService;
+
+    @Autowired
+    private ImportProcessingJobRepository jobRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private AdminService adminService;
 
     private String contextName ="";
 
@@ -171,12 +190,11 @@ public class ImportUtilities<T> {
         assert stagingAreaService != null;
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
-        return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions(),
-                contextName);
+        return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions());
     }
 
     public List<ObjectNode> handleActions(StagingAreaService stagingAreaService,
-                                   int version, String persist, String processingJson, String contextName ) throws Exception {
+                                   int version, String persist, String processingJson) throws Exception {
         assert stagingAreaService != null;
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
@@ -186,15 +204,67 @@ public class ImportUtilities<T> {
             String databaseRecordId= configSet.getStagingAreaRecords().get(r).getMatchingID();
             log.trace("matched ids {} and {}", stagingAreaId, databaseRecordId);
             ObjectNode singleReturn = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
-                    configSet.getProcessingActions(), contextName);
+                    configSet.getProcessingActions());
             returnNodes.add(singleReturn);
         }
         return returnNodes;
     }
 
+    public ImportProcessingJob handleActionsAsync(StagingAreaService stagingAreaService,
+                                                  int version, String persist, String processingJson) throws Exception {
+        ImportProcessingJob job = new ImportProcessingJob();
+        job.setId(UUID.randomUUID());
+        job.setStartDate(DateUtil.getCurrentDate());
+        job.setJobData(processingJson);
+        job.setJobStatus("starting");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(r->{
+            jobRepository.saveAndFlush(job);
+        });
+        log.trace("handleActionsAsync create job {}", job);
+        assert stagingAreaService != null;
+        ObjectMapper mapper = new ObjectMapper();
+        ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        executor.execute(()-> {
+            ArrayNode returnNodes = JsonNodeFactory.instance.arrayNode();
+            for (int r = 0; r < configSet.getStagingAreaRecords().size(); r++) {
+                String stagingAreaId = configSet.getStagingAreaRecords().get(r).getId();
+                String databaseRecordId = configSet.getStagingAreaRecords().get(r).getMatchingID();
+                log.trace("processing ids {} and {}", stagingAreaId, databaseRecordId);
+                final ObjectNode[] singleReturn = new ObjectNode[1];
+                try {
+                    Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
+                            configSet.getProcessingActions());;
+                    adminService.runAs(auth, runnable);
+                    log.trace("got back singleReturn ", singleReturn[0].toPrettyString());
+                } catch (Exception e) {
+                    log.error("error during import processing: ", e);
+                    singleReturn[0] = JsonNodeFactory.instance.objectNode();
+                    singleReturn[0].put("id", stagingAreaId);
+                    singleReturn[0].put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    singleReturn[0].put("message", "error: " + e.getMessage());
+                }
+                returnNodes.add(singleReturn[0]);
+            }
+            job.setResults(returnNodes);
+
+            log.trace("finished processing in handleActionsAsync");
+            TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
+            transactionTemplate2.executeWithoutResult(t->{
+                ImportProcessingJob updatedJob = (ImportProcessingJob) jobRepository.findById(job.getId()).get();
+                log.trace("going to save job");
+                updatedJob.setJobStatus("completed");
+                jobRepository.saveAndFlush(updatedJob);
+                log.trace("completed last save of job ({}) in handleActionsAsync", job.getId());
+            });
+        });
+        log.trace("finished in handleActionsAsync");
+        return job;
+    }
+
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
-                                        int version, String persist, List<ProcessingActionConfig> processingActions,
-                                        String context) throws Exception {
+                                        int version, String persist, List<ProcessingActionConfig> processingActions) throws Exception {
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
@@ -262,7 +332,7 @@ public class ImportUtilities<T> {
         ImportMetadata.RecordImportStatus recordImportStatus = ImportMetadata.RecordImportStatus.staged;
         boolean savingNewItem = false;
         for (ProcessingActionConfig configItem : processingActions) {
-            ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(context, configItem.getProcessingActionName());
+            ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(this.contextName, configItem.getProcessingActionName());
             if(action == null ){
                 log.error("action {} not found!", configItem.getProcessingActionName());
                 continue;
@@ -309,8 +379,8 @@ public class ImportUtilities<T> {
         } else {
             log.trace("skipped saving/processing");
         }
-        ObjectMapper mapper = new ObjectMapper();
         if( currentObject!=null) {
+            log.trace("currentObject not null");
             //messageNode.put("object", mapper.writeValueAsString(currentObject));
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);

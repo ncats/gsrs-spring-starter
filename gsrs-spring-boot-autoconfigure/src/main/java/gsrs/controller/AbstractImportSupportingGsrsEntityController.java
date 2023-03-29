@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.dataexchange.model.ImportProcessingJob;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
@@ -988,7 +989,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         int version=0;//use last
         ArrayNode overallResults = JsonNodeFactory.instance.arrayNode();
         List<ObjectNode> resultNodes = importUtilities.handleActions(stagingAreaService, 0,
-                persist, processingJson, getEntityService().getContext());
+                persist, processingJson);
         HttpStatus returnStatus;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if( resultNodes.stream().map(r->r.get("status").asInt()).allMatch(s->s.equals(HttpStatus.OK.value()))) {
@@ -1025,6 +1026,25 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         messageNode.set("individualResults", overallResults);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), returnStatus);
+    }
+
+
+    @hasAdminRole
+    @PutGsrsRestApiMapping(value = { "/stagingArea/@multiactasync"})
+    public ResponseEntity<Object> executeActMultiAsynch(
+            @RequestBody String processingJson,
+            @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting executeAct");
+        String persist = queryParameters.get("persistChangedObject");
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass());
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
+        int version=0;//use last
+        ArrayNode overallResults = JsonNodeFactory.instance.arrayNode();
+        ImportProcessingJob job = importUtilities.handleActionsAsync(stagingAreaService, 0,
+                persist, processingJson);
+
+        return new ResponseEntity<>(job, HttpStatus.OK);
     }
 
     @hasAdminRole
