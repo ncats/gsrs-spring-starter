@@ -1,18 +1,20 @@
 package ix.ginas.exporters;
 
-import gov.nih.ncats.common.io.IOUtil;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.Objects;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import gov.nih.ncats.common.io.IOUtil;
 
 /**
  * {@link Spreadsheet} implementation that writes out
@@ -27,7 +29,14 @@ public class ExcelSpreadsheet implements Spreadsheet {
     private final Workbook workbook;
 
     private final Sheet sheet;
+    
+    
 
+    private final boolean AUTO_SPILL_OVER=true;
+    private final long SPILL_OVER_AFTER=1000000;
+    private final boolean AUTO_SPILL_HEADER_REPEAT=true;
+    
+    
 
     private final OutputStream out;
 
@@ -36,14 +45,39 @@ public class ExcelSpreadsheet implements Spreadsheet {
         this.out = out;
         //just first sheet
         sheet = workbook.createSheet();
+        
     }
 
 
     @Override
     public SpreadsheetRow getRow(int i) {
         org.apache.poi.ss.usermodel.Row r = sheet.getRow(i);
+        int sheetIndex = 0;
+        int newRowIndex= i;
+        if(AUTO_SPILL_OVER) {
+        	sheetIndex= (int) (i/SPILL_OVER_AFTER);
+	        newRowIndex = (int) (i%SPILL_OVER_AFTER);
+	        if(sheetIndex>0) {
+	        	if(AUTO_SPILL_HEADER_REPEAT) {
+	        		newRowIndex++; //add a row for header
+	        	}
+	        }
+	        
+	        while(workbook.getNumberOfSheets()<sheetIndex+1) {
+	        	Sheet sheetnew= workbook.createSheet();
+	        	if(AUTO_SPILL_HEADER_REPEAT) {
+	        		Row rheader=workbook.getSheetAt(0).getRow(0);
+	        		Row rheaderNew = sheetnew.createRow(0);
+	        		rheader.forEach(cellold->{
+	        			Cell cellNew=rheaderNew.createCell(cellold.getColumnIndex());
+	        			cellNew.setCellValue(cellold.getStringCellValue());
+	        		});
+	        	}
+	        }
+        }
+        
         if (r == null) {
-            r = sheet.createRow(i);
+            r = workbook.getSheetAt(sheetIndex).createRow(newRowIndex);
         }
         return new RowWrapper(r);
     }
