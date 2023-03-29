@@ -1,5 +1,6 @@
 package ix.core.models;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -19,31 +20,30 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "ix_core_DB_GSRS_version")
+@Table(name = "ix_core_db_gsrs_version")
 @Indexable(indexed = false)
 public class DBGSRSVersion {
-	
-	@Id    
-    @GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
-    public Long id;
-	
-	@Column(nullable=false)
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+	public Long id;
+
+	@Column(nullable = false)
 	String entity;
-	
-	@Column(nullable=false)
-	String version;
-	
-	@JsonSerialize(using = GsrsDateSerializer.class)
-    @JsonDeserialize(using = GsrsDateDeserializer.class)
-    public Date modified = TimeUtil.getCurrentDate();
-	
+
+	@Column(nullable = false, name = "version_info")
+	String versionInfo;
+
+	public Timestamp modified;
+
 	String hash;
-	
-	public DBGSRSVersion() {}
-	
-	public DBGSRSVersion(String entity, String version) {
-		this.entity = entity;
-		this.version = version;
+
+	public DBGSRSVersion() {
 	}
-	
+
+	public DBGSRSVersion(String entity, String versionInfo, Timestamp timestamp) {
+		this.entity = entity;
+		this.versionInfo = versionInfo;
+		this.modified = timestamp;
+	}
 }
