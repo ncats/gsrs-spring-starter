@@ -81,15 +81,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends AbstractLegacyTextSearchGsrsEntityController, T, I> extends AbstractGsrsEntityController<C, T,I> implements GsrsLegacySearchController {
 
-//    public AbstractLegacyTextSearchGsrsEntityController(String context, IdHelper idHelper) {
-//        super(context, idHelper);
-//    }
-//
-	//
-	//
-//    public AbstractLegacyTextSearchGsrsEntityController(String context, Pattern idPattern) {
-//        super(context, idPattern);
-//    }
     @Autowired
     private PlatformTransactionManager transactionManager;
     
@@ -100,9 +91,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     private EntityManager localEntityManager;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);    
-    
-    private ResultListRecordGenerator resultListRecordGenerator;
-    
+   
     @Data
     private class ReindexStatus{
     	private UUID statusID;
@@ -160,13 +149,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     private final int BULK_SEARCH_DEFAULT_SKIP = 0;
     
-    public AbstractLegacyTextSearchGsrsEntityController() {}
-    
-    @Autowired
-    public AbstractLegacyTextSearchGsrsEntityController(ResultListRecordGenerator generator) {
-    	this.resultListRecordGenerator = generator;
+    public ResultListRecordGenerator getResultListRecordGenerator() {
+    	return new ResultListRecordGenerator (){};
     }
-    
    
     /**
      * Force a reindex of all entities of this entity type.
@@ -818,10 +803,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	baseNode.put("skip", skip);    	
     	ArrayNode listNode = baseNode.putArray("lists");
     	
-//    	ResultListRecordGenerator generator = resultListRecordGenerator;
+    	ResultListRecordGenerator generator = getResultListRecordGenerator();
     	    	
     	for(String key: topList) {
-    		ResultListRecord record = resultListRecordGenerator.generate(key);  
+    		ResultListRecord record = generator.generate(key);  
     		
     		ObjectNode node = mapper.createObjectNode();
     		node.put("key", key);

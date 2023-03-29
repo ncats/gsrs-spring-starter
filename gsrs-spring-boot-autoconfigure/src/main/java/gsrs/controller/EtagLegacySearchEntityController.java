@@ -65,13 +65,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
-
-//    public EtagLegacySearchEntityController(String context, Pattern pattern) {
-//        super(context, pattern);
-//    }
-//    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
-//        super(context, idHelper);
-//    }
 	
 	@Autowired
 	protected GsrsCache gsrscache;
@@ -97,11 +90,11 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
     
-    public EtagLegacySearchEntityController() {super();}
-    
-    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
-    	super(resultListRecordGenerator);
-    }
+//    public EtagLegacySearchEntityController() {super();}
+//    
+//    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
+//    	super(resultListRecordGenerator);
+//    }
 
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {

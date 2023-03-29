@@ -61,12 +61,6 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     	
     	return tlist;
     });
-    
-    public AbstractExportSupportingGsrsEntityController() {super();}
-    
-    public AbstractExportSupportingGsrsEntityController(ResultListRecordGenerator resultListRecordGenerator) {
-    	super(resultListRecordGenerator);
-    }
 
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
