@@ -32,13 +32,10 @@ public class ExcelSpreadsheet implements Spreadsheet {
     private final Workbook workbook;
 
     private final Sheet sheet;
-    
-    
 
     private final boolean AUTO_SPILL_OVER=true;
-    private final long SPILL_OVER_AFTER=500;            /*1000000;*/
+    private final long SPILL_OVER_AFTER=1000000;
     private final boolean AUTO_SPILL_HEADER_REPEAT=true;
-
 
     private List<String> headers;
 
@@ -51,7 +48,6 @@ public class ExcelSpreadsheet implements Spreadsheet {
         sheet = workbook.createSheet();
         
     }
-
 
     @Override
     public SpreadsheetRow getRow(int i) {
