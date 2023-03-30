@@ -23,6 +23,7 @@ import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportProcessingJobRepository;
 import gsrs.stagingarea.service.StagingAreaService;
+import ix.core.EntityFetcher;
 import ix.core.models.Text;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.SpecificExporterSettings;
@@ -210,13 +211,14 @@ public class ImportUtilities<T> {
         return returnNodes;
     }
 
-    public ImportProcessingJob handleActionsAsync(StagingAreaService stagingAreaService,
+    public JsonNode handleActionsAsync(StagingAreaService stagingAreaService,
                                                   int version, String persist, String processingJson) throws Exception {
         ImportProcessingJob job = new ImportProcessingJob();
         job.setId(UUID.randomUUID());
         job.setStartDate(DateUtil.getCurrentDate());
         job.setJobData(processingJson);
         job.setJobStatus("starting");
+        job.setStatusMessage("Processing started");
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(r->{
             jobRepository.saveAndFlush(job);
@@ -226,6 +228,7 @@ public class ImportUtilities<T> {
         ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
         executor.execute(()-> {
             ArrayNode returnNodes = JsonNodeFactory.instance.arrayNode();
             for (int r = 0; r < configSet.getStagingAreaRecords().size(); r++) {
@@ -237,30 +240,48 @@ public class ImportUtilities<T> {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
                             configSet.getProcessingActions());;
                     adminService.runAs(auth, runnable);
-                    log.trace("got back singleReturn ", singleReturn[0].toPrettyString());
+                    log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
                     log.error("error during import processing: ", e);
                     singleReturn[0] = JsonNodeFactory.instance.objectNode();
                     singleReturn[0].put("id", stagingAreaId);
-                    singleReturn[0].put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    singleReturn[0].put("status", "INTERNAL_SERVER_ERROR");
                     singleReturn[0].put("message", "error: " + e.getMessage());
                 }
                 returnNodes.add(singleReturn[0]);
+                log.trace("appending node to returnNodes");
             }
-            job.setResults(returnNodes);
-
+            returnFromInnerLambda[0] =returnNodes;
+            job.setStatusMessage("Processing completed");
             log.trace("finished processing in handleActionsAsync");
             TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
             transactionTemplate2.executeWithoutResult(t->{
-                ImportProcessingJob updatedJob = (ImportProcessingJob) jobRepository.findById(job.getId()).get();
+                ImportProcessingJob updatedJob = jobRepository.findById(job.getId()).get();
                 log.trace("going to save job");
                 updatedJob.setJobStatus("completed");
-                jobRepository.saveAndFlush(updatedJob);
+                updatedJob.setStatusMessage("Processing completed");
+                updatedJob.setResults(returnFromInnerLambda[0]);
+                jobRepository.save(updatedJob);
                 log.trace("completed last save of job ({}) in handleActionsAsync", job.getId());
             });
         });
         log.trace("finished in handleActionsAsync");
-        return job;
+        return job.toNode();
+    }
+
+    public Optional<ImportProcessingJob> getJob(String jobId) throws Exception {
+        return jobRepository.findById(UUID.fromString(jobId));
+    }
+
+    public JsonNode getJobAsNode(String jobId) throws Exception {
+        Optional<ImportProcessingJob> job = jobRepository.findById(UUID.fromString(jobId));
+        if( job.isPresent()){
+            return job.get().toNode();
+        }
+        ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
+        returnNode.put("message", "No processing job found for input");
+        returnNode.put("error", true);
+        return returnNode;
     }
 
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
@@ -268,13 +289,15 @@ public class ImportUtilities<T> {
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
-            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", "BAD_REQUEST");
+            log.trace("processOneRecord going to return message node");
             return messageNode;
         }
         Matcher matcher = regExGuid.matcher(stagingRecordId);
         if(!matcher.find()){
             messageNode.put("message", "input is not a valid id");
-            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", "BAD_REQUEST");
+            log.trace("processOneRecord going to return message node");
             return messageNode;
         }
 
@@ -296,8 +319,9 @@ public class ImportUtilities<T> {
             if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
                         stagingRecordId));
-                messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+                messageNode.put("status", "BAD_REQUEST");
                 messageNode.put("stagingAreaId", stagingRecordId);
+                log.trace("processOneRecord going to return message node");
                 return messageNode;
             }
         }
@@ -305,8 +329,9 @@ public class ImportUtilities<T> {
         if (objectJson == null || objectJson.length() == 0) {
             messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
                     objectClass, stagingRecordId));
-            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", "BAD_REQUEST");
             messageNode.put("stagingAreaId", stagingRecordId);
+            log.trace("processOneRecord going to return message node");
             return messageNode;
         }
 
@@ -321,8 +346,9 @@ public class ImportUtilities<T> {
         if (currentObject == null) {
             messageNode.put("message", String.format("Error retrieving imported object of type %s with ID %s",
                     objectClass, matchedEntityId));
-            messageNode.put("status", HttpStatus.BAD_REQUEST.value());
+            messageNode.put("status", "BAD_REQUEST");
             messageNode.put("stagingAreaId", stagingRecordId);
+            log.trace("processOneRecord going to return message node");
             return messageNode;
         }
 
@@ -362,7 +388,7 @@ public class ImportUtilities<T> {
                     log.error("Error! Saved object is null");
                     messageNode.put("message", "Object failed to save");
                     messageNode.put("error", result.getThrowable().getMessage());
-                    messageNode.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    messageNode.put("status", "INTERNAL_SERVER_ERROR");
                     return messageNode;
                 }
                 currentObject = result.getEntity();
@@ -373,8 +399,10 @@ public class ImportUtilities<T> {
             UUID indexingEventId = UUID.randomUUID();
             ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
             EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                    EntityUtils.EntityWrapper.of(wrappedObject));
+            ImportMetadata refetchedMetadata=(ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
+            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
+            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
+                    reWrappedObject);
             log.trace("reindexing importmetadata object");
         } else {
             log.trace("skipped saving/processing");
@@ -384,12 +412,14 @@ public class ImportUtilities<T> {
             //messageNode.put("object", mapper.writeValueAsString(currentObject));
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
-            messageNode.put("status", HttpStatus.OK.value());
+            messageNode.put("status", "OK");
+            log.trace("about to return message node {}", messageNode.toPrettyString());
             return messageNode;
         }else{
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
-            messageNode.put("status", HttpStatus.OK.value());
+            messageNode.put("status", "OK");
+            log.trace("about to return message node {}", messageNode.toPrettyString());
             return messageNode;
         }
     }

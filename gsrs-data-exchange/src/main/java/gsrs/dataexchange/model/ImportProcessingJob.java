@@ -2,10 +2,11 @@ package gsrs.dataexchange.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.model.GeneralPurposeJob;
 import ix.core.models.Indexable;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.UUID;
 
 @Entity
@@ -95,6 +97,14 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         this.jobStatus=status;
     }
 
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
+    }
+
     public ArrayNode getResults(){
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode();
@@ -111,9 +121,11 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     }
 
     public void setResults(ArrayNode results){
+        log.trace("starting in setResults");
         ObjectMapper mapper = new ObjectMapper();
         try {
             this.results =mapper.writeValueAsString(results);
+            log.trace("set results to {}", mapper.writeValueAsString(results));
         } catch (JsonProcessingException e) {
             log.error("Error serializing results", e);
             throw new RuntimeException(e);
@@ -131,11 +143,52 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         builder.append(this.startDate);
         return builder.toString();
     }
-    public String getStatusMessage() {
-        return statusMessage;
-    }
 
-    public void setStatusMessage(String statusMessage) {
-        this.statusMessage = statusMessage;
+    /*private ArrayNode getCleanResults() {
+        ArrayNode pre = getResults();
+        if(pre== null || pre.size()==0) {
+            return pre;
+        }
+        ArrayNode returnNode = JsonNodeFactory.instance.arrayNode();
+        for(int i=0; i<pre.size(); i++) {
+            JsonNode currentNode = pre.get(i);
+            ObjectNode nodeCopy = JsonNodeFactory.instance.objectNode();
+            if(currentNode instanceof ObjectNode){
+                ObjectNode objectNode=(ObjectNode) currentNode;
+                Iterator<String> it = objectNode.fieldNames();
+                while(it.hasNext()){
+                    String fieldName = it.next();
+                    node
+                }
+                for(int p=0; p< objectNode.fieldNames())
+            }
+            for(int l=0; l< currentNode.size();l++){
+                if(currentNode.g`)
+            }
+            if( currentNode.hasNonNull("status")) {
+                if(currentNode.get("status").asInt()==200){
+
+                }
+            }
+        }
+    }*/
+    public ObjectNode toNode(){
+        ObjectNode node =JsonNodeFactory.instance.objectNode();
+        node.put("id", this.id.toString());
+        node.put("startDate", this.startDate.getTime());
+        node.put("category", this.getCategory());
+        node.put("jobStatus", this.getJobStatus());
+        node.put("statusMessage", this.getStatusMessage());
+        node.set("results", this.getResults());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jobDataNode = null;
+        try {
+            jobDataNode = mapper.readTree(this.getJobData());
+            node.set("jobData", jobDataNode);
+        } catch (JsonProcessingException e) {
+            log.error("Error converting jobdata: ", e);
+            //throw new RuntimeException(e);
+        }
+        return node;
     }
 }

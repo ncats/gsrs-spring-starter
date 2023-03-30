@@ -302,7 +302,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             newMeta.adapterSchema = predictedSettings.getAdapterSchema();
         } else {
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-            messageNode.put("Message", "Error predicting settings");
+            messageNode.put("message", "Error predicting settings");
         }
         return newMeta;
     }
@@ -551,7 +551,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                  IllegalAccessException e) {
             log.error("error setting up staging area service", e);
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-            messageNode.put("Message", "Unable to obtain staging area service");
+            messageNode.put("message", "Unable to obtain staging area service");
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.NOT_FOUND);
         }
 
@@ -600,7 +600,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
         }
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-        messageNode.put("Message", "No data found for user input");
+        messageNode.put("message", "No data found for user input");
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.NOT_FOUND);
     }
 
@@ -839,7 +839,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         String result = service.updateRecord(recordId, cleanUpdatedJson);
 
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-        resultNode.put("Results", result);
+        resultNode.put("results", result);
 
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
@@ -992,13 +992,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 persist, processingJson);
         HttpStatus returnStatus;
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
-        if( resultNodes.stream().map(r->r.get("status").asInt()).allMatch(s->s.equals(HttpStatus.OK.value()))) {
+        if( resultNodes.stream().map(r->r.get("status").asText()).allMatch(s->s.equals("OK"))) {
             returnStatus= HttpStatus.OK;
             messageNode.put("message", "all succeeded");
-        } else if(resultNodes.stream().map(r->r.get("status").asInt()).allMatch(s->s.equals(HttpStatus.BAD_REQUEST.value()))) {
+        } else if(resultNodes.stream().map(r->r.get("status").asText()).allMatch(s->s.equals("BAD_REQUEST"))) {
             returnStatus= HttpStatus.BAD_REQUEST;
             messageNode.put("message", "input error; please see below");
-        } else if(resultNodes.stream().map(r->r.get("status").asInt()).allMatch(s->s.equals(HttpStatus.INTERNAL_SERVER_ERROR.value()))) {
+        } else if(resultNodes.stream().map(r->r.get("status").asText()).allMatch(s->s.equals("INTERNAL_SERVER_ERROR"))) {
             returnStatus = HttpStatus.INTERNAL_SERVER_ERROR;
             messageNode.put("message", "internal processing error; please see below");
         } else {
@@ -1040,11 +1040,32 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass());
         importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
         int version=0;//use last
-        ArrayNode overallResults = JsonNodeFactory.instance.arrayNode();
-        ImportProcessingJob job = importUtilities.handleActionsAsync(stagingAreaService, 0,
+        JsonNode job = importUtilities.handleActionsAsync(stagingAreaService, version,
                 persist, processingJson);
-
         return new ResponseEntity<>(job, HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = { "/stagingArea/processingstatus({processingJobId})", "/stagingArea/processingstatus/{processingJobId}"})
+    public ResponseEntity<Object> getProcessingStatus(
+            @PathVariable("processingJobId") String processingJobId,
+            @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting getProcessingStatus");
+        log.trace("using processingJobId {}", processingJobId);
+        if( processingJobId==null || processingJobId.length()==0){
+            log.warn("no processingJobId supplied");
+            ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+            messageNode.put("message", "This method requires a valid value for processingJobId");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass());
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
+        JsonNode jobNode = importUtilities.getJobAsNode(processingJobId);
+        HttpStatus returnStatus = HttpStatus.OK;
+        if(jobNode.hasNonNull("error")) {
+            returnStatus= HttpStatus.BAD_REQUEST;
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(jobNode, queryParameters), returnStatus);
     }
 
     @hasAdminRole
@@ -1109,7 +1130,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
         if (!result.isSaved()) {
             log.error("Error! Saved object is null");
-            messageNode.put("Message", "Object failed to save");
+            messageNode.put("message", "Object failed to save");
             if (result.getThrowable() != null) {
                 messageNode.put("Error", result.getThrowable().getMessage());
             }
