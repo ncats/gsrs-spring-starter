@@ -9,7 +9,7 @@ public class NoOpRecordScrubberFactory<T>  implements RecordScrubberFactory<T> {
     @Override
     public RecordScrubber<T> createScrubber(JsonNode settings) {
         //'identity' scrubber returns what was put in
-        RecordScrubber<T> identityScrubber = (t)-> Optional.of(t);
+        RecordScrubber<T> identityScrubber = (t)-> Optional.ofNullable(t);
         return identityScrubber;
     }
 }
