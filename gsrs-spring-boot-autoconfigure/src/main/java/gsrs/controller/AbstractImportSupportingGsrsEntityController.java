@@ -816,7 +816,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //STEP 3: Configure / Update
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = {"/import/{id}/@update", "/import({id})@update"})
+    @PutGsrsRestApiMapping(value = {"/import/{id}/@update", "/import({id})@update", "/stagingArea/{id}/@update", "/stagingArea({id})@update"})
     public ResponseEntity<Object> updateImportData(@PathVariable("id") String recordId,
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -1270,6 +1270,24 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         ImportTaskMetaData importConfig = ImportTaskMetaData.fromText(text);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(importConfig, queryParameters), HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping( value = {"/stagingArea/action({actionName})/@options", "/stagingArea/action/{actionName}/@options"} )
+    public ResponseEntity<Object> handleGetProcessingActionOptions(@RequestParam Map<String, String> queryParameters,
+                                                        @PathVariable("actionName") String actionName) throws JsonProcessingException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        log.trace("Starting handleGetProcessingActionOptions");
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        if( actionName==null || actionName.length()==0) {
+            messageNode.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
+                getDefaultStagingAreaService());
+        AutowireHelper.getInstance().autowire(importUtilities);
+        List<String> options = importUtilities.getOptionsForAction(actionName);
+        log.trace("received options");
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(options, queryParameters), HttpStatus.OK);
     }
 
     public JsonNode handlePreview(String id, JsonNode updatedJson, Map<String, String> queryParameters) throws Exception {

@@ -694,6 +694,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return validationIds;
     }
 
+    @Override
+    public List<ImportValidation> retrieveValidationForInstance(UUID instanceId) {
+        return importValidationRepository.retrieveValidationsByInstanceId(instanceId);
+    }
 
     private void updateImportValidationStatus(UUID recordID, ImportMetadata.RecordValidationStatus status) {
         TransactionTemplate transactionUpdate = new TransactionTemplate(transactionManager);

@@ -14,7 +14,6 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.UUID;
 
 @Entity
@@ -47,6 +46,12 @@ public class ImportProcessingJob implements GeneralPurposeJob {
 
     @Indexable(facet = true)
     private Date finishDate;
+
+    @Indexable
+    private int totalRecords=0;
+
+    @Indexable
+    private int completedRecordCount=0;
 
     @Override
     public UUID getId() {
@@ -141,6 +146,22 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         }
     }
 
+    public int getTotalRecords() {
+        return totalRecords;
+    }
+
+    public void setTotalRecords(int totalRecords) {
+        this.totalRecords = totalRecords;
+    }
+
+    public int getCompletedRecordCount() {
+        return completedRecordCount;
+    }
+
+    public void setCompletedRecordCount(int completedRecordCount) {
+        this.completedRecordCount = completedRecordCount;
+    }
+
     @Override
     public String toString(){
         StringBuilder builder = new StringBuilder();
@@ -193,6 +214,9 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         node.put("jobStatus", this.getJobStatus());
         node.put("statusMessage", this.getStatusMessage());
         node.set("results", this.getResults());
+        node.put("totalRecords", this.totalRecords);
+        node.put("completedRecordCount", this.completedRecordCount);
+
         ObjectMapper mapper = new ObjectMapper();
         if(includeJobData) {
             JsonNode jobDataNode = null;

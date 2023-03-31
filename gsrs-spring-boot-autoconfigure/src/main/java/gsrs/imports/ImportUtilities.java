@@ -232,20 +232,23 @@ public class ImportUtilities<T> {
 
     public JsonNode handleActionsAsync(StagingAreaService stagingAreaService,
                                                   int version, String persist, String processingJson) throws Exception {
+
+        assert stagingAreaService != null;
+        ObjectMapper mapper = new ObjectMapper();
+        ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         ImportProcessingJob job = new ImportProcessingJob();
         job.setId(UUID.randomUUID());
         job.setStartDate(DateUtil.getCurrentDate());
         job.setJobData(processingJson);
         job.setJobStatus("starting");
         job.setStatusMessage("Processing started");
+        job.setTotalRecords(configSet.getStagingAreaRecords().size());
+        job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(r->{
             jobRepository.saveAndFlush(job);
         });
         log.trace("handleActionsAsync create job {}", job);
-        assert stagingAreaService != null;
-        ObjectMapper mapper = new ObjectMapper();
-        ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
         executor.execute(()-> {
@@ -267,6 +270,10 @@ public class ImportUtilities<T> {
                     singleReturn[0].put("status", "INTERNAL_SERVER_ERROR");
                     singleReturn[0].put("message", "error: " + e.getMessage());
                 }
+                int finalishRecord = r+1;
+                TransactionTemplate transactionTemplateUpdateCount = new TransactionTemplate(transactionManager);
+                transactionTemplateUpdateCount.executeWithoutResult(j->jobRepository.updateCompletedRecordCount(job.getId(),finalishRecord));
+                jobRepository.updateCompletedRecordCount(job.getId(),r+1);
                 returnNodes.add(singleReturn[0]);
                 log.trace("appending node to returnNodes");
             }
@@ -289,11 +296,8 @@ public class ImportUtilities<T> {
         return job.toNode();
     }
 
-    public Optional<ImportProcessingJob> getJob(String jobId) throws Exception {
-        return jobRepository.findById(UUID.fromString(jobId));
-    }
-
-    public JsonNode getJobAsNode(String jobId, boolean includeJobData) throws Exception {
+    public JsonNode getJobAsNode(String jobId, boolean includeJobData) {
+        log.trace("in getJobAsNode, jobId: {}", jobId);
         Optional<ImportProcessingJob> job = jobRepository.findById(UUID.fromString(jobId));
         if( job.isPresent()){
             return job.get().toNode(includeJobData);
@@ -575,6 +579,8 @@ public class ImportUtilities<T> {
         job.setJobStatus("starting");
         job.setCategory("Push to Staging Area");
         job.setStatusMessage("Processing started");
+
+        job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(r->{
             jobRepository.saveAndFlush(job);
@@ -616,7 +622,6 @@ public class ImportUtilities<T> {
                 log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
                 log.trace(object.toString());
                 try {
-
                     String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task);
                     importDataRecordIds.add(newRecordId);
                     /*if (recordCount.get() < limit) {
@@ -639,6 +644,8 @@ public class ImportUtilities<T> {
                     errorRecords.add(recordCount.get());
                     log.error("Error processing staging area record", e);
                 }
+                TransactionTemplate transactionTemplateUpDateCount = new TransactionTemplate(transactionManager);
+                transactionTemplateUpDateCount.executeWithoutResult(j->jobRepository.updateCompletedRecordCount(job.getId(), recordCount.get()));
             });
 
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
@@ -666,6 +673,7 @@ public class ImportUtilities<T> {
                 updatedJob.setStatusMessage("Processing completed");
                 updatedJob.setResults(overallResult);
                 updatedJob.setFinishDate(DateUtil.getCurrentDate());
+                updatedJob.setTotalRecords(recordCount.get());
                 jobRepository.save(updatedJob);
                 log.trace("completed last save of job ({}) in handleObjectCreationAsync", job.getId());
             });
@@ -693,4 +701,11 @@ public class ImportUtilities<T> {
         return stagingAreaService.createRecord(parameters);
     }
 
+    public List<String> getOptionsForAction(String actionName){
+        ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(this.contextName, actionName);
+        if( action!=null) {
+            return action.getOptions();
+        }
+        return Collections.EMPTY_LIST;
+    }
 }

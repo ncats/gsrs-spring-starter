@@ -2,6 +2,7 @@ package gsrs.imports.indexers;
 
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.ImportValidation;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -51,12 +53,23 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
             return;
         }
         log.trace("importMetadata.getInstanceId(): {}; importMetadata.getRecordId(): {}", importMetadata.getInstanceId(), importMetadata.getRecordId());
-        ValidationResponse validationResponse= stagingAreaService.validateInstance(importMetadata.getInstanceId().toString());
-        validationResponse.getValidationMessages().forEach(vm->{
+        List<ImportValidation> validations =stagingAreaService.retrieveValidationForInstance(importMetadata.getInstanceId());
+        if(validations == null || validations.isEmpty()) {
+            log.info("No validations found; going to validate before computing facets");
+            ValidationResponse validationResponse = stagingAreaService.validateInstance(importMetadata.getInstanceId().toString());
+            validationResponse.getValidationMessages().forEach(vm -> {
+                consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
+                        String.valueOf(((ValidationMessage) vm).getMessageType())));
+                consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_MESSAGE_FACET,
+                        ((ValidationMessage) vm).getMessage()));
+            });
+            return;
+        }
+        validations.forEach(v->{
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
-                    String.valueOf(((ValidationMessage)vm).getMessageType())));
+                    String.valueOf((v.getValidationType()))));
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_MESSAGE_FACET,
-                    ((ValidationMessage)vm).getMessage()));
+                    (v.getValidationMessage())));
         });
     }
 }
