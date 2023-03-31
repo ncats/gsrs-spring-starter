@@ -20,6 +20,7 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.ImportRecordParameters;
 import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportProcessingJobRepository;
 import gsrs.stagingarea.service.StagingAreaService;
@@ -32,19 +33,23 @@ import org.jcvi.jillion.core.util.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class ImportUtilities<T> {
@@ -75,11 +80,25 @@ public class ImportUtilities<T> {
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);
 
+    StagingAreaService stagingAreaService;
 
+    public ImportUtilities(String contextName, Class<T> entityClass, StagingAreaService service) {
+        this.contextName=contextName;
+        this.entityClass=entityClass;
+        this.stagingAreaService=service;
+    }
+
+
+    //for a unit test - not general use
     public ImportUtilities(String contextName, Class<T> entityClass) {
         this.contextName=contextName;
         this.entityClass=entityClass;
     }
+
+    public void determineStagingAreaService() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        this.stagingAreaService= gsrsImportAdapterFactoryFactory.getStagingAreaService(this.contextName);
+    }
+
     private final CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
             = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.contextName,
             entityClass));
@@ -261,6 +280,7 @@ public class ImportUtilities<T> {
                 updatedJob.setJobStatus("completed");
                 updatedJob.setStatusMessage("Processing completed");
                 updatedJob.setResults(returnFromInnerLambda[0]);
+                updatedJob.setFinishDate(DateUtil.getCurrentDate());
                 jobRepository.save(updatedJob);
                 log.trace("completed last save of job ({}) in handleActionsAsync", job.getId());
             });
@@ -273,10 +293,10 @@ public class ImportUtilities<T> {
         return jobRepository.findById(UUID.fromString(jobId));
     }
 
-    public JsonNode getJobAsNode(String jobId) throws Exception {
+    public JsonNode getJobAsNode(String jobId, boolean includeJobData) throws Exception {
         Optional<ImportProcessingJob> job = jobRepository.findById(UUID.fromString(jobId));
         if( job.isPresent()){
-            return job.get().toNode();
+            return job.get().toNode(includeJobData);
         }
         ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
         returnNode.put("message", "No processing job found for input");
@@ -439,13 +459,14 @@ public class ImportUtilities<T> {
         }
         log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
         log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
-        log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
+        //log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
         adaptFac.setFileName(task.getFilename());
         return adaptFac;
     }
 
 
     public List<ImportAdapterFactory<T>> getImportAdapters() {
+        assert gsrsImportAdapterFactoryFactory != null;
         return importAdapterFactories.get();
     }
 
@@ -461,6 +482,215 @@ public class ImportUtilities<T> {
             log.trace("success? {}", adapterFactory.isPresent());
         }
         return adapterFactory;
+    }
+
+
+    public Stream<T> generateObjects(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task, Map<String, String> settingsMap) throws Exception {
+        log.trace("starting in execute. task: " + task.toString());
+        log.trace("using encoding {}, looking for payload with ID {}", task.getFileEncoding(), task.getPayloadID());
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode settingsNode = mapper.convertValue(settingsMap, ObjectNode.class);
+        if (!settingsNode.hasNonNull("Encoding")) {
+            settingsNode.put("Encoding", task.getFileEncoding());
+        }
+        ImportAdapterFactory<T> factory = fetchAdapterFactory(task);
+        ImportAdapter<T> adapter = factory.createAdapter(task.getAdapterSettings());
+        Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.getPayloadID());
+        if (streamHolder.isPresent()) {
+            InputStream stream = streamHolder.get();
+            return adapter.parse(stream, settingsNode);
+        }
+        return Stream.empty();
+    }
+
+    public JsonNode handleObjectCreation(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
+                                       Map<String, String> queryParameters) throws Exception {
+        Stream<T> objectStream = generateObjects(task, queryParameters);
+
+        ObjectMapper mapper = new ObjectMapper();
+        AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
+        AtomicInteger recordCount = new AtomicInteger(0);
+        List<Integer> errorRecords = new ArrayList<>();
+        List<String> importDataRecordIds = new ArrayList<>();
+        ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+        objectStream.forEach(object -> {
+            recordCount.incrementAndGet();
+            log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+            log.trace(object.toString());
+            try {
+                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                importDataRecordIds.add(newRecordId);
+                    /*if (recordCount.get() < limit) {
+                        if (object instanceof Supplier) {
+                            log.trace("going to invoke supplier on object");
+                            object = (T) ((Supplier) object).get();
+                        }
+                        //previewNode.add(mapper.writeValueAsString(object));
+                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
+                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
+                        singleRecord.set("data", dataAsNode);
+                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
+                                newRecordId);
+                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
+                        singleRecord.set("matches", matchesAsNode);
+                        previewNode.add(singleRecord);
+                    }*/
+            } catch (JsonProcessingException e) {
+                objectProcessingOK.set(false);
+                errorRecords.add(recordCount.get());
+                log.error("Error processing staging area record", e);
+            }
+        });
+
+        ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
+        returnNode.put("completeSuccess", objectProcessingOK.get());
+        ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
+        importDataRecordIds.forEach(recordIdListNode::add);
+        returnNode.set("stagingAreaRecordIds", recordIdListNode);
+        ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
+        errorRecords.forEach(problemRecords::add);
+        returnNode.set("recordsWithProcessingErrors", problemRecords);
+        returnNode.put("fileName", task.getFilename());
+        returnNode.put("adapter", task.getAdapter());
+        long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+        returnNode.put("limit", limit);
+        log.trace("Attached limit to returnNode");
+        returnNode.set("dataPreview", previewNode);
+        return returnNode;
+    }
+
+    public JsonNode handleObjectCreationAsync(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
+                                         Map<String, String> queryParameters) {
+
+        log.trace("starting in handleObjectCreationAsync");
+        ObjectMapper mapper = new ObjectMapper();
+        AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
+        AtomicInteger recordCount = new AtomicInteger(0);
+        List<Integer> errorRecords = new ArrayList<>();
+        List<String> importDataRecordIds = new ArrayList<>();
+        ImportProcessingJob job = new ImportProcessingJob();
+        job.setId(UUID.randomUUID());
+        job.setStartDate(DateUtil.getCurrentDate());
+        job.setJobData(task.toString());
+        job.setJobStatus("starting");
+        job.setCategory("Push to Staging Area");
+        job.setStatusMessage("Processing started");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(r->{
+            jobRepository.saveAndFlush(job);
+        });
+
+        if(queryParameters.containsKey("skipValidation") || queryParameters.containsKey("skipIndexing") || queryParameters.containsKey("skipMatching")) {
+            log.trace("keys : {}", queryParameters.keySet().stream().collect(Collectors.joining()));
+            ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
+            if(queryParameters.containsKey("skipValidation") && queryParameters.get("skipValidation").length()>0) {
+                boolean value = queryParameters.get("skipValidation").equalsIgnoreCase("true");
+                rareSettings.put("skipValidation", value);
+                log.trace("skipValidation: {}", value);
+            }
+            if(queryParameters.containsKey("skipIndexing") && queryParameters.get("skipIndexing").length()>0) {
+                boolean value = queryParameters.get("skipIndexing").equalsIgnoreCase("true");
+                rareSettings.put("skipIndexing", value);
+                log.trace("skipIndexing: {}", value);
+            }
+            if(queryParameters.containsKey("skipMatching") && queryParameters.get("skipMatching").length()>0) {
+                boolean value = queryParameters.get("skipMatching").equalsIgnoreCase("true");
+                rareSettings.put("skipMatching", value);
+                log.trace("skipMatching: {}", value);
+            }
+            log.trace("creating rarelyUsedSettings node");
+            ((ObjectNode)task.getAdapterSettings()).set("rarelyUsedSettings", rareSettings);
+        }
+        log.trace("saved init job");
+        executor.execute(()-> {
+            log.trace("starting in handleObjectCreationAsync execute lambda");
+            ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+            Stream<T> objectStream;
+            try {
+                objectStream = generateObjects(task, queryParameters);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            objectStream.forEach(object -> {
+                recordCount.incrementAndGet();
+                log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+                log.trace(object.toString());
+                try {
+
+                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                    importDataRecordIds.add(newRecordId);
+                    /*if (recordCount.get() < limit) {
+                        if (object instanceof Supplier) {
+                            log.trace("going to invoke supplier on object");
+                            object = (T) ((Supplier) object).get();
+                        }
+                        //previewNode.add(mapper.writeValueAsString(object));
+                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
+                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
+                        singleRecord.set("data", dataAsNode);
+                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
+                                newRecordId);
+                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
+                        singleRecord.set("matches", matchesAsNode);
+                        previewNode.add(singleRecord);
+                    }*/
+                } catch (JsonProcessingException e) {
+                    objectProcessingOK.set(false);
+                    errorRecords.add(recordCount.get());
+                    log.error("Error processing staging area record", e);
+                }
+            });
+
+            ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
+            returnNode.put("completeSuccess", objectProcessingOK.get());
+            ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
+            importDataRecordIds.forEach(recordIdListNode::add);
+            returnNode.set("stagingAreaRecordIds", recordIdListNode);
+            ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
+            errorRecords.forEach(problemRecords::add);
+            returnNode.set("recordsWithProcessingErrors", problemRecords);
+            returnNode.put("fileName", task.getFilename());
+            returnNode.put("adapter", task.getAdapter());
+            long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            returnNode.put("limit", limit);
+            log.trace("handleObjectCreationAsync limit to returnNode");
+            returnNode.set("dataPreview", previewNode);
+            ArrayNode overallResult= JsonNodeFactory.instance.arrayNode();
+            overallResult.add(returnNode);
+
+            TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
+            transactionTemplate2.executeWithoutResult(t->{
+                ImportProcessingJob updatedJob = jobRepository.findById(job.getId()).get();
+                log.trace("going to save job");
+                updatedJob.setJobStatus("completed");
+                updatedJob.setStatusMessage("Processing completed");
+                updatedJob.setResults(overallResult);
+                updatedJob.setFinishDate(DateUtil.getCurrentDate());
+                jobRepository.save(updatedJob);
+                log.trace("completed last save of job ({}) in handleObjectCreationAsync", job.getId());
+            });
+
+        });
+        return job.toNode();
+    }
+
+    public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData) {
+        ImportRecordParameters.ImportRecordParametersBuilder builder=
+         ImportRecordParameters.builder()
+                .jsonData(json)
+                .entityClassName(importTaskMetaData.getEntityType())
+                .formatType(importTaskMetaData.getMimeType())
+                .source(importTaskMetaData.getFilename())
+                .adapterName(importTaskMetaData.getAdapter());
+        if(importTaskMetaData.getAdapterSettings().hasNonNull("rarelyUsedSettings")) {
+            JsonNode rareSettings = importTaskMetaData.getAdapterSettings().get("rarelyUsedSettings");
+            log.trace("processing rarelyUsedSettings {}", rareSettings.toPrettyString());
+            ObjectNode parent = JsonNodeFactory.instance.objectNode();
+            parent.set("rarelyUsedSettings", rareSettings);
+            builder.settings(parent);
+        }
+        ImportRecordParameters parameters =builder.build();
+        return stagingAreaService.createRecord(parameters);
     }
 
 }

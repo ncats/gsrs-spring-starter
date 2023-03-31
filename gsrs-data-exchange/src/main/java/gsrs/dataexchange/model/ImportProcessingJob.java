@@ -42,9 +42,11 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     @Lob
     private String results ="";
 
-
     @Indexable
     private String statusMessage="";
+
+    @Indexable(facet = true)
+    private Date finishDate;
 
     @Override
     public UUID getId() {
@@ -65,7 +67,6 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     public void setJobData(String data) {
         this.data=data;
     }
-
 
     @Override
     public String getCategory() {
@@ -103,6 +104,14 @@ public class ImportProcessingJob implements GeneralPurposeJob {
 
     public void setStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
+    }
+
+    public Date getFinishDate() {
+        return finishDate;
+    }
+
+    public void setFinishDate(Date finishDate) {
+        this.finishDate = finishDate;
     }
 
     public ArrayNode getResults(){
@@ -172,23 +181,33 @@ public class ImportProcessingJob implements GeneralPurposeJob {
             }
         }
     }*/
-    public ObjectNode toNode(){
+
+    public ObjectNode toNode(boolean includeJobData){
         ObjectNode node =JsonNodeFactory.instance.objectNode();
         node.put("id", this.id.toString());
         node.put("startDate", this.startDate.getTime());
+        if(this.finishDate!=null) {
+            node.put("finishDate", this.finishDate.getTime());
+        }
         node.put("category", this.getCategory());
         node.put("jobStatus", this.getJobStatus());
         node.put("statusMessage", this.getStatusMessage());
         node.set("results", this.getResults());
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode jobDataNode = null;
-        try {
-            jobDataNode = mapper.readTree(this.getJobData());
-            node.set("jobData", jobDataNode);
-        } catch (JsonProcessingException e) {
-            log.error("Error converting jobdata: ", e);
-            //throw new RuntimeException(e);
+        if(includeJobData) {
+            JsonNode jobDataNode = null;
+            try {
+                jobDataNode = mapper.readTree(this.getJobData());
+                node.set("jobInputData", jobDataNode);
+            } catch (JsonProcessingException e) {
+                log.error("Error converting jobdata: ", e);
+                //throw new RuntimeException(e);
+            }
         }
         return node;
+    }
+
+    public ObjectNode toNode(){
+        return toNode(false);
     }
 }

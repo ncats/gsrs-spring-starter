@@ -31,12 +31,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.web.multipart.MultipartFile;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,6 +42,7 @@ import static org.mockito.Mockito.when;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Stream;
@@ -58,6 +57,11 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
     private String oneTaskId;
 
     private final String originalFileName= "basicvalues.txt";
+
+    GsrsEntityService getTopLevelEntityService() {
+        return new MyEntityService();
+    }
+
     @InjectMocks
     AbstractImportSupportingGsrsEntityController controller = new AbstractImportSupportingGsrsEntityController() {
         @Mock(name = "payloadService")
@@ -125,7 +129,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         @Override
         protected GsrsEntityService getEntityService() {
             checkSetup();
-            return new MyEntityService();
+            return getTopLevelEntityService();
         }
 
         @Override
@@ -161,15 +165,32 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         }
     };
 
+
     @Test
     void executeTest() throws Exception {
         AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<GinasCommonData> task = new AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<>();
         task.setFileEncoding("UTF-9");
         task.setPayloadID(uuid);
-        task.setAdapter("GSRS Object Adapter");
+        task.setAdapter("Dummy Import Adapter");
         Map<String, String> settingsMap = new HashMap<>();
+        ImportUtilities importUtilities = new ImportUtilities<GinasCommonData>(getTopLevelEntityService().getContext(),
+                getTopLevelEntityService().getEntityClass());
+        importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
 
-        Stream<GinasCommonData> commonDataStream = controller.generateObjects(task, settingsMap);
+        //manually wire a couple of dependencies
+        DummyGsrsImportAdapterFactoryFactory dummyGsrsImportAdapterFactoryFactory = new DummyGsrsImportAdapterFactoryFactory();
+        Field factoryField= importUtilities.getClass().getDeclaredField("gsrsImportAdapterFactoryFactory");
+        factoryField.setAccessible(true);
+        factoryField.set(importUtilities, dummyGsrsImportAdapterFactoryFactory);
+        PayloadService payloadService = mock(PayloadService.class);
+        String dataInput = "chemical CCCCCC";
+        try {
+            when(payloadService.getPayloadAsInputStream(uuid)).thenReturn(Optional.of(new ByteArrayInputStream(dataInput.getBytes(Charset.defaultCharset()))));
+        } catch (IOException ex) {
+            log.error("Error setting up unit tests", ex);
+        }
+        importUtilities.payloadService= payloadService;
+        Stream<GinasCommonData> commonDataStream = importUtilities.generateObjects(task, settingsMap);
         Assertions.assertEquals(DummyImportAdapter.getExpectedStreamSize(), commonDataStream.count());
     }
 
