@@ -33,7 +33,8 @@ public class GsrsEntityProcessorListener {
     private EntityProcessorFactory epf;
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-
+    
+  
 
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
    
@@ -49,9 +50,22 @@ public class GsrsEntityProcessorListener {
     private static boolean PREVENT_RECURSION=true;
     
     
+    private ThreadLocal<Boolean> enabledHooks = ThreadLocal.withInitial(()->true);
+
+    
+    public void runWithDisabledHooks(Runnable r) {
+    	this.enabledHooks.set(false);
+    	try {
+    		r.run();
+    	}finally {
+    		this.enabledHooks.set(true);
+    	}
+    }
+    
     @Transactional
     @PreUpdate
     public void preUpdate(Object o){
+    	if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getKey();
@@ -80,6 +94,7 @@ public class GsrsEntityProcessorListener {
     @PostUpdate
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postUpdate(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             //TODO where should oldvalues come from?
@@ -93,7 +108,7 @@ public class GsrsEntityProcessorListener {
     @PrePersist
     @Transactional
     public void prePersist(Object o){
-        
+    	if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getOptionalKey().orElse(null);
@@ -122,6 +137,7 @@ public class GsrsEntityProcessorListener {
     @PostPersist
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postPersist(Object o) {
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
@@ -137,6 +153,7 @@ public class GsrsEntityProcessorListener {
     @PreRemove
     @Transactional
     public void preRemove(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).preRemove(o);
@@ -147,6 +164,7 @@ public class GsrsEntityProcessorListener {
     @PostRemove
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postRemove(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postRemove(o);
@@ -157,6 +175,7 @@ public class GsrsEntityProcessorListener {
     @PostLoad
     @Transactional
     public void postLoad(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
 //            if(o instanceof AbstractGsrsEntity){
