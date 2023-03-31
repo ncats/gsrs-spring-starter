@@ -27,6 +27,9 @@ public interface UserSavedListRepository extends GsrsRepository<UserSavedList, L
 	@Query("select list from UserSavedList where user_id = ?1 and name = ?2")
 	public String getUserSavedBulkSearchResult(Long userId, String listName);
 	
+	@Query("select count(*) from UserSavedList where user_id = ?1 and name = ?2")
+	public int userSavedBulkSearchResultExists(Long userId, String listName);
+		
 	@Modifying
     @Transactional
 	@Query("update UserSavedList set list = ?3 where user_id = ?1 and name = ?2")

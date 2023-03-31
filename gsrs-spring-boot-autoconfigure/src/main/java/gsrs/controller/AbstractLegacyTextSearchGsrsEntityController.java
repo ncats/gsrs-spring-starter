@@ -58,6 +58,7 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.search.bulk.UserSavedListService;
+import ix.core.search.bulk.UserSavedListService.Operation;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.ResultListRecord;
@@ -883,7 +884,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     // if the user list exists, it will fail
     @PostGsrsRestApiMapping(value="/@userList/keys")  
-    public ResponseEntity<String> saveUserListWithKeys(  											
+    public ResponseEntity<String> createUserListWithKeys(  											
     										   @RequestParam String listName,
     										   @RequestBody String keys){ 
     	
@@ -909,8 +910,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	UserListStatus status = createUserListStatus(); 
     	status.total=list.size();
     	
-    	userSaveListService.saveBulkSearchResultList(userName, listName, list); 
+    	String message = userSaveListService.validateUsernameAndListname(userName, listName);
+    	if(message.length()>0)
+    		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST); 
+    	
     	executor.execute(()->{      
+    		userSaveListService.createBulkSearchResultList(userName, listName, list);
     		reIndexWithKeys(status,list);    		
     	});
     	
@@ -919,13 +924,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
-    public ResponseEntity<String> saveUserListWithEtag(  											
+    public ResponseEntity<String> createUserListWithEtag(  											
     										   @RequestParam(value="listName",required=true) String listName,
     										   @PathVariable("etagId") String etagId,
     										   HttpServletRequest request){ //take an etag and get all the keys
     	
     	
-    	log.error("in saveUserListWithEtag");
+    	log.info("in saveUserListWithEtag");
     	Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
     	if(!etagObj.isPresent()) {
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -950,11 +955,15 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
+    	String message = userSaveListService.validateUsernameAndListname(userName, listName);
+    	if(message.length()>0)
+    		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);     	
+    	
     	UserListStatus listStatus = createUserListStatus();  
     	listStatus.total=keyList.size();
     	
     	executor.execute(()->{   
-    		userSaveListService.saveBulkSearchResultList(userName, listName, keyList);       	
+    		userSaveListService.createBulkSearchResultList(userName, listName, keyList);       	
     		reIndexWithKeys(listStatus,keyList);
     	});    	
 
@@ -1012,7 +1021,52 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
     }
     
-    @PutGsrsRestApiMapping(value="/@userList/currentUser") // change to userlist
+    
+    @PutGsrsRestApiMapping(value="/@userList/currentUser/etag/{etagId}") 
+    public ResponseEntity<String> addToCurrentUserSavedListWithEtag( 
+    		@RequestParam(value="listName",required=true) String listName,
+			   @PathVariable("etagId") String etagId,
+			   HttpServletRequest request){
+    	
+    	Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
+    	if(!etagObj.isPresent()) {
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
+    	EtagExportGenerator<T> etagExporter = new EtagExportGenerator<T>(localEntityManager, transactionManager, HttpRequestHolder.fromRequest(request));
+    	List<Key> keys = etagExporter.getKeysFromUri(etagObj.get(), getEntityService().getContext());
+    	
+    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	   	
+    	if(!validStringParamater(listName) ) {
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
+    	   	
+    	List<String> keyList = keys.stream()
+    			.map(key->key.getIdString())
+    			.map(key->key.trim())
+    			.filter(key->!key.isEmpty())
+    			.collect(Collectors.toList());
+   	
+    	if(keyList.size() ==0)
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	
+    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, keyList, Operation.ADD);
+    	if(updated) {
+    		UserListStatus listStatus = createUserListStatus();  
+        	listStatus.total=keyList.size();
+    		executor.execute(()->{   			  	
+    			reIndexWithKeys(listStatus,keyList);    			
+    		});    		
+    		return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	}else {
+    		return new ResponseEntity<>(HttpStatus.OK);    		
+    	}    	
+    }   			
+    
+    
+    @PutGsrsRestApiMapping(value="/@userList/currentUser") 
     public ResponseEntity<String> updateCurrentUserSavedList(   											
     										   @RequestParam String listName,
     										   @RequestBody String keys,
