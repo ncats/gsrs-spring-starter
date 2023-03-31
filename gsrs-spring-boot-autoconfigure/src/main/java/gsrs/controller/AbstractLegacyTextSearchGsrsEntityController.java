@@ -1030,19 +1030,24 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
     	if(!etagObj.isPresent()) {
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    		return new ResponseEntity<>("Cannot find etag!", HttpStatus.NOT_FOUND);
     	}
     	EtagExportGenerator<T> etagExporter = new EtagExportGenerator<T>(localEntityManager, transactionManager, HttpRequestHolder.fromRequest(request));
     	List<Key> keys = etagExporter.getKeysFromUri(etagObj.get(), getEntityService().getContext());
     	
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+    		return new ResponseEntity<>("Cannot find user account!", HttpStatus.NOT_FOUND); 
     	
-    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	   	
+    	String userName = GsrsSecurityUtils.getCurrentUsername().get();    	
+    	
     	if(!validStringParamater(listName) ) {
-    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);    	} 
-    	   	
+    		return new ResponseEntity<>("List name is not valid, please check.", HttpStatus.BAD_REQUEST);    	}
+    	
+    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	if(!listExists) {
+    		return new ResponseEntity<>("List does not exist!", HttpStatus.NOT_FOUND);
+    	}
+    	    	   	
     	List<String> keyList = keys.stream()
     			.map(key->key.getIdString())
     			.map(key->key.trim())
