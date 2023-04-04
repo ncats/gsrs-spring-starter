@@ -15,6 +15,7 @@ public class ScheduledTaskStartupRunner implements ApplicationListener<ContextRe
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
+        System.out.println("onApplicationEvent ....");
         config.init();
     }
 }

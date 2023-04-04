@@ -33,9 +33,18 @@ public class GsrsEntityProcessorListener {
     private EntityProcessorFactory epf;
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-    
-  
 
+    static int counter = 0;
+    public int processorId = 0;
+    public GsrsEntityProcessorListener() {
+        counter++;
+        processorId = counter;
+        System.out.println("I am one GsrsEntityProcessorListener" + processorId);
+    }
+
+    public int getProcessorId() {
+            return this.processorId;
+    }
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
    
     private HashSet<Key> working =new LinkedHashSet<>();
@@ -48,11 +57,14 @@ public class GsrsEntityProcessorListener {
     // At the time of this comment it's not necessary in any known code
     // to have this on. But it may turn out to be necessary.
     private static boolean PREVENT_RECURSION=true;
-    
-    
-    private ThreadLocal<Boolean> enabledHooks = ThreadLocal.withInitial(()->true);
 
-    
+    private static ThreadLocal<Boolean> enabledHooks = ThreadLocal.withInitial(()->true);
+    private static ThreadLocal<String> tempString = ThreadLocal.withInitial(()->"unspecified");
+
+    public void setTempString(String t) {
+        this.tempString.set(t);
+    }
+
     public void runWithDisabledHooks(Runnable r) {
     	this.enabledHooks.set(false);
     	try {
@@ -65,7 +77,10 @@ public class GsrsEntityProcessorListener {
     @Transactional
     @PreUpdate
     public void preUpdate(Object o){
-    	if(!enabledHooks.get())return;
+        System.out.println("Inside preUpdate, the Thread name is " + Thread.currentThread().getName());
+        System.out.println("Inside preUpdate, tempString is: " + this.tempString.get());
+        System.out.println("The processorId is: " + this.getProcessorId());
+        if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getKey();
