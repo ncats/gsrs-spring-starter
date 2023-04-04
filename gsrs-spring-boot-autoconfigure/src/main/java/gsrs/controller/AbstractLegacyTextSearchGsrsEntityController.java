@@ -91,7 +91,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager localEntityManager;
 
-    private final static ExecutorService executor = Executors.newFixedThreadPool(1);    
+    private final static ExecutorService executor = Executors.newFixedThreadPool(4);    
    
     @Data
     private class ReindexStatus{
@@ -211,12 +211,13 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    				Optional<T> obj = getEntityService().getEntityBySomeIdentifier(i);
 //    				getlegacyGsrsSearchService().reindex(obj.get(), true);
 //    				stat.indexed++;
-    				
+   				
     				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
     				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
     				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true);
+
         			stat.indexed++;  			
     			}catch(Exception e) {
 				log.warn("trouble reindexing id: " + id, e);
@@ -259,13 +260,12 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     public ResponseEntity reindex(@PathVariable("id") String id,
     		    		  		  @RequestParam Map<String, String> queryParameters){
         //this needs to trigger a reindex
-
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             Key k = EntityWrapper.of(obj.get()).getKey();
             
             getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/);
-            //TODO: invent a better response?
+            //TODO: invent a better response?           
             return getIndexData(k.getIdString(),queryParameters);
         }    	
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -1023,29 +1023,31 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     
     @PutGsrsRestApiMapping(value="/@userList/currentUser/etag/{etagId}") 
-    public ResponseEntity<String> addToCurrentUserSavedListWithEtag( 
+    public ResponseEntity<Object> addToCurrentUserSavedListWithEtag( 
     		@RequestParam(value="listName",required=true) String listName,
 			   @PathVariable("etagId") String etagId,
 			   HttpServletRequest request){
     	
     	Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
     	if(!etagObj.isPresent()) {
-    		return new ResponseEntity<>("Cannot find etag!", HttpStatus.NOT_FOUND);
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
     	EtagExportGenerator<T> etagExporter = new EtagExportGenerator<T>(localEntityManager, transactionManager, HttpRequestHolder.fromRequest(request));
     	List<Key> keys = etagExporter.getKeysFromUri(etagObj.get(), getEntityService().getContext());
     	
     	if(!GsrsSecurityUtils.getCurrentUsername().isPresent())
-    		return new ResponseEntity<>("Cannot find user account!", HttpStatus.NOT_FOUND); 
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();    	
     	
     	if(!validStringParamater(listName) ) {
-    		return new ResponseEntity<>("List name is not valid, please check.", HttpStatus.BAD_REQUEST);    	}
+    		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);}
     	
     	boolean listExists = userSaveListService.userListExists(userName,listName);
     	if(!listExists) {
-    		return new ResponseEntity<>("List does not exist!", HttpStatus.NOT_FOUND);
+    		return new ResponseEntity<Object>(
+    				GsrsControllerConfiguration.createStatusJson("List does not exist!", HttpStatus.NOT_FOUND.value()), 
+    				HttpStatus.NOT_FOUND );
     	}
     	    	   	
     	List<String> keyList = keys.stream()
@@ -1091,6 +1093,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
+    	
+    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	if(!listExists) {
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
     	    	
     	List<String> keyList = Arrays.asList(keys.split(","));
     	
@@ -1130,6 +1137,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	UserSavedListService.Operation op = UserSavedListService.Operation.valueOf(operation.trim().toUpperCase());
     	if(op == null) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    	}
+    	
+    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	if(!listExists) {
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
     	
     	List<String> keyList = Arrays.asList(keys.split(","));
@@ -1185,12 +1197,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
     			Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
     			
-    			if(entityID.isPresent()) {
-    				
+    			if(entityID.isPresent()) {    			
     				Class eclass = getEntityService().getEntityClass();
                     Key k = Key.ofStringId(eclass, entityID.get());
-                    Object o = EntityFetcher.of(k).call();
-    				getlegacyGsrsSearchService().reindex(o, true);
+                    Object o = EntityFetcher.of(k).call();                    
+    				getlegacyGsrsSearchService().reindex(o, true);    				
     			
     			}else {
     				log.warn("Cannot get the object during reindexing id: " + id);
@@ -1219,5 +1230,5 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	return node.toPrettyString();    	
-    }
+    }    
 }
