@@ -225,6 +225,7 @@ public class ImportProcessingJob implements GeneralPurposeJob {
                 node.set("jobInputData", jobDataNode);
             } catch (JsonProcessingException e) {
                 log.error("Error converting jobdata: ", e);
+                log.trace(this.getJobData());
                 //throw new RuntimeException(e);
             }
         }

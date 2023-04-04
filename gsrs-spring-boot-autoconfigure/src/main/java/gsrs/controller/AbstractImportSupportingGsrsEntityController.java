@@ -180,26 +180,27 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         @Override
         public String toString() {
             StringBuilder returnBuilder = new StringBuilder();
-            returnBuilder.append("internalUuid: ");
+            returnBuilder.append("\"internalUuid\": \"");
             returnBuilder.append(internalUuid);
-            returnBuilder.append("\n");
-            returnBuilder.append("adapter: ");
+            returnBuilder.append("\",\n");
+            returnBuilder.append("\"adapter\": \"");
             returnBuilder.append(this.adapter);
-            returnBuilder.append("\n");
-            returnBuilder.append("adapterSettings: ");
+            returnBuilder.append("\",\n");
+            returnBuilder.append("\"adapterSettings\": ");
             returnBuilder.append(this.adapterSettings == null ? "null" : this.adapterSettings.toPrettyString());
-            returnBuilder.append("\n");
-            returnBuilder.append("adapterSchema: ");
+            returnBuilder.append(",\n");
+            returnBuilder.append("\"adapterSchema\": ");
             returnBuilder.append(this.adapterSchema == null ? "null" : this.adapterSchema.toPrettyString());
-            returnBuilder.append("\n");
-            returnBuilder.append("entity type: ");
+            returnBuilder.append(",\n");
+            returnBuilder.append("\"entityType\": \"");
             returnBuilder.append(this.entityType);
-            returnBuilder.append("\n");
-            returnBuilder.append("payloadID: ");
+            returnBuilder.append("\",\n");
+            returnBuilder.append("\"payloadID\": \"");
             returnBuilder.append(this.payloadID);
-            returnBuilder.append("\n");
-            returnBuilder.append("owner: ");
+            returnBuilder.append("\"\n");
+            returnBuilder.append("\"owner\": \"");
             returnBuilder.append(this.owner);
+            returnBuilder.append("\"");
             return returnBuilder.toString();
         }
         //TODO: add _self link
@@ -674,22 +675,16 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //May required additional work
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/import({id})/@validate", "/import/{id}/@validate"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
     public ResponseEntity<Object> executeValidate(@PathVariable("id") String id,
                                                   @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("executeValidate.  id: " + id);
 
-        String adapterName = queryParameters.get("adapter");
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         Object response = stagingAreaService.validateInstance(id);
         if (response == null) {
             ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
-            String message = "an error occurred while performing validation. Check the instanceId. Check the server logs";
-            if (ALPHANUMERIC.matcher(adapterName).matches()) {
-                message = String.format("an error occurred while performing validation. Check the instanceId %s. Check the server logs", id);
-            }
-
-            responseNode.put("message", message);
+            responseNode.put("message", "no data found for input");
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
@@ -698,16 +693,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //search for records that have the same values for key fields
     @hasAdminRole
-    @PostGsrsRestApiMapping(value = {"/import/matches"})
+    @PostGsrsRestApiMapping(value = {"/stagingArea/matches"})
     public ResponseEntity<Object> findMatches(@RequestBody JsonNode entityJson,
                                               @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in findMatches");
         String entityType = queryParameters.get("entityType");
-        String adapterName = queryParameters.get("adapter");
-        log.trace("adapterName: " + adapterName);
         log.trace("entityType: " + entityType);
         log.trace("entityJson.toString(): " + entityJson.toString());
-        StagingAreaService service = getStagingAreaService(adapterName);
+        StagingAreaService service = getDefaultStagingAreaService();
         log.trace("retrieved service");
         //findMatches
         MatchedRecordSummary summary = service.findMatchesForJson(entityType, entityJson.toString(), null);
@@ -721,17 +714,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @DeleteGsrsRestApiMapping(value = {"/import({id})/@delete", "/import/{id}/@delete"})
+    @DeleteGsrsRestApiMapping(value = {"/stagingArea({id})/@delete", "/stagingArea/{id}/@delete"})
     public ResponseEntity<Object> deleteRecord(@PathVariable("id") String id,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in deleteRecord");
-
-        String adapterName = queryParameters.get("adapter");
-        log.trace("adapterName: " + adapterName);
-        if (adapterName == null || adapterName.length() == 0) {
-            return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
-        }
-        StagingAreaService service = getStagingAreaService(adapterName);
+        StagingAreaService service = getDefaultStagingAreaService();
         log.trace("retrieved service");
         int version = 0;//todo: retrieve from parameters
         if (queryParameters.get("version") != null) {
@@ -744,6 +731,30 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         service.deleteRecord(id, version);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @hasAdminRole
+    @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk", "/stagingArea/@deletebulk"})
+    public ResponseEntity<Object> deleteRecords(@RequestBody String idSet,
+                                               @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in deleteRecord");
+        StagingAreaService service = getDefaultStagingAreaService();
+        log.trace("retrieved service");
+        int version = 0;//todo: retrieve from parameters
+        String[] ids = idSet.split("\\r\\n");
+        ArrayNode deleted = JsonNodeFactory.instance.arrayNode();
+        Arrays.stream(ids)
+                .filter(id->id!=null)
+                .map(id->id.replace("\"", "").replace(",","").replaceAll(" ","").replace("\r","").replace("\n",""))
+                .filter(id->id.length()>0)
+                        .forEach(id->{
+                            service.deleteRecord(id, version);
+                            deleted.add(id);
+                        });
+
+        ObjectNode response = JsonNodeFactory.instance.objectNode();
+        response.set("deleted records", deleted);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
     @hasAdminRole
