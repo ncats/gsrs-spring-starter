@@ -46,6 +46,11 @@ public class ExceptionValidationMessage implements ValidationMessage {
 	}
 
 	@Override
+	public String getMessageId() {
+		return "E000000";
+	}
+
+	@Override
 	public String getMessage() {
 		return message;
 	}

@@ -3144,30 +3144,6 @@ public class EntityUtils {
             return of(emeta,id);
         }
 
-        //TODO katzelda October 2020: removed EntityFetcher for now
-		/*
-        public EntityFetcher getFetcher() throws Exception{
-            return EntityFetcher.of(this);
-        }
-        
-        public EntityFetcher getFetcher(CacheType ct) throws Exception{
-            return EntityFetcher.of(this, ct);
-        }
-        
-        public EntityFetcher getFetcher(String datasource) throws Exception{
-        	Key dupe= Key.of(this.getEntityInfo(), this.getIdNative());
-        	dupe.setDefaultDS(datasource);
-        	
-            return EntityFetcher.of(dupe);
-        }
-        
-        public EntityFetcher getFetcher(String datasource,CacheType ct) throws Exception{
-        	Key dupe= Key.of(this.getEntityInfo(), this.getIdNative());
-        	dupe.setDefaultDS(datasource);
-            return EntityFetcher.of(dupe, ct);
-        }
-        */
-        
         private String ds = null;
         private void setDefaultDS(String datasource){
         	this.ds=datasource;
