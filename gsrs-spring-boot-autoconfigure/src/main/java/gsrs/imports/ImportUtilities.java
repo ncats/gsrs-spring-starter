@@ -471,6 +471,9 @@ public class ImportUtilities<T> {
 
     public List<ImportAdapterFactory<T>> getImportAdapters() {
         assert gsrsImportAdapterFactoryFactory != null;
+        log.trace("starting in getImportAdapters.  gsrsImportAdapterFactoryFactory: {}, this.contextName: {}, entityClass: {}",
+                gsrsImportAdapterFactoryFactory, this.contextName, entityClass != null ? entityClass.getName() : "null!");
+        gsrsImportAdapterFactoryFactory.newFactory(this.contextName, entityClass);
         return importAdapterFactories.get();
     }
 
@@ -490,7 +493,7 @@ public class ImportUtilities<T> {
 
 
     public Stream<T> generateObjects(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task, Map<String, String> settingsMap) throws Exception {
-        log.trace("starting in execute. task: " + task.toString());
+        log.trace("starting in generateObjects. task: " + task.toString());
         log.trace("using encoding {}, looking for payload with ID {}", task.getFileEncoding(), task.getPayloadID());
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode settingsNode = mapper.convertValue(settingsMap, ObjectNode.class);

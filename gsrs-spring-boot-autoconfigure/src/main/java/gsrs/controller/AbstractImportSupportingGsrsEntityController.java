@@ -1305,6 +1305,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("handlePreview; id: " + id);
         ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
                 getDefaultStagingAreaService());
+        AutowireHelper.getInstance().autowire(importUtilities);
         Optional<ImportTaskMetaData<T>> obj = getImportTask(UUID.fromString(id));
         Stream<T> objectStream;
         if (obj.isPresent()) {
