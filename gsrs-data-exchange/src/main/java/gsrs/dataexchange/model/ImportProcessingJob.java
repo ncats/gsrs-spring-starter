@@ -24,7 +24,8 @@ public class ImportProcessingJob implements GeneralPurposeJob {
 
     @Id
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)private UUID id;
+    @Column(length =40, updatable = false, unique = true)
+    private UUID id;
     
     @Lob
     private String data;
