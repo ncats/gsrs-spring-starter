@@ -582,6 +582,9 @@ public class ImportUtilities<T> {
         job.setJobStatus("starting");
         job.setCategory("Push to Staging Area");
         job.setStatusMessage("Processing started");
+        if( task.getAdapterSettings().hasNonNull("RecordCount")) {
+            job.setTotalRecords(((ObjectNode)task.getAdapterSettings()).get("RecordCount").asInt());
+        }
 
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);

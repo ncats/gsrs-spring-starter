@@ -298,8 +298,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         ImportTaskMetaData<T> newMeta = task.copy();
         if (predictedSettings != null) {
-            newMeta.adapterSettings = predictedSettings.getAdapterSettings();
-            newMeta.adapterSchema = predictedSettings.getAdapterSchema();
+            newMeta.setAdapterSettings(predictedSettings.getAdapterSettings());
+            newMeta.setAdapterSchema( predictedSettings.getAdapterSchema());
         } else {
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
             messageNode.put("message", "Error predicting settings");
@@ -479,8 +479,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/import/data({id})/{version}", "/import/data/{id}/{version}",
-            "/stagingArea({id})/{version}", "/stagingArea/{id}/{version}"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea({id})/{version}", "/stagingArea/{id}/{version}"})
     public ResponseEntity<Object> getImportData(@PathVariable("id") String id,
                                                 @PathVariable("version") int version,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -519,8 +518,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/importdata({id})/{segment}", "/importdata/{id}/{segment}",
-            "/stagingArea({id})/{segment}", "/stagingArea/{id}/{segment}"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea({id})/{segment}", "/stagingArea/{id}/{segment}"})
     public ResponseEntity<Object> getImportDataFull(@PathVariable("id") String id,
                                                     @PathVariable("segment") String segment,
                                                     @RequestParam Map<String, String> queryParameters,
@@ -530,7 +528,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/importdata({id})", "/importdata/{id}", "/stagingArea({id})", "/stagingArea/{id}"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea({id})", "/stagingArea/{id}"})
     public ResponseEntity<Object> getImportDataFullNoSegment(@PathVariable("id") String id,
                                                              @RequestParam Map<String, String> queryParameters,
                                                              HttpServletRequest request) throws Exception {
@@ -827,7 +825,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //STEP 3: Configure / Update
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = {"/import/{id}/@update", "/import({id})@update", "/stagingArea/{id}/@update", "/stagingArea({id})@update"})
+    @PutGsrsRestApiMapping(value = {"/stagingArea/{id}/@update", "/stagingArea({id})@update"})
     public ResponseEntity<Object> updateImportData(@PathVariable("id") String recordId,
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -907,8 +905,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = { "/stagingArea({id})/@act",
-            "/stagingArea/{id}/@act"})
+    @PutGsrsRestApiMapping(value = { "/stagingArea({id})/@act", "/stagingArea/{id}/@act"})
     public ResponseEntity<Object> executeAct2(@PathVariable("id") String stagingRecordId,
                                              @RequestBody String processingJson,
                                              @RequestParam Map<String, String> queryParameters) throws Exception {
