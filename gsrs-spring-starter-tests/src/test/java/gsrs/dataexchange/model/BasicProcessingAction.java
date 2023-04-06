@@ -21,4 +21,8 @@ public class BasicProcessingAction implements ProcessingAction<GinasCommonData>{
         }
         return stagingAreaRecord;
     }
+
+    public String getActionName(){
+        return "Basic";
+    }
 }

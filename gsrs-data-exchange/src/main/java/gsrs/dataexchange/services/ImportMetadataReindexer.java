@@ -137,7 +137,7 @@ public class ImportMetadataReindexer {
                                             try {
                                                 wrapper.traverse().execute((p, child) -> {
                                                     log.trace("handling indexing of 'child' {}/{}", child.getKind(), child.getId());
-                                                    EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+                                                    EntityUtils.EntityWrapper<ImportMetadata> wrapped = child;
                                                     //this should speed up indexing so that we only index
                                                     //things that are roots.  the actual indexing process of the root should handle any
                                                     //child objects of that root.
@@ -215,9 +215,9 @@ public class ImportMetadataReindexer {
     }
 
     public static void indexOneItem(UUID reindexId, Consumer<Object> eventConsumer, EntityUtils.Key key,
-                                    EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrappedEntity) {
+                                    EntityUtils.EntityWrapper<ImportMetadata> wrappedEntity) {
         log.trace("indexOneItem will process reindex of key {}",  key);
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrappedEntity), true);
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(wrappedEntity), true);
         eventConsumer.accept(event);
         log.trace("submitted index event");
     }

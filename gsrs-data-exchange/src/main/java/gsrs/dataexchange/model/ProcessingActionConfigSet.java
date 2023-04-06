@@ -1,8 +1,6 @@
 package gsrs.dataexchange.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +16,8 @@ import java.util.List;
 public class ProcessingActionConfigSet {
 
     List<ProcessingActionConfig> processingActions = new ArrayList<>();
+
+    List<MatchedIDs> stagingAreaRecords;
 
     @JsonIgnore
     public void addAction(ProcessingActionConfig actionConfig) {

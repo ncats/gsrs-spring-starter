@@ -14,7 +14,7 @@ public class ProcessingActionConfigTest {
     public void ConfigSerializationTest() throws JsonProcessingException {
         ProcessingActionConfigSet configSet= new ProcessingActionConfigSet();
         ProcessingActionConfig config = new ProcessingActionConfig();
-        config.setProcessingActionClass(BasicProcessingAction.class);
+        config.setProcessingActionName(BasicProcessingAction.class.getName());
         Map<String, Object> parms = new HashMap<>();
         parms.put("copyAccess", true);
         parms.put("copyUuid", false);
@@ -22,7 +22,7 @@ public class ProcessingActionConfigTest {
         configSet.addAction(config);
 
         ProcessingActionConfig config2 = new ProcessingActionConfig();
-        config2.setProcessingActionClass(OriginalProcessingAction.class);
+        config2.setProcessingActionName(OriginalProcessingAction.class.getName());
         Map<String, Object> parms2 = new HashMap<>();
         parms2.put("returnStagingRecord", true);
         config2.setParameters(parms2);
@@ -39,7 +39,7 @@ public class ProcessingActionConfigTest {
     testing deserialization
      */
     public void ConfigDeserializationTest() throws JsonProcessingException {
-        String inputJson ="{\"processingActions\":[{\"parameters\":{\"copyUuid\":false,\"copyAccess\":false},\"processingActionClass\":\"gsrs.dataexchange.model.BasicProcessingAction\"},{\"parameters\":{\"returnStagingRecord\":false},\"processingActionClass\":\"gsrs.dataexchange.model.OriginalProcessingAction\"}]}";
+        String inputJson ="{\"processingActions\":[{\"parameters\":{\"copyUuid\":false,\"copyAccess\":false},\"processingActionName\":\"gsrs.dataexchange.model.BasicProcessingAction\"},{\"parameters\":{\"returnStagingRecord\":false},\"processingActionName\":\"Original\"}]}";
         ObjectMapper mapper= new ObjectMapper();
         ProcessingActionConfigSet configSet =mapper.readValue(inputJson, ProcessingActionConfigSet.class);
         Assertions.assertEquals(2, configSet.processingActions.size());

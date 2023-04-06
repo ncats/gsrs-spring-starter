@@ -11,13 +11,21 @@ public class InputFieldStatistics {
     private static final int MAX_READS=10;
 
     private final int maxExamples;
+
     private String field;
     private List<String> examples= new ArrayList<>();
+
+    private Object valueRange;//for numerics
+
+    private int count;
+
+    private int distinctCount;
 
     public InputFieldStatistics(String f){
         this.field=f;
         this.maxExamples=MAX_READS;
     }
+
     public InputFieldStatistics(String f, int max){
         this.field=f;
         this.maxExamples=max;

@@ -3,6 +3,8 @@ package gsrs.stagingarea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
@@ -110,7 +112,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 ex.printStackTrace();
             }
         }
-
     }
 
 
@@ -118,6 +119,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     public String createRecord(ImportRecordParameters parameters) {
         if( indexer==null) setupIndexer();
         Objects.requireNonNull(indexer, "need a text indexer!");
+        //step 1 - persist raw object JSON to staging area
         ImportData data = new ImportData();
         data.setData(parameters.getJsonData());
         UUID recordId = UUID.randomUUID();
@@ -125,11 +127,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         data.setRecordId(recordId);
         data.setVersion(1);
         data.setInstanceId(instanceId);
-        data.setSaveDate(new Date());
+        data.setSaveDate(TimeUtil.getCurrentDate());
         data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository, "importDataRepository is required");
         ImportData saved = importDataRepository.saveAndFlush(data);
 
+        //step 2 - save metadata
         ImportMetadata metadata = new ImportMetadata();
         metadata.setRecordId(recordId);
         metadata.setInstanceId(instanceId);
@@ -145,16 +148,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         metadata.setDataFormat(parameters.getFormatType());
         metadata.setImportAdapter(parameters.getAdapterName());
         metadataRepository.saveAndFlush(metadata);
-        EntityUtils.EntityWrapper<ImportMetadata> wrapper = EntityUtils.EntityWrapper.of(metadata);
-        try {
-            indexer.add(wrapper);
-            log.trace("indexer.add called");
-        } catch (IOException e) {
-            log.error("Error indexing import metadata to index", e);
-        }
-        //log.trace("indexer.add skippedindexer.add skipped");
-        //update processing status after every step
 
+        //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
             try {
                 saveRawData(parameters.getRawDataSource(), recordId);
@@ -163,10 +158,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
         }
 
+        //deserialize
         Object domainObject;
         try {
             log.trace("going deserialize object of class {}", parameters.getEntityClassName());
-            log.trace(parameters.getJsonData());
             domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
         } catch (JsonProcessingException e) {
             log.error("Error deserializing imported object.", e);
@@ -177,17 +172,40 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return recordId.toString();
         }
         log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
-        _entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
+        //_entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
 
-        ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
-        domainObject = response.getNewObject();
+        //step 4: validate
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
-        if (response != null) {
-            List<UUID> savedResult = persistValidationInfo(response, 1, instanceId);
-            overallStatus = getOverallValidationStatus(response);
+
+        boolean performValidation=true;
+        boolean performIndexing=true;
+        boolean performMatching=true;
+        log.trace("parameters.getSettings(): {}", parameters.getSettings());
+        if(parameters.getSettings()!= null && parameters.getSettings().hasNonNull("rarelyUsedSettings")) {
+
+            ObjectNode rareSettings = (ObjectNode) parameters.getSettings().get("rarelyUsedSettings");
+            log.trace("unpacking rarelyUsedSettings. ");
+            if(rareSettings.hasNonNull("skipValidation") && rareSettings.get("skipValidation").asBoolean()) {
+                performValidation=false;
+            }
+            if(rareSettings.hasNonNull("skipIndexing") && rareSettings.get("skipIndexing").asBoolean()) {
+                performIndexing=false;
+            }
+            if(rareSettings.hasNonNull("skipMatching") && rareSettings.get("skipMatching").asBoolean()) {
+                performMatching=false;
+            }
         }
-        //save the updated object
-        try {
+        if( performValidation) {
+            log.trace("going to validate");
+            ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
+            domainObject = response.getNewObject();
+            if (response != null) {
+                List<UUID> savedResult = persistValidationInfo(response, 1, instanceId);
+                overallStatus = getOverallValidationStatus(response);
+            }
+
+            //save the updated object
+        /*try {
             log.trace("going to save updated domain object post-validation");
             data.setData(serializeObject(domainObject));
             data.setVersion(data.getVersion() + 1);
@@ -196,40 +214,42 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             importDataRepository.save(data);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+        }*/
+
+            log.trace("overallStatus: " + overallStatus);
+            updateImportValidationStatus(recordId, overallStatus);
         }
+        //step 5: matchables
 
-        log.trace("overallStatus: " + overallStatus);
-        updateImportValidationStatus(recordId, overallStatus);
-
-        List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-        definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-        persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
         updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
 
-        handleIndexing(metadata);
-        //event driven: each step in process sends an event (pub/sub) look in ... indexing
-        //  validation, when done would trigger the next event
-        //  event manager type of thing
-        // passively: daemon running in background looks for records with a given status and then performs
-        // the next step
-        // will
-        //todo: run duplicate check
-        try {
-            MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
-            log.trace("Matches: ");
-            summary.getMatches().forEach(m -> {
-                log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
-                if (m.getMatchingRecords().size() == 0) {
-                    log.trace(" 0 matching records");
+        if(performMatching){
+            log.trace("going to match");
+            List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
+            definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+            persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
 
-                } else {
-                    m.getMatchingRecords().forEach(r -> log.trace("   location: {} record Id: {}; key that matched: {}", r.getSourceName(), r.getRecordId(),
-                            r.getMatchedKey()));
-                }
 
-            });
-        } catch (ClassNotFoundException e) {
-            log.error("Error looking for matches", e);
+            //event driven: each step in process sends an event (pub/sub) look in ... indexing
+            //  validation, when done would trigger the next event
+            //  event manager type of thing
+            // passively: daemon running in background looks for records with a given status and then performs
+            // the next step
+            // will
+            //todo: run duplicate check
+            try {
+                MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
+                //log.trace("Matches: ");
+                summary.getMatches().forEach(m -> {
+                    //log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
+                });
+            } catch (ClassNotFoundException e) {
+                log.error("Error looking for matches", e);
+            }
+        }
+        if( performIndexing ) {
+            log.trace("going to index");
+            handleIndexing(metadata);
         }
 
         return saved.getRecordId().toString();
@@ -674,6 +694,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return validationIds;
     }
 
+    @Override
+    public List<ImportValidation> retrieveValidationForInstance(UUID instanceId) {
+        return importValidationRepository.retrieveValidationsByInstanceId(instanceId);
+    }
 
     private void updateImportValidationStatus(UUID recordID, ImportMetadata.RecordValidationStatus status) {
         TransactionTemplate transactionUpdate = new TransactionTemplate(transactionManager);
