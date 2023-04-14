@@ -196,7 +196,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
         }
         if( performValidation) {
-            log.trace("going to validate");
+            log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
             ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
             domainObject = response.getNewObject();
             if (response != null) {
@@ -266,9 +266,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public String updateRecord(String recordId, String jsonData) {
+        log.trace("starting in updateRecord");
         //locate the latest record
         List<ImportData> importData= importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
         if(importData==null || importData.isEmpty()){
+            log.trace("no data found for id {}", recordId);
             return "No data found";
         }
         ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
