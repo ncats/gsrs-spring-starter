@@ -116,7 +116,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     }
 
     @Override
-    public Class<T> getDefaultStagingAreaService(String context) {
+    public synchronized Class<T> getDefaultStagingAreaService(String context) {
         String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaServiceClass().get(context);
         if(clsName==null || clsName.length()==0) {
             clsName="gsrs.stagingarea.service.DefaultStagingAreaService";

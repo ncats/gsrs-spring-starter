@@ -478,7 +478,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    @hasAdminRole
+    /*@hasAdminRole
     @GetGsrsRestApiMapping(value = {"/stagingArea({id})/{version}", "/stagingArea/{id}/{version}"})
     public ResponseEntity<Object> getImportData(@PathVariable("id") String id,
                                                 @PathVariable("version") int version,
@@ -499,10 +499,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(foundData.get(), queryParameters), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
-    }
+    }*/
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/import/metadata({id})", "/import/metadata/{id}"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea/metadata({id})", "/stagingArea/metadata/{id}"})
     public ResponseEntity<Object> getImportMetadata(@PathVariable("id") String id,
                                                     @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting getImportMetadata");
@@ -563,6 +563,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         log.trace("id: {} version: {} segment: {}", id, version, segment);
         Objects.requireNonNull(service, "Must have a Staging Area Service work with data!");
+        if(segment!= null && segment.equalsIgnoreCase("instances")){
+            List<ImportData> data = service.getImportData(id);
+            log.trace("retrieved data for record");
+            return new ResponseEntity<>(data, HttpStatus.OK);
+        }
         ImportData requestedDataItem = service.getImportDataByInstanceIdOrRecordId(id, version);
         ImportMetadata matchingMetadata;
 
@@ -755,7 +760,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
-    @hasAdminRole
+/*    @hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/data", "/import/{id}/data"})
     public ResponseEntity<Object> retrieveRecord(@PathVariable("id") String id,
                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -778,27 +783,23 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         int version = Integer.parseInt(queryParameters.get("version"));
         ImportMetadata data = service.getImportMetaData(id, version);
         return new ResponseEntity<>(data, HttpStatus.OK);
-    }
+    }*/
 
+/*
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/import({id})/instances", "/import/{id}/instances"})
+    @GetGsrsRestApiMapping(value = {"/stagingArea({id})/instances", "/stagingArea/{id}/instances"})
     public ResponseEntity<Object> getInstances(@PathVariable("id") String recordId,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in getInstances with data");
-
-        String adapterName = queryParameters.get("adapter");
-        log.trace("adapterName: " + adapterName);
-        if (adapterName == null || adapterName.length() == 0) {
-            return new ResponseEntity<>("No adapterName supplied", HttpStatus.BAD_REQUEST);
-        }
-        StagingAreaService service = getStagingAreaService(adapterName);
+        StagingAreaService service = getDefaultStagingAreaService();
         log.trace("retrieved service");
         List<ImportData> data = service.getImportData(recordId);
         log.trace("retrieved data for record");
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
+*/
 
-    @hasAdminRole
+    /*@hasAdminRole
     @GetGsrsRestApiMapping(value = {"/import({id})/instancedata", "/import/{id}/instancedata"})
     public ResponseEntity<Object> retrieveInstanceData(@PathVariable("id") String instanceId,
                                                        @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -820,7 +821,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("retrieved service");
         String data = service.getInstanceData(instanceId);
         return new ResponseEntity<>(data, HttpStatus.OK);
-    }
+    }*/
 
 
     //STEP 3: Configure / Update
@@ -829,10 +830,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> updateImportData(@PathVariable("id") String recordId,
                                                    @RequestBody String updatedJson,
                                                    @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("in updateImportData. json:");
+        log.trace("in updateImportData. ID: {} ", recordId);
         StagingAreaService service = getDefaultStagingAreaService();
         String cleanUpdatedJson = ImportUtilities.removeMetadataFromDomainObjectJson(updatedJson);
-        log.trace(cleanUpdatedJson);
+        log.trace("json: {}", cleanUpdatedJson);
         String result = service.updateRecord(recordId, cleanUpdatedJson);
 
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
@@ -842,7 +843,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 4: Execute import -- persist the domain entity to the staging area
-    @hasAdminRole
+    /*@hasAdminRole
     @PostGsrsRestApiMapping(value = {"/import({id})/@execute", "/import/{id}/@execute"})
     public ResponseEntity<Object> executeImport(@PathVariable("id") String id,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -857,10 +858,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             return new ResponseEntity<>(returnNode, HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
-    }
+    }*/
 
     @hasAdminRole
-    @PostGsrsRestApiMapping(value = {"/import({id})/@executeasync", "/import/{id}/@executeasync"})
+    @PostGsrsRestApiMapping(value = {"/import({id})/@executeasync", "/import/{id}/@executeasync", "/import({id})/@execute",
+            "/import/{id}/@execute"})
     public ResponseEntity<Object> executeImportAsync(@PathVariable("id") String id,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting executeImport");
@@ -932,7 +934,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
     }
 
-    @hasAdminRole
+    /*@hasAdminRole
     @PutGsrsRestApiMapping(value = { "/stagingArea/@bulkact"})
     public ResponseEntity<Object> executeActBulk(
                                               @RequestBody String processingJson,
@@ -980,14 +982,13 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         statistics.put("operationTotal", resultNodes.size());
         messageNode.set("operationStatistics", statistics);
 
-
         messageNode.set("individualResults", overallResults);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), returnStatus);
-    }
+    }*/
 
 
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = { "/stagingArea/@bulkactasync"})
+    @PutGsrsRestApiMapping(value = { "/stagingArea/@bulkactasync", "/stagingArea/@bulkAct"})
     public ResponseEntity<Object> executeActBulkAsync(
             @RequestBody String processingJson,
             @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -1034,13 +1035,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(jobNode, queryParameters), returnStatus);
     }
 
+/*
     @hasAdminRole
     @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@create", "/import/{id}/{version}/@create"})
     public ResponseEntity<Object> executeCreate(@PathVariable("id") String stagingRecordId,
                                                 @PathVariable("version") int version,
                                                 @RequestBody String processingJson,
                                                 @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("starting executeAct");
+        log.trace("starting executeCreate");
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         String objectJson = "";
         String objectClass = "";
@@ -1106,6 +1108,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("saved new or updated entity");
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(currentObject, queryParameters), HttpStatus.OK);
     }
+*/
 
 
     @hasAdminRole
@@ -1194,7 +1197,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
     }
 
-    @hasAdminRole
+    /*@hasAdminRole
     @GetGsrsRestApiMapping("/import/data")
     @Transactional(readOnly = true)
     public ResponseEntity<Object> pageImportData(@RequestParam(value = "top", defaultValue = "10") long top,
@@ -1212,7 +1215,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
 
         return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
-    }
+    }*/
 
     @hasAdminRole
     @PostGsrsRestApiMapping("/import/config")
@@ -1251,7 +1254,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         //todo: ID processing
 
         ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-        resultNode.put("Newly created configuration", savedText.id);
+        resultNode.put("newly created configuration", savedText.id);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
 
