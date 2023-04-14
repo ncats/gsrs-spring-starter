@@ -95,10 +95,6 @@ public class ImportUtilities<T> {
         this.entityClass=entityClass;
     }
 
-    public void determineStagingAreaService() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        this.stagingAreaService= gsrsImportAdapterFactoryFactory.getStagingAreaService(this.contextName);
-    }
-
     private final CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
             = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.contextName,
             entityClass));
@@ -410,6 +406,7 @@ public class ImportUtilities<T> {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
                 if (!result.isSaved()) {
                     log.error("Error! Saved object is null");
+                    messageNode.put("stagingAreaId", stagingRecordId);
                     messageNode.put("message", "Object failed to save");
                     messageNode.put("error", result.getThrowable().getMessage());
                     messageNode.put("status", "INTERNAL_SERVER_ERROR");
@@ -689,6 +686,8 @@ public class ImportUtilities<T> {
     }
 
     public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData) {
+        log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
+                importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
          ImportRecordParameters.builder()
                 .jsonData(json)
