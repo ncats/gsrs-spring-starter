@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -52,6 +54,7 @@ import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.EntityFetcher;
 import ix.core.models.ETag;
+import ix.core.models.BaseModel;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
@@ -169,8 +172,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
     public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
-    		HttpServletRequest request){
-    	
+    		HttpServletRequest request){    	
     	return Optional.ofNullable(reindexing.get(id)).map(o->{
     		o.set_self(request.getRequestURL().toString());
     		return new ResponseEntity<>(o, HttpStatus.OK);	
@@ -208,19 +210,15 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
     			//TODO: Should change how this works probably to not use REST endpoint
     			try {
-//    				Optional<T> obj = getEntityService().getEntityBySomeIdentifier(i);
-//    				getlegacyGsrsSearchService().reindex(obj.get(), true);
-//    				stat.indexed++;
-   				
     				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
     				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
-    				Object o = EntityFetcher.of(k).call();
+    				Object o = EntityFetcher.of(k).findObject();
         			getlegacyGsrsSearchService().reindex(o, true);
-
-        			stat.indexed++;  			
+        			stat.indexed++;  				
+    				
     			}catch(Exception e) {
-				log.warn("trouble reindexing id: " + id, e);
+    				log.warn("trouble reindexing id: " + id, e);
     				stat.failed++;
     			}   
     			
@@ -228,8 +226,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     		stat.setStatus("finished");
     		stat.done=true;
     		stat.finshed = TimeUtil.getCurrentTimeMillis();
-    	});
-    	
+    	});    	
     	
         return new ResponseEntity<>(stat, HttpStatus.OK);
     }
@@ -237,9 +234,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @GetGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
     public ResponseEntity bulkReindex(@RequestParam Map<String, String> queryParameters){
     	ReindexStatusTasks tasks = new ReindexStatusTasks();
-    	tasks.tasks=reindexing.values().stream().collect(Collectors.toList());
-        return new ResponseEntity<>(tasks, HttpStatus.OK);
+    	tasks.tasks = reindexing.values().stream().collect(Collectors.toList());
+    	return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
+    
     @DeleteGsrsRestApiMapping(value="/@reindexBulk/clear", apiVersions = 1)
     public ResponseEntity bulkReindexClear(@RequestParam Map<String, String> queryParameters){
     	reindexing.entrySet().stream()

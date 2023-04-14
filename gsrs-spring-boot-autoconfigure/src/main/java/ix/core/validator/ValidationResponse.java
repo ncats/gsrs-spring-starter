@@ -67,6 +67,11 @@ public class ValidationResponse<T> {
 		vr.setValid(true);
 		vr.addValidationMessage(new ValidationMessage(){
 			@Override
+			public String getMessageId() {
+				return "S000000";
+			}
+
+			@Override
 			public String getMessage() {
 				return "SUCCESS";
 			}

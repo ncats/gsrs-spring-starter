@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,6 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     protected TextRepository textRepository;
-    
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
@@ -61,6 +61,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     	
     	return tlist;
     });
+
 
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
@@ -99,23 +100,30 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> handleExportConfigsFetch(
             @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigsFetch");
-        String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
-        List<Text> configs = textRepository.findByLabel(label);
         try {
-            configs.addAll(getHardcodedConfigs());
-        } catch (JsonProcessingException ex) {
-            log.error("Error creating hard-coded exporter settings", ex);
-        }
+            String label = SpecificExporterSettings.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
+            log.trace("label: {}", label);
+            List<Text> configs = textRepository.findByLabel(label);
+            log.trace("found {} configs", configs.size());
+            try {
+                configs.addAll(getHardcodedConfigs());
+            } catch (JsonProcessingException ex) {
+                log.error("Error creating hard-coded exporter settings", ex);
+            }
 
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t-> {
-                    try {
-                        return SpecificExporterSettings.fromText(t);
-                    } catch (JsonProcessingException e) {
-                        log.error("Error converting configuration value", e);
-                    }
-                    return null;
-                }).collect(Collectors.toList()),
-                queryParameters), HttpStatus.OK);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t -> {
+                        try {
+                            return SpecificExporterSettings.fromText(t);
+                        } catch (JsonProcessingException e) {
+                            log.error("Error converting configuration value", e);
+                        }
+                        return null;
+                    }).collect(Collectors.toList()),
+                    queryParameters), HttpStatus.OK);
+        }  catch (Exception ex) {
+            log.error("Error in handleExportConfigsFetch", ex);
+            return new ResponseEntity<>("error: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // todo:
@@ -268,7 +276,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     boolean doesExporterKeyExist(String exporterKey) {
         Class entityClass = getEntityService().getEntityClass();
-        Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
+        Objects.requireNonNull(entityClass, "Must be able to resolve the entity class");
         
         
         String label = SpecificExporterSettings.getEntityKeyFromClass(entityClass.getName());

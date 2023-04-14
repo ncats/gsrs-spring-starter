@@ -85,6 +85,7 @@ public class SpELValidator<T> extends AbstractValidatorPlugin<T> {
         switch(messageType){
             case WARNING: return GinasProcessingMessage.WARNING_MESSAGE(message);
             case ERROR: return GinasProcessingMessage.ERROR_MESSAGE(message);
+            case NOTICE: return GinasProcessingMessage.NOTICE_MESSAGE(message);
             case INFO: return GinasProcessingMessage.INFO_MESSAGE(message);
             case SUCCESS: return GinasProcessingMessage.SUCCESS_MESSAGE(message);
 

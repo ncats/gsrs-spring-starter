@@ -62,9 +62,9 @@ public @interface GsrsFullStackTest {
     @AliasFor(annotation = ContextConfiguration.class)
     Class[] classes() default {};
 
-    @AliasFor(
+/*    @AliasFor(
             annotation = ImportAutoConfiguration.class,
             attribute = "exclude"
     )
-    Class<?>[] excludeAutoConfiguration() default {};
+    Class<?>[] excludeAutoConfiguration() default {};*/
 }

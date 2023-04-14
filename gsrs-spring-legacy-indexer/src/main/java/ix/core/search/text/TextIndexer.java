@@ -2906,6 +2906,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void update(EntityWrapper ew) throws IOException{
+        log.trace("starting in update, key: {}", ew.getKey());
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
@@ -4311,4 +4312,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			log.trace("Can't create Lookup!", ex);
 		}
 	}
+
+    private boolean DEBUG(int level) {
+        return true;
+    }
 }

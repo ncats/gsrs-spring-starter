@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ActiveProfiles("test")
-@SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class})
+@SpringBootTest(classes = {GsrsSpringApplication.class, GsrsEntityTestConfiguration.class})
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
 	// This works locally but does not work on Travis-CI due to a JVM start/stop issue where

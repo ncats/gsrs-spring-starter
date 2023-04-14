@@ -7,6 +7,7 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.controllers.EntityFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
@@ -18,6 +19,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 
+@Slf4j
 public final class GsrsControllerUtil {
 
     private static final Map<String, String> FULL_VIEW= Collections.singletonMap("view", "full");
@@ -76,6 +78,7 @@ public final class GsrsControllerUtil {
 
     public static GsrsUnwrappedEntityModel enhanceWithView(Object obj,  Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
         String view = queryParameters.get("view");
+        //log.trace("in enhanceWithView: " + view);
 
         GsrsUnwrappedEntityModel model =  GsrsUnwrappedEntityModel.of(obj, view);
         //default view is compact
@@ -92,6 +95,7 @@ public final class GsrsControllerUtil {
     }
 
     public static GsrsUnwrappedEntityModel enhanceWithView(List<Object> list, Map<String, String> queryParameters, Consumer<GsrsUnwrappedEntityModel> additionalLinksConsumer){
+        //log.trace("enhanceWithView with list");
         List<Object> modelList = new ArrayList<>(list.size());
         for(Object o : list){
             modelList.add(enhanceWithView(o, queryParameters, additionalLinksConsumer));
