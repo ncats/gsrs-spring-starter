@@ -19,14 +19,14 @@ public class KeyUserList {
 	@Id
 	@Column(unique = true)
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
-    public Long id;		
+	public Long id;
 	
 	@Column(name = "entity_key")
 	public String entityKey;	
 	
 	@ManyToOne    
-    @JoinColumn(name = "user_id")	
-    public Principal principal;
+	@JoinColumn(name = "user_id")
+	public Principal principal;
 
 	@Column(nullable = false, name = "list_name")
 	public String listName;	

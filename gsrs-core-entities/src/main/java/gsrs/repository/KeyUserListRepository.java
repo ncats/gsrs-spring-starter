@@ -17,14 +17,14 @@ public interface KeyUserListRepository extends GsrsRepository<KeyUserList, Long>
 	public List<KeyUserList> getAllListNamesFromKey(String key);
 			
 	@Modifying
-    @Transactional
-    @Query("delete from KeyUserList where entityKey = ?1 and user_id = ?2 and listName = ?3")
-    public void removeKey(String key, Long userId, String listName);
+	@Transactional
+	@Query("delete from KeyUserList where entityKey = ?1 and user_id = ?2 and listName = ?3")
+	public void removeKey(String key, Long userId, String listName);
 	
 	@Modifying
-    @Transactional
-    @Query("delete from KeyUserList where user_id = ?1 and listName = ?2")
-    public void removeList(Long userId, String listName);
+	@Transactional
+	@Query("delete from KeyUserList where user_id = ?1 and listName = ?2")
+	public void removeList(Long userId, String listName);
 	
 	
 

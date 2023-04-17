@@ -22,17 +22,17 @@ public class UserSavedList {
 	@Id
 	@Column(unique = true)
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
-    private Long id;
+	private Long id;
 	
 	@ManyToOne    
-    @JoinColumn(name="user_id")	
-    public Principal principal;
+	@JoinColumn(name="user_id")
+	public Principal principal;
 
 	@Column(nullable=false)
 	public String name; 
 	
 	@Lob
-    @Basic(fetch= FetchType.EAGER)	
+	@Basic(fetch= FetchType.EAGER)
 	public String list;	
 	
 	public UserSavedList() {}
