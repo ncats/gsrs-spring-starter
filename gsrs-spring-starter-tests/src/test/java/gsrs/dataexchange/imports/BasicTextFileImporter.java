@@ -1,5 +1,6 @@
 package gsrs.dataexchange.imports;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
@@ -24,7 +25,7 @@ public class BasicTextFileImporter implements ImportAdapter<GinasCommonData> {
     }
 
     @Override
-    public Stream<GinasCommonData> parse(InputStream is, ObjectNode settings) {
+    public Stream<GinasCommonData> parse(InputStream is, ObjectNode settings, JsonNode schema) {
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader bufferedReader = new BufferedReader(isr);
         if (!(actions.size()==1 && actions.get(0).getClass().getName().contains("BasicMappingAction"))){

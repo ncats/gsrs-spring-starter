@@ -453,15 +453,16 @@ public class ImportUtilities<T> {
         if (task.getAdapter() == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
-        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task.getAdapter())
+        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task)
                 .orElse(null);
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.getAdapter() + "\"");
         }
         log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
-        log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
+        log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac.getClass().getName());
         //log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
         adaptFac.setFileName(task.getFilename());
+        log.trace("passed file name {} to adapter factory", task.getFilename());
         return adaptFac;
     }
 
@@ -474,15 +475,15 @@ public class ImportUtilities<T> {
         return importAdapterFactories.get();
     }
 
-    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
-        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", name, getImportAdapters().size());
+    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task) {
+        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", task.getAdapter(), getImportAdapters().size());
         if (getImportAdapters() != null) {
             getImportAdapters().forEach(a -> log.trace("adapter with name: '{}', key: '{}'", a.getAdapterName(), a.getAdapterKey()));
         }
-        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterName())).findFirst();
         if (!adapterFactory.isPresent()) {
             log.trace("searching for adapter by name failed; using key");
-            adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+            adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterKey())).findFirst();
             log.trace("success? {}", adapterFactory.isPresent());
         }
         return adapterFactory;
@@ -502,7 +503,7 @@ public class ImportUtilities<T> {
         Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.getPayloadID());
         if (streamHolder.isPresent()) {
             InputStream stream = streamHolder.get();
-            return adapter.parse(stream, settingsNode);
+            return adapter.parse(stream, settingsNode, task.getAdapterSchema());
         }
         return Stream.empty();
     }
@@ -567,6 +568,7 @@ public class ImportUtilities<T> {
                                          Map<String, String> queryParameters) {
 
         log.trace("starting in handleObjectCreationAsync");
+        log.trace("task: {}", task.getAdapterSchema().toPrettyString());
         ObjectMapper mapper = new ObjectMapper();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
@@ -580,7 +582,7 @@ public class ImportUtilities<T> {
         job.setCategory("Push to Staging Area");
         job.setStatusMessage("Processing started");
         if( task.getAdapterSettings().hasNonNull("RecordCount")) {
-            job.setTotalRecords(((ObjectNode)task.getAdapterSettings()).get("RecordCount").asInt());
+            job.setTotalRecords((task.getAdapterSettings()).get("RecordCount").asInt());
         }
 
         job.setCompletedRecordCount(0);

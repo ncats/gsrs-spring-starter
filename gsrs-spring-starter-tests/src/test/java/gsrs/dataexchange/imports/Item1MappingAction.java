@@ -11,4 +11,5 @@ public class Item1MappingAction implements MappingAction<GinasCommonData, TextRe
         }
         return building;
     }
+
 }

@@ -1,6 +1,5 @@
 package gsrs.imports.indexers;
 
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
@@ -59,7 +58,8 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
         long matchCount= matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                                 .count();
-        consumer.accept(IndexableValue.simpleLongValue(IMPORT_METADATA_MATCH_COUNT_FACET, matchCount));
+        consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_MATCH_COUNT_FACET, Long.toString(matchCount)));
+        log.trace("created string facet {} with value{}", IMPORT_METADATA_MATCH_COUNT_FACET, matchCount);
         matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                 .forEach(r->r.getMatchingRecords()
