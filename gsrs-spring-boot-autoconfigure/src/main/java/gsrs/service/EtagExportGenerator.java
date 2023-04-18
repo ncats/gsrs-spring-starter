@@ -1,13 +1,16 @@
 package gsrs.service;
 
 import java.io.UnsupportedEncodingException;
+
 import java.net.URLDecoder;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -28,6 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.yield.Yield;
 import gsrs.controller.hateoas.HttpRequestHolder;
 import gsrs.controller.hateoas.LoopbackWebRequestHelper;
@@ -38,6 +42,8 @@ import ix.core.controllers.EntityFactory;
 import ix.core.models.ETag;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * An {@link ExportService} that uses a saved {@link ETag} and pulls out the original query
@@ -71,53 +77,17 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     public Supplier<Stream<T>> generateExportFrom(String context, ETag etag) {
 
         return ()-> Yield.<T>create(yieldRecipe-> {
-                    String uriToUse = etag.uri;
-                    JsonNode responseAsJson;
-                    JsonNode array;
-                    int tries = 0;
+                   
 
-
-                    do {
-                        responseAsJson = makePagedSubstanceRequest(uriToUse, 0, etag.total, context);
-                        JsonNode finished = responseAsJson.get("finished");
-                        if (finished != null && !finished.asBoolean()) {
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            //don't count this try
-                            tries--;
-                        }
-
-                        array = responseAsJson.get("content");
-                        //text searches and substructure searches have a content
-                        //but sequence searches do not... so need to hit their results url
-                        //or maybe change what url the etag saves?
-                        //TP: This shouldn't be the case ... if it is, there's been 
-                        // a misunderstanding at some point that needs to be corrected
-                        if (array == null) {
-                            JsonNode results = responseAsJson.get("results");
-                            if (results != null) {
-                                uriToUse = results.asText();
-                            }
-
-                        }
-                        tries++;
-                    } while (array == null && tries < 3);
-                    //if we are here, then
-                    if (array == null) {
-//			System.out.println("could not fetch results!!!");
-                        throw new IllegalStateException("could not fetch results");
-                    }
+                   
 //		System.out.println("out of while loop array =\n===============\n===============\n=============" );
 //		System.out.println(array);
+        	        List<Key> keys = getKeysFromUri(etag,context);
 
-
-                    Consumer<JsonNode> arrayConsumer = a -> {
+//                    Consumer<JsonNode> arrayConsumer = a -> {
                         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
                         transactionTemplate.executeWithoutResult( status->{
-                        for (JsonNode sub : a) {
+                        for (Key k : keys) {
                             //GSRS-1760 using key view always now
 
                             /*
@@ -128,9 +98,7 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                              */
 
                             try {
-                                EntityUtils.EntityInfo ei = EntityUtils.getEntityInfoFor(sub.get("kind").asText());
-                                Object _id = ei.formatIdToNative(sub.get("idString").asText());
-                                EntityUtils.Key k = EntityUtils.Key.of(ei, _id);
+                               
                                 Optional<EntityUtils.EntityWrapper<?>> opt = EntityFetcher.of(k).getIfPossible()
                                         .map(t->EntityWrapper.of(t));
                                 if (opt.isPresent()) {
@@ -141,23 +109,85 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
                                     yieldRecipe.returning(value);
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                            	log.debug(e.getMessage());                                
                             }
                         }
 
 
                         });
-                    };
+//                    };
 
-                    arrayConsumer.accept(array);
+//                    arrayConsumer.accept(array);
 
                 })
                 .stream();
     }
 
+    private static Optional<Key> jsonToKey(JsonNode sub){    	
+    	EntityUtils.EntityInfo ei;
+		try {
+			ei = EntityUtils.getEntityInfoFor(sub.get("kind").asText());
+   		    Object _id = ei.formatIdToNative(sub.get("idString").asText());
+		    EntityUtils.Key k = EntityUtils.Key.of(ei, _id);
+		    return Optional.of(k);
+		} catch (Exception e) {			
+			log.debug(e.getMessage());
+			return Optional.empty();			
+		}        
+    }
+    
+    public List<Key> getKeysFromUri(ETag etag, String context){
+    	 String uriToUse = etag.uri;
+         JsonNode responseAsJson;
+         JsonNode array;
+         int tries = 0;
 
+    	
+    	do {
+    		responseAsJson = makePagedEntityRequest(uriToUse, 0, etag.total, context);
+            JsonNode finished = responseAsJson.get("finished");
+            if (finished != null && !finished.asBoolean()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                //don't count this try
+                tries--;
+            }
 
-    private JsonNode makePagedSubstanceRequest(String uri, int skip, int top, String context) {
+            array = responseAsJson.get("content");
+            //text searches and substructure searches have a content
+            //but sequence searches do not... so need to hit their results url
+            //or maybe change what url the etag saves?
+            //TP: This shouldn't be the case ... if it is, there's been 
+            // a misunderstanding at some point that needs to be corrected
+            if (array == null) {
+                JsonNode results = responseAsJson.get("results");
+                if (results != null) {
+                	//For async api calls, the real uri for export is found in the results json property. 
+                    uriToUse = results.asText();
+                }
+
+            }
+            tries++;
+        } while (array == null && tries < 3);
+        //if we are here, then
+        if (array == null) {
+//System.out.println("could not fetch results!!!");
+            throw new IllegalStateException("could not fetch results");
+        }
+        
+        return StreamUtil.forIterable(array)
+        		.map(jn->jsonToKey(jn))
+        		.filter(o->o.isPresent())
+        		.map(o->o.get())
+        		.collect(Collectors.toList());        
+    	
+    }
+    
+
+    private JsonNode makePagedEntityRequest(String uri, int skip, int top, String context) {
         String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
         cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
         cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
