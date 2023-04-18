@@ -9,6 +9,6 @@ import java.util.Map;
 @Data
 public class ProcessingActionConfig {
 
-    private Class ProcessingActionClass;
+    private String ProcessingActionName;
     Map<String, Object> parameters;
 }

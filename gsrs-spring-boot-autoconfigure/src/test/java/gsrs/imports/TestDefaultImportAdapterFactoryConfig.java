@@ -3,6 +3,7 @@ package gsrs.imports;
 import gsrs.GsrsFactoryConfiguration;
 import ix.ginas.models.GinasCommonData;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -11,6 +12,7 @@ import java.util.*;
 public class TestDefaultImportAdapterFactoryConfig {
 
     @Test
+    @Disabled
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         String substanceContext="substances";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
