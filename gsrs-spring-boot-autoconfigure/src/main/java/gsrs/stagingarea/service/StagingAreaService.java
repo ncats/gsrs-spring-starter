@@ -38,6 +38,8 @@ public interface StagingAreaService {
 
     <T> ValidationResponse<T> validateInstance(String instanceId);
 
+    List<ImportValidation> retrieveValidationForInstance(UUID instanceId);
+
     <T> List<gsrs.stagingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables,
@@ -50,8 +52,6 @@ public interface StagingAreaService {
     <T> void registerEntityService(StagingAreaEntityService<T> service);
 
     MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId);
-
-    //<T> String persistEntity(String instanceId);
 
     <T> T retrieveEntity(String entityType, String entityId);
 

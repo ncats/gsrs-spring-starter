@@ -10,7 +10,4 @@ import ix.core.models.Principal;
 public interface PrincipalRepository extends GsrsRepository<Principal, Long> {
 
     Principal findDistinctByUsernameIgnoreCase(String username);
-
-
-
 }

@@ -4,6 +4,7 @@ import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.repository.EditRepository;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.ControlledVocabulary;
 //import org.hibernate.search.backend.lucene.LuceneExtension;
 //import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
@@ -36,8 +37,6 @@ public class CvController extends EtagLegacySearchEntityController<CvController,
 
     @Autowired
     private ControlledVocabularyEntityService entityService;
-
-
 
     @Override
     protected CvLegacySearchService getlegacyGsrsSearchService() {

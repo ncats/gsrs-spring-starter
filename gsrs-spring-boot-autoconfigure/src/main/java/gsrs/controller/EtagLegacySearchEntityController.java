@@ -50,6 +50,7 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -96,6 +97,12 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
+    
+//    public EtagLegacySearchEntityController() {super();}
+//    
+//    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
+//    	super(resultListRecordGenerator);
+//    }
 
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
@@ -255,15 +262,18 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
-        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings())));
+        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings(),scrubber)));
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
     }
 
     protected ExporterFactory.Parameters createParameters(String extension, boolean publicOnly, Map<String, String> parameters,
-                                                          JsonNode detailedParameters){
+                                                          JsonNode detailedParameters, 
+                                                          RecordScrubber scrubber){
         for(OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())){
             if(extension.equals(f.getExtension())){
-                return new DefaultParameters(f, publicOnly, detailedParameters);
+            	DefaultParameters param= new DefaultParameters(f, publicOnly, detailedParameters);
+            	param.setScrubber(scrubber);
+            	return param;
             }
         }
         throw new IllegalArgumentException("could not find supported exporter for extension '"+ extension +"'");
@@ -273,10 +283,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
     private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters,
-                                       JsonNode detailedParameters)
+                                       JsonNode detailedParameters, RecordScrubber scrubber)
             throws IOException {
 
-        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters);
+        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters, scrubber);
         params.setUsername(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "[unknown]");
 
         ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);

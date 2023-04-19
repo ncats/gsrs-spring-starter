@@ -96,6 +96,8 @@ public class SearchOptions implements RequestOptions {
 	
 	//TODO: I don't think this is used anymore
 	private String filter;
+	
+	private String userName;
 
 
 	/**

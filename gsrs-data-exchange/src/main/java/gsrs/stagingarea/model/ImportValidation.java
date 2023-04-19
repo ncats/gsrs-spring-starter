@@ -28,6 +28,7 @@ public class ImportValidation {
 
     public enum ImportValidationType {
         info,
+        notice,
         warning,
         error
     }
