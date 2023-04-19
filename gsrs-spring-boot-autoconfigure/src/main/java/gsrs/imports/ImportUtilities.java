@@ -40,7 +40,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +71,7 @@ public class ImportUtilities<T> {
     @Autowired
     private AdminService adminService;
 
-    private String contextName ="";
+    private String contextName;
 
     private Class<T> entityClass;
 
@@ -197,6 +196,7 @@ public class ImportUtilities<T> {
             } catch (JsonProcessingException e) {
                 log.error("Error", e);
             }
+            assert config != null;
             return config.getExporterKey() != null && config.getExporterKey().equalsIgnoreCase(importerId);
         });
     }
@@ -241,9 +241,7 @@ public class ImportUtilities<T> {
         job.setTotalRecords(configSet.getStagingAreaRecords().size());
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
         log.trace("handleActionsAsync create job {}", job);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
@@ -256,7 +254,7 @@ public class ImportUtilities<T> {
                 final ObjectNode[] singleReturn = new ObjectNode[1];
                 try {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
-                            configSet.getProcessingActions());;
+                            configSet.getProcessingActions());
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
@@ -587,12 +585,10 @@ public class ImportUtilities<T> {
 
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
 
         if(queryParameters.containsKey("skipValidation") || queryParameters.containsKey("skipIndexing") || queryParameters.containsKey("skipMatching")) {
-            log.trace("keys : {}", queryParameters.keySet().stream().collect(Collectors.joining()));
+            log.trace("keys : {}", String.join("||", queryParameters.keySet()));
             ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
             if(queryParameters.containsKey("skipValidation") && queryParameters.get("skipValidation").length()>0) {
                 boolean value = queryParameters.get("skipValidation").equalsIgnoreCase("true");
@@ -714,5 +710,13 @@ public class ImportUtilities<T> {
             return action.getOptions();
         }
         return Collections.EMPTY_LIST;
+    }
+
+    public JsonNode getSchemaForAction(String actionName){
+        ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(this.contextName, actionName);
+        if( action!=null) {
+            return action.getAvailableSettingsSchema();
+        }
+        return JsonNodeFactory.instance.objectNode();
     }
 }

@@ -25,7 +25,6 @@ import ix.core.models.Payload;
 import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
-import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
@@ -73,9 +72,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
-
-    @Autowired
-    private TextIndexerFactory textIndexerFactory;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -1290,8 +1286,26 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 getDefaultStagingAreaService());
         AutowireHelper.getInstance().autowire(importUtilities);
         List<String> options = importUtilities.getOptionsForAction(actionName);
-        log.trace("received options");
+        log.trace("received schema");
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(options, queryParameters), HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping( value = {"/stagingArea/action({actionName})/@schema", "/stagingArea/action/{actionName}/@schema"} )
+    public ResponseEntity<Object> handleGetProcessingActionSchema(@RequestParam Map<String, String> queryParameters,
+                                                                   @PathVariable("actionName") String actionName) throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        log.trace("Starting handleGetProcessingActionOptions");
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        if( actionName==null || actionName.length()==0) {
+            messageNode.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
+                getDefaultStagingAreaService());
+        AutowireHelper.getInstance().autowire(importUtilities);
+        JsonNode schema = importUtilities.getSchemaForAction(actionName);
+        log.trace("received schema");
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(schema, queryParameters), HttpStatus.OK);
     }
 
     public JsonNode handlePreview(String id, JsonNode updatedJson, Map<String, String> queryParameters) throws Exception {
@@ -1304,12 +1318,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (obj.isPresent()) {
             log.trace("retrieved ImportTaskMetaData");
             //TODO: make async and do other stuff:
-            ImportTaskMetaData retrievedTask = obj.get();
+            ImportTaskMetaData<T> retrievedTask = obj.get();
             StagingAreaService service;
-            ImportTaskMetaData usableTask;
+            ImportTaskMetaData<T> usableTask;
             if (updatedJson != null && updatedJson.size() > 0) {
                 ObjectMapper om = new ObjectMapper();
-                ImportTaskMetaData taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
+                ImportTaskMetaData<T> taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
                 if (taskFromInput.getAdapter() != null && taskFromInput.getAdapterSettings() == null) {
                     taskFromInput = predictSettings(taskFromInput, queryParameters);
                 }
