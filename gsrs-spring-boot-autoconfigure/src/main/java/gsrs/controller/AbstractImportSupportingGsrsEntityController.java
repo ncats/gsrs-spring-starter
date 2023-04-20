@@ -8,39 +8,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.dataexchange.model.ProcessingAction;
-import gsrs.dataexchange.model.ProcessingActionConfig;
-import gsrs.dataexchange.model.ProcessingActionConfigSet;
-import gsrs.security.GsrsSecurityUtils;
-import gsrs.stagingarea.model.*;
-import gsrs.stagingarea.service.StagingAreaEntityService;
-import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.imports.*;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
-import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.service.StagingAreaEntityService;
+import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.models.Payload;
 import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
-import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,8 +50,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,9 +72,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
-
-    @Autowired
-    private TextIndexerFactory textIndexerFactory;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -1297,8 +1286,26 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 getDefaultStagingAreaService());
         AutowireHelper.getInstance().autowire(importUtilities);
         List<String> options = importUtilities.getOptionsForAction(actionName);
-        log.trace("received options");
+        log.trace("received schema");
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(options, queryParameters), HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping( value = {"/stagingArea/action({actionName})/@schema", "/stagingArea/action/{actionName}/@schema"} )
+    public ResponseEntity<Object> handleGetProcessingActionSchema(@RequestParam Map<String, String> queryParameters,
+                                                                   @PathVariable("actionName") String actionName) throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        log.trace("Starting handleGetProcessingActionOptions");
+        ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
+        if( actionName==null || actionName.length()==0) {
+            messageNode.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(messageNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
+                getDefaultStagingAreaService());
+        AutowireHelper.getInstance().autowire(importUtilities);
+        JsonNode schema = importUtilities.getSchemaForAction(actionName);
+        log.trace("received schema");
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(schema, queryParameters), HttpStatus.OK);
     }
 
     public JsonNode handlePreview(String id, JsonNode updatedJson, Map<String, String> queryParameters) throws Exception {
@@ -1311,12 +1318,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (obj.isPresent()) {
             log.trace("retrieved ImportTaskMetaData");
             //TODO: make async and do other stuff:
-            ImportTaskMetaData retrievedTask = obj.get();
+            ImportTaskMetaData<T> retrievedTask = obj.get();
             StagingAreaService service;
-            ImportTaskMetaData usableTask;
+            ImportTaskMetaData<T> usableTask;
             if (updatedJson != null && updatedJson.size() > 0) {
                 ObjectMapper om = new ObjectMapper();
-                ImportTaskMetaData taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
+                ImportTaskMetaData<T> taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
                 if (taskFromInput.getAdapter() != null && taskFromInput.getAdapterSettings() == null) {
                     taskFromInput = predictSettings(taskFromInput, queryParameters);
                 }
@@ -1368,6 +1375,5 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         return JsonNodeFactory.instance.textNode("No import data found using input");
     }
-
 
 }

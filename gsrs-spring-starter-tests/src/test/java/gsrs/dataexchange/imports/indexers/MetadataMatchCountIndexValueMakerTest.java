@@ -84,7 +84,7 @@ public class MetadataMatchCountIndexValueMakerTest {
         serviceField.set(indexValueMaker1, stagingAreaService);;
         indexValueMaker1.createIndexableValues(metadata, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_COUNT_FACET)
-                && ((long)i.value()== 2)));
+                && (i.value().equals("2"))));
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_KEY_FACET)
         && i.value().equals("Factor 1")));
     }

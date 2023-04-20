@@ -19,7 +19,7 @@ public class MetadataStatusIndexValueMaker implements IndexValueMaker<ImportMeta
 
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
-        log.trace("In createIndexableValues");
+        log.trace("In createIndexableValues, value: {}", importMetadata.getImportStatus().toString());
         consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_STATUS_FACET, importMetadata.getImportStatus().toString()));
     }
 }

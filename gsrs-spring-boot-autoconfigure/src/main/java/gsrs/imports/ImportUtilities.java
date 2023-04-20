@@ -27,6 +27,7 @@ import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
 import ix.core.models.Text;
 import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationMessage;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
@@ -40,7 +41,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +72,7 @@ public class ImportUtilities<T> {
     @Autowired
     private AdminService adminService;
 
-    private String contextName ="";
+    private String contextName;
 
     private Class<T> entityClass;
 
@@ -197,6 +197,7 @@ public class ImportUtilities<T> {
             } catch (JsonProcessingException e) {
                 log.error("Error", e);
             }
+            assert config != null;
             return config.getExporterKey() != null && config.getExporterKey().equalsIgnoreCase(importerId);
         });
     }
@@ -241,9 +242,7 @@ public class ImportUtilities<T> {
         job.setTotalRecords(configSet.getStagingAreaRecords().size());
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
         log.trace("handleActionsAsync create job {}", job);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
@@ -256,7 +255,7 @@ public class ImportUtilities<T> {
                 final ObjectNode[] singleReturn = new ObjectNode[1];
                 try {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
-                            configSet.getProcessingActions());;
+                            configSet.getProcessingActions());
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
@@ -399,6 +398,7 @@ public class ImportUtilities<T> {
                 recordImportStatus = ImportMetadata.RecordImportStatus.rejected;
             }
         }
+        boolean updateMetadataState = true;
         log.trace(whatHappened.toString());
         if (persist != null && persist.equalsIgnoreCase("TRUE") && isSaveNecessary(recordImportStatus)) {
             //check whether we have something to save... otherwise, skip to the next step in the processing
@@ -406,28 +406,45 @@ public class ImportUtilities<T> {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
                 if (!result.isSaved()) {
                     log.error("Error! Saved object is null");
+                    String errorMessage;
+                    if(result.getThrowable()!=null ){
+                        errorMessage=result.getThrowable().getMessage();
+                    } else if( result.getValidationResponse().hasError()) {
+                        errorMessage = result.getValidationResponse().getValidationMessages().stream()
+                                .filter(m->m.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR)
+                                .map(m->m.getMessage())
+                                .collect(Collectors.joining("|"));
+                    } else {
+                        errorMessage= "Unknown error!";
+                    }
+                    updateMetadataState=false;
                     messageNode.put("stagingAreaId", stagingRecordId);
-                    messageNode.put("message", "Object failed to save");
-                    messageNode.put("error", result.getThrowable().getMessage());
-                    messageNode.put("status", "INTERNAL_SERVER_ERROR");
+                    messageNode.put("message","Object failed to save");
+                    messageNode.put("error", errorMessage);
+                    messageNode.put("status","INTERNAL_SERVER_ERROR");
                     return messageNode;
                 }
                 currentObject = result.getEntity();
                 log.trace("saved new or updated entity");
-
             }
-            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
-            UUID indexingEventId = UUID.randomUUID();
-            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
-            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-            ImportMetadata refetchedMetadata=(ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
-            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
-            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
-                    reWrappedObject);
-            log.trace("reindexing importmetadata object");
+
         } else {
             log.trace("skipped saving/processing");
         }
+
+        if(updateMetadataState) {
+            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
+            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+            ImportMetadata refetchedMetadata = (ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
+            refetchedMetadata.setImportStatus(recordImportStatus);
+            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
+            UUID indexingEventId = UUID.randomUUID();
+            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
+                    reWrappedObject);
+            log.trace("reindexing importmetadata object");
+        }
+
         if( currentObject!=null) {
             log.trace("currentObject not null");
             //messageNode.put("object", mapper.writeValueAsString(currentObject));
@@ -453,15 +470,16 @@ public class ImportUtilities<T> {
         if (task.getAdapter() == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
-        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task.getAdapter())
+        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task)
                 .orElse(null);
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.getAdapter() + "\"");
         }
         log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
-        log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
+        log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac.getClass().getName());
         //log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
         adaptFac.setFileName(task.getFilename());
+        log.trace("passed file name {} to adapter factory", task.getFilename());
         return adaptFac;
     }
 
@@ -474,15 +492,15 @@ public class ImportUtilities<T> {
         return importAdapterFactories.get();
     }
 
-    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
-        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", name, getImportAdapters().size());
+    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task) {
+        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", task.getAdapter(), getImportAdapters().size());
         if (getImportAdapters() != null) {
             getImportAdapters().forEach(a -> log.trace("adapter with name: '{}', key: '{}'", a.getAdapterName(), a.getAdapterKey()));
         }
-        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterName())).findFirst();
         if (!adapterFactory.isPresent()) {
             log.trace("searching for adapter by name failed; using key");
-            adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+            adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterKey())).findFirst();
             log.trace("success? {}", adapterFactory.isPresent());
         }
         return adapterFactory;
@@ -502,7 +520,7 @@ public class ImportUtilities<T> {
         Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.getPayloadID());
         if (streamHolder.isPresent()) {
             InputStream stream = streamHolder.get();
-            return adapter.parse(stream, settingsNode);
+            return adapter.parse(stream, settingsNode, task.getAdapterSchema());
         }
         return Stream.empty();
     }
@@ -567,6 +585,7 @@ public class ImportUtilities<T> {
                                          Map<String, String> queryParameters) {
 
         log.trace("starting in handleObjectCreationAsync");
+        log.trace("task: {}", task.toString());
         ObjectMapper mapper = new ObjectMapper();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
@@ -580,17 +599,15 @@ public class ImportUtilities<T> {
         job.setCategory("Push to Staging Area");
         job.setStatusMessage("Processing started");
         if( task.getAdapterSettings().hasNonNull("RecordCount")) {
-            job.setTotalRecords(((ObjectNode)task.getAdapterSettings()).get("RecordCount").asInt());
+            job.setTotalRecords((task.getAdapterSettings()).get("RecordCount").asInt());
         }
 
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
 
         if(queryParameters.containsKey("skipValidation") || queryParameters.containsKey("skipIndexing") || queryParameters.containsKey("skipMatching")) {
-            log.trace("keys : {}", queryParameters.keySet().stream().collect(Collectors.joining()));
+            log.trace("keys : {}", String.join("||", queryParameters.keySet()));
             ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
             if(queryParameters.containsKey("skipValidation") && queryParameters.get("skipValidation").length()>0) {
                 boolean value = queryParameters.get("skipValidation").equalsIgnoreCase("true");
@@ -712,5 +729,13 @@ public class ImportUtilities<T> {
             return action.getOptions();
         }
         return Collections.EMPTY_LIST;
+    }
+
+    public JsonNode getSchemaForAction(String actionName){
+        ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(this.contextName, actionName);
+        if( action!=null) {
+            return action.getAvailableSettingsSchema();
+        }
+        return JsonNodeFactory.instance.objectNode();
     }
 }
