@@ -142,7 +142,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     protected EntityLinks entityLinks;
     
     @Autowired
-    protected UserSavedListService userSaveListService;
+    protected UserSavedListService userSavedListService;
     
     
     //should maybe use cache
@@ -213,7 +213,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
     				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
-    				Object o = EntityFetcher.of(k).findObject();
+    				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true);
         			stat.indexed++;  				
     				
@@ -747,7 +747,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> list = userSaveListService.getUserSearchResultLists(name);
+    	List<String> list = userSavedListService.getUserSearchResultLists(name);
     	
     	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK);   	
     	
@@ -761,9 +761,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	List<String> list; 
     	if(!name.isPresent())
-    		list = userSaveListService.getAllUserSearchResultLists();
+    		list = userSavedListService.getAllUserSearchResultLists();
     	else 
-    		list = userSaveListService.getUserSearchResultLists(name.get());
+    		list = userSavedListService.getUserSearchResultLists(name.get());
     	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);    	    	
@@ -847,7 +847,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
     	    	
     	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
     	
@@ -865,7 +865,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
      	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
     	   	
     	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
     	
@@ -882,7 +882,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     // if the user list exists, it will fail
     @PostGsrsRestApiMapping(value="/@userList/keys")  
-    public ResponseEntity<String> createUserListWithKeys(  											
+    public ResponseEntity<String> createUserSavedListWithKeys(  											
     										   @RequestParam String listName,
     										   @RequestBody String keys){ 
     	
@@ -908,12 +908,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	UserListStatus status = createUserListStatus(); 
     	status.total=list.size();
     	
-    	String message = userSaveListService.validateUsernameAndListname(userName, listName);
+    	String message = userSavedListService.validateUsernameAndListname(userName, listName);
     	if(message.length()>0)
     		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST); 
     	
     	executor.execute(()->{      
-    		userSaveListService.createBulkSearchResultList(userName, listName, list);
+    		userSavedListService.createBulkSearchResultList(userName, listName, list);
     		reIndexWithKeys(status,list);    		
     	});
     	
@@ -922,7 +922,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
-    public ResponseEntity<String> createUserListWithEtag(  											
+    public ResponseEntity<String> createUserSavedListWithEtag(  											
     										   @RequestParam(value="listName",required=true) String listName,
     										   @PathVariable("etagId") String etagId,
     										   HttpServletRequest request){ //take an etag and get all the keys
@@ -953,7 +953,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	String message = userSaveListService.validateUsernameAndListname(userName, listName);
+    	String message = userSavedListService.validateUsernameAndListname(userName, listName);
     	if(message.length()>0)
     		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);     	
     	
@@ -961,7 +961,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	listStatus.total=keyList.size();
     	
     	executor.execute(()->{   
-    		userSaveListService.createBulkSearchResultList(userName, listName, keyList);       	
+    		userSavedListService.createBulkSearchResultList(userName, listName, keyList);       	
     		reIndexWithKeys(listStatus,keyList);
     	});    	
 
@@ -983,13 +983,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
-    	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, listName);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
     	
     	UserListStatus listStatus = createUserListStatus();  
     	listStatus.total=keys.size();
     	
     	executor.execute(()->{  
-    		userSaveListService.deleteBulkSearchResultList(userName, listName);    	
+    		userSavedListService.deleteBulkSearchResultList(userName, listName);    	
     		reIndexWithKeys(listStatus,keys);
     	});
     	
@@ -1006,13 +1006,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
     	
-    	List<String> keys = userSaveListService.getUserSavedBulkSearchResultListContent(userName, listName);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
     	
     	UserListStatus listStatus = createUserListStatus();  
     	listStatus.total=keys.size();
     	
     	executor.execute(()->{  
-    		userSaveListService.deleteBulkSearchResultList(userName, listName);  	
+    		userSavedListService.deleteBulkSearchResultList(userName, listName);  	
     		reIndexWithKeys(listStatus,keys);
     	});    	
     	
@@ -1041,7 +1041,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!validStringParamater(listName) ) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);}
     	
-    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	boolean listExists = userSavedListService.userListExists(userName,listName);
     	if(!listExists) {
     		return new ResponseEntity<Object>(
     				GsrsControllerConfiguration.createStatusJson("List does not exist!", HttpStatus.NOT_FOUND.value()), 
@@ -1057,7 +1057,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, keyList, Operation.ADD);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, keyList, Operation.ADD);
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  
         	listStatus.total=keyList.size();
@@ -1092,7 +1092,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
-    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	boolean listExists = userSavedListService.userListExists(userName,listName);
     	if(!listExists) {
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
@@ -1106,7 +1106,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(list.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	    	
-    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, list, op);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op);
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  
         	listStatus.total=list.size();
@@ -1137,7 +1137,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}
     	
-    	boolean listExists = userSaveListService.userListExists(userName,listName);
+    	boolean listExists = userSavedListService.userListExists(userName,listName);
     	if(!listExists) {
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
@@ -1151,7 +1151,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(list.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	boolean updated = userSaveListService.updateBulkSearchResultList(userName, listName, list, op);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op);
     	
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  
@@ -1166,7 +1166,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
-    public ResponseEntity<String> getSaveUserListStatus(@PathVariable("id") String id){
+    public ResponseEntity<String> getUserSavedListStatus(@PathVariable("id") String id){
     	    	
     	UserListStatus status = (UserListStatus)gsrscache.getRaw("UserSavedList/" + id);
     	if(status ==null){
