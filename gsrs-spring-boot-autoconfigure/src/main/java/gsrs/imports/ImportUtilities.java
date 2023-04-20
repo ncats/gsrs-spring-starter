@@ -27,6 +27,7 @@ import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
 import ix.core.models.Text;
 import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationMessage;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
@@ -397,6 +398,7 @@ public class ImportUtilities<T> {
                 recordImportStatus = ImportMetadata.RecordImportStatus.rejected;
             }
         }
+        boolean updateMetadataState = true;
         log.trace(whatHappened.toString());
         if (persist != null && persist.equalsIgnoreCase("TRUE") && isSaveNecessary(recordImportStatus)) {
             //check whether we have something to save... otherwise, skip to the next step in the processing
@@ -404,28 +406,45 @@ public class ImportUtilities<T> {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
                 if (!result.isSaved()) {
                     log.error("Error! Saved object is null");
+                    String errorMessage;
+                    if(result.getThrowable()!=null ){
+                        errorMessage=result.getThrowable().getMessage();
+                    } else if( result.getValidationResponse().hasError()) {
+                        errorMessage = result.getValidationResponse().getValidationMessages().stream()
+                                .filter(m->m.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR)
+                                .map(m->m.getMessage())
+                                .collect(Collectors.joining("|"));
+                    } else {
+                        errorMessage= "Unknown error!";
+                    }
+                    updateMetadataState=false;
                     messageNode.put("stagingAreaId", stagingRecordId);
-                    messageNode.put("message", "Object failed to save");
-                    messageNode.put("error", result.getThrowable().getMessage());
-                    messageNode.put("status", "INTERNAL_SERVER_ERROR");
+                    messageNode.put("message","Object failed to save");
+                    messageNode.put("error", errorMessage);
+                    messageNode.put("status","INTERNAL_SERVER_ERROR");
                     return messageNode;
                 }
                 currentObject = result.getEntity();
                 log.trace("saved new or updated entity");
-
             }
-            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
-            UUID indexingEventId = UUID.randomUUID();
-            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
-            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-            ImportMetadata refetchedMetadata=(ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
-            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
-            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
-                    reWrappedObject);
-            log.trace("reindexing importmetadata object");
+
         } else {
             log.trace("skipped saving/processing");
         }
+
+        if(updateMetadataState) {
+            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
+            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+            ImportMetadata refetchedMetadata = (ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
+            refetchedMetadata.setImportStatus(recordImportStatus);
+            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
+            UUID indexingEventId = UUID.randomUUID();
+            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
+                    reWrappedObject);
+            log.trace("reindexing importmetadata object");
+        }
+
         if( currentObject!=null) {
             log.trace("currentObject not null");
             //messageNode.put("object", mapper.writeValueAsString(currentObject));
@@ -566,7 +585,7 @@ public class ImportUtilities<T> {
                                          Map<String, String> queryParameters) {
 
         log.trace("starting in handleObjectCreationAsync");
-        log.trace("task: {}", task.getAdapterSchema().toPrettyString());
+        log.trace("task: {}", task.toString());
         ObjectMapper mapper = new ObjectMapper();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
