@@ -65,6 +65,10 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 //2. if there's an ID use the regex for that entity type
                 Set<String> apiBasePatterns = new HashSet<>();
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
+                if(mapping.getPatternsCondition()==null) {
+                    System.err.println("mapping.getPatternsCondition() is null!");
+                    return;
+                }
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
                         Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
