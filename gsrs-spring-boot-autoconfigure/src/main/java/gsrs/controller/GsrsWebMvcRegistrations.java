@@ -2,6 +2,7 @@ package gsrs.controller;
 
 import gsrs.controller.hateoas.DefaultGsrsEntityToControllerMapper;
 import gsrs.springUtils.AutowireHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -14,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import java.lang.reflect.Method;
 import java.util.*;
 
+@Slf4j
 class GsrsWebMvcRegistrations implements WebMvcRegistrations {
 
     public GsrsWebMvcRegistrations(DefaultGsrsEntityToControllerMapper entityToControllerMapper) {
@@ -65,14 +67,17 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 //2. if there's an ID use the regex for that entity type
                 Set<String> apiBasePatterns = new HashSet<>();
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
-                if(mapping.getPatternsCondition()==null) {
-                    System.err.println("mapping.getPatternsCondition() is null!");
-                    return;
-                }
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
-                        Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
+                        Set<String> patterns;
+                        if(mapping.getPatternsCondition()==null){
+                            log.warn("getPatternsCondition() is null for mapping {}",String.join("|", mapping.getDirectPaths()));
+                            patterns= new PatternsRequestCondition(API_BASE_PATH + versions[i]).getPatterns();
+                        } else {
+                            patterns= new PatternsRequestCondition(API_BASE_PATH + versions[i])
                                 .combine(mapping.getPatternsCondition()).getPatterns();
+                        }
+
                         apiBasePatterns.addAll(patterns);
                         apiBasesByVersions.add(patterns);
                     }
