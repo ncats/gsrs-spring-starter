@@ -133,16 +133,18 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Override
     public Class<T> getDefaultStagingAreaEntityService(String context) {
-        return serviceMap.computeIfAbsent(context, (c)->{
-            log.trace("instantiating a staging area for context {}",context);
-            String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
-            try {
-                return (Class<T>) Class.forName(clsName);
-            } catch (ClassNotFoundException e) {
-                log.error("Class {} not found", clsName);
-                throw new RuntimeException(e);
-            }
-        });
+        synchronized (ConfigBasedGsrsImportAdapterFactoryFactory.class) {
+            return serviceMap.computeIfAbsent(context, (c) -> {
+                log.trace("instantiating a staging area for context {}", context);
+                String clsName = gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
+                try {
+                    return (Class<T>) Class.forName(clsName);
+                } catch (ClassNotFoundException e) {
+                    log.error("Class {} not found", clsName);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     @Override
