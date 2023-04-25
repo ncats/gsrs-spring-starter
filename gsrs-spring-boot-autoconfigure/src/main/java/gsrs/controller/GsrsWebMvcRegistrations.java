@@ -62,6 +62,11 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                     versions = gsrsMapping.apiVersions();
                 }
 
+                if(mapping.getPatternsCondition()==null){
+                    log.warn("getPatternsCondition() is null for mapping {}",String.join("|", mapping.getDirectPaths()));
+                    return;
+                }
+
                 //we want to do 2 things
                 //1. add the api base to everything
                 //2. if there's an ID use the regex for that entity type
@@ -70,13 +75,22 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
                         Set<String> patterns;
-                        if(mapping.getPatternsCondition()==null){
+                        String version = Integer.toString(versions[i]);
+
+                        /*if(mapping.getPatternsCondition()==null){
+                            patterns = new HashSet<>();
                             log.warn("getPatternsCondition() is null for mapping {}",String.join("|", mapping.getDirectPaths()));
-                            patterns= new PatternsRequestCondition(API_BASE_PATH + versions[i]).getPatterns();
-                        } else {
+                            Set<String> finalPatterns = patterns;
+                            mapping.getPathPatternsCondition().getDirectPaths().forEach(p->{
+                                String testUrl = API_BASE_PATH+ version + p;
+                                log.trace("testUrl: {}", testUrl);
+                                finalPatterns.add(testUrl);
+                            });
+                            if(finalPatterns.size()>0) patterns.addAll(finalPatterns);
+                        } else {*/
                             patterns= new PatternsRequestCondition(API_BASE_PATH + versions[i])
                                 .combine(mapping.getPatternsCondition()).getPatterns();
-                        }
+                        //}
 
                         apiBasePatterns.addAll(patterns);
                         apiBasesByVersions.add(patterns);

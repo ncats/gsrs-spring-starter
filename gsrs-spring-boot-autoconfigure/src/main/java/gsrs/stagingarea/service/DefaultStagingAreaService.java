@@ -535,38 +535,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
     }
 
-    /*@Override
-    public <T> String persistEntity(String instanceId){
-        log.trace("in persistEntity, instanceId: {}", instanceId);
-        Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
-        if( data.isPresent()) {
-            log.trace("found data");
-            String entityJson = data.get().getData();
-            String entityType = data.get().getEntityClassName();
-            try {
-                Object domainObject = deserializeObject(entityType, entityJson);
-                ValidationResponse<T> response = validateRecord(entityType, entityJson);
-                List<ValidationMessage> messages = response.getValidationMessages();
-                if (messages.stream().noneMatch(m -> m.isError())) {
-                    Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
-                    metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
-                    ObjectMapper mapper = new ObjectMapper();
-                    String json = mapper.writeValueAsString(savedObject);
-                    JsonNode objectNode= mapper.readTree(json);
-                    if(objectNode.hasNonNull("uuid")) {
-                        return objectNode.get("uuid").asText();
-                    }
-
-                    return "Object saved!";
-                }
-                return "One or more errors exist. Please validate and take action!";
-            } catch (JsonProcessingException e) {
-                log.error("Error in persistEntity", e);
-            }
-        }
-        return "";
-    }*/
-
     @Override
     public <T> T retrieveEntity(String entityType, String entityId) {
         log.trace("going to retrieve entity of type {} - id {}", entityType, entityId);
