@@ -300,9 +300,14 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .withParameters(request.getParameterMap())
                 .build();
         so = this.instrumentSearchOptions(so); //add user
+        
+        String userName = GsrsSecurityUtils.getCurrentUsername().get();
+        List<String> userLists = userSavedListService.getUserSearchResultLists(userName);
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
-        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
+        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
+        		StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
+        		userName, userLists);
 
 
         //indexer.extractFullFacetQuery(this.query, this.options, field);
@@ -322,9 +327,14 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .build();
         
         so = this.instrumentSearchOptions(so);
+        
+        String userName = GsrsSecurityUtils.getCurrentUsername().get();
+        List<String> userLists = userSavedListService.getUserSearchResultLists(userName);
 
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
-        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString());
+        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
+        		StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
+        		userName, userLists);
 
     }
 
@@ -982,19 +992,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	
-    	UserListStatus listStatus = createUserListStatus();  
-    	listStatus.total=keys.size();
-    	
-    	executor.execute(()->{  
-    		userSavedListService.deleteBulkSearchResultList(userName, listName);    	
-    		reIndexWithKeys(listStatus,keys);
-    	});
-    	
-    	
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	    	
+    	userSavedListService.deleteBulkSearchResultList(userName, listName);
+    	    	
+    	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
     @hasAdminRole
@@ -1005,18 +1006,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!validStringParamater(userName) || !validStringParamater(listName)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
-    	
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	
-    	UserListStatus listStatus = createUserListStatus();  
-    	listStatus.total=keys.size();
-    	
-    	executor.execute(()->{  
-    		userSavedListService.deleteBulkSearchResultList(userName, listName);  	
-    		reIndexWithKeys(listStatus,keys);
-    	});    	
-    	
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	   	
+    	userSavedListService.deleteBulkSearchResultList(userName, listName);  
+       	
+    	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
     
