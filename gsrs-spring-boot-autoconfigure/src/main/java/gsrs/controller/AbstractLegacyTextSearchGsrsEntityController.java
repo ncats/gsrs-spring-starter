@@ -992,15 +992,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	
-    	UserListStatus listStatus = createUserListStatus();  
-    	listStatus.total=keys.size();
-    	
+    	    	
     	userSavedListService.deleteBulkSearchResultList(userName, listName);
     	    	
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
     @hasAdminRole
@@ -1011,15 +1006,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!validStringParamater(userName) || !validStringParamater(listName)) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
-    	
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName);
-    	
-    	UserListStatus listStatus = createUserListStatus();  
-    	listStatus.total=keys.size();
-    	
+    	   	
     	userSavedListService.deleteBulkSearchResultList(userName, listName);  
        	
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
     
