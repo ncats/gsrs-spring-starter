@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,10 +23,12 @@ import lombok.Data;
 @Data
 @Table(name = "ix_core_db_gsrs_version")
 @Indexable(indexed = false)
+@SequenceGenerator(name = "db_gsrs_version", sequenceName = "db_gsrs_version_seq", allocationSize = 1)
 public class DBGSRSVersion {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+	@Column(unique = true)
+	@GeneratedValue(strategy = GenerationType.AUTO, generator = "db_gsrs_version")
 	public Long id;
 
 	@Column(nullable = false)

@@ -2366,9 +2366,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		AutowireHelper.getInstance().autowireAndProxy(userSavedListService);
 		
-		List<String> userLists = new ArrayList<>();		
-		String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
-		userLists = userSavedListService.getUserSearchResultLists(currentUserName);
+		List<String> userLists = new ArrayList<>();
+		if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+			String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
+			userLists = userSavedListService.getUserSearchResultLists(currentUserName);
+		}
 		
 		if(options.getIncludeFacets()) {
 		     collectBasicFacets(lspResult.getFacets(), searchResult, userLists);
