@@ -151,6 +151,7 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.TextService;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -165,6 +166,7 @@ import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.search.SearchResult;
 import ix.core.search.SuggestResult;
 import ix.core.search.bulk.UserSavedListService;
+import ix.core.search.bulk.UserSavedListService.UserListIndexedValue;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -196,8 +198,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
     private TextIndexerConfig textIndexerConfig;
 
-    @Autowired
-    private TextService textService;
+    
+    private UserSavedListService userSavedListService = new UserSavedListService();
   
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
@@ -425,7 +427,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             };
         }
 
-        public FacetMeta getFacet(int top, int skip, String filter, String uri) throws ParseException {
+        public FacetMeta getFacet(int top, int skip, String filter, String uri, String userName, List<String> userLists) throws ParseException {
             FacetImpl fac = new FacetImpl(getField(), null);
             
             String field = getField(); //name
@@ -437,14 +439,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                 filt = getPredicate(parser.parse(filter));
             }
 
-            String userName;
-            Optional<String> nameOptional = GsrsSecurityUtils.getCurrentUsername();
-            if(nameOptional.isPresent()) {
-            	userName = nameOptional.get();
-            }else {
-            	userName="";
-            }
-
             terms.entrySet()
                 .stream()
                 .parallel()
@@ -453,12 +447,14 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(t->new FV(fac,t.k(),t.v()))
                 .filter(fv->{
                 	if(field.equalsIgnoreCase("User List")) {
-                		// check the current user, filter facet by user name 
-                		String nameInLabel = UserSavedListService.getUserNameFromIndexedValue(fv.getLabel());
-                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
-                		if(userName.isEmpty())
-                			return false;
-                		else if(userName.equalsIgnoreCase(nameInLabel))
+                		// check the current user, filter facet by user name
+                		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
+                		String nameInLabel = dataItem.getUserName();
+                		String listName = dataItem.getListName();
+//                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
+                		if(userName.isEmpty() || userLists.size() == 0)
+                			return false;                		
+                		else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName))
                 			return true;
                 		else
                 			return false;
@@ -1920,7 +1916,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 
-	public static void collectBasicFacets(Facets facets, SearchResult sr) throws IOException{
+	public static void collectBasicFacets(Facets facets, SearchResult sr, List<String> userLists) throws IOException{
 		Map<String,List<DrillAndPath>> providedDrills = sr.getOptions().getEnhancedDrillDownsMap();
 
 		int fdim=sr.getOptions().getFdim();
@@ -1961,12 +1957,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 					fac.setSelectedLabels(selected);
 				}
-
+				
 				for(LabelAndValue lv:result.labelValues){
 					if(result.dim.equalsIgnoreCase("User List")) {
-						String userName = UserSavedListService.getUserNameFromIndexedValue(lv.label);						
-						if(userName.equalsIgnoreCase(sr.getUserName())) {
+						UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
+						String userName = dataItem.getUserName();
+						String listName = dataItem.getListName();
+//						log.error("before adding facet: username: " + userName + "  listName: " + listName );
+						if(userName.equalsIgnoreCase(sr.getUserName()) && 
+								userLists.size() > 0 && userLists.contains(listName)) {
 							fac.add(lv.label, lv.value.intValue());
+//							log.error("adding facet: username: " + userName + "  listName: " + listName );
 						}											
 					}else {
 						fac.add(lv.label, lv.value.intValue());
@@ -2363,8 +2364,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
 
+		AutowireHelper.getInstance().autowireAndProxy(userSavedListService);
+		
+		List<String> userLists = new ArrayList<>();
+		if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+			String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
+			userLists = userSavedListService.getUserSearchResultLists(currentUserName);
+		}
+		
 		if(options.getIncludeFacets()) {
-		     collectBasicFacets(lspResult.getFacets(), searchResult);
+		     collectBasicFacets(lspResult.getFacets(), searchResult, userLists);
 		     collectLongRangeFacets(facetCollector, searchResult);
 		}
 
