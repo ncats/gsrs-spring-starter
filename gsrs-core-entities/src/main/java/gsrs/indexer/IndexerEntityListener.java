@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JPA Entity Listener that will fire
@@ -18,6 +19,7 @@ import ix.core.util.EntityUtils.Key;
  * if the entity being persisted/updated/removed is indexable
  * determined by {@link EntityUtils.EntityWrapper#shouldIndex()}.
  */
+@Slf4j
 public class IndexerEntityListener {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -60,6 +62,7 @@ public class IndexerEntityListener {
         if(ew.shouldIndex()) {
             IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
             if(indexerFactoryFor !=null) {
+//            	log.error("ew before publishing event :" + ew.toString());
                 applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst));
                 
             }

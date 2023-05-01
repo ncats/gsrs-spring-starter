@@ -217,10 +217,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
                     log.warn("indexing error handling:" + wrapped, t);
                 }
             }
-
-        });
-    
-    	
+        });    	
     }
     
     

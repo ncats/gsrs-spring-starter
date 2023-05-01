@@ -50,6 +50,7 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -64,7 +65,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
-public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
+public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractImportSupportingGsrsEntityController<C, T,I> {
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
 //        super(context, pattern);
@@ -72,10 +73,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 //    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
 //        super(context, idHelper);
 //    }
-	
-	@Autowired
-	protected GsrsCache gsrscache;
-	
+
+    @Autowired
+    protected GsrsCache gsrscache;
+
     @Autowired
     private ETagRepository eTagRepository;
 
@@ -96,6 +97,12 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
+    
+//    public EtagLegacySearchEntityController() {super();}
+//    
+//    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
+//    	super(resultListRecordGenerator);
+//    }
 
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
@@ -130,18 +137,18 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             return matchingFactory.getSchema();
         }
         List<ExportLink> links = new ArrayList<>();
-         for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
+        for(OutputFormat fmt : gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext())){
             links.add(ExportLink.builder()
                     .displayname(fmt.getDisplayName())
                     .extension(fmt.getExtension())
 
                     .link(new GsrsUnwrappedEntityModel.RestUrlLink(GsrsLinkUtil.fieldLink(null,null, getLinkBuilderForEntity(getEntityService().getEntityClass()).get()
-                            .slash("export").slash(etagId).slash(fmt.getExtension())
-                            .withSelfRel() )
+                                    .slash("export").slash(etagId).slash(fmt.getExtension())
+                                    .withSelfRel() )
                             .getHref()))
                     .build());
         }
-         return links;
+        return links;
     }
 
     @Data
@@ -161,7 +168,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
             Set<OutputFormat> formats =factory.getSupportedFormats();
             for(OutputFormat format: formats) {
                 if(format.getExtension().equalsIgnoreCase(extension) || format.getDisplayName().equalsIgnoreCase(extension)) {
-                   return factory;
+                    return factory;
                 }
             }
         }
@@ -170,16 +177,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
-    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId, 
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId,
                                                @PathVariable("format") String format,
-                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj, 
+                                               @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj,
                                                @RequestParam(value ="filename", required= false) String fileName,
                                                @RequestParam(value="exportConfigId", required = false) String exportConfigId,
                                                Principal prof,
                                                @RequestParam Map<String, String> parameters,
                                                HttpServletRequest request
 
-            ) throws Exception {
+    ) throws Exception {
         log.warn("Starting in createExport. exportConfigId: {}", exportConfigId);
         Optional<ETag> etagObj = eTagRepository.findByEtag(etagId);
 
@@ -220,7 +227,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         Optional<SpecificExporterSettings> finalExportConfig=exportConfig;
 
-	RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
+        RecordScrubber<T> scrubber= getScrubberFactory().createScrubber(exportConfig.get().getScrubberSettings());
         log.trace("got RecordScrubber of type {}", scrubber.getClass().getName());
         RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
@@ -255,15 +262,18 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
         ExportProcess<T> p = exportService.createExport(emd,
                 () -> effectivelyFinalStream);
-        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings())));
+        p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(format, out, publicOnly, parameters, finalExportConfig.get().getExporterSettings(),scrubber)));
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(p.getMetaData(), parameters), HttpStatus.OK);
     }
 
     protected ExporterFactory.Parameters createParameters(String extension, boolean publicOnly, Map<String, String> parameters,
-                                                          JsonNode detailedParameters){
+                                                          JsonNode detailedParameters, 
+                                                          RecordScrubber scrubber){
         for(OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())){
             if(extension.equals(f.getExtension())){
-                return new DefaultParameters(f, publicOnly, detailedParameters);
+            	DefaultParameters param= new DefaultParameters(f, publicOnly, detailedParameters);
+            	param.setScrubber(scrubber);
+            	return param;
             }
         }
         throw new IllegalArgumentException("could not find supported exporter for extension '"+ extension +"'");
@@ -273,10 +283,10 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
 
     private Exporter<T> getExporterFor(String extension, OutputStream pos, boolean publicOnly, Map<String, String> parameters,
-                                       JsonNode detailedParameters)
+                                       JsonNode detailedParameters, RecordScrubber scrubber)
             throws IOException {
 
-        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters);
+        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters, detailedParameters, scrubber);
         params.setUsername(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "[unknown]");
 
         ExporterFactory<T>  factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
@@ -306,8 +316,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else{
             viewMap= Collections.singletonMap("view", view);
         }
-        
-        
+
+
         //Due to the way that hibernate works, the series of fetches that may have happened
         //before this line could include some staged insert/update statements
         //that haven't been executed. The entities which remain attached at this time
@@ -316,16 +326,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         //and the updates/inserts won't happen. This shouldn't be necessary, ultimately,
         //and it's worth tracking down WHY some entities become flagged as dirty/updated
         //from simple fetches that happen before this.
-        // 
+        //
         entityManager.clear();
-        
+
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult( stauts -> {
-                    if (request.getParameter("export") == null) {
-                        entityManager.merge(etag);
-                    }
-                });
-        
+            if (request.getParameter("export") == null) {
+                entityManager.merge(etag);
+            }
+        });
+
         //content is transient so don't need to worry about transforming results
         if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
             etag.setContent(results.stream().map(r-> {
@@ -335,9 +345,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }else {
             etag.setContent(results);
         }
-       
-        
-        
+
+
+
         etag.setSponosredResults(result.getSponsoredMatches());
         //sponsored Results also needs to be "enhanced" GSRS-2042
         if(!"key".equalsIgnoreCase(viewMap.get("view"))) {
@@ -382,7 +392,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
     static String getKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
     }
-    
+
     public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
             throws IOException, Exception{
 

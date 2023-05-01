@@ -19,6 +19,7 @@ public class GinasProcessingMessage implements ValidationMessage {
 	public MESSAGE_TYPE messageType= MESSAGE_TYPE.INFO;
 	public ACTION_TYPE actionType= ACTION_TYPE.DO_NOTHING;
 
+	public String messageId;
 	public String message;
 	public static class Link{
 		public String href;
@@ -32,7 +33,8 @@ public class GinasProcessingMessage implements ValidationMessage {
 
 	public GinasProcessingMessage(){}
 
-	public GinasProcessingMessage(MESSAGE_TYPE mtype, String msg){
+	public GinasProcessingMessage(MESSAGE_TYPE mtype, String msg, String msgId){
+		this.messageId=msgId;
 		this.messageType=mtype;
 		this.message=msg;
 	}
@@ -43,7 +45,7 @@ public class GinasProcessingMessage implements ValidationMessage {
 	}
 	
 	public String toString(){
-		return messageType + ": " + message;
+		return messageType + ": " + messageId + " " + message;
 	}
 
 	@Override
@@ -61,21 +63,54 @@ public class GinasProcessingMessage implements ValidationMessage {
 	}
 
 	public static GinasProcessingMessage ERROR_MESSAGE(String msg){
-		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
 	}
 	public static GinasProcessingMessage WARNING_MESSAGE(String msg){
-		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
+		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
+	}
+	public static GinasProcessingMessage NOTICE_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
+		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
 	}
 	public static GinasProcessingMessage INFO_MESSAGE(String msg){
-		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
+		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
 	}
 	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg){
-		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg);
+		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
+		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
+	}
+	public static GinasProcessingMessage ERROR_MESSAGE(String msg, Object... args){
+		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
+		msg = String.format(msg, args);
+		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
+	}
+	public static GinasProcessingMessage WARNING_MESSAGE(String msg, Object... args){
+		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
+		msg = String.format(msg, args);
+		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
+	}
+	public static GinasProcessingMessage NOTICE_MESSAGE(String msg, Object... args){
+		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
+		msg = String.format(msg, args);
+		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
+	}
+	public static GinasProcessingMessage INFO_MESSAGE(String msg, Object... args){
+		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
+		msg = String.format(msg, args);
+		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
+	}
+	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg, Object... args){
+		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
+		msg = String.format(msg, args);
+		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
 	}
 	
 	public static boolean ALL_VALID(Collection<GinasProcessingMessage> messages){
 		for(GinasProcessingMessage gpm:messages){
-			log.info("Message:" + gpm.message);
+			log.info("Message: " + gpm.messageId + " " + gpm.message);
 			if(gpm.isProblem()){
 				return false;
 			}
@@ -84,7 +119,7 @@ public class GinasProcessingMessage implements ValidationMessage {
 	}
 	@JsonIgnore
 	public boolean isProblem(){
-		return messageType == MESSAGE_TYPE.ERROR ||messageType == MESSAGE_TYPE.WARNING;
+		return messageType == MESSAGE_TYPE.ERROR || messageType == MESSAGE_TYPE.WARNING || messageType == MESSAGE_TYPE.NOTICE;
 	}
 	@JsonIgnore
 	public boolean isError(){
@@ -98,6 +133,16 @@ public class GinasProcessingMessage implements ValidationMessage {
 	}
 	public GinasProcessingMessage addLink(Link l){
 		this.links.add(l);
+		return this;
+	}
+
+	@Override
+	public String getMessageId() {
+		return messageId;
+	}
+
+	public GinasProcessingMessage setMessageId(String s) {
+		this.messageId = s;
 		return this;
 	}
 
@@ -128,6 +173,12 @@ public class GinasProcessingMessage implements ValidationMessage {
 
 	public void makeError() {
 		this.messageType= MESSAGE_TYPE.ERROR;
+	}
+
+	public static String makeMessageId(MESSAGE_TYPE mtype, String msg) {
+		String callerClassName = new Throwable().getStackTrace()[2].getClassName();
+		callerClassName = callerClassName.substring(callerClassName.lastIndexOf('.') + 1);
+		return mtype.toString().substring(0,1) + String.valueOf(callerClassName.hashCode()).substring(2,5) + String.valueOf(msg.hashCode()).substring(1,5);
 	}
 
 	public boolean hasLinks() {

@@ -5,12 +5,11 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.0.3-SNAPSHOT</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
-
     <properties>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
@@ -167,11 +166,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
-	<dependency>
-	    <groupId>org.apache.tika</groupId>
-	    <artifactId>tika-core</artifactId>
-	    <version>1.22</version>
-	</dependency>
+    	<dependency>
+	        <groupId>org.apache.tika</groupId>
+    	    <artifactId>tika-core</artifactId>
+    	    <version>1.22</version>
+    	</dependency>
+
+        <dependency>
+           <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-data-exchange</artifactId>
+            <version>${gsrs.version}</version>
+            <!--scope>compile</scope-->
+        </dependency>
     </dependencies>
 
 </project>

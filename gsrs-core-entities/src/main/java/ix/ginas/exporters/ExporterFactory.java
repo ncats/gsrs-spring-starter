@@ -41,13 +41,12 @@ public interface ExporterFactory<T> {
         String getUsername();
 
         void setUsername(String username);
-        /* new stuff 19 August*/
-/*
+
         default RecordScrubber getScrubber() {
-            //not clear what's requested
-            return null;
+            //no-op scrubber
+            return new NoOpRecordScrubberFactory().createScrubber(null);
         }
-*/
+
 
     }
 

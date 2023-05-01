@@ -61,14 +61,14 @@ public class ExportController {
         return new ResponseEntity<>(
                 DownloadResultPage.builder()
                         .page(page).row(rows)
-                .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
-                .build(),
+                        .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
+                        .build(),
                 HttpStatus.OK);
 
     }
 
     private static List<ExportMetaData> getPagedDownloads(List<ExportMetaData> result, int rows,
-                                                         int page) {
+                                                          int page) {
 
         List<ExportMetaData> jobs = new ArrayList<ExportMetaData>();
 
@@ -187,7 +187,7 @@ public class ExportController {
 
         Optional<ExportDir.ExportFile<ExportMetaData>> exportFile = exportService.getFile(principal.getName(), opt.get().getFilename());
         if(!opt.get().isComplete()){
-           //should we not return unless complete?
+            //should we not return unless complete?
             return new ResponseEntity<>("export not completed" + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
@@ -198,12 +198,12 @@ public class ExportController {
                 return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
             }
         }
-        
+
         String filename = parameters.getOrDefault("filename", opt.get().getDisplayFilename());
-        
+
         File f = exportFile.get().getFile();
-        
-        
+
+
 
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
@@ -212,9 +212,9 @@ public class ExportController {
                 .contentLength(f.length())
                 .header("Content-disposition", "attachment; filename=" + filename)
 //                .contentType("application/x-download")
-                
+
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                
+
                 .body(resource);
     }
 
