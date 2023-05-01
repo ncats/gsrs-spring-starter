@@ -301,8 +301,12 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                 .build();
         so = this.instrumentSearchOptions(so); //add user
         
-        String userName = GsrsSecurityUtils.getCurrentUsername().get();
-        List<String> userLists = userSavedListService.getUserSearchResultLists(userName);
+        List<String> userLists = new ArrayList<>();
+        String userName = "";
+        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        	userName = GsrsSecurityUtils.getCurrentUsername().get();
+        	userLists= userSavedListService.getUserSearchResultLists(userName);
+        }
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
@@ -328,8 +332,13 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         
         so = this.instrumentSearchOptions(so);
         
-        String userName = GsrsSecurityUtils.getCurrentUsername().get();
-        List<String> userLists = userSavedListService.getUserSearchResultLists(userName);
+
+        List<String> userLists = new ArrayList<>();
+        String userName = "";
+        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        	userName = GsrsSecurityUtils.getCurrentUsername().get();
+        	userLists= userSavedListService.getUserSearchResultLists(userName);
+        }
 
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
