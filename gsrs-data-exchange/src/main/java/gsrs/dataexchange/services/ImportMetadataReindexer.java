@@ -198,7 +198,7 @@ public class ImportMetadataReindexer {
 
     }
 
-    @org.springframework.context.event.EventListener(EndReindexEvent.class)
+    @EventListener(EndReindexEvent.class)
     public void endReindex(EndReindexEvent event){
         CountDownLatch latch = latchMap.remove(event.getId());
         if(latch !=null){
