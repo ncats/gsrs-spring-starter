@@ -451,7 +451,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
                 		String nameInLabel = dataItem.getUserName();
                 		String listName = dataItem.getListName();
-//                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
+                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
                 		if(userName.isEmpty() || userLists.size() == 0)
                 			return false;                		
                 		else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName))
@@ -1963,11 +1963,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 						UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
 						String userName = dataItem.getUserName();
 						String listName = dataItem.getListName();
-//						log.error("before adding facet: username: " + userName + "  listName: " + listName );
+						log.error("before adding facet: username: " + userName + "  listName: " + listName );
 						if(userName.equalsIgnoreCase(sr.getUserName()) && 
 								userLists.size() > 0 && userLists.contains(listName)) {
 							fac.add(lv.label, lv.value.intValue());
-//							log.error("adding facet: username: " + userName + "  listName: " + listName );
+							log.error("adding facet: username: " + userName + "  listName: " + listName );
 						}											
 					}else {
 						fac.add(lv.label, lv.value.intValue());
