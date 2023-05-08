@@ -105,7 +105,8 @@ public class ImportUtilities<T> {
             String metadataAsString;
             try {
                 EntityUtils.EntityInfo<ImportMetadata> eics= EntityUtils.getEntityInfoFor(ImportMetadata.class);
-                if (metadata.validations == null || metadata.validations.isEmpty()) {
+                log.trace("before changed code");
+                if (metadata.getValidations() == null || metadata.getValidations().isEmpty()) {
                     log.trace("going to fill in validations");
                     service.fillCollectionsForMetadata(metadata);
                 }

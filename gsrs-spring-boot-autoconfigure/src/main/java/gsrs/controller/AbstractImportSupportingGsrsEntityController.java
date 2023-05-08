@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.controller.hateoas.IxContext;
 import gsrs.imports.*;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
@@ -16,6 +17,7 @@ import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.springUtils.StaticContextAccessor;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
@@ -23,12 +25,16 @@ import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.models.Payload;
 import ix.core.models.Text;
+import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.text.FacetMeta;
+import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -562,7 +568,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 }
             }
             if (realData instanceof ObjectNode) {
-                log.trace("yes, an ObjectNode");
                 ImportUtilities.enhanceWithMetadata((ObjectNode) realData, matchingMetadata, service);
             }
             //log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
@@ -887,10 +892,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 .build();
 
         //this.instrumentSearchRequest(searchRequest);
-
+        StagingAreaService service = getDefaultStagingAreaService();
         SearchResult result;
         try {
-            result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions());
+            //result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions());
+            result=service.findRecords(searchRequest, ImportTaskMetaData.class);
         } catch (Exception e) {
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
         }
@@ -924,8 +930,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
         });
 
+
         //some processing to return a List of domain objects with ImportMetadata appended
-        StagingAreaService service = getDefaultStagingAreaService();
         List transformedResults = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
         results.forEach(r->{
@@ -950,6 +956,37 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
         //even if list is empty we want to return an empty list not a 404
         return new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
+    }
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = "stagingArea/search/@facets", apiVersions = 1)
+    public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
+                                                 @RequestParam("field") Optional<String> field,
+                                                 @RequestParam("top") Optional<Integer> top,
+                                                 @RequestParam("skip") Optional<Integer> skip,
+                                                 HttpServletRequest request) throws ParseException, IOException {
+        SearchOptions so = new SearchOptions.Builder()
+                .kind(getEntityService().getEntityClass())
+                .top(Integer.MAX_VALUE) // match Play GSRS
+                .fdim(10)
+                .fskip(0)
+                .ffilter("")
+                .withParameters(request.getParameterMap())
+                .build();
+        so = this.instrumentSearchOptions(so); //add user
+
+        List<String> userLists = new ArrayList<>();
+        String userName = "";
+        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+            userName = GsrsSecurityUtils.getCurrentUsername().get();
+            userLists= userSavedListService.getUserSearchResultLists(userName);
+        }
+
+        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
+        return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
+                StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
+                userName, userLists);
+
     }
 
     @hasAdminRole

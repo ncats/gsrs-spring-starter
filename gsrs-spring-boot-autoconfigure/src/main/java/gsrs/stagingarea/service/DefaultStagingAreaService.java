@@ -172,7 +172,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return recordId.toString();
         }
         log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
-        //_entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
 
         //step 4: validate
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
@@ -451,10 +450,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
+        log.trace("in findRecords");
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
             try {
+                log.trace("going to instantiate importMetadataLegacySearchService");
                 importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
+                AutowireHelper.getInstance().autowire(importMetadataLegacySearchService);
                 SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
                 return searchResult;
             } catch (Exception e) {
