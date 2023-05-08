@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -125,29 +126,35 @@ public class ImportMetadataReindexer {
                         txRetrieveList.setReadOnly(true);
 
                         List<ImportMetadata> blist=txRetrieveList.execute( t-> importMetadataRepository.findAll());
+                        List<UUID> idList=txRetrieveList.execute( t->
+                            importMetadataRepository.findAll().stream()
+                                    .map(i->i.getRecordId())
+                                    .collect(Collectors.toList())
+                        );
 
                         TransactionTemplate tx = new TransactionTemplate(transactionManager);
                         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         tx.setReadOnly(true);
                         tx.executeWithoutResult(stat->{
 
-                            log.trace("set reindexingCount to {}", blist.size());
-                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size(), BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX,
+                            log.trace("set reindexingCount to {}", idList.size());
+                            eventConsumer.accept(new BeginReindexEvent(reindexId, idList.size(), BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX,
                                     Collections.singletonList(ImportMetadata.class)));
                             try(Stream<ImportMetadata> stream = blist.stream()){
                                 l.message("Initializing reindexing: beginning process");
 
-                                Stream<EntityUtils.EntityWrapper> ewStream=stream
-                                        .map(oo->EntityUtils.EntityWrapper.of(oo));
+                                /*Stream<EntityUtils.EntityWrapper> ewStream=stream
+                                        .map(oo->EntityUtils.EntityWrapper.of(oo));*/
 
-                                ewStream
+                                Stream<UUID> uuidStream = idList.stream();
+                                uuidStream
                                         .parallel()
                                         .forEach(wrapper ->{
                                             try {
-                                                EntityFetcher fetcher = EntityFetcher.of(wrapper);
-                                                Optional<ImportMetadata> optionalImportMetadata= fetcher.getIfPossible();
+                                                EntityFetcher<?> fetcher = EntityFetcher.of(EntityUtils.Key.of(ImportMetadata.class, wrapper));
+                                                Optional<?> optionalImportMetadata= fetcher.getIfPossible();
                                                 if(optionalImportMetadata.isPresent()){
-                                                    EntityUtils.EntityWrapper innerWrapper= EntityUtils.EntityWrapper.of(optionalImportMetadata.get());
+                                                    EntityUtils.EntityWrapper<?> innerWrapper= EntityUtils.EntityWrapper.of(optionalImportMetadata.get());
                                                     innerWrapper.traverse().execute((p, child) -> {
                                                         log.trace("handling indexing of 'child' {}/{}", child.getKind(), child.getId());
                                                         //this should speed up indexing so that we only index
@@ -155,7 +162,7 @@ public class ImportMetadataReindexer {
                                                         //child objects of that root.
                                                         if (child.isEntity() && child.isRootIndex()) {
                                                             try {
-                                                                log.trace("meets criteria for indexing");;
+                                                                log.trace("meets criteria for indexing");
                                                                 EntityUtils.Key key = child.getKey();
                                                                 String keyString = key.toString();
 
@@ -173,9 +180,7 @@ public class ImportMetadataReindexer {
                                                         }
 
                                                     });
-
                                                 }
-
                                             }catch(Throwable ee) {
                                                 log.warn("indexing error handling:" + wrapper, ee);
                                             }finally {
