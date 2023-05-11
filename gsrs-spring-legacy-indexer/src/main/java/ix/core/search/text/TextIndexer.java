@@ -452,7 +452,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
                 		String nameInLabel = dataItem.getUserName();
                 		String listName = dataItem.getListName();
-                		log.error("User List Facet: user name: "+  userName + " list name: "+ listName);
+                		log.error("User List Facet: user name: "+ userName + ", name in label:" + nameInLabel +", list name: "+ listName);
                 		if(userName.isEmpty() || userLists.size() == 0) {
                 			return false;                		
                 		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
