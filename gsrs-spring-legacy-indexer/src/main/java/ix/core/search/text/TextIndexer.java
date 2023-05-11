@@ -447,17 +447,19 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(t->new FV(fac,t.k(),t.v()))
                 .filter(fv->{
                 	if(field.equalsIgnoreCase("User List")) {
+                		log.error("User List Facet: " + fv.getLabel());
                 		// check the current user, filter facet by user name
                 		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
                 		String nameInLabel = dataItem.getUserName();
                 		String listName = dataItem.getListName();
-                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
-                		if(userName.isEmpty() || userLists.size() == 0)
+                		log.error("User List Facet: user name: "+  userName + " list name: "+ listName);
+                		if(userName.isEmpty() || userLists.size() == 0) {
                 			return false;                		
-                		else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName))
+                		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
                 			return true;
-                		else
+                		}else {
                 			return false;
+                		}
                 	}else {
                 		return true;
                 	}                		
@@ -1959,16 +1961,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				
 				for(LabelAndValue lv:result.labelValues){
-					if(result.dim.equalsIgnoreCase("User List")) {
+					if(result.dim.equalsIgnoreCase("User List")) {						
+						log.error("Checking facet: " + lv.label);
 						UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
 						String userName = dataItem.getUserName();
 						String listName = dataItem.getListName();
 						log.error("before adding facet: username: " + userName + "  listName: " + listName );
-						if(userName.equalsIgnoreCase(sr.getUserName()) && 
-								userLists.size() > 0 && userLists.contains(listName)) {
+						if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+							userLists.size() > 0 && userLists.contains(listName)) {
 							fac.add(lv.label, lv.value.intValue());
 							log.error("adding facet: username: " + userName + "  listName: " + listName );
-						}											
+						}						
 					}else {
 						fac.add(lv.label, lv.value.intValue());
 					}

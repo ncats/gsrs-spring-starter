@@ -272,7 +272,7 @@ public class UserSavedListService {
 	public static UserListIndexedValue getUserNameAndListNameFromIndexedValue(String value) {
 		List<String> resultList = Arrays.asList(value.split(":"));
 		if(resultList.size()!=2)
-			return null;		
+			return new UserListIndexedValue("","");		
 		return new UserListIndexedValue(resultList.get(0), resultList.get(1));
 	}	
 	
