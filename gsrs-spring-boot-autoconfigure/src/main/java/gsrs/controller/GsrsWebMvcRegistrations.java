@@ -2,7 +2,6 @@ package gsrs.controller;
 
 import gsrs.controller.hateoas.DefaultGsrsEntityToControllerMapper;
 import gsrs.springUtils.AutowireHelper;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -15,7 +14,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import java.lang.reflect.Method;
 import java.util.*;
 
-@Slf4j
 class GsrsWebMvcRegistrations implements WebMvcRegistrations {
 
     public GsrsWebMvcRegistrations(DefaultGsrsEntityToControllerMapper entityToControllerMapper) {
@@ -69,21 +67,10 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
-                        if(mapping.getPatternsCondition()!=null) {
-                            Set<String> patterns = new HashSet<>();
-                            String version = Integer.toString(versions[i]);
-
-                            try {
-                                patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
-                                        .combine(mapping.getPatternsCondition()).getPatterns();
-                            } catch (NullPointerException npe) {
-
-                            }
-                            //}
-
-                            apiBasePatterns.addAll(patterns);
-                            apiBasesByVersions.add(patterns);
-                        }
+                        Set<String> patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
+                                .combine(mapping.getPatternsCondition()).getPatterns();
+                        apiBasePatterns.addAll(patterns);
+                        apiBasesByVersions.add(patterns);
                     }
                 }else{
                     apiBasePatterns.addAll(mapping.getPatternsCondition().getPatterns());
@@ -178,11 +165,9 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
 
                 }
 
-                try {
-                    super.registerHandlerMethod(handler, method, mapping);
-                } catch (IllegalStateException ex){
-                    log.warn("Error registering handler: {}, method: {}", handler, method.getName());
-                }
+
+                super.registerHandlerMethod(handler, method, mapping);
+
             }
 
         };
