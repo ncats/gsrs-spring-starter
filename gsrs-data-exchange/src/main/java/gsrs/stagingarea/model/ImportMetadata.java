@@ -9,11 +9,9 @@ import ix.ginas.converters.GinasAccessConverter;
 import ix.ginas.models.GinasAccessContainer;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.utils.JSONEntity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -24,19 +22,23 @@ import java.util.*;
 @Backup
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_Class_Name")})
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_class_name")})
 @Slf4j
 @IndexableRoot
-@Data
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
+//@NoArgsConstructor    commented out because of "constructor ImportMetadata() is already defined"
 public class ImportMetadata implements Serializable, GinasAccessControlled {
 
     //OLD WAY
     @JsonIgnore
     @Basic(fetch = FetchType.LAZY)
     @Convert(converter = GinasAccessConverter.class)
+    @ToString.Exclude
     private GinasAccessContainer recordAccess;
 
     @Override
@@ -153,10 +155,12 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
+    @ToString.Exclude
+    @ElementCollection(fetch = FetchType.EAGER) //testing out eager fetch 05 May 2023
     public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
     @JSONEntity(title = "ImportValidations")
@@ -164,8 +168,10 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
     })
+    @ToString.Exclude
+    @ElementCollection(fetch = FetchType.EAGER)
     public List<ImportValidation> validations = new ArrayList<>();
 
     @Indexable
@@ -179,4 +185,30 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable
     private String importAdapter;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        ImportMetadata that = (ImportMetadata) o;
+        boolean  equalsValue= recordId != null && Objects.equals(recordId, that.recordId);
+        if(equalsValue && this.instanceId!=null){
+            equalsValue = equalsValue && Objects.equals(this.instanceId, that.instanceId);
+        }
+        if(equalsValue && this.dataFormat != null) {
+            equalsValue = equalsValue && Objects.equals(this.dataFormat, that.dataFormat);
+        }
+        if(equalsValue && this.entityClassName !=null) {
+            equalsValue = equalsValue && Objects.equals(this.entityClassName, that.entityClassName);
+        }
+        if(equalsValue && this.processStatus !=null) {
+            equalsValue = equalsValue && Objects.equals(this.processStatus, that.processStatus);
+        }
+
+        return equalsValue;
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

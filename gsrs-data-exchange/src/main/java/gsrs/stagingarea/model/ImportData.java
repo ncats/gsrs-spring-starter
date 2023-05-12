@@ -17,8 +17,8 @@ import java.util.Date;
 import java.util.UUID;
 
 @Backup
-@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_entity_class_name", columnList = "entity_Class_Name"),
-        @Index(name="idx_ix_import_data_version", columnList = "version"), @Index(name="idx_ix_import_data_record_id", columnList = "record_Id")})
+@Table(name = "ix_import_data", indexes={@Index(name="idx_ix_import_data_entity_class_name", columnList = "entity_class_name"),
+        @Index(name="idx_ix_import_data_version", columnList = "version"), @Index(name="idx_ix_import_data_record_id", columnList = "record_id")})
 @Slf4j
 @Data
 @Entity
