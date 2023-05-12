@@ -83,7 +83,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private ApplicationEventPublisher eventPublisher;
 
     private final CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
-            = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(this.getEntityService().getContext(),
+            = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(getEntityService().getContext(),
             this.getEntityService().getEntityClass()));
 
     private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");

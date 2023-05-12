@@ -62,11 +62,6 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                     versions = gsrsMapping.apiVersions();
                 }
 
-                if(mapping.getPatternsCondition()==null){
-                    log.warn("getPatternsCondition() is null for mapping {}",String.join("|", mapping.getDirectPaths()));
-                    return;
-                }
-
                 //we want to do 2 things
                 //1. add the api base to everything
                 //2. if there's an ID use the regex for that entity type
@@ -74,26 +69,21 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                 List<Set<String>> apiBasesByVersions = new ArrayList<>();
                 if(gsrsRestApiAnnotation ==null || gsrsRestApiAnnotation.instrumentRoutes()) {
                     for (int i = 0; i < versions.length; i++) {
-                        Set<String> patterns;
-                        String version = Integer.toString(versions[i]);
+                        if(mapping.getPatternsCondition()!=null) {
+                            Set<String> patterns = new HashSet<>();
+                            String version = Integer.toString(versions[i]);
 
-                        /*if(mapping.getPatternsCondition()==null){
-                            patterns = new HashSet<>();
-                            log.warn("getPatternsCondition() is null for mapping {}",String.join("|", mapping.getDirectPaths()));
-                            Set<String> finalPatterns = patterns;
-                            mapping.getPathPatternsCondition().getDirectPaths().forEach(p->{
-                                String testUrl = API_BASE_PATH+ version + p;
-                                log.trace("testUrl: {}", testUrl);
-                                finalPatterns.add(testUrl);
-                            });
-                            if(finalPatterns.size()>0) patterns.addAll(finalPatterns);
-                        } else {*/
-                            patterns= new PatternsRequestCondition(API_BASE_PATH + versions[i])
-                                .combine(mapping.getPatternsCondition()).getPatterns();
-                        //}
+                            try {
+                                patterns = new PatternsRequestCondition(API_BASE_PATH + versions[i])
+                                        .combine(mapping.getPatternsCondition()).getPatterns();
+                            } catch (NullPointerException npe) {
 
-                        apiBasePatterns.addAll(patterns);
-                        apiBasesByVersions.add(patterns);
+                            }
+                            //}
+
+                            apiBasePatterns.addAll(patterns);
+                            apiBasesByVersions.add(patterns);
+                        }
                     }
                 }else{
                     apiBasePatterns.addAll(mapping.getPatternsCondition().getPatterns());
@@ -188,12 +178,13 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
 
                 }
 
-
-                super.registerHandlerMethod(handler, method, mapping);
-
+                try {
+                    super.registerHandlerMethod(handler, method, mapping);
+                } catch (IllegalStateException ex){
+                    log.warn("Error registering handler: {}, method: {}", handler, method.getName());
+                }
             }
 
-            ;
         };
     }
 }

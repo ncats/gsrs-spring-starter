@@ -14,9 +14,9 @@ import java.util.UUID;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "Mapping_Key"),
+@Table(name = "ix_import_mapping", indexes = {@Index(name="idx_ix_import_mapping_key", columnList = "mapping_key"),
         @Index(name="idx_ix_import_mapping_value", columnList = "mapping_value"),
-        @Index(name="idx_ix_import_mapping_instance_id", columnList = "instance_Id")})
+        @Index(name="idx_ix_import_mapping_instance_id", columnList = "instance_id")})
 @Slf4j
 @IndexableRoot
 @Data
@@ -40,11 +40,11 @@ public class KeyValueMapping {
     @Column(length =40, updatable = false, unique = false)
     private UUID recordId;
 
-    @Indexable(name = "Mapping_Key", suggest = true)
+    @Indexable(name = "mapping_key", suggest = true)
     @Column(name = "mapping_key")
     private String key;
 
-    @Indexable(name = "Mapping_Value", suggest = true)
+    @Indexable(name = "mapping_value", suggest = true)
     @Column(length = MAX_VALUE_LENGTH, name = "mapping_value")
     private String value;
 
@@ -60,7 +60,6 @@ public class KeyValueMapping {
     @PrePersist
     @PreUpdate
     public void tidy() {
-        log.trace("tidy called");
         value=value!=null && value.length()>0 ? value.substring(0, Math.min(value.length(), MAX_VALUE_LENGTH-1)) :"";
     }
 }

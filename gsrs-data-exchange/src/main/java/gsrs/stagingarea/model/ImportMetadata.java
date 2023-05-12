@@ -22,7 +22,7 @@ import java.util.*;
 @Backup
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_Class_Name")})
+@Table(name = "ix_import_metadata", indexes = {@Index(name="idx_ix_import_metadata_entity_class_name", columnList = "entity_class_name")})
 @Slf4j
 @IndexableRoot
 @Getter
@@ -155,7 +155,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
     })
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
@@ -168,7 +168,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
     @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_Id")
+            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
     })
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
