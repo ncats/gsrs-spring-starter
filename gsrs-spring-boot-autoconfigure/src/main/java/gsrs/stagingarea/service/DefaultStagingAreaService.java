@@ -197,23 +197,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         if( performValidation) {
             log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
             ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
-            domainObject = response.getNewObject();
             if (response != null) {
-                List<UUID> savedResult = persistValidationInfo(response, 1, instanceId);
+                domainObject = response.getNewObject();
+                persistValidationInfo(response, 1, instanceId);
                 overallStatus = getOverallValidationStatus(response);
             }
-
-            //save the updated object
-        /*try {
-            log.trace("going to save updated domain object post-validation");
-            data.setData(serializeObject(domainObject));
-            data.setVersion(data.getVersion() + 1);
-            data.setInstanceId(UUID.randomUUID());
-            data.setSaveDate(new Date());
-            importDataRepository.save(data);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }*/
 
             log.trace("overallStatus: " + overallStatus);
             updateImportValidationStatus(recordId, overallStatus);
