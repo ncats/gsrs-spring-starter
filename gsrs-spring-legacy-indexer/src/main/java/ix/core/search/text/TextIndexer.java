@@ -128,6 +128,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -189,17 +190,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TextIndexer implements Closeable, ProcessListener {
+	
 	private static final String FACET_DELIMITER = "!!";
 
 	public static final String TERM_VEC_PREFIX = "F";
 
     public static final String IX_BASE_PACKAGE = "ix";
-
-
-    private TextIndexerConfig textIndexerConfig;
-
-    
-    private UserSavedListService userSavedListService = new UserSavedListService();
   
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
@@ -241,9 +237,12 @@ public class TextIndexer implements Closeable, ProcessListener {
     private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-
+		
 	@Autowired
 	GsrsCache gsrscache;
+	
+	private TextIndexerConfig textIndexerConfig;
+	private UserSavedListService userSavedListService = new UserSavedListService();
 
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -438,7 +437,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 QueryParser parser = new IxQueryParser("label");
                 filt = getPredicate(parser.parse(filter));
             }
-
+            
             terms.entrySet()
                 .stream()
                 .parallel()
@@ -447,12 +446,10 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(t->new FV(fac,t.k(),t.v()))
                 .filter(fv->{
                 	if(field.equalsIgnoreCase("User List")) {
-                		log.error("User List Facet: " + fv.getLabel());
                 		// check the current user, filter facet by user name
                 		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
                 		String nameInLabel = dataItem.getUserName();
-                		String listName = dataItem.getListName();
-                		log.error("User List Facet: user name: "+ userName + ", name in label:" + nameInLabel +", list name: "+ listName);
+                		String listName = dataItem.getListName();                		
                 		if(userName.isEmpty() || userLists.size() == 0) {
                 			return false;                		
                 		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
@@ -470,7 +467,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .forEach(fv->{
                     fac.add(fv);
                 });
-
+          
             return new FacetMeta.Builder()
 					            .facets(fac)
 					            .ffilter(filter)
@@ -1923,17 +1920,38 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		int fdim=sr.getOptions().getFdim();
 		if(fdim<=0)return;
+		
+		List<LabelAndValue> userListInResult = new ArrayList<>();
 
-		List<FacetResult> facetResults = facets.getAllDims(fdim);
+		List<FacetResult> facetResults = facets.getAllDims(fdim);		
+		FacetResult userListFacet = facets.getTopChildren(sr.getOptions().getUserListFetchSize(), "User List");
+		
+		if(userListFacet != null) {			
+			for(LabelAndValue lv:userListFacet.labelValues){				
+				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
+				String userName = dataItem.getUserName();
+				String listName = dataItem.getListName();
+//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+						userLists.size() > 0 && userLists.contains(listName)) {
+					userListInResult.add(lv);					
+//					log.info("adding facet: username: " + userName + "  listName: " + listName );
+				}									
+			}	
+		}
+		
+		
 //		if (DEBUG(1)) {
 //			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
 //		}
 
+		
 		//Convert FacetResult -> Facet, and add to
 		//search result
 		facetResults.stream()
 			.filter(Objects::nonNull)
-			.map(result -> {
+			.map(result -> {			
+			
 				Facet fac = new FacetImpl(result.dim, sr);
 
 				// make sure the facet value is returned
@@ -1958,24 +1976,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 					fac.setSelectedLabels(selected);
-				}
-				
-				for(LabelAndValue lv:result.labelValues){
-					if(result.dim.equalsIgnoreCase("User List")) {						
-						log.error("Checking facet: " + lv.label);
-						UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
-						String userName = dataItem.getUserName();
-						String listName = dataItem.getListName();
-						log.error("before adding facet: username: " + userName + "  listName: " + listName );
-						if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
-							userLists.size() > 0 && userLists.contains(listName)) {
-							fac.add(lv.label, lv.value.intValue());
-							log.error("adding facet: username: " + userName + "  listName: " + listName );
-						}						
-					}else {
+				}				
+
+				if(result.dim.equalsIgnoreCase("User List")) {
+					int fcount = 0;
+					for(LabelAndValue lv:userListInResult){	
+						if(fcount >= fdim) break;						
 						fac.add(lv.label, lv.value.intValue());
-					}
-									
+						fcount++;
+					}								
+				}else {				
+					for(LabelAndValue lv:result.labelValues){					
+						fac.add(lv.label, lv.value.intValue());
+					}	
 				}
 
 				fac.getMissingSelections().stream().forEach(l->{
