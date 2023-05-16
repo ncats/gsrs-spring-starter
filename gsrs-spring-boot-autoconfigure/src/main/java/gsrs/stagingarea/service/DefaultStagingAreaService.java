@@ -3,8 +3,10 @@ package gsrs.stagingarea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
@@ -74,6 +76,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Autowired
     private IndexValueMakerFactory factory;
+
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
@@ -216,23 +221,21 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
             persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
 
-
             //event driven: each step in process sends an event (pub/sub) look in ... indexing
-            //  validation, when done would trigger the next event
+            //  validation, when done would trigger the next event via
             //  event manager type of thing
             // passively: daemon running in background looks for records with a given status and then performs
             // the next step
             // will
-            //todo: run duplicate check
-            try {
-                MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
+            //try {
+            //    MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
                 //log.trace("Matches: ");
-                summary.getMatches().forEach(m -> {
+                //summary.getMatches().forEach(m -> {
                     //log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
-                });
-            } catch (ClassNotFoundException e) {
-                log.error("Error looking for matches", e);
-            }
+                //});
+            //} catch (ClassNotFoundException e) {
+            //    log.error("Error looking for matches", e);
+            //}
         }
         if( performIndexing ) {
             log.trace("going to index");
@@ -718,6 +721,28 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Override
     public Page page(Pageable pageable) {
         return metadataRepository.findAll(pageable);
+    }
+
+    @Override
+    public void synchronizeRecord(UUID recordId) {
+        List<ImportData> importData= importDataRepository.retrieveDataForRecord(recordId);
+        if(importData==null || importData.isEmpty()){
+            log.warn("in synchronizeRecord, no data found for id {}", recordId);
+        }
+        ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
+        log.trace("synchronizeRecord located object with latest version {}", latestExisting.getVersion());
+        try {
+            Object data= deserializeObject(latestExisting.getEntityClassName(), latestExisting.getData());
+            StringBuilder builder = new StringBuilder();
+            ObjectNode settings = JsonNodeFactory.instance.objectNode();
+            settings.put("refUuidCodeSystem", gsrsFactoryConfiguration.getUuidCodeSystem());
+            settings.put("refApprovalIdCodeSystem", gsrsFactoryConfiguration.getApprovalIdCodeSystem());
+            log.trace("About to call synchronizeEntity");
+            _entityServiceRegistry.get(latestExisting.getEntityClassName()).synchronizeEntity(data, builder::append, settings);
+        } catch (JsonProcessingException e) {
+            log.error("Error processing json");
+            throw new RuntimeException(e);
+        }
     }
 
     private String serializeObject(Object object) throws JsonProcessingException {

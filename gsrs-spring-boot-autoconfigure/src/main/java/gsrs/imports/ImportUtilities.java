@@ -88,7 +88,6 @@ public class ImportUtilities<T> {
         this.stagingAreaService=service;
     }
 
-
     //for a unit test - not general use
     public ImportUtilities(String contextName, Class<T> entityClass) {
         this.contextName=contextName;
@@ -274,6 +273,18 @@ public class ImportUtilities<T> {
                 log.trace("appending node to returnNodes");
             }
             returnFromInnerLambda[0] =returnNodes;
+            //now synchronize all records -- tidy up relationships and other entity-entity links
+            if(needToSave(configSet.getProcessingActions())){
+                log.trace("going to synchronize entities");
+                returnNodes.forEach(n->{
+                    if( n instanceof ObjectNode){
+                        if(n.get("status").textValue().equalsIgnoreCase("OK")){
+                            String recordId= n.get("stagingAreaId").asText();
+                            stagingAreaService.synchronizeRecord(UUID.fromString(recordId));
+                        }
+                    }
+                });
+            }
             job.setStatusMessage("Processing completed");
             log.trace("finished processing in handleActionsAsync");
             TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
@@ -645,21 +656,6 @@ public class ImportUtilities<T> {
                 try {
                     String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task);
                     importDataRecordIds.add(newRecordId);
-                    /*if (recordCount.get() < limit) {
-                        if (object instanceof Supplier) {
-                            log.trace("going to invoke supplier on object");
-                            object = (T) ((Supplier) object).get();
-                        }
-                        //previewNode.add(mapper.writeValueAsString(object));
-                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
-                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
-                        singleRecord.set("data", dataAsNode);
-                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
-                                newRecordId);
-                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
-                        singleRecord.set("matches", matchesAsNode);
-                        previewNode.add(singleRecord);
-                    }*/
                 } catch (JsonProcessingException e) {
                     objectProcessingOK.set(false);
                     errorRecords.add(recordCount.get());
@@ -738,5 +734,9 @@ public class ImportUtilities<T> {
             return action.getAvailableSettingsSchema();
         }
         return JsonNodeFactory.instance.objectNode();
+    }
+
+    private boolean needToSave(List<ProcessingActionConfig> actionConfigs){
+        return actionConfigs.stream().anyMatch(c->c.getProcessingActionName().toUpperCase().contains("CREATE"));
     }
 }

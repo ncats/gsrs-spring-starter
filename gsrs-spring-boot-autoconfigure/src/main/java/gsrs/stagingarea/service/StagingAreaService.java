@@ -63,5 +63,7 @@ public interface StagingAreaService {
 
     void fillCollectionsForMetadata(ImportMetadata metadata);
 
-    public Page page(Pageable pageable);
+    Page page(Pageable pageable);
+
+    void synchronizeRecord(UUID recordId);
 }
