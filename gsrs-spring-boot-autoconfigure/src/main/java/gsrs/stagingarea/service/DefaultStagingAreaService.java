@@ -724,25 +724,16 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public void synchronizeRecord(UUID recordId) {
-        List<ImportData> importData= importDataRepository.retrieveDataForRecord(recordId);
-        if(importData==null || importData.isEmpty()){
-            log.warn("in synchronizeRecord, no data found for id {}", recordId);
-        }
-        ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
-        log.trace("synchronizeRecord located object with latest version {}", latestExisting.getVersion());
-        try {
-            Object data= deserializeObject(latestExisting.getEntityClassName(), latestExisting.getData());
-            StringBuilder builder = new StringBuilder();
-            ObjectNode settings = JsonNodeFactory.instance.objectNode();
-            settings.put("refUuidCodeSystem", gsrsFactoryConfiguration.getUuidCodeSystem());
-            settings.put("refApprovalIdCodeSystem", gsrsFactoryConfiguration.getApprovalIdCodeSystem());
-            log.trace("About to call synchronizeEntity");
-            _entityServiceRegistry.get(latestExisting.getEntityClassName()).synchronizeEntity(data, builder::append, settings);
-        } catch (JsonProcessingException e) {
-            log.error("Error processing json");
-            throw new RuntimeException(e);
-        }
+    public void synchronizeRecord(String entityId, String entityType, String entityContext) {
+        log.trace("synchronizeRecord entityId {}", entityId);
+        StringBuilder builder = new StringBuilder();
+        ObjectNode settings = JsonNodeFactory.instance.objectNode();
+        log.trace("getUuidCodeSystem from config: {}", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refUuidCodeSystem", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refApprovalIdCodeSystem", gsrsFactoryConfiguration.getApprovalIdCodeSystem().get(entityContext));
+        log.trace("About to call synchronizeEntity");
+        _entityServiceRegistry.get(entityType).synchronizeEntity(entityId, builder::append, settings);
+        log.trace("result of synchronizeEntity: {}", builder);
     }
 
     private String serializeObject(Object object) throws JsonProcessingException {

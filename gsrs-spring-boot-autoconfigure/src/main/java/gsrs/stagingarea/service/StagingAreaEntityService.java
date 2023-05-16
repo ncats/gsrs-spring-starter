@@ -26,5 +26,5 @@ public interface StagingAreaEntityService<T> {
 
     void IndexEntity(TextIndexer indexer, Object object);
 
-    void synchronizeEntity(T t, Consumer<String> recorder, JsonNode options);
+    void synchronizeEntity(String entityId, Consumer<String> recorder, JsonNode options);
 }

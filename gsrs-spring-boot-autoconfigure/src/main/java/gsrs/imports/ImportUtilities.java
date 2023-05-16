@@ -256,6 +256,7 @@ public class ImportUtilities<T> {
                 try {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
                             configSet.getProcessingActions());
+                    log.trace("about to call runnable to call processOneRecord");
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
@@ -279,8 +280,15 @@ public class ImportUtilities<T> {
                 returnNodes.forEach(n->{
                     if( n instanceof ObjectNode){
                         if(n.get("status").textValue().equalsIgnoreCase("OK")){
-                            String recordId= n.get("stagingAreaId").asText();
-                            stagingAreaService.synchronizeRecord(UUID.fromString(recordId));
+                            if(n.hasNonNull("PersistedEntityId")) {
+                                log.trace("found PersistedEntityId");
+                                String entityId = n.get("PersistedEntityId").asText();
+                                Unchecked.ThrowingRunnable runnable2 = ()-> stagingAreaService.synchronizeRecord(entityId, entityClass.getName(), contextName);
+                                log.trace("About to call runnable2 to call synchronizeRecord");
+                                adminService.runAs(auth, runnable2);
+                            } else {
+                                log.warn("entity id not found!!");
+                            }
                         }
                     }
                 });
@@ -317,6 +325,7 @@ public class ImportUtilities<T> {
 
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
                                         int version, String persist, List<ProcessingActionConfig> processingActions) throws Exception {
+        log.trace("starting in processOneRecord");
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
@@ -437,6 +446,7 @@ public class ImportUtilities<T> {
                     return messageNode;
                 }
                 currentObject = result.getEntity();
+                messageNode.put("PersistedEntityId", result.getEntityId().toString());
                 log.trace("saved new or updated entity");
             }
 

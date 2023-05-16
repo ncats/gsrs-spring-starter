@@ -35,9 +35,9 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, List<String>> availableProcessActions;
 
-    private String uuidCodeSystem;
+    private Map<String, String> uuidCodeSystem;
 
-    private String approvalIdCodeSystem;
+    private Map<String, String> approvalIdCodeSystem;
 
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();

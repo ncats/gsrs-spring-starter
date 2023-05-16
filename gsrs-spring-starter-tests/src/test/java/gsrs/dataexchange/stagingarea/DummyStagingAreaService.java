@@ -171,7 +171,7 @@ public class DummyStagingAreaService implements StagingAreaService {
     }
 
     @Override
-    public void synchronizeRecord(UUID recordId) {
+    public void synchronizeRecord(String entityId, String entityeType, String entityContext) {
         log.trace("dummy implementation of synchronizeRecord");
     }
 }

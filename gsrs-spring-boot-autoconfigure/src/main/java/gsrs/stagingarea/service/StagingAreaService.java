@@ -65,5 +65,5 @@ public interface StagingAreaService {
 
     Page page(Pageable pageable);
 
-    void synchronizeRecord(UUID recordId);
+    void synchronizeRecord(String entityId, String entityType, String entityContext);
 }
