@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
+import gsrs.repository.PrincipalRepository;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
 import gsrs.indexer.IndexValueMakerFactory;
@@ -152,6 +153,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         metadata.setVersionCreationDate(new Date());
         metadata.setDataFormat(parameters.getFormatType());
         metadata.setImportAdapter(parameters.getAdapterName());
+        if(parameters.getImportingUser()!=null){
+            metadata.setImportedBy( parameters.getImportingUser());
+        }else{
+            log.warn("Unable to retrieve current user!");
+        }
+
         metadataRepository.saveAndFlush(metadata);
 
         //step 3: save raw data, when available

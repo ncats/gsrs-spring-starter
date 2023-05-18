@@ -1,6 +1,7 @@
 package gsrs.stagingarea.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import ix.core.models.Principal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,4 +24,5 @@ public class ImportRecordParameters {
     private UUID recordId;//will be null for creation; populated when updating
     private String adapterName;
     private JsonNode settings;
+    private Principal importingUser;
 }

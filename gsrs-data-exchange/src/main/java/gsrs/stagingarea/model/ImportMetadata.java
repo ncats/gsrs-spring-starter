@@ -3,17 +3,24 @@ package gsrs.stagingarea.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.EntityMapperOptions;
 import ix.core.models.*;
 import ix.ginas.converters.GinasAccessConverter;
 import ix.ginas.models.GinasAccessContainer;
 import ix.ginas.models.GinasAccessControlled;
+import ix.ginas.models.serialization.GsrsDateDeserializer;
+import ix.ginas.models.serialization.PrincipalDeserializer;
+import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -124,8 +131,10 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable(name = "SourceName", suggest = true)
     private String sourceName;
 
-    @Indexable
-    private Date versionCreationDate;
+    @CreatedDate
+    @Indexable(facet=true, sortable = true, name = "Load Date")
+    @JsonDeserialize(using = GsrsDateDeserializer.class)
+    private Date versionCreationDate =null;
 
     @Indexable(name="ImportStatus", facet = true)
     private RecordImportStatus importStatus;
@@ -184,6 +193,13 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
 
     @Indexable
     private String importAdapter;
+
+    @CreatedBy
+    @Indexable(facet = true, name = "Loaded By", sortable = true, recurse = false)
+    @ManyToOne()
+    @JsonDeserialize(using = PrincipalDeserializer.class)
+    @JsonSerialize(using = PrincipalSerializer.class)
+    public Principal importedBy;
 
     @Override
     public boolean equals(Object o) {
