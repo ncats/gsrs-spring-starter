@@ -242,8 +242,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	GsrsCache gsrscache;
 	
 	private TextIndexerConfig textIndexerConfig;
-	private UserSavedListService userSavedListService = new UserSavedListService();
-
+	
+	private UserSavedListService userSavedListService;
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -1236,7 +1236,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         return taxonWriter;
     }
 
-    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
+    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction,
+    			UserSavedListService userSavedListService) {
 
         // empty instance should only be used for
 		// facet subsearching so we only need to have
@@ -1250,8 +1252,11 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.textIndexerConfig = textIndexerConfig;
         this.indexerService = indexerService;
         this.deepKindFunction = deepKindFunction;
+        this.userSavedListService = userSavedListService;
     }
-    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, Function<EntityWrapper, Boolean> deepKindFunction) throws IOException{
+    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, 
+    			Function<EntityWrapper, Boolean> deepKindFunction, UserSavedListService userSavedListService) throws IOException{
         this.gsrscache=cache;
         this.textIndexerConfig = textIndexerConfig;
         this.indexValueMakerFactory = indexValueMakerFactory;
@@ -1264,6 +1269,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.deepKindFunction = deepKindFunction;
         this.indexerService = indexerService;
         this.indexerServiceFactory = indexerServiceFactory;
+        this.userSavedListService = userSavedListService;
         
         initialSetup();
 
@@ -1441,7 +1447,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * subset of the documents stored.
 	 */
 	public TextIndexer createEmptyInstance() throws IOException {
-	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, indexValueMakerFactory, deepKindFunction );
+	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, 
+	    		indexValueMakerFactory, deepKindFunction, userSavedListService );
 		indexer.taxonDir = new RAMDirectory();
 		return config(indexer);
 	}
@@ -2379,8 +2386,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
-
-		AutowireHelper.getInstance().autowireAndProxy(userSavedListService);
 		
 		List<String> userLists = new ArrayList<>();
 		if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
