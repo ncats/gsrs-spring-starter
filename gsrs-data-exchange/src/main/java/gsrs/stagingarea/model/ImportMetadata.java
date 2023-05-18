@@ -133,7 +133,6 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
 
     @CreatedDate
     @Indexable(facet=true, sortable = true, name = "Load Date")
-    @JsonDeserialize(using = GsrsDateDeserializer.class)
     private Date versionCreationDate =null;
 
     @Indexable(name="ImportStatus", facet = true)

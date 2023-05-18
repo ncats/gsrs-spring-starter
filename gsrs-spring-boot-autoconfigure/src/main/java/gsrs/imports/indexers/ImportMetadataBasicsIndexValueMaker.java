@@ -1,11 +1,12 @@
 package gsrs.imports.indexers;
 
-import gsrs.security.GsrsSecurityUtils;
 import gsrs.stagingarea.model.ImportMetadata;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.extern.slf4j.Slf4j;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.function.Consumer;
 
 /*
@@ -14,8 +15,10 @@ Who created this (based on logged-on user)
 @Slf4j
 public class ImportMetadataBasicsIndexValueMaker implements IndexValueMaker<ImportMetadata> {
 
-    public static final String IMPORT_METADATA_LOADED_BY_FACET="Loaded By";
-    public static final String IMPORT_METADATA_IMPORT_DATE_FACET="Loaded By";
+    public static final String IMPORT_METADATA_IMPORT_DATE_FACET="Date Loaded";
+
+    private final String pattern = "dd-MMM-yyyy HH:mm:ss";
+    DateFormat dateFormat = new SimpleDateFormat(pattern);
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
@@ -24,8 +27,13 @@ public class ImportMetadataBasicsIndexValueMaker implements IndexValueMaker<Impo
 
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
-        consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_LOADED_BY_FACET,
-                GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "[unknown]"));
+        log.trace("starting createIndexableValues");
+        String dateLoaded = "";
+        if( importMetadata.getVersionCreationDate()!=null){
+            dateLoaded=dateFormat.format(importMetadata.getVersionCreationDate());
+        }
+        log.trace("value: {}", dateLoaded);
+        consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_IMPORT_DATE_FACET, dateLoaded));
 
     }
 }
