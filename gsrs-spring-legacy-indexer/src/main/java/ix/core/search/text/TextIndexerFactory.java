@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.util.EntityUtils;
 
 @Service
@@ -43,6 +45,9 @@ public class TextIndexerFactory {
 
     @Autowired
     public IndexValueMakerFactory indexValueMakerFactory;
+    
+    
+    private UserSavedListService userSavedListService = new UserSavedListService();
 
     private TextIndexer defaultIndexer;
 
@@ -80,10 +85,13 @@ public class TextIndexerFactory {
         return getInstanceWithoutSync(baseDir);
     }
     private TextIndexer getInstanceWithoutSync(File baseDir){
+    	
+    	AutowireHelper.getInstance().autowireAndProxy(userSavedListService);
 
         return indexers.computeIfAbsent(baseDir, dir -> {
             try {
-                return new TextIndexer(dir, indexerServiceFactory, indexerServiceFactory.createForDir(dir), textIndexerConfig,indexValueMakerFactory, gsrsCache,  this::isDeepKind);
+                return new TextIndexer(dir, indexerServiceFactory, indexerServiceFactory.createForDir(dir), textIndexerConfig,
+                		indexValueMakerFactory, gsrsCache,  this::isDeepKind, userSavedListService);
             } catch (IOException ex) {
                 ex.printStackTrace();
                 return null;
