@@ -14,8 +14,11 @@ import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
+import gsrs.indexer.IndexRemoveEntityEvent;
+import gsrs.repository.PrincipalRepository;
 import gsrs.repository.TextRepository;
 import gsrs.security.AdminService;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.stagingarea.model.ImportData;
@@ -25,7 +28,9 @@ import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportProcessingJobRepository;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
+import ix.core.models.Principal;
 import ix.core.models.Text;
+import ix.core.search.text.TextIndexerEntityListener;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.exporters.SpecificExporterSettings;
@@ -72,6 +77,12 @@ public class ImportUtilities<T> {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private TextIndexerEntityListener textIndexerEntityListener;
+
+    @Autowired
+    PrincipalRepository principalRepository;
+
     private String contextName;
 
     private Class<T> entityClass;
@@ -87,7 +98,6 @@ public class ImportUtilities<T> {
         this.entityClass=entityClass;
         this.stagingAreaService=service;
     }
-
 
     //for a unit test - not general use
     public ImportUtilities(String contextName, Class<T> entityClass) {
@@ -257,6 +267,7 @@ public class ImportUtilities<T> {
                 try {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
                             configSet.getProcessingActions());
+                    log.trace("about to call runnable to call processOneRecord");
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
@@ -274,6 +285,25 @@ public class ImportUtilities<T> {
                 log.trace("appending node to returnNodes");
             }
             returnFromInnerLambda[0] =returnNodes;
+            //now synchronize all records -- tidy up relationships and other entity-entity links
+            if(needToSave(configSet.getProcessingActions())){
+                log.trace("going to synchronize entities");
+                returnNodes.forEach(n->{
+                    if( n instanceof ObjectNode){
+                        if(n.get("status").textValue().equalsIgnoreCase("OK")){
+                            if(n.hasNonNull("PersistedEntityId")) {
+                                log.trace("found PersistedEntityId");
+                                String entityId = n.get("PersistedEntityId").asText();
+                                Unchecked.ThrowingRunnable runnable2 = ()-> stagingAreaService.synchronizeRecord(entityId, entityClass.getName(), contextName);
+                                log.trace("About to call runnable2 to call synchronizeRecord");
+                                adminService.runAs(auth, runnable2);
+                            } else {
+                                log.warn("entity id not found!!");
+                            }
+                        }
+                    }
+                });
+            }
             job.setStatusMessage("Processing completed");
             log.trace("finished processing in handleActionsAsync");
             TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
@@ -306,6 +336,7 @@ public class ImportUtilities<T> {
 
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
                                         int version, String persist, List<ProcessingActionConfig> processingActions) throws Exception {
+        log.trace("starting in processOneRecord");
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
@@ -426,6 +457,7 @@ public class ImportUtilities<T> {
                     return messageNode;
                 }
                 currentObject = result.getEntity();
+                messageNode.put("PersistedEntityId", result.getEntityId().toString());
                 log.trace("saved new or updated entity");
             }
 
@@ -536,12 +568,16 @@ public class ImportUtilities<T> {
         List<Integer> errorRecords = new ArrayList<>();
         List<String> importDataRecordIds = new ArrayList<>();
         ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+                ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+                : null;
+
         objectStream.forEach(object -> {
             recordCount.incrementAndGet();
             log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
             log.trace(object.toString());
             try {
-                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
                 importDataRecordIds.add(newRecordId);
                     /*if (recordCount.get() < limit) {
                         if (object instanceof Supplier) {
@@ -629,6 +665,9 @@ public class ImportUtilities<T> {
             ((ObjectNode)task.getAdapterSettings()).set("rarelyUsedSettings", rareSettings);
         }
         log.trace("saved init job");
+        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+            ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+            : null;
         executor.execute(()-> {
             log.trace("starting in handleObjectCreationAsync execute lambda");
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
@@ -643,23 +682,8 @@ public class ImportUtilities<T> {
                 log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
                 log.trace(object.toString());
                 try {
-                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
                     importDataRecordIds.add(newRecordId);
-                    /*if (recordCount.get() < limit) {
-                        if (object instanceof Supplier) {
-                            log.trace("going to invoke supplier on object");
-                            object = (T) ((Supplier) object).get();
-                        }
-                        //previewNode.add(mapper.writeValueAsString(object));
-                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
-                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
-                        singleRecord.set("data", dataAsNode);
-                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
-                                newRecordId);
-                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
-                        singleRecord.set("matches", matchesAsNode);
-                        previewNode.add(singleRecord);
-                    }*/
                 } catch (JsonProcessingException e) {
                     objectProcessingOK.set(false);
                     errorRecords.add(recordCount.get());
@@ -703,7 +727,7 @@ public class ImportUtilities<T> {
         return job.toNode();
     }
 
-    public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData) {
+    public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
         log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
@@ -712,7 +736,8 @@ public class ImportUtilities<T> {
                 .entityClassName(importTaskMetaData.getEntityType())
                 .formatType(importTaskMetaData.getMimeType())
                 .source(importTaskMetaData.getFilename())
-                .adapterName(importTaskMetaData.getAdapter());
+                .adapterName(importTaskMetaData.getAdapter())
+                 .importingUser(creatingUser);
         if(importTaskMetaData.getAdapterSettings().hasNonNull("rarelyUsedSettings")) {
             JsonNode rareSettings = importTaskMetaData.getAdapterSettings().get("rarelyUsedSettings");
             log.trace("processing rarelyUsedSettings {}", rareSettings.toPrettyString());
@@ -738,5 +763,47 @@ public class ImportUtilities<T> {
             return action.getAvailableSettingsSchema();
         }
         return JsonNodeFactory.instance.objectNode();
+    }
+
+    private boolean needToSave(List<ProcessingActionConfig> actionConfigs){
+        return actionConfigs.stream().anyMatch(c->c.getProcessingActionName().toUpperCase().contains("CREATE"));
+    }
+
+    public JsonNode handleDeletion(String[] ids, boolean reindex){
+        log.trace("in handleDeletion");
+        ArrayNode deleted = JsonNodeFactory.instance.arrayNode();
+        int version = 0;//possible to retrieve from parameters. For now, assume latest
+        Arrays.stream(ids)
+                .filter(id->id!=null)
+                .map(id->id.replace("\"", "")
+                        .replace(",","")
+                        .replaceAll(" ","")
+                        .replace("\r","")
+                        .replace("\n","")
+                        .replace("\t",""))
+                .filter(id->id.length()>0)
+                .forEach(id->{
+                    if(reindex){
+                        try {
+                            ImportMetadata object= stagingAreaService.getImportMetaData(id, version);
+                            if( object !=null) {
+                                textIndexerEntityListener.deleteEntity(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(object)));
+                                log.trace("submitted index deletion");
+                            } else{
+                                log.warn("Error retrieving ImportMetadata with ID {}", id);
+                            }
+                        } catch (Exception e) {
+                            log.error("Error during removal from index: ", e);
+
+                        }
+                    }
+                    stagingAreaService.deleteRecord(id, version);
+                    log.trace("deleted record with ID {}", id);
+                    deleted.add(id);
+                });
+
+        ObjectNode response = JsonNodeFactory.instance.objectNode();
+        response.set("deleted records", deleted);
+        return response;
     }
 }

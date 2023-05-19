@@ -7,6 +7,7 @@ import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface StagingAreaEntityService<T> {
     Class<T> getEntityClass();
@@ -24,4 +25,6 @@ public interface StagingAreaEntityService<T> {
     T retrieveEntity(String entityId);
 
     void IndexEntity(TextIndexer indexer, Object object);
+
+    void synchronizeEntity(String entityId, Consumer<String> recorder, JsonNode options);
 }

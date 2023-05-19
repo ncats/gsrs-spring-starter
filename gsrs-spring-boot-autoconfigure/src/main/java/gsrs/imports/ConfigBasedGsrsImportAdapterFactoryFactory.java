@@ -34,10 +34,10 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 {
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
-                        log.trace("c.getStagingServiceClass(): {}", c.getStagingAreaServiceClass()==null ? "null!!" :
-                                c.getStagingAreaServiceClass().getName());
+//                        log.trace("c.getStagingServiceClass(): {}", c.getStagingAreaServiceClass()==null ? "null!!" :
+//                                c.getStagingAreaServiceClass().getName());
                         iaf.setStagingAreaService(c.getStagingAreaServiceClass());
-                        log.trace("entity services:");
+                        //log.trace("entity services:");
                         //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
                         //iaf.setEntityServices(c.getEntityServices());
                         iaf.setEntityServiceClass(c.getEntityServiceClass());
@@ -47,12 +47,12 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         if(c.getDescription() !=null && c.getDescription().length()>0) {
                             iaf.setDescription(c.getDescription());
                         }
-                        log.trace("using description {} for this iaf", iaf.getDescription());
+                        //log.trace("using description {} for this iaf", iaf.getDescription());
                         if(c.getSupportedFileExtensions()!=null && !c.getSupportedFileExtensions().isEmpty()) {
-                            log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
+                            //log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
                             iaf.setSupportedFileExtensions(c.getSupportedFileExtensions());
                         } else {
-                            log.trace("using extensions within class");
+                            //log.trace("using extensions within class");
                         }
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();

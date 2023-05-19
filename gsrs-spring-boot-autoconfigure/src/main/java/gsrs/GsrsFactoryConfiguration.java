@@ -35,6 +35,10 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, List<String>> availableProcessActions;
 
+    private Map<String, String> uuidCodeSystem;
+
+    private Map<String, String> approvalIdCodeSystem;
+
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();
         return Optional.ofNullable(search.get(context));
@@ -105,8 +109,8 @@ public class GsrsFactoryConfiguration {
             }
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
             });
-            log.trace("list (after):");
-            configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
+            //log.trace("list (after):");
+            //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
             return configs;
         } catch (Exception t) {
             log.error("Error fetching import factory config");
