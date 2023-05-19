@@ -407,7 +407,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if(_stagingAreaService == null) {
             lock.lock();
             try {
-                _stagingAreaService=gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
+                if(_stagingAreaService==null) {
+                    _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
+                }
             }finally {
                 lock.unlock();
             }

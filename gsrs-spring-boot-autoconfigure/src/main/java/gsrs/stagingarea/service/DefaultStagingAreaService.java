@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
-import gsrs.repository.PrincipalRepository;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
 import gsrs.indexer.IndexValueMakerFactory;
