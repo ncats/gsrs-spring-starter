@@ -69,7 +69,9 @@ public class SearchOptions implements RequestOptions {
 
 	// default number of elements to fetch while blocking
 	public static final int DEFAULT_FETCH_SIZE = 100; // 0 means all
-	public static final int USER_LIST_FACET_FETCH_SIZE=1000;
+	
+	// default max fetch size of user list facets
+	public static final int USER_LIST_FACET_FETCH_SIZE = 10000;
 
 	private Class<?> kind; // filter by type
 
