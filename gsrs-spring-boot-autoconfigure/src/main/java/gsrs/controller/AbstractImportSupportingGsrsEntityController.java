@@ -768,7 +768,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("in deleteRecords");
         log.trace("retrieved service");
         int version = 0;//possible to retrieve from parameters
-        String[] ids = idSet.split("\\r\\n");
+        String[] ids = idSet.split("[\\\\n\\r\\n]{1,2}");//input from front end uses \\n as delim; input from Postman \r\n
         boolean removeFromIndex = true;
         if( queryParameters.containsKey("skipIndex") && queryParameters.get("skipIndex").equalsIgnoreCase("true")){
             removeFromIndex=false;
