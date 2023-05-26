@@ -762,13 +762,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk"})
+    @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk", "/stagingArea/@bulkDelete"})
     public ResponseEntity<Object> deleteRecords(@RequestBody String idSet,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in deleteRecords");
         log.trace("retrieved service");
         int version = 0;//possible to retrieve from parameters
-        String[] ids = idSet.split("[\\\\n\\r\\n]{1,2}");//input from front end uses \\n as delim; input from Postman \r\n
+        log.trace("idSet: {}", idSet);
+        String[] ids =idSet.split("[\\\\n\\r\\n]{1,2}");//idSet.split("\r{0,1}\n|\r");;
+        //idSet.split("[\\\\n\\r\\n]{1,2}");//input from front end uses \\n as delim; input from Postman \r\n
         boolean removeFromIndex = true;
         if( queryParameters.containsKey("skipIndex") && queryParameters.get("skipIndex").equalsIgnoreCase("true")){
             removeFromIndex=false;
