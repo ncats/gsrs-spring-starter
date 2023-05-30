@@ -1022,8 +1022,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = "stagingArea/search/@facets", apiVersions = 1)
-    public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
+    @GetGsrsRestApiMapping(value = "/stagingArea/search/@facets", apiVersions = 1)
+    public FacetMeta searchImportFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
