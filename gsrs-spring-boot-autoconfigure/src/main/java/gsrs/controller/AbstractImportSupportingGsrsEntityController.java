@@ -1028,8 +1028,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  HttpServletRequest request) throws ParseException, IOException {
+        log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
-                .kind(getEntityService().getEntityClass())
+                .kind(ImportMetadata.class)
                 .top(Integer.MAX_VALUE) // match Play GSRS
                 .fdim(10)
                 .fskip(0)
