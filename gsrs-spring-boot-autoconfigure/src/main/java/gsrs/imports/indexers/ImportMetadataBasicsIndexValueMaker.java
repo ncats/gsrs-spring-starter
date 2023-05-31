@@ -17,7 +17,7 @@ public class ImportMetadataBasicsIndexValueMaker implements IndexValueMaker<Impo
 
     public static final String IMPORT_METADATA_IMPORT_DATE_FACET="Date Loaded";
 
-    private final String pattern = "dd-MMM-yyyy HH:mm:ss";
+    private final String pattern = "dd-MMM-yyyy";//"dd-MMM-yyyy HH:mm:ss";
     DateFormat dateFormat = new SimpleDateFormat(pattern);
 
     @Override

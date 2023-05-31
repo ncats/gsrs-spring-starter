@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import ix.core.EntityMapperOptions;
 import ix.core.models.*;
 import ix.ginas.converters.GinasAccessConverter;
@@ -14,6 +16,8 @@ import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.ginas.models.utils.JSONEntity;
+import ix.ginas.models.serialization.GsrsDateDeserializer;
+import ix.ginas.models.serialization.GsrsDateSerializer;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -133,6 +137,8 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
 
     @CreatedDate
     @Indexable(facet=true, sortable = true, name = "Load Date")
+    @JsonSerialize(using = GsrsDateSerializer.class)
+    @JsonDeserialize(using = GsrsDateDeserializer.class)
     private Date versionCreationDate =null;
 
     @Indexable(name="ImportStatus", facet = true)

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
+import gsrs.imports.MatchableCalculationConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
 import lombok.Data;
@@ -22,6 +23,8 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, List<Map<String, Object>>> validators;
     private Map<String, List<Map<String, Object>>> importAdapterFactories;
+
+    private Map<String, List<Map<String, Object>>> matchableCalculators;
 
     private Map<String, Map<String, Object>> search;
 
@@ -118,4 +121,20 @@ public class GsrsFactoryConfiguration {
         }
     }
 
+    public List<? extends MatchableCalculationConfig> getMatchableCalculationConfig(String context) {
+        log.trace("in ");
+        if(matchableCalculators==null){
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> list = matchableCalculators.get(context);
+        if (list == null || list.isEmpty()) {
+            log.warn("no matchable calculation configuration info found!");
+            return Collections.emptyList();
+        }
+        List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() {
+        });
+        //log.trace("list (after):");
+        //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
+        return configs;
+    }
 }

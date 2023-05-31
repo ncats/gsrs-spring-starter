@@ -762,13 +762,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk"})
+    @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk", "/stagingArea/@bulkDelete"})
     public ResponseEntity<Object> deleteRecords(@RequestBody String idSet,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in deleteRecords");
         log.trace("retrieved service");
         int version = 0;//possible to retrieve from parameters
-        String[] ids = idSet.split("[\\\\n\\r\\n]{1,2}");//input from front end uses \\n as delim; input from Postman \r\n
+        log.trace("idSet: {}", idSet);
+        String[] ids =idSet.split("[,\\r\\n]{1,2}");//idSet.split("\r{0,1}\n|\r");;
         boolean removeFromIndex = true;
         if( queryParameters.containsKey("skipIndex") && queryParameters.get("skipIndex").equalsIgnoreCase("true")){
             removeFromIndex=false;
@@ -1021,8 +1022,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = "stagingArea/search/@facets", apiVersions = 1)
-    public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
+    @GetGsrsRestApiMapping(value = "/stagingArea/search/@facets", apiVersions = 1)
+    public FacetMeta searchImportFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
