@@ -1050,7 +1050,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             userLists= userSavedListService.getUserSearchResultLists(userName);
         }
 
-        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
+        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
                 userName, userLists);
