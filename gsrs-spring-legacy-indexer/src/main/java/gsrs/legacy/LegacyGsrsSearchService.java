@@ -125,7 +125,8 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         try {
             Query q= indexer.extractFullFacetQuery(query, options, field);
-            return indexer.getTermVectors(entityClass, field, (Filter)null, q);
+            log.trace("getTermVectorsFromQuery using kind {}", options.getKind());
+            return indexer.getTermVectors(options.getKind()!=null ? options.getKind() : entityClass, field, (Filter)null, q);
         } catch (ParseException e) {
             throw new IOException("error parsing lucene query '" + query + "'", e);
         }catch(Exception e){

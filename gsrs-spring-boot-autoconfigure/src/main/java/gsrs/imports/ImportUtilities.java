@@ -784,18 +784,7 @@ public class ImportUtilities<T> {
                 .filter(id->id.length()>0)
                 .forEach(id->{
                     if(reindex){
-                        try {
-                            ImportMetadata object= stagingAreaService.getImportMetaData(id, version);
-                            if( object !=null) {
-                                textIndexerEntityListener.deleteEntity(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(object)));
-                                log.trace("submitted index deletion");
-                            } else{
-                                log.warn("Error retrieving ImportMetadata with ID {}", id);
-                            }
-                        } catch (Exception e) {
-                            log.error("Error during removal from index: ", e);
-
-                        }
+                        removeImportMetadataFromIndex(id, version);
                     }
                     stagingAreaService.deleteRecord(id, version);
                     log.trace("deleted record with ID {}", id);
@@ -805,5 +794,19 @@ public class ImportUtilities<T> {
         ObjectNode response = JsonNodeFactory.instance.objectNode();
         response.set("deleted records", deleted);
         return response;
+    }
+
+    public void removeImportMetadataFromIndex(String metadataId, int version) {
+        ImportMetadata object= stagingAreaService.getImportMetaData(metadataId, version);
+        if( object !=null) {
+            try {
+                textIndexerEntityListener.deleteEntity(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(object)));
+            } catch (Exception e) {
+                log.error("error removing ImportMetadata object from index: ", e);
+            }
+            log.trace("submitted index deletion");
+        } else{
+            log.warn("Error retrieving ImportMetadata with ID {}", metadataId);
+        }
     }
 }
