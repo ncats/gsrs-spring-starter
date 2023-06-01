@@ -746,7 +746,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> deleteRecord(@PathVariable("id") String id,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in deleteRecord");
-        StagingAreaService service = getDefaultStagingAreaService();
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         log.trace("retrieved service");
         int version = 0;//todo: retrieve from parameters
         if (queryParameters.get("version") != null) {
@@ -757,7 +757,11 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 //we just fall back on the original 0 value
             }
         }
-        service.deleteRecord(id, version);
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
+                stagingAreaService);
+        AutowireHelper.getInstance().autowire(importUtilities);
+        importUtilities.removeImportMetadataFromIndex(id, version);
+        stagingAreaService.deleteRecord(id, version);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
@@ -1028,8 +1032,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  HttpServletRequest request) throws ParseException, IOException {
+        log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
-                .kind(getEntityService().getEntityClass())
+                .kind(ImportMetadata.class)
                 .top(Integer.MAX_VALUE) // match Play GSRS
                 .fdim(10)
                 .fskip(0)
@@ -1045,7 +1050,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             userLists= userSavedListService.getUserSearchResultLists(userName);
         }
 
-        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
+        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
                 userName, userLists);
