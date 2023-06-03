@@ -87,7 +87,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     private TextIndexer indexer;
 
-    private MatchableCalculationConfig matchableCalculationConfig;
+    //private MatchableCalculationConfig matchableCalculationConfig;
 
     //public final static String CURRENT_SOURCE = "Staging Area";
 
@@ -582,9 +582,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return matches;
     }
 
-    public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
+    /*public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
         this.matchableCalculationConfig = matchableCalculationConfig;
-    }
+    }*/
 
     private <T> List<MatchableKeyValueTuple> getMatchables(T entity) {
         String lookupClass = entity.getClass().getName();

@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/*
-a  key/value pair that has located one or more records in a Staging Area or permanent GSRS database
+/**
+a key/value pair that has located one or more records in a Staging Area or permanent GSRS database
  */
 @Data
 @AllArgsConstructor
@@ -26,8 +26,19 @@ public class MatchedKeyValue {
     @Builder
     public static class MatchingRecordReference{
 
+        /**
+         * reference to another record
+         */
         private EntityUtils.Key recordId;
+
+        /**
+         * location of the matching data (GSRS or staging area)
+         */
         private String sourceName;
+
+        /**
+         * ID of matching record
+         */
         private String matchedKey;
 
         @Override
