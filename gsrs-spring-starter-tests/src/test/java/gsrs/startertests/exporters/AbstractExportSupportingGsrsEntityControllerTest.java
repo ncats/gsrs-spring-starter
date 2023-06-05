@@ -10,6 +10,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.startertests.GsrsJpaTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ActiveProfiles("test")
-@SpringBootTest(classes = {GsrsSpringApplication.class, GsrsEntityTestConfiguration.class})
+@GsrsJpaTest( classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
 	// This works locally but does not work on Travis-CI due to a JVM start/stop issue where
@@ -57,7 +59,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
             protected Object createSearchResponse(List results, SearchResult result, HttpServletRequest request) {
                 return null;
             }
-
+            
             @SneakyThrows
             @Override
             protected GsrsEntityService getEntityService() {

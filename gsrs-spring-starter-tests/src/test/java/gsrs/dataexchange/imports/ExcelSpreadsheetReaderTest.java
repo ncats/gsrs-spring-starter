@@ -26,9 +26,9 @@ public class ExcelSpreadsheetReaderTest {
     @Test
     public void basicReadTest1() throws IOException {
         AtomicBoolean readData= new AtomicBoolean(false);
-        String filePathName ="E:\\ncats_source\\gsrs-spring-module-substances_clean\\gsrs-module-substance-example\\src\\test\\resources\\testExcelFile\\export-29-12-2022_17-40-13.xlsx";
-        filePathName ="d:\\temp\\simple-wb.xlsx";
-        File inputFile= new File(filePathName);
+        String fileName ="excel/simple-wb.xlsx";
+        ClassPathResource resource = new ClassPathResource(fileName);
+        File inputFile = resource.getFile();
         FileInputStream fis = new FileInputStream(inputFile);
         Workbook workbook = new XSSFWorkbook(fis);
         Sheet datatypeSheet = workbook.getSheetAt(0);
@@ -104,8 +104,9 @@ public class ExcelSpreadsheetReaderTest {
     }
     @Test
     public void getFileFieldsTest2() throws IOException {
-        String filePathName ="d:\\temp\\simple-wb.xlsx";
-        File inputFile= new File(filePathName);
+        String fileName ="excel/simple-wb.xlsx";
+        ClassPathResource resource = new ClassPathResource(fileName);
+        File inputFile = resource.getFile();
         FileInputStream fis = new FileInputStream(inputFile);
         ExcelSpreadsheetReader reader= new ExcelSpreadsheetReader(fis);
         List<String> fieldNames= reader.getFileFields(0, 0);

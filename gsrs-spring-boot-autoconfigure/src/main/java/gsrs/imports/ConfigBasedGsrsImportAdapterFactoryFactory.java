@@ -2,14 +2,17 @@ package gsrs.imports;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.stagingarea.service.DefaultStagingAreaService;
+import gsrs.stagingarea.service.StagingAreaEntityService;
+import gsrs.stagingarea.service.StagingAreaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-import java.util.Objects;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -17,6 +20,10 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
 
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
+    private static Map<String, Class<T>> serviceMap = new HashMap<>();
+
+    private static List<ProcessingAction> processingActionClasses =new ArrayList<>();
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
@@ -27,10 +34,10 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 {
                     try {
                         ImportAdapterFactory<T> iaf = (ImportAdapterFactory<T>) c.newImportAdapterFactory(mapper, AutowireHelper.getInstance().getClassLoader());
-                        log.trace("c.getStagingServiceClass(): {}", c.getStagingAreaServiceClass()==null ? "null!!" :
-                                c.getStagingAreaServiceClass().getName());
+//                        log.trace("c.getStagingServiceClass(): {}", c.getStagingAreaServiceClass()==null ? "null!!" :
+//                                c.getStagingAreaServiceClass().getName());
                         iaf.setStagingAreaService(c.getStagingAreaServiceClass());
-                        log.trace("entity services:");
+                        //log.trace("entity services:");
                         //c.getEntityServices().forEach(k->log.trace("k: {} ", k.getName()));
                         //iaf.setEntityServices(c.getEntityServices());
                         iaf.setEntityServiceClass(c.getEntityServiceClass());
@@ -40,12 +47,12 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         if(c.getDescription() !=null && c.getDescription().length()>0) {
                             iaf.setDescription(c.getDescription());
                         }
-                        log.trace("using description {} for this iaf", iaf.getDescription());
+                        //log.trace("using description {} for this iaf", iaf.getDescription());
                         if(c.getSupportedFileExtensions()!=null && !c.getSupportedFileExtensions().isEmpty()) {
-                            log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
+                            //log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
                             iaf.setSupportedFileExtensions(c.getSupportedFileExtensions());
                         } else {
-                            log.trace("using extensions within class");
+                            //log.trace("using extensions within class");
                         }
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();
@@ -109,7 +116,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     }
 
     @Override
-    public Class<T> getDefaultStagingAreaService(String context) {
+    public synchronized Class<T> getDefaultStagingAreaService(String context) {
         String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaServiceClass().get(context);
         if(clsName==null || clsName.length()==0) {
             clsName="gsrs.stagingarea.service.DefaultStagingAreaService";
@@ -122,14 +129,72 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
         }
     }
 
+
+
     @Override
     public Class<T> getDefaultStagingAreaEntityService(String context) {
-        String clsName= gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
-        try {
-            return (Class<T>) Class.forName(clsName);
-        } catch (ClassNotFoundException e) {
-            log.error("Class {} not found", clsName);
-            throw new RuntimeException(e);
+        synchronized (ConfigBasedGsrsImportAdapterFactoryFactory.class) {
+            return serviceMap.computeIfAbsent(context, (c) -> {
+                log.trace("instantiating a staging area for context {}", context);
+                String clsName = gsrsFactoryConfiguration.getDefaultStagingAreaEntityService().get(context);
+                try {
+                    return (Class<T>) Class.forName(clsName);
+                } catch (ClassNotFoundException e) {
+                    log.error("Class {} not found", clsName);
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
+
+    @Override
+    public StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        //todo: cache instances of staging areas in hashmap
+        log.trace("in getStagingAreaService for context {}", context);
+        Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
+        Constructor constructor = stagingAreaServiceClass.getConstructor();
+        Object o = constructor.newInstance();
+        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
+        log.trace("instantiated service");
+        Class stagingAreaEntityServiceClass = getDefaultStagingAreaEntityService(context);
+        log.trace("going to use entity service class: {}", stagingAreaEntityServiceClass.getName());
+        Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
+        Object o2 = constructorEntityService.newInstance();
+        log.trace("instantiated entity service");
+        StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
+        service.registerEntityService(entityService);
+        log.trace("called registerEntityService with {}", entityService.getClass().getName());
+
+        return service;
+    }
+
+    @Override
+    public ProcessingAction<T> getMatchingProcessingAction(String context, String actionName) {
+        log.trace("in getMatchingProcessingAction");
+        if( processingActionClasses.isEmpty()) {
+            log.trace("instantiating list");
+            List<String> classNames= gsrsFactoryConfiguration.getAvailableProcessActions().get(context);
+            classNames.forEach(className->{
+                log.trace("class: {}", classNames);
+                try {
+                    Class<?> clazz = Class.forName(className);
+                    Constructor constructor =clazz.getConstructor();
+                    ProcessingAction<T> action= (ProcessingAction<T>) constructor.newInstance();
+                    processingActionClasses.add(action);
+                } catch (Exception e) {
+                    log.error("Class {} not found", className);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        for( ProcessingAction<T> action : processingActionClasses) {
+            if( action.getActionName().equalsIgnoreCase(actionName)) {
+                log.trace("found a match");
+                return action;
+            }
+        }
+        log.warn("found NO match for {}", actionName);
+        return null;
+    }
+
 }

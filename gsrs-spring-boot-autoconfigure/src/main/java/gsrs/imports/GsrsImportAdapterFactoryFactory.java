@@ -1,7 +1,9 @@
 package gsrs.imports;
 
-import org.apache.poi.ss.formula.functions.T;
+import gsrs.dataexchange.model.ProcessingAction;
+import gsrs.stagingarea.service.StagingAreaService;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 /*
@@ -15,7 +17,11 @@ public interface GsrsImportAdapterFactoryFactory {
 
     <T> List<ClientFriendlyImportAdapterConfig> getConfiguredAdapters(String context, Class <T> clazz);
 
-    Class<T> getDefaultStagingAreaService(String context);
+    Class<?> getDefaultStagingAreaService(String context);
 
-    Class<T> getDefaultStagingAreaEntityService(String context);
+    Class<?> getDefaultStagingAreaEntityService(String context);
+
+    StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException;
+
+    ProcessingAction<?> getMatchingProcessingAction(String context, String actionName);
 }

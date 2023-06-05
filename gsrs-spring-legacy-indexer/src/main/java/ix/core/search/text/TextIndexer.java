@@ -128,6 +128,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -149,7 +150,9 @@ import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.TextService;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -163,6 +166,8 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.search.SearchResult;
 import ix.core.search.SuggestResult;
+import ix.core.search.bulk.UserSavedListService;
+import ix.core.search.bulk.UserSavedListService.UserListIndexedValue;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -185,17 +190,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TextIndexer implements Closeable, ProcessListener {
+	
 	private static final String FACET_DELIMITER = "!!";
 
 	public static final String TERM_VEC_PREFIX = "F";
 
     public static final String IX_BASE_PACKAGE = "ix";
-
-
-    private TextIndexerConfig textIndexerConfig;
-
-    @Autowired
-    private TextService textService;
   
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
@@ -237,10 +237,13 @@ public class TextIndexer implements Closeable, ProcessListener {
     private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-
+		
 	@Autowired
 	GsrsCache gsrscache;
-
+	
+	private TextIndexerConfig textIndexerConfig;
+	
+	private UserSavedListService userSavedListService;
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -423,30 +426,48 @@ public class TextIndexer implements Closeable, ProcessListener {
             };
         }
 
-        public FacetMeta getFacet(int top, int skip, String filter, String uri) throws ParseException {
+        public FacetMeta getFacet(int top, int skip, String filter, String uri, String userName, List<String> userLists) throws ParseException {
             FacetImpl fac = new FacetImpl(getField(), null);
-
+            
+            String field = getField(); //name
+            
             Predicate<Tuple<String,Integer>> filt=(t)->true;
 
             if(filter!=null && !filter.equals("")){
                 QueryParser parser = new IxQueryParser("label");
                 filt = getPredicate(parser.parse(filter));
             }
-
-
+            
             terms.entrySet()
                 .stream()
                 .parallel()
                 .map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
                 .filter(filt)
                 .map(t->new FV(fac,t.k(),t.v()))
+                .filter(fv->{
+                	if(field.equalsIgnoreCase("User List")) {
+                		// check the current user, filter facet by user name
+                		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
+                		String nameInLabel = dataItem.getUserName();
+                		String listName = dataItem.getListName();                		
+                		if(userName.isEmpty() || userLists.size() == 0) {
+                			return false;                		
+                		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
+                			return true;
+                		}else {
+                			return false;
+                		}
+                	}else {
+                		return true;
+                	}                		
+                })
                 .collect(StreamUtil.maxElements(top+skip, FacetImpl.Comparators.COUNT_SORTER_DESC))
                 .skip(skip)
                 .limit(top)
                 .forEach(fv->{
                     fac.add(fv);
                 });
-
+          
             return new FacetMeta.Builder()
 					            .facets(fac)
 					            .ffilter(filter)
@@ -1215,7 +1236,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         return taxonWriter;
     }
 
-    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
+    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction,
+    			UserSavedListService userSavedListService) {
 
         // empty instance should only be used for
 		// facet subsearching so we only need to have
@@ -1229,8 +1252,11 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.textIndexerConfig = textIndexerConfig;
         this.indexerService = indexerService;
         this.deepKindFunction = deepKindFunction;
+        this.userSavedListService = userSavedListService;
     }
-    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, Function<EntityWrapper, Boolean> deepKindFunction) throws IOException{
+    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, 
+    			Function<EntityWrapper, Boolean> deepKindFunction, UserSavedListService userSavedListService) throws IOException{
         this.gsrscache=cache;
         this.textIndexerConfig = textIndexerConfig;
         this.indexValueMakerFactory = indexValueMakerFactory;
@@ -1243,6 +1269,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.deepKindFunction = deepKindFunction;
         this.indexerService = indexerService;
         this.indexerServiceFactory = indexerServiceFactory;
+        this.userSavedListService = userSavedListService;
         
         initialSetup();
 
@@ -1420,7 +1447,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * subset of the documents stored.
 	 */
 	public TextIndexer createEmptyInstance() throws IOException {
-	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, indexValueMakerFactory, deepKindFunction );
+	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, 
+	    		indexValueMakerFactory, deepKindFunction, userSavedListService );
 		indexer.taxonDir = new RAMDirectory();
 		return config(indexer);
 	}
@@ -1894,22 +1922,43 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 
-	public static void collectBasicFacets(Facets facets, SearchResult sr) throws IOException{
+	public static void collectBasicFacets(Facets facets, SearchResult sr, List<String> userLists) throws IOException{
 		Map<String,List<DrillAndPath>> providedDrills = sr.getOptions().getEnhancedDrillDownsMap();
 
 		int fdim=sr.getOptions().getFdim();
 		if(fdim<=0)return;
+		
+		List<LabelAndValue> userListInResult = new ArrayList<>();
 
-		List<FacetResult> facetResults = facets.getAllDims(fdim);
+		List<FacetResult> facetResults = facets.getAllDims(fdim);		
+		FacetResult userListFacet = facets.getTopChildren(sr.getOptions().getUserListFetchSize(), "User List");
+		
+		if(userListFacet != null) {			
+			for(LabelAndValue lv:userListFacet.labelValues){				
+				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
+				String userName = dataItem.getUserName();
+				String listName = dataItem.getListName();
+//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+						userLists.size() > 0 && userLists.contains(listName)) {
+					userListInResult.add(lv);					
+//					log.info("adding facet: username: " + userName + "  listName: " + listName );
+				}									
+			}	
+		}
+		
+		
 //		if (DEBUG(1)) {
 //			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
 //		}
 
+		
 		//Convert FacetResult -> Facet, and add to
 		//search result
 		facetResults.stream()
 			.filter(Objects::nonNull)
-			.map(result -> {
+			.map(result -> {			
+			
 				Facet fac = new FacetImpl(result.dim, sr);
 
 				// make sure the facet value is returned
@@ -1934,10 +1983,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 					fac.setSelectedLabels(selected);
-				}
+				}				
 
-				for(LabelAndValue lv:result.labelValues){
-				    fac.add(lv.label, lv.value.intValue());
+				if(result.dim.equalsIgnoreCase("User List")) {
+					int fcount = 0;
+					for(LabelAndValue lv:userListInResult){	
+						if(fcount >= fdim) break;						
+						fac.add(lv.label, lv.value.intValue());
+						fcount++;
+					}								
+				}else {				
+					for(LabelAndValue lv:result.labelValues){					
+						fac.add(lv.label, lv.value.intValue());
+					}	
 				}
 
 				fac.getMissingSelections().stream().forEach(l->{
@@ -2328,9 +2386,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
-
+		
+		List<String> userLists = new ArrayList<>();
+		if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+			String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
+			userLists = userSavedListService.getUserSearchResultLists(currentUserName);
+		}
+		
 		if(options.getIncludeFacets()) {
-		     collectBasicFacets(lspResult.getFacets(), searchResult);
+		     collectBasicFacets(lspResult.getFacets(), searchResult, userLists);
 		     collectLongRangeFacets(facetCollector, searchResult);
 		}
 
@@ -3266,7 +3330,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
+//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
+//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 				this.instrumentIndexableValue(ix, iv);
 			});
 			ix.fields.add(IndexedField.builder()

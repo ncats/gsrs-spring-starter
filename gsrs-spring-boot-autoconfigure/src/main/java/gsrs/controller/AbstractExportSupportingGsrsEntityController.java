@@ -31,6 +31,7 @@ import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.repository.TextRepository;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Text;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultRecordExpanderFactory;
 import ix.ginas.exporters.NoOpRecordScrubberFactory;
 import ix.ginas.exporters.RecordExpanderFactory;
@@ -49,7 +50,9 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     private GsrsExportConfiguration gsrsExportConfiguration;
 
     @Autowired
-    protected PlatformTransactionManager transactionManager;
+    protected PlatformTransactionManager transactionManager; 
+    
+    
     
     CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
 
@@ -273,7 +276,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     boolean doesExporterKeyExist(String exporterKey) {
         Class entityClass = getEntityService().getEntityClass();
-        Objects.requireNonNull(entityClass, "Must be able to resolver the entity class");
+        Objects.requireNonNull(entityClass, "Must be able to resolve the entity class");
         
         
         String label = SpecificExporterSettings.getEntityKeyFromClass(entityClass.getName());

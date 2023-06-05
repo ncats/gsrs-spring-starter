@@ -1,6 +1,7 @@
 package ix.core.validator;
 
 
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -152,8 +153,14 @@ public interface Validator<T> {
 				}
 			};
 
-			validate(o,n,spy);
-			if(!halt.get()) {
+			boolean validationWorking = true;
+			try {
+				validate(o, n, spy);
+			}catch (RuntimeException ignore){
+				System.err.println("error during validation");
+				validationWorking=false;
+			}
+			if(!halt.get() &&validationWorking) {
 				other.validate(o, n, callback);
 			}
 

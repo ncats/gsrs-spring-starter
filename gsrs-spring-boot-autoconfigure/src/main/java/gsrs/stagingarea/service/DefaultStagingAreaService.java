@@ -3,6 +3,10 @@ package gsrs.stagingarea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
@@ -73,6 +77,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private IndexValueMakerFactory factory;
 
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
 
@@ -80,20 +87,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     private TextIndexer indexer;
 
-    private final String context;
-
-    private MatchableCalculationConfig matchableCalculationConfig;
-
-    //public final static String CURRENT_SOURCE = "Staging Area";
-
     private Map<String, StagingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
-
-    public DefaultStagingAreaService(String context) {
-        this.context = Objects.requireNonNull(context, "context can not be null");
-    }
 
     @PostConstruct
     public void setupIndexer() {
@@ -116,7 +113,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 ex.printStackTrace();
             }
         }
-
     }
 
 
@@ -124,6 +120,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     public String createRecord(ImportRecordParameters parameters) {
         if( indexer==null) setupIndexer();
         Objects.requireNonNull(indexer, "need a text indexer!");
+        //step 1 - persist raw object JSON to staging area
         ImportData data = new ImportData();
         data.setData(parameters.getJsonData());
         UUID recordId = UUID.randomUUID();
@@ -131,11 +128,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         data.setRecordId(recordId);
         data.setVersion(1);
         data.setInstanceId(instanceId);
-        data.setSaveDate(new Date());
+        data.setSaveDate(TimeUtil.getCurrentDate());
         data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository, "importDataRepository is required");
         ImportData saved = importDataRepository.saveAndFlush(data);
 
+        //step 2 - save metadata
         ImportMetadata metadata = new ImportMetadata();
         metadata.setRecordId(recordId);
         metadata.setInstanceId(instanceId);
@@ -150,17 +148,15 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         metadata.setVersionCreationDate(new Date());
         metadata.setDataFormat(parameters.getFormatType());
         metadata.setImportAdapter(parameters.getAdapterName());
-        metadataRepository.saveAndFlush(metadata);
-        EntityUtils.EntityWrapper<ImportMetadata> wrapper = EntityUtils.EntityWrapper.of(metadata);
-        try {
-            indexer.add(wrapper);
-            log.trace("indexer.add called");
-        } catch (IOException e) {
-            log.error("Error indexing import metadata to index", e);
+        if(parameters.getImportingUser()!=null){
+            metadata.setImportedBy( parameters.getImportingUser());
+        }else{
+            log.warn("Unable to retrieve current user!");
         }
-        //log.trace("indexer.add skippedindexer.add skipped");
-        //update processing status after every step
 
+        metadataRepository.saveAndFlush(metadata);
+
+        //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
             try {
                 saveRawData(parameters.getRawDataSource(), recordId);
@@ -169,10 +165,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
         }
 
+        //deserialize
         Object domainObject;
         try {
             log.trace("going deserialize object of class {}", parameters.getEntityClassName());
-            log.trace(parameters.getJsonData());
             domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
         } catch (JsonProcessingException e) {
             log.error("Error deserializing imported object.", e);
@@ -183,59 +179,75 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return recordId.toString();
         }
         log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
-        _entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
 
-        ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
-        domainObject = response.getNewObject();
+        //step 4: validate
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
-        if (response != null) {
-            List<UUID> savedResult = persistValidationInfo(response, 1, instanceId);
-            overallStatus = getOverallValidationStatus(response);
-        }
-        //save the updated object
-        try {
-            log.trace("going to save updated domain object post-validation");
-            data.setData(serializeObject(domainObject));
-            data.setVersion(data.getVersion() + 1);
-            data.setInstanceId(UUID.randomUUID());
-            data.setSaveDate(new Date());
-            importDataRepository.save(data);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
 
-        log.trace("overallStatus: " + overallStatus);
-        updateImportValidationStatus(recordId, overallStatus);
+        boolean performValidation=true;
+        boolean performIndexing=true;
+        boolean performMatching=true;
+        log.trace("parameters.getSettings(): {}", parameters.getSettings());
+        if(parameters.getSettings()!= null && parameters.getSettings().hasNonNull("rarelyUsedSettings")) {
 
-        List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-        definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-        persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
+            ObjectNode rareSettings = (ObjectNode) parameters.getSettings().get("rarelyUsedSettings");
+            log.trace("unpacking rarelyUsedSettings. ");
+            if(rareSettings.hasNonNull("skipValidation") && rareSettings.get("skipValidation").asBoolean()) {
+                performValidation=false;
+            }
+            if(rareSettings.hasNonNull("skipIndexing") && rareSettings.get("skipIndexing").asBoolean()) {
+                performIndexing=false;
+            }
+            if(rareSettings.hasNonNull("skipMatching") && rareSettings.get("skipMatching").asBoolean()) {
+                performMatching=false;
+            }
+        }
+        if( performValidation) {
+            log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
+            ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
+            if (response != null) {
+                domainObject = response.getNewObject();
+                persistValidationInfo(response, 1, instanceId);
+                overallStatus = getOverallValidationStatus(response);
+                try {
+                    importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
+                    log.trace("updating record after validation");
+                } catch (JsonProcessingException e) {
+                    log.error("Error serializing validated substance", e);
+                }
+            }
+
+            log.trace("overallStatus: " + overallStatus);
+            updateImportValidationStatus(recordId, overallStatus);
+        }
+        //step 5: matchables
+
         updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
 
-        handleIndexing(metadata);
-        //event driven: each step in process sends an event (pub/sub) look in ... indexing
-        //  validation, when done would trigger the next event
-        //  event manager type of thing
-        // passively: daemon running in background looks for records with a given status and then performs
-        // the next step
-        // will
-        //todo: run duplicate check
-        try {
-            MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples);
-            log.trace("Matches: ");
-            summary.getMatches().forEach(m -> {
-                log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
-                if (m.getMatchingRecords().size() == 0) {
-                    log.trace(" 0 matching records");
+        if(performMatching){
+            log.trace("going to match");
+            List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
+            definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+            persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
 
-                } else {
-                    m.getMatchingRecords().forEach(r -> log.trace("   location: {} record Id: {}; key that matched: {}", r.getSourceName(), r.getRecordId(),
-                            r.getMatchedKey()));
-                }
-
-            });
-        } catch (ClassNotFoundException e) {
-            log.error("Error looking for matches", e);
+            //event driven: each step in process sends an event (pub/sub) look in ... indexing
+            //  validation, when done would trigger the next event via
+            //  event manager type of thing
+            // passively: daemon running in background looks for records with a given status and then performs
+            // the next step
+            // will
+            //try {
+            //    MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
+                //log.trace("Matches: ");
+                //summary.getMatches().forEach(m -> {
+                    //log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
+                //});
+            //} catch (ClassNotFoundException e) {
+            //    log.error("Error looking for matches", e);
+            //}
+        }
+        if( performIndexing ) {
+            log.trace("going to index");
+            handleIndexing(metadata);
         }
 
         return saved.getRecordId().toString();
@@ -252,9 +264,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public String updateRecord(String recordId, String jsonData) {
+        log.trace("starting in updateRecord");
         //locate the latest record
         List<ImportData> importData= importDataRepository.retrieveDataForRecord(UUID.fromString(recordId));
         if(importData==null || importData.isEmpty()){
+            log.trace("no data found for id {}", recordId);
             return "No data found";
         }
         ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
@@ -324,7 +338,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 }
             } catch (NoSuchMethodError error) {
                 //have observed this error several times when attempting to retrieve a non-existent ID
-                log.warn("error retrieving ImportData");
+                log.warn("error retrieving ImportData for id {}", id);
             }
         }
 
@@ -435,10 +449,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
+        log.trace("in findRecords");
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
             try {
+                log.trace("going to instantiate importMetadataLegacySearchService");
                 importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
+                AutowireHelper.getInstance().autowire(importMetadataLegacySearchService);
                 SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
                 return searchResult;
             } catch (Exception e) {
@@ -449,7 +466,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException {
+    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables,
+                                            String startingRecordId) throws ClassNotFoundException {
         log.trace("in findMatches, entityClass: {}", entityClass);
         Class objectClass = Class.forName(entityClass);
         MatchedRecordSummary summary = new MatchedRecordSummary();
@@ -460,6 +478,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             if (m.getValue() != null && m.getValue().length() > 0) {
                 log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
                 List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
+                        .filter(ma->startingRecordId==null || !ma.getRecordId().toString().equals(startingRecordId))
                         .map(ma -> {
                             MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
                             builder
@@ -499,7 +518,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
         log.trace("calculated latest matchables");
         matchableKeyValueTuples.forEach(m-> log.trace("key: {} = value: {}", m.getKey(), m.getValue()));
-        return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples);
+        return findMatches(domainObject.getClass().getName(), matchableKeyValueTuples, importMetadata.getRecordId().toString());
     }
 
     @Override
@@ -516,38 +535,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     public String getInstanceData(String instanceId) {
         return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
     }
-
-    /*@Override
-    public <T> String persistEntity(String instanceId){
-        log.trace("in persistEntity, instanceId: {}", instanceId);
-        Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
-        if( data.isPresent()) {
-            log.trace("found data");
-            String entityJson = data.get().getData();
-            String entityType = data.get().getEntityClassName();
-            try {
-                Object domainObject = deserializeObject(entityType, entityJson);
-                ValidationResponse<T> response = validateRecord(entityType, entityJson);
-                List<ValidationMessage> messages = response.getValidationMessages();
-                if (messages.stream().noneMatch(m -> m.isError())) {
-                    Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
-                    metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
-                    ObjectMapper mapper = new ObjectMapper();
-                    String json = mapper.writeValueAsString(savedObject);
-                    JsonNode objectNode= mapper.readTree(json);
-                    if(objectNode.hasNonNull("uuid")) {
-                        return objectNode.get("uuid").asText();
-                    }
-
-                    return "Object saved!";
-                }
-                return "One or more errors exist. Please validate and take action!";
-            } catch (JsonProcessingException e) {
-                log.error("Error in persistEntity", e);
-            }
-        }
-        return "";
-    }*/
 
     @Override
     public <T> T retrieveEntity(String entityType, String entityId) {
@@ -575,7 +562,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @SneakyThrows
     @Override
-    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson) {
+    public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId) {
         log.trace("starting findMatchesForJson with {}", qualifiedEntityType);
         Object domainObject;
         try {
@@ -593,17 +580,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
         //TODO: extend this to other types of objects
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-        MatchedRecordSummary matches = findMatches(qualifiedEntityType, definitionalValueTuples);
+        MatchedRecordSummary matches = findMatches(qualifiedEntityType, definitionalValueTuples, startingRecordId);
         return matches;
     }
 
-    public String getContext() {
-        return context;
-    }
-
-    public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
+    /*public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
         this.matchableCalculationConfig = matchableCalculationConfig;
-    }
+    }*/
 
     private <T> List<MatchableKeyValueTuple> getMatchables(T entity) {
         String lookupClass = entity.getClass().getName();
@@ -682,6 +665,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return validationIds;
     }
 
+    @Override
+    public List<ImportValidation> retrieveValidationForInstance(UUID instanceId) {
+        return importValidationRepository.retrieveValidationsByInstanceId(instanceId);
+    }
 
     private void updateImportValidationStatus(UUID recordID, ImportMetadata.RecordValidationStatus status) {
         TransactionTemplate transactionUpdate = new TransactionTemplate(transactionManager);
@@ -742,6 +729,19 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Override
     public Page page(Pageable pageable) {
         return metadataRepository.findAll(pageable);
+    }
+
+    @Override
+    public void synchronizeRecord(String entityId, String entityType, String entityContext) {
+        log.trace("synchronizeRecord entityId {}", entityId);
+        StringBuilder builder = new StringBuilder();
+        ObjectNode settings = JsonNodeFactory.instance.objectNode();
+        log.trace("getUuidCodeSystem from config: {}", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refUuidCodeSystem", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refApprovalIdCodeSystem", gsrsFactoryConfiguration.getApprovalIdCodeSystem().get(entityContext));
+        log.trace("About to call synchronizeEntity");
+        _entityServiceRegistry.get(entityType).synchronizeEntity(entityId, builder::append, settings);
+        log.trace("result of synchronizeEntity: {}", builder);
     }
 
     private String serializeObject(Object object) throws JsonProcessingException {

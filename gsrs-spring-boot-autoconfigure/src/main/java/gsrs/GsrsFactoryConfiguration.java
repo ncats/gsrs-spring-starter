@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
+import gsrs.imports.MatchableCalculationConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
 import lombok.Data;
@@ -23,6 +24,8 @@ public class GsrsFactoryConfiguration {
     private Map<String, List<Map<String, Object>>> validators;
     private Map<String, List<Map<String, Object>>> importAdapterFactories;
 
+    private Map<String, List<Map<String, Object>>> matchableCalculators;
+
     private Map<String, Map<String, Object>> search;
 
     private List<EntityProcessorConfig> entityProcessors;
@@ -32,6 +35,12 @@ public class GsrsFactoryConfiguration {
     private Map<String, String> defaultStagingAreaServiceClass;
 
     private Map<String, String> defaultStagingAreaEntityService;
+
+    private Map<String, List<String>> availableProcessActions;
+
+    private Map<String, String> uuidCodeSystem;
+
+    private Map<String, String> approvalIdCodeSystem;
 
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();
@@ -103,8 +112,8 @@ public class GsrsFactoryConfiguration {
             }
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
             });
-            log.trace("list (after):");
-            configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
+            //log.trace("list (after):");
+            //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
             return configs;
         } catch (Exception t) {
             log.error("Error fetching import factory config");
@@ -112,4 +121,20 @@ public class GsrsFactoryConfiguration {
         }
     }
 
+    public List<? extends MatchableCalculationConfig> getMatchableCalculationConfig(String context) {
+        log.trace("in ");
+        if(matchableCalculators==null){
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> list = matchableCalculators.get(context);
+        if (list == null || list.isEmpty()) {
+            log.warn("no matchable calculation configuration info found!");
+            return Collections.emptyList();
+        }
+        List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() {
+        });
+        //log.trace("list (after):");
+        //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
+        return configs;
+    }
 }

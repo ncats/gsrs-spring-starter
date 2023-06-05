@@ -38,9 +38,12 @@ public interface StagingAreaService {
 
     <T> ValidationResponse<T> validateInstance(String instanceId);
 
+    List<ImportValidation> retrieveValidationForInstance(UUID instanceId);
+
     <T> List<gsrs.stagingarea.model.MatchableKeyValueTuple> calculateMatchables(T domainObject);
 
-    MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables) throws ClassNotFoundException;
+    MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables,
+                                     String startingRecordId) throws ClassNotFoundException;
 
     MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException;
 
@@ -48,9 +51,7 @@ public interface StagingAreaService {
 
     <T> void registerEntityService(StagingAreaEntityService<T> service);
 
-    MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson);
-
-    //<T> String persistEntity(String instanceId);
+    MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId);
 
     <T> T retrieveEntity(String entityType, String entityId);
 
@@ -62,5 +63,7 @@ public interface StagingAreaService {
 
     void fillCollectionsForMetadata(ImportMetadata metadata);
 
-    public Page page(Pageable pageable);
+    Page page(Pageable pageable);
+
+    void synchronizeRecord(String entityId, String entityType, String entityContext);
 }

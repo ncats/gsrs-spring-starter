@@ -34,16 +34,17 @@ public class MetadataMatchCountIndexValueMakerTest {
         String sourceName = "Unique Data Source";
         metadata.setSourceName(sourceName);
         metadata.setEntityClassName("ix.ginas.models.v1.Substance");
-        
-        String record1Id = UUID.randomUUID().toString();
+        UUID record1IdValue = UUID.randomUUID();
+        String record1Id = record1IdValue.toString();
+        metadata.setRecordId(record1IdValue);
         StagingAreaService stagingAreaService = mock(StagingAreaService.class);
         ImportDataRepository importDataRepository = mock(ImportDataRepository.class);
         MatchedRecordSummary matchedRecordSummary = new MatchedRecordSummary();
         List<MatchedKeyValue> matchedKeyValues = new ArrayList<>();
         List<MatchedKeyValue.MatchingRecordReference> matchingRecords = new ArrayList<>();
         MatchedKeyValue.MatchingRecordReference match1= new MatchedKeyValue.MatchingRecordReference();
-        match1.setMatchedKey("Key 1");
-        match1.setSourceName("Database");
+        match1.setMatchedKey("Factor 1");
+        match1.setSourceName("GSRS");
         EntityUtils.Key recordId=EntityUtils.Key.of(ImportMetadata.class, record1Id);
         match1.setRecordId( recordId);
         matchingRecords.add(match1);
@@ -69,7 +70,8 @@ public class MetadataMatchCountIndexValueMakerTest {
         query.add(tuple2);
         matchedRecordSummary.setQuery(query);
         String recordJson = "";
-        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson, null)).thenReturn(matchedRecordSummary);
+        when(stagingAreaService.findMatchesForJson(metadata.getEntityClassName(), recordJson, record1Id)).thenReturn(matchedRecordSummary);
         when(importDataRepository.retrieveByInstanceID(metadata.getInstanceId())).thenReturn(recordJson);
 
         List<IndexableValue> indexedValues = new ArrayList<>();
@@ -82,8 +84,8 @@ public class MetadataMatchCountIndexValueMakerTest {
         serviceField.set(indexValueMaker1, stagingAreaService);;
         indexValueMaker1.createIndexableValues(metadata, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_COUNT_FACET)
-                && ((long)i.value()== 2)));
+                && (i.value().equals("2"))));
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataMatchCountIndexValueMaker.IMPORT_METADATA_MATCH_KEY_FACET)
-        && i.value().equals("Factor 2")));
+        && i.value().equals("Factor 1")));
     }
 }

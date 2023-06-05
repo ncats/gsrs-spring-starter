@@ -14,4 +14,8 @@ public class OriginalProcessingAction implements ProcessingAction<GinasCommonDat
         if( hasTrueValue(parameters, "returnStagingRecord"))  return stagingAreaRecord;
         return additionalRecord;
     }
+
+    public String getActionName() {
+        return "Original";
+    }
 }

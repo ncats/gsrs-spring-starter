@@ -7,6 +7,7 @@ import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.repository.ImportMetadataRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -44,8 +46,8 @@ public class ImportMetadataReindexer {
     @Autowired
     ImportMetadataRepository importMetadataRepository;
 
-    private Map<UUID, CountDownLatch> latchMap = new ConcurrentHashMap<>();
-    private Map<UUID, TaskProgress> listenerMap = new ConcurrentHashMap<>();
+    private final Map<UUID, CountDownLatch> latchMap = new ConcurrentHashMap<>();
+    private final Map<UUID, TaskProgress> listenerMap = new ConcurrentHashMap<>();
 
     @Data
     @Builder
@@ -107,6 +109,7 @@ public class ImportMetadataReindexer {
             };
         }else {
             eventConsumer= (ev)->{
+                log.trace("about to call eventPublisher.publishEvent");
                 eventPublisher.publishEvent(ev);
             };
         }
@@ -118,68 +121,83 @@ public class ImportMetadataReindexer {
         try {
             customThreadPool.submit(
                     () -> {
+                        TransactionTemplate txRetrieveList = new TransactionTemplate(transactionManager);
+                        txRetrieveList.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                        txRetrieveList.setReadOnly(true);
+
+                        List<ImportMetadata> blist=txRetrieveList.execute( t-> importMetadataRepository.findAll());
+                        List<UUID> idList=txRetrieveList.execute( t->
+                            importMetadataRepository.findAll().stream()
+                                    .map(i->i.getRecordId())
+                                    .collect(Collectors.toList())
+                        );
+
                         TransactionTemplate tx = new TransactionTemplate(transactionManager);
                         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         tx.setReadOnly(true);
                         tx.executeWithoutResult(stat->{
-                            List<ImportMetadata> blist=importMetadataRepository.findAll();
-                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size(), BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX,
+
+                            log.trace("set reindexingCount to {}", idList.size());
+                            eventConsumer.accept(new BeginReindexEvent(reindexId, idList.size(), BeginReindexEvent.IndexBehavior.WIPE_SPECIFIC_INDEX,
                                     Collections.singletonList(ImportMetadata.class)));
                             try(Stream<ImportMetadata> stream = blist.stream()){
                                 l.message("Initializing reindexing: beginning process");
 
-                                Stream<EntityUtils.EntityWrapper> ewStream=stream
-                                        .map(oo->EntityUtils.EntityWrapper.of(oo));
+                                /*Stream<EntityUtils.EntityWrapper> ewStream=stream
+                                        .map(oo->EntityUtils.EntityWrapper.of(oo));*/
 
-                                ewStream
+                                Stream<UUID> uuidStream = idList.stream();
+                                uuidStream
                                         .parallel()
                                         .forEach(wrapper ->{
                                             try {
-                                                wrapper.traverse().execute((p, child) -> {
-                                                    log.trace("handling indexing of 'child' {}/{}", child.getKind(), child.getId());
-                                                    EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
-                                                    //this should speed up indexing so that we only index
-                                                    //things that are roots.  the actual indexing process of the root should handle any
-                                                    //child objects of that root.
-                                                    boolean isEntity = wrapped.isEntity();
-                                                    boolean isRootIndexed = wrapped.isRootIndex();
+                                                EntityFetcher<?> fetcher = EntityFetcher.of(EntityUtils.Key.of(ImportMetadata.class, wrapper));
+                                                Optional<?> optionalImportMetadata= fetcher.getIfPossible();
+                                                if(optionalImportMetadata.isPresent()){
+                                                    EntityUtils.EntityWrapper<?> innerWrapper= EntityUtils.EntityWrapper.of(optionalImportMetadata.get());
+                                                    innerWrapper.traverse().execute((p, child) -> {
+                                                        log.trace("handling indexing of 'child' {}/{}", child.getKind(), child.getId());
+                                                        //this should speed up indexing so that we only index
+                                                        //things that are roots.  the actual indexing process of the root should handle any
+                                                        //child objects of that root.
+                                                        if (child.isEntity() && child.isRootIndex()) {
+                                                            try {
+                                                                log.trace("meets criteria for indexing");
+                                                                EntityUtils.Key key = child.getKey();
+                                                                String keyString = key.toString();
 
-                                                    if (isEntity && isRootIndexed) {
-                                                        try {
-                                                            log.trace("meets criteria for indexing");;
-                                                            EntityUtils.Key key = wrapped.getKey();
-                                                            String keyString = key.toString();
-
-                                                            // TODO add only index if it has a controller?
-                                                            // TP: actually, for subunits you need to index them even though there is no controller
-                                                            // however, you could argue there SHOULD be a controller for them
-                                                            if (seen.add(keyString)) {
-                                                                indexOneItem(reindexId, eventConsumer, key, wrapped);
+                                                                // TODO add only index if it has a controller?
+                                                                // TP: actually, for subunits you need to index them even though there is no controller
+                                                                // however, you could argue there SHOULD be a controller for them
+                                                                if (seen.add(keyString)) {
+                                                                    //indexOneItem(reindexId, eventConsumer, key, child);
+                                                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(child), false);
+                                                                    eventConsumer.accept(event);
+                                                                }
+                                                            } catch (Throwable t) {
+                                                                log.warn("indexing error handling:" + child, t);
                                                             }
-                                                        } catch (Throwable t) {
-                                                            log.warn("indexing error handling:" + wrapped, t);
                                                         }
-                                                    }
 
-                                                });
-
+                                                    });
+                                                }
                                             }catch(Throwable ee) {
                                                 log.warn("indexing error handling:" + wrapper, ee);
                                             }finally {
+                                                log.trace("about to call eventConsumer.accept(new IncrementReindexEvent(reindexId))");
                                                 eventConsumer.accept(new IncrementReindexEvent(reindexId));
                                             }
                                         });
-
                             }
                         });
                         return true;
                     });
 
             if(FORCE_SINGLE_THREADED_EVENT_HANDLING) {
-                while(true) {
+                while(endLatch.getCount()>0) {
+                    log.trace("endLatch.getCount(): {}", endLatch.getCount());
                     Object ot=qevents.take();
                     eventPublisher.publishEvent(ot);
-                    if(endLatch.getCount()==0)break;
                 }
             }
         }catch(Exception e) {
@@ -198,8 +216,9 @@ public class ImportMetadataReindexer {
 
     }
 
-    @org.springframework.context.event.EventListener(EndReindexEvent.class)
+    @EventListener(EndReindexEvent.class)
     public void endReindex(EndReindexEvent event){
+        log.trace("in endReindex");
         CountDownLatch latch = latchMap.remove(event.getId());
         if(latch !=null){
             latch.countDown();
@@ -207,7 +226,8 @@ public class ImportMetadataReindexer {
     }
 
     @EventListener(IncrementReindexEvent.class)
-    public void endReindex(IncrementReindexEvent event){
+    public void incrementReindexEvent(IncrementReindexEvent event){
+        log.trace("in incrementReindexEvent");
         TaskProgress progress = listenerMap.get(event.getId());
         if(progress !=null){
             progress.increment();
@@ -215,9 +235,9 @@ public class ImportMetadataReindexer {
     }
 
     public static void indexOneItem(UUID reindexId, Consumer<Object> eventConsumer, EntityUtils.Key key,
-                                    EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrappedEntity) {
+                                    EntityUtils.EntityWrapper<ImportMetadata> wrappedEntity) {
         log.trace("indexOneItem will process reindex of key {}",  key);
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrappedEntity), true);
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(wrappedEntity), true);
         eventConsumer.accept(event);
         log.trace("submitted index event");
     }
