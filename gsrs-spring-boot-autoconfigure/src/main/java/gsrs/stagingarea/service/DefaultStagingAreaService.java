@@ -87,10 +87,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     private TextIndexer indexer;
 
-    //private MatchableCalculationConfig matchableCalculationConfig;
-
-    //public final static String CURRENT_SOURCE = "Staging Area";
-
     private Map<String, StagingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
     @Autowired
@@ -212,6 +208,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 domainObject = response.getNewObject();
                 persistValidationInfo(response, 1, instanceId);
                 overallStatus = getOverallValidationStatus(response);
+                try {
+                    importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
+                    log.trace("updating record after validation");
+                } catch (JsonProcessingException e) {
+                    log.error("Error serializing validated substance", e);
+                }
             }
 
             log.trace("overallStatus: " + overallStatus);
