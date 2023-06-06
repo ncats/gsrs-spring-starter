@@ -42,6 +42,8 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, String> approvalIdCodeSystem;
 
+    private Map<String, Boolean> sortExportOutput;
+
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();
         return Optional.ofNullable(search.get(context));

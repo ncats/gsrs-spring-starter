@@ -52,9 +52,8 @@ public class GsrsExportConfiguration {
     
     private Map<String, Map<String, OutputFormat>> extensionMap = new LinkedHashMap<>();
     
-    
-    //Used after parsed from config
-    
+    private Map<String, Boolean> sortOutput = new HashMap<>();
+
     @JsonIgnore
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
 
