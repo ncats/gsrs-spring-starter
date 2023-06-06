@@ -4,13 +4,7 @@ package gsrs.controller;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -232,6 +226,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
+        Comparator<T> comparator = getComparator();
+        log.trace("got comparator of type {}", comparator.getClass().getName());
+
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
@@ -254,8 +251,9 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 .distinct()
                 .map(t->  scrubber.scrub(t))
                 .filter(o->o.isPresent())
-                .map(o->o.get());
-        log.trace("computed effectivelyFinalStream using distinct");
+                .map(o->o.get())
+                .sorted(comparator);
+        log.trace("computed effectivelyFinalStream using sorted and distinct");
 
         if(fileName!=null){
             emd.setDisplayFilename(fileName);

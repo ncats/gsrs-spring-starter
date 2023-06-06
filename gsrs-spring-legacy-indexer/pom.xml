@@ -123,7 +123,8 @@
                 <version>1.18.0.0</version>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
-                    <outputDirectory>${delombok.output}</outputDirectory>
+                    <!--outputDirectory>${delombok.output}</outputDirectory-->
+                    <outputDirectory>${project.build.directory}/delombok</outputDirectory>
                     <addOutputDirectory>false</addOutputDirectory>
                 </configuration>
                 <executions>
@@ -140,7 +141,8 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9</version>
                 <configuration>
-                    <sourcepath>${delombok.output}</sourcepath>
+                    <!--sourcepath>${delombok.output}</sourcepath-->
+                    <sourcepath>${project.build.directory}/delombok</sourcepath>
                 </configuration>
             </plugin>
         </plugins>

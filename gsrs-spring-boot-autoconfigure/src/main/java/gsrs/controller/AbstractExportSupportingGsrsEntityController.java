@@ -2,11 +2,7 @@ package gsrs.controller;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -38,6 +34,8 @@ import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
+
+import static java.util.Comparator.naturalOrder;
 
 @Slf4j
 public abstract class AbstractExportSupportingGsrsEntityController<C extends AbstractExportSupportingGsrsEntityController, T, I>
@@ -294,6 +292,14 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     public RecordScrubberFactory<T> getScrubberFactory(){
         return new NoOpRecordScrubberFactory<T>();
+    }
+
+    public Comparator<T> getComparator() {
+        log.trace("in getComparator");
+        Comparator< T> naturalComparator
+                = (Comparator<T>) naturalOrder();
+        log.trace("set up natural comparator");
+        return naturalComparator;
     }
 
     public RecordExpanderFactory<T> getExpanderFactory(){
