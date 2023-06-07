@@ -248,8 +248,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
 
     private StagingAreaService getStagingAreaService(ImportTaskMetaData<T> task) throws Exception {
-        Objects.requireNonNull(task.adapter, "Cannot predict settings with null import adapter");
-        return getStagingAreaService(task.getAdapter());
+        return gsrsImportAdapterFactoryFactory.getStagingAreaService(this.getEntityService().getContext());
+        /*Objects.requireNonNull(task.adapter, "Cannot predict settings with null import adapter");
+        return getStagingAreaService(task.getAdapter());*/
     }
 
     protected StagingAreaService getStagingAreaService(String adapterName) throws Exception {
@@ -404,6 +405,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     static protected StagingAreaService _stagingAreaService = null;
 
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
+/*
         if(_stagingAreaService == null) {
             lock.lock();
             try {
@@ -415,6 +418,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
         }
         return _stagingAreaService;
+*/
     }
 
     //STEP 0: list adapter classes

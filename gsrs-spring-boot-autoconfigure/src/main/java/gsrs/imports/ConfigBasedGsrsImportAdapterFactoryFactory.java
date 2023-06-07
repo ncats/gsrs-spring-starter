@@ -164,7 +164,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                     Constructor<?> constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
                     Object o2 = constructorEntityService.newInstance();
                     log.trace("instantiated entity service");
-                    StagingAreaEntityService<T> entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
+                    StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService<T>) o2);
                     service.registerEntityService(entityService);
                     log.trace("called registerEntityService with {}", entityService.getClass().getName());
                     return service;
