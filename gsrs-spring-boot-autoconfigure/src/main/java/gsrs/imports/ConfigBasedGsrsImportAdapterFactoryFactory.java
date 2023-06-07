@@ -21,9 +21,11 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
-    private static Map<String, Class<T>> serviceMap = new HashMap<>();
+    private final static Map<String, Class<T>> serviceMap = new HashMap<>();
 
-    private static List<ProcessingAction> processingActionClasses =new ArrayList<>();
+    private final static Map<String, StagingAreaService> serviceInstanceMap = new HashMap<>();
+
+    private static final List<ProcessingAction<T>> processingActionClasses =new ArrayList<>();
 
     @Override
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
@@ -51,8 +53,6 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                         if(c.getSupportedFileExtensions()!=null && !c.getSupportedFileExtensions().isEmpty()) {
                             //log.trace("passing on extensions from config: {}", String.join("***", c.getSupportedFileExtensions()));
                             iaf.setSupportedFileExtensions(c.getSupportedFileExtensions());
-                        } else {
-                            //log.trace("using extensions within class");
                         }
                         //TODO initialize throws IllegalStateException should we catch it and report it somewhere?
                         iaf.initialize();
@@ -70,7 +70,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Override
     public List<String> getAvailableAdapterNames(String context) {
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        return configs.stream().map(c -> c.getAdapterName())
+        return configs.stream().map(ImportAdapterFactoryConfig::getAdapterName)
                 .collect(Collectors.toList());
     }
 
@@ -151,21 +151,31 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     public StagingAreaService getStagingAreaService(String context) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         //todo: cache instances of staging areas in hashmap
         log.trace("in getStagingAreaService for context {}", context);
-        Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
-        Constructor constructor = stagingAreaServiceClass.getConstructor();
-        Object o = constructor.newInstance();
-        StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
-        log.trace("instantiated service");
-        Class stagingAreaEntityServiceClass = getDefaultStagingAreaEntityService(context);
-        log.trace("going to use entity service class: {}", stagingAreaEntityServiceClass.getName());
-        Constructor constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
-        Object o2 = constructorEntityService.newInstance();
-        log.trace("instantiated entity service");
-        StagingAreaEntityService entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
-        service.registerEntityService(entityService);
-        log.trace("called registerEntityService with {}", entityService.getClass().getName());
+        synchronized (ConfigBasedGsrsImportAdapterFactoryFactory.class) {
+            return serviceInstanceMap.computeIfAbsent(context, (c) -> {
+                Class<T> stagingAreaServiceClass = getDefaultStagingAreaService(context);
+                try {
+                    Constructor<?> constructor = stagingAreaServiceClass.getConstructor();
+                    Object o = constructor.newInstance();
+                    StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
+                    log.trace("instantiated service");
+                    Class<?> stagingAreaEntityServiceClass = getDefaultStagingAreaEntityService(context);
+                    log.trace("going to use entity service class: {}", stagingAreaEntityServiceClass.getName());
+                    Constructor<?> constructorEntityService = stagingAreaEntityServiceClass.getConstructor();
+                    Object o2 = constructorEntityService.newInstance();
+                    log.trace("instantiated entity service");
+                    StagingAreaEntityService<T> entityService = AutowireHelper.getInstance().autowireAndProxy((StagingAreaEntityService) o2);
+                    service.registerEntityService(entityService);
+                    log.trace("called registerEntityService with {}", entityService.getClass().getName());
+                    return service;
+                }
+                catch (Exception ex){
+                    log.error("Error instantiating staging area service", ex);
+                }
+                return null;
+            });
+        }
 
-        return service;
     }
 
     @Override
@@ -178,7 +188,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                 log.trace("class: {}", classNames);
                 try {
                     Class<?> clazz = Class.forName(className);
-                    Constructor constructor =clazz.getConstructor();
+                    Constructor<?> constructor =clazz.getConstructor();
                     ProcessingAction<T> action= (ProcessingAction<T>) constructor.newInstance();
                     processingActionClasses.add(action);
                 } catch (Exception e) {
