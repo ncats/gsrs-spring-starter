@@ -14,7 +14,6 @@ import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.ginas.models.utils.JSONEntity;
-import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.GsrsDateSerializer;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +27,11 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Primary entity for the staging area.
+ * @since GSRS 3.1
+ *
+ */
 @Backup
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -118,6 +122,9 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Column(length =40, updatable = false, unique = true)
     private UUID instanceId; //always unique!  changes when data change
 
+    /**
+     * Primary key.  value is assigned in code
+     */
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
@@ -127,18 +134,35 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     //@OneToOne
     private UUID recordId; //stays the same for a given record
 
+    /**
+     * sequential integer to track revisions to this record.
+     * Initially set to 1  when the record is created and incremented after any change
+     */
     @Indexable(facet = true)
     private int version;
 
+    /**
+     * File from which this record was taken
+     */
     @Indexable(name = "SourceName", suggest = true)
     private String sourceName;
 
+    /**
+     * Date on which this record was added to the staging area
+     */
     @CreatedDate
     @Indexable(facet=true, sortable = true, name = "Load Date")
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
     private Date versionCreationDate =null;
 
+    /**
+     * How far along the import process this record is.
+     * staged - just added to the staging area
+     * imported - copied into the main GSRS database
+     * merged - data from selected fields has been copied into a matching record in the main database
+     * rejected - the user consciously marks this record as not to be used.
+     */
     @Indexable(name="ImportStatus", facet = true)
     private RecordImportStatus importStatus;
 
@@ -148,22 +172,40 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable(facet = true)
     private RecordVersionStatus versionStatus;
 
+    /**
+     * Value of RecordValidationStatus applied to this record
+     * currently used values:
+     *  valid - obeys all business rules
+     *  warning - one or more rules flags the record for further examination.
+     *  error - record has a serious error that must be addressed
+     */
     @Indexable
     private RecordValidationStatus validationStatus;
 
+    /**
+     * Value of RecordProcessStatus assigned to this record.
+     * Note: as of June 2023, this field is set to loaded and never updated
+     */
     @Indexable(name="processStatus", facet = true)
     private RecordProcessStatus processStatus;
 
+    /**
+     * qualified name of the class of domain object being imported
+     */
     @Indexable
     @Column(length = 255)
     private String entityClassName;
 
     /*
     To record why this import was rejected or processed in a certain way.
+    Not used, as of June 2023
      */
     @Indexable()
     private String reason;
 
+    /**
+     * List of factors that suggest that this entity is similar to other entities in the main database or staging area
+     */
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
     @JoinColumns({
@@ -175,6 +217,9 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @ElementCollection(fetch = FetchType.EAGER) //testing out eager fetch 05 May 2023
     public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
+    /**
+     * Link to the results of validation (applying business rules to this object)
+     */
     @JSONEntity(title = "ImportValidations")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
@@ -186,6 +231,10 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @ElementCollection(fetch = FetchType.EAGER)
     public List<ImportValidation> validations = new ArrayList<>();
 
+    /**
+     * Mime typeof raw import data.
+     * Not particularly useful as of June 2023
+     */
     @Indexable
     private String dataFormat;
 
@@ -194,9 +243,15 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
         return recordAccess;
     }
 
+    /**
+     * ImportAdapterFactory used to load this entity from file
+     */
     @Indexable
     private String importAdapter;
 
+    /**
+     * User who loaded this record
+     */
     @CreatedBy
     @Indexable(facet = true, name = "Loaded By", sortable = true, recurse = false)
     @ManyToOne()

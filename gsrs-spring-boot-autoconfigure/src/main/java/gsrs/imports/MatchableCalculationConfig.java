@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import ix.core.util.InheritanceTypeIdResolver;
 
-/*
-Support handling matchable calculation configuration - setting the class + properties within JSON
+/**
+Description of set-up of matchable calculations - the class + properties within JSON
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "configClass", defaultImpl = DefaultMatchableCalculationConfig.class)
 @JsonTypeIdResolver(InheritanceTypeIdResolver.class)
