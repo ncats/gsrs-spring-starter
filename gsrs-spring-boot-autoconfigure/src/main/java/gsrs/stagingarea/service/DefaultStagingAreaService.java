@@ -226,24 +226,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         if(performMatching){
             log.trace("going to match");
             List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-            definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+            //definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
             persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
-
-            //event driven: each step in process sends an event (pub/sub) look in ... indexing
-            //  validation, when done would trigger the next event via
-            //  event manager type of thing
-            // passively: daemon running in background looks for records with a given status and then performs
-            // the next step
-            // will
-            //try {
-            //    MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
-                //log.trace("Matches: ");
-                //summary.getMatches().forEach(m -> {
-                    //log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
-                //});
-            //} catch (ClassNotFoundException e) {
-            //    log.error("Error looking for matches", e);
-            //}
         }
         if( performIndexing ) {
             log.trace("going to index");
@@ -567,7 +551,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         Object domainObject;
         try {
             log.trace("going deserialize object of class {}", qualifiedEntityType);
-            log.trace(entityJson);
             domainObject = deserializeObject(qualifiedEntityType, entityJson);
         } catch (JsonProcessingException e) {
             log.error("Error deserializing imported object.", e);
