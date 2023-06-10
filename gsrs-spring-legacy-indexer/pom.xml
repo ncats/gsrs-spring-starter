@@ -116,7 +116,7 @@
         </dependency>
     </dependencies>
     <build>
-        <plugins>
+        <!--plugins>
             <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
@@ -143,6 +143,6 @@
                     <sourcepath>${delombok.output}</sourcepath>
                 </configuration>
             </plugin>
-        </plugins>
+        </plugins-->
     </build>
 </project>

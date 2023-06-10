@@ -61,9 +61,12 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
                 .map(MatchedKeyValue::getMatchingRecords)
                 .flatMap(Collection::stream)
                 .filter(m->m. getSourceName().equals(USED_SOURCE))
+                .map(m->m.getRecordId().getIdString())
+                .distinct()
                 .count();
         consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_MATCH_COUNT_FACET, Long.toString(matchCount)));
-        log.trace("created string facet {} with value {}", IMPORT_METADATA_MATCH_COUNT_FACET, matchCount);
+        log.trace("created string facet {} with value {} for record {}", IMPORT_METADATA_MATCH_COUNT_FACET, matchCount,
+                importMetadata.getRecordId());
         matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                 .forEach(r->r.getMatchingRecords()
