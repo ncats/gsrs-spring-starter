@@ -27,7 +27,7 @@ public class KeyUserList {
 	@Column(name = "entity_key")
 	public String entityKey;	
 	
-	@ManyToOne(fetch = FetchType.LAZY)    
+	@ManyToOne   
 	@JoinColumn(name = "user_id")
 	public Principal principal;
 

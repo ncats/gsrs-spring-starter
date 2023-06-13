@@ -2978,7 +2978,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     
     
 
-    @Builder
+//    @Builder
     @AllArgsConstructor(access = AccessLevel.PACKAGE)
     @NoArgsConstructor(access = AccessLevel.PACKAGE)
     @Setter(value = AccessLevel.PACKAGE)

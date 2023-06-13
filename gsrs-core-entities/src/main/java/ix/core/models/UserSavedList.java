@@ -26,7 +26,7 @@ public class UserSavedList {
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 	private Long id;
 	
-	@ManyToOne(fetch = FetchType.LAZY)    
+	@ManyToOne  
 	@JoinColumn(name="user_id")
 	public Principal principal;
 
