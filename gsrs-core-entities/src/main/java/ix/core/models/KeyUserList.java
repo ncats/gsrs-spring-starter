@@ -1,7 +1,10 @@
 package ix.core.models;
 
+import java.util.Objects;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,7 +27,7 @@ public class KeyUserList {
 	@Column(name = "entity_key")
 	public String entityKey;	
 	
-	@ManyToOne    
+	@ManyToOne   
 	@JoinColumn(name = "user_id")
 	public Principal principal;
 
@@ -37,5 +40,21 @@ public class KeyUserList {
 		this.entityKey = key;
         this.principal = user;
         this.listName = name;        
-    }		
+    }
+	
+	@Override
+	public boolean equals(Object o) {
+		if(o == null)
+			return false;
+		if(this == o)
+			return true;
+		if(getClass() != o.getClass())
+			return false;
+		return (id != null && id.equals (((KeyUserList)o).id));
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(id);
+	}
 }
