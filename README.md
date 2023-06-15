@@ -561,7 +561,7 @@ The EntityScan and EnableJpaRepositories need to list all the base packages to s
  #### Legacy Authentication
   The GSRS Starter supports the legacy GSRS 2 authentication mechanisms such as the GSRS User Profile table and 
   checking specific headers in REST Requests for authentication information.  To Turn this on,
-  use `@EnableLegacyGsrsAuthentication`.
+  use `@EnableGsrsLegacyAuthentication`.
 
 These are the legacy config options that can be set
 ```

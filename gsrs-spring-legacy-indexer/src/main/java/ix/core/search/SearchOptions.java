@@ -69,6 +69,9 @@ public class SearchOptions implements RequestOptions {
 
 	// default number of elements to fetch while blocking
 	public static final int DEFAULT_FETCH_SIZE = 100; // 0 means all
+	
+	// default max fetch size of user list facets
+	public static final int USER_LIST_FACET_FETCH_SIZE = 10000;
 
 	private Class<?> kind; // filter by type
 
@@ -76,7 +79,7 @@ public class SearchOptions implements RequestOptions {
 	private int skip;
 	private int fetch = DEFAULT_FETCH_SIZE;
 	private int fdim = DEFAULT_FDIM; // facet dimension
-	
+	private int userListFetchSize = USER_LIST_FACET_FETCH_SIZE;
 	private int fskip=DEFAULT_FSKIP;
 	
 	private int qTop = DEFAULT_TOP;
@@ -96,6 +99,8 @@ public class SearchOptions implements RequestOptions {
 	
 	//TODO: I don't think this is used anymore
 	private String filter;
+	
+	private String userName;
 
 
 	/**
@@ -740,6 +745,10 @@ public class SearchOptions implements RequestOptions {
 	public void setFetch(int fetch) {
 		this.fetch = fetch;
 		queryParams.resetCache();
+	}
+	
+	public int getUserListFetchSize() {
+		return userListFetchSize;
 	}
 	
 	public void setFetchAll(){

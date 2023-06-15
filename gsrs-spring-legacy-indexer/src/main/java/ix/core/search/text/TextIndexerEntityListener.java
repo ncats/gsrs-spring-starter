@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 
+import gsrs.events.ClearIndexByTypeEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -82,13 +83,16 @@ public class TextIndexerEntityListener {
     }
     @EventListener
     public void reindexEntity(ReindexEntityEvent event) throws IOException {
+        log.trace("in reindexEntity");
         autowireIfNeeded();
         Optional<EntityUtils.EntityWrapper<?>> opt = event.getOptionalFetchedEntityToReindex();
         
         if(opt.isPresent()){
         	if(event.isRequiresDelete()) {
+                log.trace("updating");
         		textIndexerFactory.getDefaultInstance().update(opt.get());
         	}else {
+                log.trace("adding");
         		textIndexerFactory.getDefaultInstance().add(opt.get());	
         	}
             
@@ -105,7 +109,17 @@ public class TextIndexerEntityListener {
             textIndexerFactory.getDefaultInstance().doneProcess();
         }
     }
-    
+
+    @EventListener
+    public void clearIndexByType(ClearIndexByTypeEvent event) {
+        autowireIfNeeded();
+        try {
+            textIndexerFactory.getDefaultInstance().removeAllType(event.getTypeToClear());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Async
     @TransactionalEventListener

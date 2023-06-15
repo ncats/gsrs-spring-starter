@@ -117,4 +117,32 @@ public interface GsrsEntityService<T, I> {
         @JsonIgnore
         private String oldJson;
     }
+
+    @Data
+    @Builder
+    class ProcessResult<T>{
+        private boolean saved;
+        private ValidationResponse<T> validationResponse;
+        private T entity;
+        private Throwable throwable;
+        private Object entityId;
+
+        public static ProcessResult ofCreation(CreationResult update) {
+            ProcessResultBuilder builder = ProcessResult.builder();
+            return builder.validationResponse(update.validationResponse)
+                    .entity(update.createdEntity)
+                    .throwable(update.throwable)
+                    .saved(update.created)
+                    .build();
+        }
+        public static ProcessResult ofUpdate(UpdateResult update) {
+            ProcessResultBuilder builder = ProcessResult.builder();
+            builder.throwable(update.throwable)
+                    .saved(update.status== UpdateResult.STATUS.UPDATED)
+                    .entity(update.updatedEntity)
+                    .validationResponse(update.validationResponse);
+
+            return builder.build();
+        }
+    }
 }

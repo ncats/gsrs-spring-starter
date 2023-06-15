@@ -125,6 +125,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         TextIndexer indexer = textIndexerFactory.getDefaultInstance();
         try {
             Query q= indexer.extractFullFacetQuery(query, options, field);
+            log.trace("getTermVectorsFromQuery using kind {}", options.getKind());
             return indexer.getTermVectors(entityClass, field, (Filter)null, q);
         } catch (ParseException e) {
             throw new IOException("error parsing lucene query '" + query + "'", e);
@@ -132,7 +133,19 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
             throw new IOException("error getting term vectors ", e);
         }
     }
-    
+
+    public TextIndexer.TermVectors getTermVectorsFromQueryNew(String query, SearchOptions options, String field) throws IOException {
+        TextIndexer indexer = textIndexerFactory.getDefaultInstance();
+        try {
+            Query q= indexer.extractFullFacetQuery(query, options, field);
+            log.trace("getTermVectorsFromQuery using kind {}", options.getKind());
+            return indexer.getTermVectors(options.getKind()!=null ? options.getKind() : entityClass, field, (Filter)null, q);
+        } catch (ParseException e) {
+            throw new IOException("error parsing lucene query '" + query + "'", e);
+        }catch(Exception e){
+            throw new IOException("error getting term vectors ", e);
+        }
+    }
 
     @hasAdminRole
     @Transactional( readOnly= true)
@@ -217,10 +230,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
                     log.warn("indexing error handling:" + wrapped, t);
                 }
             }
-
-        });
-    
-    	
+        });    	
     }
     
     

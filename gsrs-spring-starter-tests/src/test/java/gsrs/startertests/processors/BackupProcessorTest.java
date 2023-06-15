@@ -1,10 +1,8 @@
 package gsrs.startertests.processors;
 
-import gsrs.model.AbstractGsrsEntity;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.repository.BackupRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
-import gsrs.startertests.GsrsJpaTest;
-import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.History;
 import ix.core.models.*;
@@ -12,17 +10,16 @@ import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.*;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 
-import java.util.concurrent.CountDownLatch;
+import javax.persistence.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved
@@ -88,7 +85,8 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     PlatformTransactionManager platformTransactionManager;
 
-
+    @MockBean
+    WebMvcRegistrations webMvcRegistrations;
 
     TransactionTemplate transactionTemplate;
 

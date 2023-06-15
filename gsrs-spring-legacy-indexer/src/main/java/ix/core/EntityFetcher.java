@@ -15,6 +15,7 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.BackupEntity;
 import ix.core.search.LazyList.NamedCallable;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil.TypedCallable;
 import lombok.extern.slf4j.Slf4j;
@@ -227,6 +228,14 @@ public class EntityFetcher<T> implements NamedCallable<Key,T>{
 	
 	public static <T> EntityFetcher<T> of(Key k, Class<T> cls) {
 		return new EntityFetcher<>(k);
+	}
+	
+	public static <T> EntityFetcher<T> of(EntityWrapper<T> ew) {
+		return new EntityFetcher<>(ew.getKey());
+	}
+	
+	public static <T> EntityFetcher<T> ofPojo(T obj) {
+		return new EntityFetcher<>(EntityWrapper.of(obj).getKey());
 	}
 	
 	

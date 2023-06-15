@@ -34,3 +34,5 @@ build/
 
 ### VS Code ###
 .vscode/
+gsrs-module-substance-example/src/main/resources/application-postgres0.conf
+ gsrs-module-substance-example/src/test/resources/atomicweightdata.csv

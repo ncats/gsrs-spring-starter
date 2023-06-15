@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.service.ExportService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
@@ -26,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+//import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 import javax.validation.constraints.Pattern;
@@ -45,6 +45,8 @@ public class ExportController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
+//    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
+
     /**
      * Get a listing of all the downloads by this user.
      * @param principal
@@ -63,14 +65,14 @@ public class ExportController {
         return new ResponseEntity<>(
                 DownloadResultPage.builder()
                         .page(page).row(rows)
-                .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
-                .build(),
+                        .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
+                        .build(),
                 HttpStatus.OK);
 
     }
 
     private static List<ExportMetaData> getPagedDownloads(List<ExportMetaData> result, int rows,
-                                                         int page) {
+                                                          int page) {
 
         List<ExportMetaData> jobs = new ArrayList<ExportMetaData>();
 
@@ -177,12 +179,12 @@ public class ExportController {
         if(!exportFile.isPresent()){
             return GsrsControllerConfiguration.createResponseEntity("could not find exported file from Id " + id, HttpStatus.BAD_REQUEST.value());
         }
-        
+
         String filename = parameters.getOrDefault("filename", opt.get().getDisplayFilename());
-        
+
         File f = exportFile.get().getFile();
-        
-        
+
+
 
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
@@ -191,9 +193,9 @@ public class ExportController {
                 .contentLength(f.length())
                 .header("Content-disposition", "attachment; filename=" + filename)
 //                .contentType("application/x-download")
-                
+
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                
+
                 .body(resource);
     }
 

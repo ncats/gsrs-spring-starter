@@ -108,5 +108,9 @@ public class OffsetBasedPageRequest implements Pageable, Serializable{
         return offset > 0;
     }
 
-
+    @Override
+    public Pageable withPage(int pageNumber) {
+        //todo: make this method do something useful
+        return this;
+    }
 }

@@ -9,6 +9,7 @@ import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.indexer.IndexerEventFactoryFactory;
 import gsrs.validator.GsrsValidatorFactory;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.Lucene4IndexServiceFactory;
 import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
@@ -31,7 +32,7 @@ import org.springframework.test.context.ContextConfiguration;
 @TestConfiguration
 @ContextConfiguration(classes= {GsrsFactoryConfiguration.class, GsrsApiAutoConfiguration.class,
         TextIndexerFactory.class, TextIndexerConfig.class,
-        Lucene4IndexServiceFactory.class})
+        Lucene4IndexServiceFactory.class, UserSavedListService.class})
 @Order
 public class GsrsEntityTestConfiguration {
 
@@ -65,5 +66,10 @@ public class GsrsEntityTestConfiguration {
     public IndexerEventFactoryFactory indexerEventFactoryFactory(){
         return new DefaultIndexerEventFactoryFactory();
     }
+
+    @Bean
+    @Order
+    @ConditionalOnMissingBean
+    public UserSavedListService userSavedListService() {return new UserSavedListService();}
 }
 
