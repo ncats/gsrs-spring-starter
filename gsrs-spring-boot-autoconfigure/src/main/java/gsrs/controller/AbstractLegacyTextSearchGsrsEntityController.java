@@ -880,10 +880,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
   	    	
     	String userName = pathVarsMap.get("user");    	
-     	String list = pathVarsMap.get("list");
+     	String listName = pathVarsMap.get("list");
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, rTop, rSkip);
     	   	
     	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
     	
