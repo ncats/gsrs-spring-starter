@@ -874,14 +874,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @hasAdminRole
     @GetGsrsRestApiMapping(value="/@userList/{user}/{list}")
-    public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable String name,
-    										   @PathVariable String list,
+    public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
   	    	
-    	String userName = name;    	
-     	
+    	String userName = pathVarsMap.get("user");    	
+     	String list = pathVarsMap.get("list");
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
