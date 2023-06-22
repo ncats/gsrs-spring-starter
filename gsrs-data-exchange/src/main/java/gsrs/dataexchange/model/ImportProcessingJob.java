@@ -175,35 +175,6 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         return builder.toString();
     }
 
-    /*private ArrayNode getCleanResults() {
-        ArrayNode pre = getResults();
-        if(pre== null || pre.size()==0) {
-            return pre;
-        }
-        ArrayNode returnNode = JsonNodeFactory.instance.arrayNode();
-        for(int i=0; i<pre.size(); i++) {
-            JsonNode currentNode = pre.get(i);
-            ObjectNode nodeCopy = JsonNodeFactory.instance.objectNode();
-            if(currentNode instanceof ObjectNode){
-                ObjectNode objectNode=(ObjectNode) currentNode;
-                Iterator<String> it = objectNode.fieldNames();
-                while(it.hasNext()){
-                    String fieldName = it.next();
-                    node
-                }
-                for(int p=0; p< objectNode.fieldNames())
-            }
-            for(int l=0; l< currentNode.size();l++){
-                if(currentNode.g`)
-            }
-            if( currentNode.hasNonNull("status")) {
-                if(currentNode.get("status").asInt()==200){
-
-                }
-            }
-        }
-    }*/
-
     public ObjectNode toNode(boolean includeJobData){
         ObjectNode node =JsonNodeFactory.instance.objectNode();
         node.put("id", this.id.toString());

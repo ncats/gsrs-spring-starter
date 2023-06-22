@@ -125,6 +125,7 @@ public interface GsrsEntityService<T, I> {
         private ValidationResponse<T> validationResponse;
         private T entity;
         private Throwable throwable;
+        private Object entityId;
 
         public static ProcessResult ofCreation(CreationResult update) {
             ProcessResultBuilder builder = ProcessResult.builder();

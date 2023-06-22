@@ -170,7 +170,6 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
 
             }
 
-            ;
         };
     }
 }

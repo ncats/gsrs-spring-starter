@@ -15,9 +15,12 @@ import javax.persistence.Id;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 import gsrs.cache.GsrsCache;
 import gsrs.indexer.IndexValueMakerFactory;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.search.text.Lucene4IndexServiceFactory;
@@ -46,12 +49,19 @@ public class TextIndexerIndexedRecordTest {
     @TempDir
     static File file;
     
+    
+    
+    
     private TextIndexer getNewTextIndexer() throws IOException {
     	Lucene4IndexServiceFactory fac = new Lucene4IndexServiceFactory();
 		TextIndexerConfig conf = new TextIndexerConfig();
 		conf.setEnabled(true);
 		conf.setFieldsuggest(true);
 		conf.setShouldLog(false);
+		UserSavedListService userSavedListService = mock(UserSavedListService.class);
+		Mockito.when(userSavedListService.getUserSearchResultLists(ArgumentMatchers.anyString())).thenReturn(new ArrayList<String>());
+				
+		
 		IndexValueMakerFactory singleIVMMaker = new IndexValueMakerFactory() {
 			@Override
 			public IndexValueMaker<Object> createIndexValueMakerFor(EntityWrapper<?> ew) {
@@ -71,7 +81,7 @@ public class TextIndexerIndexedRecordTest {
 			}
 		};
 		GsrsCache cache = mock(GsrsCache.class);
-		TextIndexer ti= new TextIndexer(file, fac, fac.createForDir(file), conf, singleIVMMaker, cache, (ee)->false);
+		TextIndexer ti= new TextIndexer(file, fac, fac.createForDir(file), conf, singleIVMMaker, cache, (ee)->false, userSavedListService);
 		return ti;
     }
     

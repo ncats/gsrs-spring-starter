@@ -1,5 +1,7 @@
 package ix.core.models;
 
+import java.util.Objects;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -24,7 +26,7 @@ public class UserSavedList {
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 	private Long id;
 	
-	@ManyToOne    
+	@ManyToOne  
 	@JoinColumn(name="user_id")
 	public Principal principal;
 
@@ -43,4 +45,19 @@ public class UserSavedList {
         this.list = list;
     }
 	
+	@Override
+	public boolean equals(Object o) {
+		if(o == null)
+			return false;
+		if(this == o)
+			return true;
+		if(getClass() != o.getClass())
+			return false;
+		return (id != null && id.equals (((UserSavedList)o).id));
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(id);
+	}
 }

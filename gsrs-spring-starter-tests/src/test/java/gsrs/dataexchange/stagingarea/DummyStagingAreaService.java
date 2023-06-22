@@ -12,12 +12,14 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexer;
 import ix.core.validator.ValidationResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 public class DummyStagingAreaService implements StagingAreaService {
     @Override
     public String createRecord(ImportRecordParameters parameters) {
@@ -104,7 +106,7 @@ public class DummyStagingAreaService implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables, String startingRecordId) throws ClassNotFoundException {
+    public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables, String startingRecordId)  {
 //        MatchedRecordSummary matches = new MatchedRecordSummary();
 //        matches.setQuery(recordMatchables);
 //        MatchedKeyValue oneMatch= new MatchedKeyValue();
@@ -119,7 +121,7 @@ public class DummyStagingAreaService implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException {
+    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) {
         return null;
     }
 
@@ -144,7 +146,7 @@ public class DummyStagingAreaService implements StagingAreaService {
     }
 
     @Override
-    public <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException {
+    public <T> T deserializeObject(String entityClassName, String objectJson) {
         return null;
     }
 
@@ -166,5 +168,10 @@ public class DummyStagingAreaService implements StagingAreaService {
     @Override
     public Page page(Pageable pageable) {
         return null;
+    }
+
+    @Override
+    public void synchronizeRecord(String entityId, String entityeType, String entityContext) {
+        log.trace("dummy implementation of synchronizeRecord");
     }
 }
