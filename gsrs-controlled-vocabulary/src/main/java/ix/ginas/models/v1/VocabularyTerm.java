@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
+import ix.core.models.ForceUpdatableModel;
 import ix.core.models.IxModel;
 import ix.core.models.ParentReference;
 import ix.ginas.models.EmbeddedKeywordList;
@@ -19,14 +20,14 @@ import javax.persistence.*;
  */
 
 @Entity
-@Table(name="ix_ginas_vocabulary_term")
+@Table(name="ix_ginas_vocabulary_term", indexes = {@Index(name = "vocabulary_term_owner_index", columnList = "owner_id")})
 @Inheritance
 @DiscriminatorValue("VOCAB")
 @SingleParent
 @Getter
 @Setter
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_vocabulary_term_seq", allocationSize = 1)
-public class VocabularyTerm extends IxModel {
+public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	/**
 	 * 
 	 */
@@ -50,16 +51,16 @@ public class VocabularyTerm extends IxModel {
 	};
 
 	private static final long serialVersionUID = -5625533710493695789L;
-	@Column(length=4000)
+	@Column(length=3000)
 	public String value;
 
-	@Column(length=4000)
+	@Column(length=3000)
 	public String display;
 
 	@Column(length=4000)
 	public String description;
 
-	@Column(length=4000)
+	@Column(length=3000)
 	public String regex;
 
 	public String origin;
@@ -101,5 +102,11 @@ public class VocabularyTerm extends IxModel {
 				", selected=" + selected +
 				"} " + super.toString();
 	}
+
+
+    @Override
+    public void forceUpdate() {
+        this.setIsAllDirty();
+    }
 
 }

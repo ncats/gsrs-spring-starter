@@ -148,6 +148,7 @@ public class AuditConfig {
                                                                                         .maximumSize(100L)
                                                                                         .<String, Optional<Principal>>build().asMap();
 
+        //TODO: Need to invalidate sometime
         public void clearCache(){
             principalCache.clear();
         }
@@ -188,6 +189,7 @@ public class AuditConfig {
             log.debug("looking up principal for " + name + " from class "+ auth.getClass());
 //            System.out.println("looking up principal for " + name + " from class "+ auth.getClass());
             try {
+            	//principalCache.clear();
                 Optional<Principal> value = principalCache.computeIfAbsent(name,
                         n -> {
                             //if name doesn't exist it will return null which won't get entered into the map and could

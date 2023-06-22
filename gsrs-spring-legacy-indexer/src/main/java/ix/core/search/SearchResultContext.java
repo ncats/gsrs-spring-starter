@@ -20,7 +20,6 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,11 +28,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.cache.CacheStrategy;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.utils.Util;
-//TODO katzelda October 2020 : caching in a later sprint
-//@CacheStrategy(evictable=false)
+
+@CacheStrategy(evictable=false)
 public class SearchResultContext {
     public enum Status {
         Pending,	//show  +
@@ -47,6 +47,7 @@ public class SearchResultContext {
     //so that it COULD be rerun if it is ever removed / finished
     
     public static final BiFunction<SearchRequest, SearchResultContext, SearchResult> DEFAULT_ADAPTER = (sr, ctx)->{
+    	
     	return SearchResult.fromContext(ctx, sr.getOptions());
     };
     
@@ -351,6 +352,18 @@ public class SearchResultContext {
     public void setGeneratingUrl(String url){
     	this.originalRequest=url;
     }
+    
+    
+    @JsonProperty("context")
+    public String getContext(){
+    	String eratingUrl=this.getGeneratingUrl();
+    	if(eratingUrl!=null){
+    	    return eratingUrl.split("/v1/")[1].split("/")[0];
+    	}else{
+    		return null;
+    	}
+    }
+
 	//TODO katzelda October 2020 : comment out getting result call for now since we don't implement that yet
 	/*
     @JsonIgnore

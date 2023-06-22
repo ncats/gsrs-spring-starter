@@ -56,6 +56,21 @@ public class SearchRequest {
 			opBuilder.skip(skip);
 			return this;
 		}
+		
+		public Builder qTop(int qTop) {
+			opBuilder.qTop(qTop);
+			return this;
+		}
+
+		public Builder qSkip(int qSkip) {
+			opBuilder.qSkip(qSkip);
+			return this;
+		}
+		
+		public Builder bulkSearchOnIdentifiers(boolean on) {
+			opBuilder.bulkSearchOnIdentifiers(on);
+			return this;
+		}
 
 		public Builder fetch(int fetch) {
 			opBuilder.fetch(fetch);
@@ -139,6 +154,26 @@ public class SearchRequest {
 
 		public Builder query(String query) {
 			this.query = query;
+			return this;
+		}
+
+
+		public Builder includeFacets(boolean f) {
+			this.opBuilder.includeFacets(f);
+			return this;
+		}
+		public Builder includeBreakdown(boolean b) {
+			this.opBuilder.includeBreakdown(b);
+			return this;
+		}
+
+		public Builder promoteSpecialMatches(boolean p) {
+			this.opBuilder.promoteSpecialMatches(p);
+			return this;
+		}
+
+		public Builder simpleSearchOnly(boolean s) {
+			this.opBuilder.promoteSpecialMatches(s);
 			return this;
 		}
 

@@ -1,38 +1,47 @@
 package ix.core.search;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import gov.nih.ncats.common.Tuple;
-import gov.nih.ncats.common.util.TimeUtil;
-
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.model.GsrsApiAction;
-import gsrs.springUtils.StaticContextAccessor;
-import ix.core.models.FieldedQueryFacet;
-import ix.core.search.LazyList.NamedCallable;
-import ix.core.models.Facet;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.EntityUtils.Key;
-import ix.utils.Util;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkBuilder;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
-
-
 import java.lang.ref.SoftReference;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-//TODO katzelda October 2020 : ignore caching for now
-//@CacheStrategy(evictable = false)
+
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.security.GsrsSecurityUtils;
+import ix.core.cache.CacheStrategy;
+import ix.core.models.BaseModel;
+import ix.core.models.Facet;
+import ix.core.models.FieldedQueryFacet;
+import ix.core.search.LazyList.NamedCallable;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
+
+@CacheStrategy(evictable = false)
+@Slf4j
 public class SearchResult {
 
 	private String key;
@@ -40,12 +49,14 @@ public class SearchResult {
 	final private List<Facet> facets = new ArrayList<Facet>();
 	final private List<FieldedQueryFacet> suggestFacets = new ArrayList<FieldedQueryFacet>();
 
-	private final LazyList<Key,Object> matches = new LazyList<>(o -> (EntityWrapper.of(o)).getKey());
-	
+	private final LazyList<Key,Object> matches = new LazyList<>(o -> (EntityWrapper.of(o)).getKey().toRootKey());
 	
 	private List<?> result; // final result when there are no more updates
 	                        // (largely unnecessary now)
-
+	private BulkQuerySummary summary;
+	
+	private String userName="";
+	
 	private int count;
 	private SearchOptions options;
 	final long timestamp = TimeUtil.getCurrentTimeMillis();
@@ -53,17 +64,24 @@ public class SearchResult {
 	
 	Comparator<Key> idComparator = null;
 	
-	private String generatingUrl;
+	private String generatingUrl = "";
 
 	private final List<SoftReference<SearchResultDoneListener>> listeners = new ArrayList<>();
 
-	public SearchResult(SearchOptions options) {
+	public SearchResult(SearchOptions options) {		
 		this(options, null);
+		Optional<String> optionalName = GsrsSecurityUtils.getCurrentUsername();
+		if(optionalName.isPresent()) {
+			this.userName = optionalName.get();			
+		}
 	}
 	public SearchResult(SearchOptions options, String query) {
 		this.options = options;
 		this.query = query;
-		
+		Optional<String> optionalName = GsrsSecurityUtils.getCurrentUsername();
+		if(optionalName.isPresent()) {
+			this.userName = optionalName.get();
+		}
 	}
 
 	@JsonIgnore
@@ -152,6 +170,10 @@ public class SearchResult {
 	public SearchOptions getOptions() {
 		return options;
 	}
+	
+	public String getUserName() {
+		return userName;
+	}
 
 	public List<Facet> getFacets() {
 		return facets;
@@ -225,7 +247,12 @@ public class SearchResult {
 
 		int i = 0;
 		for (; i < count && it.hasNext(); ++i) {
-			list.add(it.next());
+			Object s = it.next();
+			//need this to clear temp cache stuff that comes from other searches
+			if(s instanceof BaseModel) {
+            		((BaseModel)s).clearAllMatchContextProperties();
+            }            
+			list.add(s);
 		}
 
 		return i;
@@ -452,6 +479,13 @@ public class SearchResult {
 		}
 	}
 
+	public void setSummary(BulkQuerySummary inputSummary) {		
+		this.summary = inputSummary;
+	}
+	
+	public BulkQuerySummary getSummary(){
+		return summary;
+	}
 
 	@JsonIgnore
 	public String getFacetURI(String facetName) throws Exception{
@@ -515,9 +549,10 @@ public class SearchResult {
 
 	public void addSponsoredNamedCallable(NamedCallable<Key,Object> c) {
 		//System.out.println("Sponsored record: " + c.getName());
-		sponsored.put(c.getName(), c);
-		matches.addCallable(c);
-		processAddition(c);
+		if(sponsored.put(c.getName(), c)==null){
+			matches.addCallable(c);
+			processAddition(c);
+		}
 	}
 
 	/**

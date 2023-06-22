@@ -2,8 +2,8 @@ package gsrs.startertests.validator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.GsrsSpringApplication;
+import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.validator.ValidatorConfig;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,7 @@ public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
     private ObjectMapper mapper = new ObjectMapper();
 
 
+    //This test fails when run along with the others but passes when run by itself
     @Test
     public void jsonCreateConfigUsingParameters() throws ClassNotFoundException, JsonProcessingException {
 

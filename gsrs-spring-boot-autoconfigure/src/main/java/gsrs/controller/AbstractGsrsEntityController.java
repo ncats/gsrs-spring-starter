@@ -1,24 +1,22 @@
 package gsrs.controller;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
-import gsrs.repository.EditRepository;
-import gsrs.service.AbstractGsrsEntityService;
-import gsrs.service.GsrsEntityService;
-import ix.core.models.Edit;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-import ix.core.util.pojopointer.PojoPointer;
-import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidatorCategory;
-//import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
-//import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
-//import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import lombok.extern.slf4j.Slf4j;
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -28,17 +26,29 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.security.Principal;
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.repository.EditRepository;
+import gsrs.service.AbstractGsrsEntityService;
+import gsrs.service.GsrsEntityService;
+import ix.core.EntityFetcher;
+import ix.core.models.Edit;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
+import ix.core.util.pojopointer.PojoPointer;
+import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidatorCategory;
+//import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
+//import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
+//import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -58,7 +68,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     private static Pattern VERSIONED_ROUTE = Pattern.compile("^v/(\\d+)$");
     @Autowired
-    private GsrsControllerConfiguration gsrsControllerConfiguration;
+	protected GsrsControllerConfiguration gsrsControllerConfiguration;
 
 
     @Autowired
@@ -205,7 +215,22 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                                                @RequestParam(value="urldecode", required = false) Boolean urlDecode,
                                                @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
         
-        return returnOnySpecifiedFieldPartFor(getEntityService().getEntityBySomeIdentifier(id), urlDecode, queryParameters, request);
+    	//This uses an entity fetcher instead of the existing lookup services
+    	//since entity fetchers tend to be faster
+    	Optional<T> ent = getEntityService()
+			    			.getEntityIdOnlyBySomeIdentifier(id)
+			    			.map(ii->(I)ii)
+			    			.map(ii->{
+			    				Key k=Key.of(getEntityService().getEntityClass(), (Object)ii);
+			    				return k;
+			    			})
+			    			.map(k->EntityFetcher.of(k).getIfPossible())
+			    			.filter(ff->ff.isPresent())
+			    			.map(f->(T)f.get());
+//    	Old way
+//    	Optional<T> ent = getEntityService().getEntityBySomeIdentifier(id);
+    	
+        return returnOnySpecifiedFieldPartFor(ent, urlDecode, queryParameters, request);
     }
 
 

@@ -1,14 +1,16 @@
 package gsrs.indexer;
 
-import gsrs.springUtils.AutowireHelper;
-import ix.core.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
-import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+
+import gsrs.springUtils.AutowireHelper;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JPA Entity Listener that will fire
@@ -17,6 +19,7 @@ import java.io.IOException;
  * if the entity being persisted/updated/removed is indexable
  * determined by {@link EntityUtils.EntityWrapper#shouldIndex()}.
  */
+@Slf4j
 public class IndexerEntityListener {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -52,6 +55,20 @@ public class IndexerEntityListener {
             }
         }
     }
+    
+    public void reindexEntity(Object obj, boolean deleteFirst) {
+        autowireIfNeeded();
+        EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
+        if(ew.shouldIndex()) {
+            IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
+            if(indexerFactoryFor !=null) {
+//            	log.error("ew before publishing event :" + ew.toString());
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst));
+                
+            }
+        }
+    }
+    
     @PostRemove
     public void deleteEntity(Object obj){
         autowireIfNeeded();

@@ -1,27 +1,65 @@
 package ix.core.search;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by katzelda on 2/27/17.
+ * 
+ * This wraps a {@link AnalyzingInfixSuggester} and allows it to promote exact matches to the top
+ * which is something the existing suggester doesn't do. To do this it uses reflection to find the
+ * index searcher attributes and do a pre-screen search before the standard suggest search.
  */
+@Slf4j
 public class ExactMatchSuggesterDecorator extends Lookup implements Closeable {
 
+	// This is used as a hack to get the search manager used internally to the
+    // AnalyzingInfixSuggester, which hides it. This is used because we need
+    // to adjust exact match results
+    private static <T>  T getFieldValue(Object obj, String fieldName){
+        try {
+            java.lang.reflect.Field f = obj.getClass().getDeclaredField(fieldName);
+            try {
+            	f.setAccessible(true);
+            }catch(Exception e) {
+            	log.warn("Unable to mark field as accessible:" +fieldName ,e);
+            }
+            return (T) f.get(obj);
+        }catch(NoSuchFieldException  | IllegalAccessException e){
+            throw new RuntimeException(e);
+        }
+    }
+	
     private static final String TEXT_FIELD_NAME = "text";
     private final static String EXACT_TEXT_FIELD_NAME = "exacttext";
 
@@ -34,7 +72,7 @@ public class ExactMatchSuggesterDecorator extends Lookup implements Closeable {
         return r2Key.replaceAll("<b>(.+?)</b>", "$1");
     };
 
-    private final Lookup delegate;
+    private final AnalyzingInfixSuggester delegate;
 
     private final Supplier<SearcherManager> searcherMgr;
 
@@ -45,16 +83,21 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
 		super(matchVersion, dir, analyzer);
 	}
  */
-    public ExactMatchSuggesterDecorator(Lookup delegate, Supplier<SearcherManager> searchMgr) {
+    public ExactMatchSuggesterDecorator(AnalyzingInfixSuggester delegate) {
+        this(delegate, ()->{
+        	return getFieldValue(delegate, "searcherMgr");
+        }, DEFAULT_KEY_TRANSFORMATION_FUNCTION);
+    }
+    public ExactMatchSuggesterDecorator(AnalyzingInfixSuggester delegate, Supplier<SearcherManager> searchMgr) {
         this(delegate, searchMgr, DEFAULT_KEY_TRANSFORMATION_FUNCTION);
     }
-    public ExactMatchSuggesterDecorator(Lookup delegate, Supplier<SearcherManager> searchMgr, Function<String, String> keyTransformationFunction) {
+    public ExactMatchSuggesterDecorator(AnalyzingInfixSuggester delegate, Supplier<SearcherManager> searchMgr, Function<String, String> keyTransformationFunction) {
         this.delegate = Objects.requireNonNull(delegate);
         this.searcherMgr = Objects.requireNonNull(searchMgr);
         this.keyTransformationFunction = Objects.requireNonNull(keyTransformationFunction);
     }
 
-   public Lookup getDelegate(){
+   public AnalyzingInfixSuggester getDelegate(){
        return delegate;
    }
     @Override
@@ -141,11 +184,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         SearcherManager manager=null;
         try{
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num,SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
@@ -162,7 +205,9 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
                 FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
                 BytesRef term = textDV.get(fd.doc);
                 String text = term.utf8ToString();
-                if(text.equalsIgnoreCase(queryStr)){
+                long score = (Long) fd.fields[0];
+                //don't return negative scores
+                if(text.equalsIgnoreCase(queryStr) && score>=0){
                     //used by TextIndexer like this
                     //.map(r -> new SuggestResult(r.payload.utf8ToString(), r.key, r.value))
                     //key, highlight, weight
@@ -198,11 +243,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             TermQuery tq=new TermQuery(t);
 
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false, false);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false);
 
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2);
+            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
@@ -234,5 +279,11 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
 		if(this.delegate instanceof Closeable){
 			((Closeable)this.delegate).close();
 		}
+	}
+	public void update(BytesRef ref, Set<BytesRef> context, long p, BytesRef ref2) throws IOException {
+		delegate.update(ref,context, p, ref2);
+	}
+	public void refresh() throws IOException {
+		delegate.refresh();
 	}
 }

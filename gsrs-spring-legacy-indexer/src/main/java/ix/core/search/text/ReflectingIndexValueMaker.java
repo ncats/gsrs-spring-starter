@@ -1,14 +1,16 @@
 package ix.core.search.text;
 
 
+
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
 import ix.utils.PathStack;
 import org.apache.lucene.document.LongField;
-//import org.apache.lucene.document.LongPoint;
-//import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
+
+import gov.nih.ncats.common.Tuple;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -35,12 +37,17 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 		}
 	
 		public void acceptWithGeneric(PathStack path, EntityUtils.EntityWrapper<Object> ew) {
+			//should only add at root level
+			if(path.getDepth()<2) {
 			toAdd.accept(new IndexableValueDirect(new FacetField(DIM_CLASS, ew.getKind())));
+			}
 
 				ew.getId().ifPresent(o -> {
-					String internalIdField = ew.getInternalIdField();
+					Key key = ew.getKey().toRootKey();
+					Tuple<String, String> t = key.asLuceneIdTuple();
+					String internalIdField = ew.getEntityInfo().getInherittedRootEntityInfo().getInternalIdField();
 					if (o instanceof Long) {
-						toAdd.accept(new IndexableValueDirect(new LongField(ew.getInternalIdField(), (Long) o, YES)));
+						toAdd.accept(new IndexableValueDirect(new StringField(internalIdField, o.toString(), (path.getDepth()<2)?YES:NO)));
 						//katzelda October 2020:
 						//Looks like newer versions of lucene removed LongField.
 						// There was a LegacyLongField but that's gone now too and now there is LongPoint
@@ -49,11 +56,10 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 //						toAdd.accept(new IndexableValueDirect(new LongPoint(internalIdField, value)));
 //						toAdd.accept(new IndexableValueDirect(new StoredField(internalIdField, value)));
 					} else {
-						toAdd.accept(new IndexableValueDirect(new StringField(internalIdField, o.toString(), YES)));  //Only Special case
+						toAdd.accept(new IndexableValueDirect(new StringField(internalIdField, o.toString(), (path.getDepth()<2)?YES:NO)));  //Only Special case
 					}
-					toAdd.accept(new IndexableValueDirect(new StringField(ew.getIdField(), o.toString(), NO)));
+					toAdd.accept(new IndexableValueDirect(new StringField(t.k(), o.toString(), NO)));
 				}); //
-	
 
 				if(ReflectingIndexerAware.class.isAssignableFrom(ew.getEntityClass()) && path.getDepth()>0){
 
@@ -75,13 +81,13 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 								fi.k().getIndexable()));
 					});
 				}); //Primitive fields
-	
+
 				ew.getDynamicFacet().ifPresent(fv -> {
 					path.pushAndPopWith(fv.k(), () -> {
 						toAdd.accept(new IndexableValueFromRaw(fv.k(), fv.v(), path.toPath()).dynamic().suggestable());
 					});
 				}); //Dynamic Facets
-				
+
 				ew.streamMethodReflectingIndexerAwares()
 						.filter(r ->r.getEmbeddedIndexFieldName() !=null)
 						.forEach(kw -> {
@@ -91,7 +97,7 @@ public class ReflectingIndexValueMaker implements IndexValueMaker<Object>{
 //						toAdd.accept(new IndexableValueFromRaw(kw.label, kw.getValue(), path.toPath()).dynamic().suggestable());
 					});
 				}); //Method keywords
-	
+
 				ew.streamMethodsAndValues(m -> m.isArrayOrCollection()).forEach(t -> {
 					path.pushAndPopWith(t.k().getName(), () -> {
 						t.k().forEach(t.v(), (i, o) -> {

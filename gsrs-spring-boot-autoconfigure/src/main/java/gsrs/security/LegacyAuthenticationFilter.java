@@ -129,8 +129,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
                     .map(e->request.getHeader(e))
                     .map(v->Arrays.stream(v.split(";"))
-                            .map(r->r.trim())
-                            .map(r->Role.valueOf(r))
+                            .filter(r->Arrays.stream(Role.values()).map(Role::name).anyMatch(r.trim()::equals))
+                            .map(r->Role.valueOf(r.trim()))
+                            .distinct()
                             .collect(Collectors.toList())
                     )
                     .orElse(null);

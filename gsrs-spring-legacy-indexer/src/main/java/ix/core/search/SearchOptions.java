@@ -69,6 +69,9 @@ public class SearchOptions implements RequestOptions {
 
 	// default number of elements to fetch while blocking
 	public static final int DEFAULT_FETCH_SIZE = 100; // 0 means all
+	
+	// default max fetch size of user list facets
+	public static final int USER_LIST_FACET_FETCH_SIZE = 10000;
 
 	private Class<?> kind; // filter by type
 
@@ -76,14 +79,17 @@ public class SearchOptions implements RequestOptions {
 	private int skip;
 	private int fetch = DEFAULT_FETCH_SIZE;
 	private int fdim = DEFAULT_FDIM; // facet dimension
-	
+	private int userListFetchSize = USER_LIST_FACET_FETCH_SIZE;
 	private int fskip=DEFAULT_FSKIP;
 	
+	private int qTop = DEFAULT_TOP;
+	private int qSkip;
+	private boolean bulkSearchOnIdentifiers = true;
 	
-
     private String ffilter=DEFAULT_FFILTER;
 	
 	
+    private String defaultField=null;
 
 
     // whether drilldown (false) or sideway (true)
@@ -93,6 +99,8 @@ public class SearchOptions implements RequestOptions {
 	
 	//TODO: I don't think this is used anymore
 	private String filter;
+	
+	private String userName;
 
 
 	/**
@@ -169,12 +177,15 @@ public class SearchOptions implements RequestOptions {
 		     	}),
 		     	ofInteger("top", a->setTop(a), ()->getTop()),
 		     	ofInteger("skip", a->skip=a, ()->skip),
+		     	ofInteger("qTop", a->setQTop(a), ()->getQTop()),
+		     	ofInteger("qSkip", a->qSkip=a, ()->qSkip),
 		     	ofInteger("fskip", a->fskip=a, ()->fskip),
 		     	ofInteger("fdim", a->setFdim(a), ()->getFdim()),
 		     	ofInteger("fetch", a->setFetch(a), ()->getFetch()),
 		     	ofBoolean("sideway", a->setSideway(a), ()->isSideway(),true),
 		     	ofBoolean("wait", a->setWait(a), ()->isWait(),false),
 		     	ofSingleString("ffilter", a->ffilter=a, ()->ffilter),
+		     	ofSingleString("defaultField", a->defaultField=a, ()->defaultField),
 		     	ofSingleString("filter", a->filter=a, ()->filter),
 		     	ofSingleString("kind", a->{
 		     		try{
@@ -390,6 +401,19 @@ public class SearchOptions implements RequestOptions {
 	public int getSkip() {
 		return this.skip;
 	}
+	
+	public int getQTop() {
+		return this.qTop;
+	}
+
+	
+	public int getQSkip() {
+		return this.qSkip;
+	}
+	
+	public boolean getBulkSearchOnIdentifiers() {
+		return bulkSearchOnIdentifiers;
+	}
 
 	//TODO I don't think this is ever used anymore
 	@Override
@@ -402,6 +426,9 @@ public class SearchOptions implements RequestOptions {
 		private Class<?> kind;
 		private int top=DEFAULT_TOP;
 		private int skip=0;
+		private int qTop=DEFAULT_TOP;
+		private int qSkip=0;		
+		private boolean bulkSearchOnIdentifiers;
 		private int fetch=DEFAULT_FETCH_SIZE;
 		private int fdim=DEFAULT_FDIM;
 		private boolean sideway=true;
@@ -410,6 +437,7 @@ public class SearchOptions implements RequestOptions {
         private boolean includeBreakdown=true;
         private boolean promoteSpecialMatches =true;
 		
+        private String defaultField;
 		private String filter;
 		
 		private List<String> facets = new ArrayList<>();
@@ -434,6 +462,9 @@ public class SearchOptions implements RequestOptions {
 		public Builder from(SearchOptions so) {
 			top(so.getTop());
 			skip(so.skip);
+			qTop(so.getQTop());
+			qSkip(so.getQSkip());
+			bulkSearchOnIdentifiers(so.getBulkSearchOnIdentifiers());
 			fetch(so.getFetch());
 			fdim(so.getFdim());
 			sideway(so.isSideway());
@@ -447,6 +478,7 @@ public class SearchOptions implements RequestOptions {
 			includeFacets(so.getIncludeFacets());
 			includeBreakdown(so.getIncludeBreakdown());
 			promoteSpecialMatches(so.getPromoteSpecialMatches());
+			defaultField(so.defaultField);
 			return this;
 		}
 
@@ -464,7 +496,22 @@ public class SearchOptions implements RequestOptions {
 			this.skip = skip;
 			return this;
 		}
+		
+		public Builder qTop(int qTop) {
+			this.qTop = qTop;
+			return this;
+		}
 
+		public Builder qSkip(int qSkip) {
+			this.qSkip = qSkip;
+			return this;
+		}
+
+		public Builder bulkSearchOnIdentifiers(boolean on) {
+			this.bulkSearchOnIdentifiers = on;
+			return this;
+		}
+		
 		public Builder fetch(int fetch) {
 			this.fetch = fetch;
 			return this;
@@ -484,6 +531,13 @@ public class SearchOptions implements RequestOptions {
             this.ffilter = ffilter;
             return this;
         }
+		
+		public Builder defaultField(String defaultField) {
+            this.defaultField = defaultField;
+            return this;
+        }
+        
+		
 
 		public Builder sideway(boolean sideway) {
 			this.sideway = sideway;
@@ -586,6 +640,9 @@ public class SearchOptions implements RequestOptions {
 		this.setKind(builder.kind);
 		this.setTop(builder.top);
 		this.skip = builder.skip;
+		this.qTop = builder.qTop;
+		this.qSkip = builder.qSkip;
+		this.bulkSearchOnIdentifiers = builder.bulkSearchOnIdentifiers;
 		this.setFetch(builder.fetch);
 		this.setFdim(builder.fdim);
 		this.setSideway(builder.sideway);
@@ -690,6 +747,10 @@ public class SearchOptions implements RequestOptions {
 		queryParams.resetCache();
 	}
 	
+	public int getUserListFetchSize() {
+		return userListFetchSize;
+	}
+	
 	public void setFetchAll(){
 	    setFetch(-1);
 	}
@@ -716,6 +777,28 @@ public class SearchOptions implements RequestOptions {
 		this.top = top;
 		queryParams.resetCache();
 		return top;
+	}
+	
+	public int setSkip(int skip) {
+		this.skip = skip;
+		queryParams.resetCache();
+		return skip;
+	}
+	
+	public int setQTop(int qTop) {
+		this.qTop = qTop;
+		queryParams.resetCache();
+		return top;
+	}
+	
+	public int setQSkip(int qSkip) {
+		this.qSkip = qSkip;
+		queryParams.resetCache();
+		return skip;
+	}
+	
+	public void setBulkSearchOnIdentifiers(boolean on) {
+		bulkSearchOnIdentifiers = on;
 	}
 
 	public boolean isWait() {
@@ -760,6 +843,10 @@ public class SearchOptions implements RequestOptions {
 	public boolean getPromoteSpecialMatches()  {
 	    return this.promoteSpecialMatches;
 	}
+	
+    public String getDefaultField() {
+        return this.defaultField;
+    }
 	 
 	private static FacetLongRange asDateFacet(String fname) {
 	    return asDateFacet(fname, getDefaultDateOrderMap());
@@ -844,5 +931,9 @@ public class SearchOptions implements RequestOptions {
         // Older than 2 Years
         map.put("Older than 2 years", now -> now.minusYears(6000));
         return map;
+    }
+
+    public void setDefaultField(String defaultField) {
+        this.defaultField=defaultField;
     }
 }

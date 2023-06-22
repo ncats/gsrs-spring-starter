@@ -45,7 +45,7 @@ public class Lucene4IndexService implements IndexerService {
     public Lucene4IndexService() throws IOException{
         indexDir= new RAMDirectory();
         Analyzer indexAnalyzer = createIndexAnalyzer();
-        IndexWriterConfig conf = new IndexWriterConfig(LUCENE_VERSION, indexAnalyzer);
+        IndexWriterConfig conf = new IndexWriterConfig(indexAnalyzer);
 
         indexWriter = new IndexWriter(indexDir, conf);
     }
@@ -59,9 +59,10 @@ public class Lucene4IndexService implements IndexerService {
         //
         // if (!indexFileDir.exists())
         // indexFileDir.mkdirs();
-        indexDir = new NIOFSDirectory(indexFileDir, NoLockFactory.getNoLockFactory());
+        
+        indexDir = new NIOFSDirectory(indexFileDir.toPath(), NoLockFactory.INSTANCE);
         indexAnalyzer = createIndexAnalyzer();
-        IndexWriterConfig conf = new IndexWriterConfig(LUCENE_VERSION, indexAnalyzer);
+        IndexWriterConfig conf = new IndexWriterConfig(indexAnalyzer);
         indexWriter = new IndexWriter(indexDir, conf);
     }
 
@@ -71,7 +72,7 @@ public class Lucene4IndexService implements IndexerService {
         fields.put(TextIndexer.FIELD_ID, new KeywordAnalyzer());
         fields.put(TextIndexer.FIELD_KIND, new KeywordAnalyzer());
         //dkatzel 2017-08 no stop words
-        return new PerFieldAnalyzerWrapper(new StandardAnalyzer(LUCENE_VERSION, CharArraySet.EMPTY_SET), fields);
+        return new PerFieldAnalyzerWrapper(new StandardAnalyzer(CharArraySet.EMPTY_SET), fields);
     }
     @Override
     public Analyzer getIndexAnalyzer(){

@@ -3,6 +3,7 @@ package gsrs.json;
 import gov.nih.ncats.common.sneak.Sneak;
 import ix.core.models.ParentReference;
 import ix.core.util.EntityUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.implementation.bytecode.Throw;
 
 import java.lang.reflect.Field;
@@ -11,6 +12,7 @@ import java.lang.reflect.Method;
 /**
  * Utility class for working on entity objects that have been deserialized from JSON.
  */
+@Slf4j
 public final class JsonEntityUtil {
 
     private JsonEntityUtil(){
@@ -38,19 +40,22 @@ public final class JsonEntityUtil {
     private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
         boolean found=false;
         for(Method m: aClass.getDeclaredMethods()){
-            m.setAccessible(true);
+        	try {
+        		m.setAccessible(true);
+        	}catch(Exception e) {}
             if(m.getAnnotation(ParentReference.class) != null){
                 try{
                     m.invoke(obj, owner);
                 } catch (Throwable e) {
                     Sneak.sneakyThrow(e);
                 }
-                found=true;
             }
         }
         if(!found) {
             for (Field f : aClass.getDeclaredFields()) {
+            	try {
                 f.setAccessible(true);
+            	}catch(Exception e) {}
                 if (f.getAnnotation(ParentReference.class) != null) {
                     try {
                         if (force || f.get(obj) == null) {

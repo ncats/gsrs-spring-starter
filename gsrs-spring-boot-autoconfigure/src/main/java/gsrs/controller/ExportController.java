@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.service.ExportService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +40,8 @@ public class ExportController {
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
+
+    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     /**
      * Get a listing of all the downloads by this user.
@@ -59,14 +61,14 @@ public class ExportController {
         return new ResponseEntity<>(
                 DownloadResultPage.builder()
                         .page(page).row(rows)
-                .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
-                .build(),
+                        .downloads(dataList.stream().map(e-> GsrsControllerUtil.enhanceWithView(e, parameters)).collect(Collectors.toList()))
+                        .build(),
                 HttpStatus.OK);
 
     }
 
     private static List<ExportMetaData> getPagedDownloads(List<ExportMetaData> result, int rows,
-                                                         int page) {
+                                                          int page) {
 
         List<ExportMetaData> jobs = new ArrayList<ExportMetaData>();
 
@@ -102,8 +104,11 @@ public class ExportController {
         System.out.println("latest getStatusOf");
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
-            return new ResponseEntity<>("could not find etag with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-
+            if(ALPHANUMERIC.matcher(id).matches()) {
+                return new ResponseEntity<>("could not find etag with Id " + id, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
 
 
@@ -122,7 +127,11 @@ public class ExportController {
     public ResponseEntity<Object> cancel(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
-            return new ResponseEntity<>("could not find etag with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            if(ALPHANUMERIC.matcher(id).matches()) {
+                return new ResponseEntity<>("could not find etag with Id " + id, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
 
         }
         if(opt.get().isComplete()){
@@ -146,8 +155,11 @@ public class ExportController {
     public ResponseEntity<Object> delete(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters){
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
-            return new ResponseEntity<>("could not find exported data with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-
+            if(ALPHANUMERIC.matcher(id).matches()) {
+                return new ResponseEntity<>("could not find exported data with Id " + id, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
         exportService.remove(opt.get());
 
@@ -167,26 +179,32 @@ public class ExportController {
     public ResponseEntity<Object> download(@PathVariable("id") String id, Principal principal, @RequestParam Map<String, String> parameters) throws IOException {
         Optional<ExportMetaData> opt = exportService.getStatusFor(principal.getName(), id);
         if(!opt.isPresent()){
-            return new ResponseEntity<>("could not find exported data with Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-
+            if(ALPHANUMERIC.matcher(id).matches()) {
+                return new ResponseEntity<>("could not find exported data with Id " + id, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
 
         Optional<ExportDir.ExportFile<ExportMetaData>> exportFile = exportService.getFile(principal.getName(), opt.get().getFilename());
         if(!opt.get().isComplete()){
-           //should we not return unless complete?
+            //should we not return unless complete?
             return new ResponseEntity<>("export not completed" + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
 
         }
         if(!exportFile.isPresent()){
-            return new ResponseEntity<>("could not find exported file from Id " + id,gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-
+            if(ALPHANUMERIC.matcher(id).matches()) {
+                return new ResponseEntity<>("could not find exported data with Id " + id, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            } else {
+                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
+            }
         }
-        
+
         String filename = parameters.getOrDefault("filename", opt.get().getDisplayFilename());
-        
+
         File f = exportFile.get().getFile();
-        
-        
+
+
 
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
@@ -195,9 +213,9 @@ public class ExportController {
                 .contentLength(f.length())
                 .header("Content-disposition", "attachment; filename=" + filename)
 //                .contentType("application/x-download")
-                
+
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                
+
                 .body(resource);
     }
 

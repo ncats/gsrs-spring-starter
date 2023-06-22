@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.Striped;
@@ -78,8 +79,12 @@ public class SequenceIndexerEventListener {
         EntityUtils.Key entityKey = event.getEntityKey();
         try {
             EntityUtils.EntityWrapper<?> ew = event.getOptionalFetchedEntityToReindex().get();
-            addSequenceFieldDataToIndex(ew, entityKey,null);
+            if(event.isRequiresDelete()) {
+            	removeFromIndex(ew, entityKey);
+        	}
+        	addSequenceFieldDataToIndex(ew, entityKey,null);
             addSequenceFileDataToIndex(entityKey, CachedSupplier.of(()->Optional.of(ew) ));
+            
         }catch(Exception e) {
            log.warn("Trouble sequence indexing:" + entityKey, e);
             
@@ -91,17 +96,17 @@ public class SequenceIndexerEventListener {
     public void onCreate(IndexCreateEntityEvent event) {
 
         if(event instanceof SequenceEntityIndexCreateEvent){
-            indexSequencesFor(event.getSource(), ((SequenceEntityIndexCreateEvent)event).getSequenceType());
+            indexSequencesFor(event.getSource(),event::getOptionalFetchedEntityToIndex, ((SequenceEntityIndexCreateEvent)event).getSequenceType());
         }else {
-            indexSequencesFor(event.getSource(), null);
+            indexSequencesFor(event.getSource(),event::getOptionalFetchedEntityToIndex, null);
         }
     }
 
-    private void indexSequencesFor(EntityUtils.Key source, SequenceEntity.SequenceType sequenceType) {
+    private void indexSequencesFor(EntityUtils.Key source, Supplier<Optional<EntityUtils.EntityWrapper<?>>> supplier, SequenceEntity.SequenceType sequenceType) {
         try {
             //fetch might be an expensive operation so wrap it in a cachedSupplier
             //since we might call this more than once now
-            CachedSupplier<Optional<EntityUtils.EntityWrapper<?>>> entitySupplier = CachedSupplier.of(source::fetch);
+            CachedSupplier<Optional<EntityUtils.EntityWrapper<?>>> entitySupplier = CachedSupplier.of(supplier);
 
             if(source.getEntityInfo().couldHaveSequenceFields()) {
                 Optional<EntityUtils.EntityWrapper<?>> opt =entitySupplier.get();
@@ -263,6 +268,7 @@ public class SequenceIndexerEventListener {
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
+        //TODO: this is potentially inefficient, could use cached fetcher
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
@@ -282,6 +288,7 @@ public class SequenceIndexerEventListener {
         if(!event.getSource().getEntityInfo().couldHaveSequenceFields()) {
             return;
         }
+        //TODO: this is potentially inefficient, could use cached fetcher
         EntityUtils.EntityWrapper ew = event.getSource().fetch().get();
         if(ew.isEntity() && ew.hasKey()) {
             EntityUtils.Key key = ew.getKey();
