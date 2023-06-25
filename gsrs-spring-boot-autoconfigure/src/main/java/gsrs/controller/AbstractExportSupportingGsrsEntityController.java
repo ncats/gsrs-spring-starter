@@ -296,10 +296,14 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
     public Comparator<T> getComparator() {
         log.trace("in getComparator");
-        Comparator< T> naturalComparator
+        Comparator<T> simplisticComparator = (T o1, T o2)-> 0;
+        return simplisticComparator;
+        //using naturalOrder leads to errors on Substances; use the above lambda to short-circuit sorting.
+        // individual entity controllers should override getComparator
+        /*Comparator< T> naturalComparator
                 = (Comparator<T>) naturalOrder();
         log.trace("set up natural comparator");
-        return naturalComparator;
+        return naturalComparator; */
     }
 
     public RecordExpanderFactory<T> getExpanderFactory(){
