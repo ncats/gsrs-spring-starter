@@ -282,6 +282,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             Object data = deserializeObject(importMetadata.getEntityClassName(), jsonData);
             cleanJson= serializeObject(data);
         } catch (JsonProcessingException e) {
+            log.error("Error deserializing JSON", e);
             throw new RuntimeException(e);
         }
         ImportData newVersion = latestExisting.toBuilder()
