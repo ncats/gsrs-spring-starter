@@ -463,8 +463,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 EntityUtils.EntityWrapper<T> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
                 	EntityUtils.EntityWrapper<T> og = EntityUtils.EntityWrapper.of(oldEntity);
                 	String oldJson = og.toInternalJson();
-                    log.trace("oldJson: {}", oldJson);
-                	Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE, ValidatorCategory.CATEGORY_ALL());
+                    Validator<T> validator = validatorFactory.getSync().createValidatorFor(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE, ValidatorCategory.CATEGORY_ALL());
 
                 	ValidationResponse<T> response = createValidationResponse(updatedEntity, oldEntity, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
                 	ValidatorCallback callback = createCallbackFor(updatedEntity, response, DefaultValidatorConfig.METHOD_TYPE.UPDATE);
