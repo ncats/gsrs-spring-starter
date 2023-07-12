@@ -274,14 +274,25 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
         log.trace("located object with latest version {}", latestExisting.getVersion());
         UUID latestInstanceId=UUID.randomUUID();
+
+        ImportMetadata importMetadata = metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
+        String cleanJson;
+        try {
+            //deserializing and re-serializing will allow us to reset the '_name' field of substances
+            Object data = deserializeObject(importMetadata.getEntityClassName(), jsonData);
+            cleanJson= serializeObject(data);
+        } catch (JsonProcessingException e) {
+            log.error("Error deserializing JSON", e);
+            throw new RuntimeException(e);
+        }
         ImportData newVersion = latestExisting.toBuilder()
                 .instanceId(latestInstanceId)
                 .version(latestExisting.getVersion()+1)
-                .data(jsonData)
+                .data(cleanJson)
                 .saveDate( new Date())
                 .build();
         log.trace("cloned");
-        ImportMetadata importMetadata = metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
+
         log.trace("retrieved importMetadata with {} mappings and {} validations", importMetadata.keyValueMappings.size(), importMetadata.validations.size());
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
         transactionDelete.executeWithoutResult(r -> {
@@ -292,7 +303,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 ImportMetadata updatedImportMetadata= metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
                 //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
                 updatedImportMetadata.setInstanceId(latestInstanceId);
-                metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));;
+                metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));
                 //ImportMetadata saved=metadataRepository.save(updatedImportMetadata);
                 //metadataRepository.saveAndFlush(updatedImportMetadata);
                 //handleIndexing(updatedImportMetadata);
