@@ -21,6 +21,7 @@ import gsrs.springUtils.StaticContextAccessor;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.MatchedRecordSummary;
+import gsrs.stagingarea.model.SelectableObject;
 import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.models.Payload;
@@ -942,7 +943,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"/importdata/search", "/stagingArea/search"}, apiVersions = 1)
+    @GetGsrsRestApiMapping(value = {"/stagingArea/search"}, apiVersions = 1)
     public ResponseEntity<Object> searchImportData(@RequestParam("q") Optional<String> query,
                                                    @RequestParam("top") Optional<Integer> top,
                                                    @RequestParam("skip") Optional<Integer> skip,
@@ -961,11 +962,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
 
-        //this.instrumentSearchRequest(searchRequest);
         StagingAreaService service = getDefaultStagingAreaService();
         SearchResult result;
         try {
-            //result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions());
             result=service.findRecords(searchRequest, ImportTaskMetaData.class);
         } catch (Exception e) {
             return getGsrsControllerConfiguration().handleError(e, queryParameters);
@@ -973,6 +972,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         SearchResult fresult = result;
 
+        ObjectMapper mapper = new ObjectMapper();
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);
         List results = (List) transactionTemplate.execute(stats -> {
@@ -993,7 +993,31 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 List<ix.core.util.EntityUtils.Key> klist = new ArrayList<>(Math.min(fresult.getCount(), 1000));
                 fresult.copyKeysTo(klist, 0, top.orElse(10), true);
                 return klist;
-            } else {
+            } else if("selectable".equals(viewType)) {
+                log.trace("selectable view");
+                return (List<SelectableObject>) result.getMatches().stream()
+                        .map(r -> {
+                            ImportMetadata currentResult = (ImportMetadata) r;
+                            log.trace("cast object to ImportMetadata");
+                            SelectableObject selectableObject = new SelectableObject();
+                            selectableObject.setId(currentResult.getRecordId() != null ? currentResult.getRecordId().toString() : "No ID");
+                            selectableObject.setEntityClass(currentResult.getEntityClassName());
+                            log.trace("set id and class");
+                            log.trace("retrieved related data");
+                            try {
+                                JsonNode realData = mapper.readTree(service.getInstanceData(currentResult.getInstanceId().toString()));
+                                log.trace("retrieved domain object JSON directly and turned it into a JsonNode");
+                                selectableObject.setName(realData.get("_name").asText());
+                                log.trace("gong name");
+                            } catch (JsonProcessingException e) {
+                                log.error("Error processing selectable search result", e);
+                                throw new RuntimeException(e);
+                            }
+                            return selectableObject;
+                        })
+                        .collect(Collectors.toList());
+            }
+            else {
                 List tlist = new ArrayList<>(top.orElse(10));
                 fresult.copyTo(tlist, 0, top.orElse(10), true);
                 return tlist;
@@ -1003,15 +1027,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         //some processing to return a List of domain objects with ImportMetadata appended
         List transformedResults = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
+
         results.forEach(r->{
             if( r instanceof ImportMetadata){
                 ImportMetadata currentResult = (ImportMetadata)r;
                 log.trace("looking at metadata object with record ID {}", currentResult.getRecordId());
-                ImportData requestedDataItem = service.getImportDataByInstanceIdOrRecordId(currentResult.getRecordId().toString(), 0);
                 try {
-                    JsonNode realData = mapper.readTree(requestedDataItem.getData());
-                    log.trace("retrieved domain object JSON and turned it into a JsonNode");
+                    JsonNode realData = mapper.readTree(service.getInstanceData(currentResult.getInstanceId().toString()));
+                    log.trace("retrieved domain object JSON directly and turned it into a JsonNode");
                     ImportUtilities.enhanceWithMetadata((ObjectNode) realData, currentResult, service);
                     transformedResults.add(realData);
                 } catch (JsonProcessingException e) {
