@@ -61,7 +61,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Validated
-public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractExportSupportingGsrsEntityController<C, T,I> {
+public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractImportSupportingGsrsEntityController<C, T,I> {
 
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
