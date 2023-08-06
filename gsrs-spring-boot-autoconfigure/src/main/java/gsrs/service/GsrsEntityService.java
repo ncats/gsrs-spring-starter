@@ -6,6 +6,7 @@ import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.security.*;
+import ix.core.util.EntityUtils.Key;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
 import lombok.Builder;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,6 +49,10 @@ public interface GsrsEntityService<T, I> {
      * @return a number &ge;0.
      */
     long count();
+    
+    default List<Key> getKeys(){
+    	return new ArrayList<Key>();
+    }
 
     /**
      * Remove the given entity from the repository.

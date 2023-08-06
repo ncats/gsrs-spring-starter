@@ -399,6 +399,12 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public long getCount(){
         return getEntityService().count();
     }
+    
+    @Override
+    @GetGsrsRestApiMapping("/@keys")
+    public List<Key> getKeys(){
+    	return getEntityService().getKeys();
+    }
 
     @Override
     @GetGsrsRestApiMapping("")

@@ -10,7 +10,9 @@ import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.service.AbstractGsrsEntityService;
+import ix.core.util.EntityUtils.Key;
 import ix.ginas.models.v1.ControlledVocabulary;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
 public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntityService<ControlledVocabulary, Long> implements ControlledVocabularyEntityService {
@@ -247,6 +251,11 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
 
 //    }
 
-
+    @Override
+	public List<Key> getKeys() {
+		List<Long> IDs = repository.getAllIds();
+		List<Key> keys = IDs.stream().map(id->Key.ofStringId(ControlledVocabulary.class, Long.toString(id))).collect(Collectors.toList());
+		return keys;
+	}
 
 }
