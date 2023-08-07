@@ -7,6 +7,8 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.models.Edit;
+
+import org.aspectj.apache.bcel.Repository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -123,4 +125,9 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     public Page<Edit> page(Pageable pageable) {
         return editRepository.findAll(pageable);
     }
+
+	@Override
+	public List<UUID> getIDs() {
+		return editRepository.getAllIDs();
+	}
 }

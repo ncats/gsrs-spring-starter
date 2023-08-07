@@ -15,7 +15,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Contains all the business logic for converting JSON into an Entity, reading and writing
@@ -47,6 +50,10 @@ public interface GsrsEntityService<T, I> {
      */
     long count();
 
+    default List<I> getIDs(){
+    	return new ArrayList<I>();
+    }
+    
     /**
      * Remove the given entity from the repository.
      * @param id the id of the entity to delete.

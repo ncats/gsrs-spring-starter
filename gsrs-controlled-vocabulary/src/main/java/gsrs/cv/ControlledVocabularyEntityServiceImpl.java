@@ -154,6 +154,11 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return Optional.empty();
     }
 
+	@Override
+	public List<Long> getIDs() {
+		return repository.getAllIDs();
+	}
+
 
 //    private SearchResult<ControlledVocabulary> parseQueryIntoMatch(String query, SearchSession session) {
 //        Pattern pattern = Pattern.compile("(\\S+):(\\S+)");
