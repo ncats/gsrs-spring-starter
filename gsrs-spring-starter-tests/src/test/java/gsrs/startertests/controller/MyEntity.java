@@ -20,6 +20,7 @@ import java.util.UUID;
 public class MyEntity extends AbstractGsrsEntity {
     @Id
     @GeneratedValue
+    @Column(columnDefinition="UUID")
     private UUID uuid;
 
     private String foo;

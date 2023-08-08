@@ -110,7 +110,6 @@ public class OffsetBasedPageRequest implements Pageable, Serializable{
 
     @Override
     public Pageable withPage(int pageNumber) {
-        //todo: make this method do something useful
-        return this;
+        return new OffsetBasedPageRequest((long) pageNumber * getPageSize(), getPageSize(), getSort());
     }
 }
