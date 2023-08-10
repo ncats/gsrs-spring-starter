@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import ix.core.EbeanLikeImplicitNamingStategy;
+import ix.core.H2EbeanLikeImplicitNamingStategy;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -84,7 +85,7 @@ public abstract class GSRSDataSourceConfig {
 
         //This doesn't seem ideal ... but it may be the only way
         map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
-        map.put("hibernate.implicit_naming_strategy", EbeanLikeImplicitNamingStategy.class.getName());
+        map.put("hibernate.implicit_naming_strategy", H2EbeanLikeImplicitNamingStategy.class.getName());
         
                 
                 

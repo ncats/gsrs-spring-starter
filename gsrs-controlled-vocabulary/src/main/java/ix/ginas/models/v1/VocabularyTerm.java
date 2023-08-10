@@ -51,7 +51,7 @@ public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	};
 
 	private static final long serialVersionUID = -5625533710493695789L;
-	@Column(name="`value`", length=3000)
+	@Column(length=3000)
 	public String value;
 
 	@Column(length=3000)

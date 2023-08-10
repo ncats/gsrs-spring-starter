@@ -6,6 +6,8 @@ import gsrs.repository.UserProfileRepository;
 import gsrs.security.AdminService;
 import gsrs.services.*;
 import ix.core.EbeanLikeImplicitNamingStategy;
+import ix.core.H2EbeanLikeImplicitNamingStategy;
+
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
@@ -66,7 +68,7 @@ public class GsrsEntitiesConfiguration {
 
     @Bean
     public ImplicitNamingStrategy implicit() {
-        return new EbeanLikeImplicitNamingStategy();
+        return new H2EbeanLikeImplicitNamingStategy();
     }
     @Bean
     @ConditionalOnMissingBean
