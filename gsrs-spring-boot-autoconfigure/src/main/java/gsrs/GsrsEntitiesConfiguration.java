@@ -68,7 +68,7 @@ public class GsrsEntitiesConfiguration {
 //
 //    @Bean
 //    public ImplicitNamingStrategy implicit() {
-//        return new H2EbeanLikeImplicitNamingStategy();
+//        return new EbeanLikeImplicitNamingStategy();
 //    }
     @Bean
     @ConditionalOnMissingBean
