@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
@@ -20,6 +21,11 @@ public abstract class GSRSDataSourceConfig {
     @Autowired(required = false)
     private Environment env;
     
+    @Value("${spring.jpa.hibernate.naming.physical-strategy}")
+    private String physicalStrategy;
+    
+    @Value("${spring.jpa.hibernate.naming.implicit-strategy}")
+    private String implicitStrategy;
 
     private Optional<String> getProperty(String key1, String key2){
         return getProperty(key1,key2, null);
@@ -84,8 +90,11 @@ public abstract class GSRSDataSourceConfig {
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
         //This doesn't seem ideal ... but it may be the only way
-        map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
-        map.put("hibernate.implicit_naming_strategy", H2EbeanLikeImplicitNamingStategy.class.getName());
+//        map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
+//        map.put("hibernate.implicit_naming_strategy", H2EbeanLikeImplicitNamingStategy.class.getName());
+        map.put("hibernate.physical_naming_strategy", physicalStrategy);
+        map.put("hibernate.implicit_naming_strategy", implicitStrategy);
+        
         
                 
                 

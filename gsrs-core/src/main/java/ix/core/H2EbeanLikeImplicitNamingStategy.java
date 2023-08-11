@@ -16,11 +16,11 @@ public class H2EbeanLikeImplicitNamingStategy extends ImplicitNamingStrategyLega
             MetadataBuildingContext buildingContext) {
     	if(stringForm.equalsIgnoreCase("value")) {
     		stringForm = "term_"+stringForm;
-    		System.out.println("Modified value ID from:" + stringForm );
+//    		System.out.println("\n\nvalue to " + stringForm + "\n\n");
     	}
     	
         Identifier id = super.toIdentifier(STRATEGY_INSTANCE.columnName(stringForm), buildingContext);
-        System.out.println("ID from:" + stringForm + " is " + id.toString());
+//        System.out.println("ID from:" + stringForm + " is " + id.toString());
         return id;
     }
 

@@ -61,15 +61,15 @@ public class GsrsEntitiesConfiguration {
     //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
     //to be backwards compatible we have to tell hibernate to use Legacy Jpa (1.0)
     //and not JPA 2 naming strategies.  This mostly affects join table names and columns
-    @Bean
-    public PhysicalNamingStrategy physical() {
-        return new PhysicalNamingStrategyStandardImpl();
-    }
-
-    @Bean
-    public ImplicitNamingStrategy implicit() {
-        return new H2EbeanLikeImplicitNamingStategy();
-    }
+//    @Bean
+//    public PhysicalNamingStrategy physical() {
+//        return new PhysicalNamingStrategyStandardImpl();
+//    }
+//
+//    @Bean
+//    public ImplicitNamingStrategy implicit() {
+//        return new H2EbeanLikeImplicitNamingStategy();
+//    }
     @Bean
     @ConditionalOnMissingBean
     public EditEventService EditEventService(){
