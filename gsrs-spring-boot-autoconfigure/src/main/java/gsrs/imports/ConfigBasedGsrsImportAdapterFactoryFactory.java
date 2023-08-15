@@ -190,6 +190,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
                     Class<?> clazz = Class.forName(className);
                     Constructor<?> constructor =clazz.getConstructor();
                     ProcessingAction<T> action= (ProcessingAction<T>) constructor.newInstance();
+                    AutowireHelper.getInstance().autowire(action);
                     processingActionClasses.add(action);
                 } catch (Exception e) {
                     log.error("Class {} not found", className);
