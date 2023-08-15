@@ -18,6 +18,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
@@ -43,6 +44,9 @@ public class GsrsEntitiesConfiguration {
 
     @Autowired
     private GsrsRabbitMqConfiguration gsrsRabbitMqConfiguration;
+    
+    @Value("${hibernate.naming.implicit-strategy.custom.database:none}")
+    private String databaseFlavor;
 
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -61,15 +65,19 @@ public class GsrsEntitiesConfiguration {
     //May 2021: Gsrs 2.x used an old version of JPA to generate the schema
     //to be backwards compatible we have to tell hibernate to use Legacy Jpa (1.0)
     //and not JPA 2 naming strategies.  This mostly affects join table names and columns
-//    @Bean
-//    public PhysicalNamingStrategy physical() {
-//        return new PhysicalNamingStrategyStandardImpl();
-//    }
-//
-//    @Bean
-//    public ImplicitNamingStrategy implicit() {
-//        return new EbeanLikeImplicitNamingStategy();
-//    }
+    @Bean
+    public PhysicalNamingStrategy physical() {
+        return new PhysicalNamingStrategyStandardImpl();
+    }
+
+    @Bean
+    public ImplicitNamingStrategy implicit() {
+    	if(databaseFlavor.equalsIgnoreCase("H2"))
+    		return new H2EbeanLikeImplicitNamingStategy();
+    	else
+    		return new EbeanLikeImplicitNamingStategy();
+    }
+    
     @Bean
     @ConditionalOnMissingBean
     public EditEventService EditEventService(){

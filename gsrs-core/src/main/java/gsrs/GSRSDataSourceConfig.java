@@ -21,11 +21,15 @@ public abstract class GSRSDataSourceConfig {
     @Autowired(required = false)
     private Environment env;
     
-    @Value("${spring.jpa.hibernate.naming.physical-strategy}")
-    private String physicalStrategy;
     
-    @Value("${spring.jpa.hibernate.naming.implicit-strategy}")
-    private String implicitStrategy;
+    @Value("${hibernate.naming.implicit-strategy.custom.database:none}")
+    private String databaseFlavor;
+    
+//    @Value("${spring.jpa.hibernate.naming.physical-strategy}")
+//    private String physicalStrategy;
+//    
+//    @Value("${spring.jpa.hibernate.naming.implicit-strategy}")
+//    private String implicitStrategy;
 
     private Optional<String> getProperty(String key1, String key2){
         return getProperty(key1,key2, null);
@@ -69,7 +73,7 @@ public abstract class GSRSDataSourceConfig {
         Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql", "false");
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
         Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
-        Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
+        Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");        
 
         log.debug("dialect:" + dialect.orElse(null));
         log.debug("Show SQL:" + showSQL.orElse(null));
@@ -89,16 +93,13 @@ public abstract class GSRSDataSourceConfig {
 
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
-        //This doesn't seem ideal ... but it may be the only way
-//        map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
-//        map.put("hibernate.implicit_naming_strategy", H2EbeanLikeImplicitNamingStategy.class.getName());
-        map.put("hibernate.physical_naming_strategy", physicalStrategy);
-        map.put("hibernate.implicit_naming_strategy", implicitStrategy);
-        
-        
-                
-                
-                
+               
+        //This doesn't seem ideal ... but it may be the only way        
+        map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
+        if(databaseFlavor.equalsIgnoreCase("H2"))
+        	map.put("hibernate.implicit_naming_strategy", H2EbeanLikeImplicitNamingStategy.class.getName());
+        else
+        	map.put("hibernate.implicit_naming_strategy", EbeanLikeImplicitNamingStategy.class.getName());
 
         return map;
     }
