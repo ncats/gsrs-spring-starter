@@ -24,12 +24,6 @@ public abstract class GSRSDataSourceConfig {
     
     @Value("${hibernate.naming.implicit-strategy.custom.database:none}")
     private String databaseFlavor;
-    
-//    @Value("${spring.jpa.hibernate.naming.physical-strategy}")
-//    private String physicalStrategy;
-//    
-//    @Value("${spring.jpa.hibernate.naming.implicit-strategy}")
-//    private String implicitStrategy;
 
     private Optional<String> getProperty(String key1, String key2){
         return getProperty(key1,key2, null);
