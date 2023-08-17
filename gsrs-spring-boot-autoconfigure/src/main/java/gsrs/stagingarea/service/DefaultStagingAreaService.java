@@ -335,6 +335,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Override
     public ImportData getImportDataByInstanceIdOrRecordId(String id, int version) {
         log.trace("getImportDataByInstanceIdOrRecordId starting. ID: {}", id);
+        if( id ==null || id.length()==0 || !metadataRepository.existsById(UUID.fromString(id))){
+            log.trace("no data for ID {}", id);
+            return null;
+        }
         //first, look for ImportData directly -- assuming recordID
         List<ImportData> importDataList = getImportData(id);
 
