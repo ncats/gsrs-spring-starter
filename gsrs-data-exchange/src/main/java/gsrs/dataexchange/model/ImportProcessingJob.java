@@ -186,6 +186,19 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         node.put("jobStatus", this.getJobStatus());
         node.put("statusMessage", this.getStatusMessage());
         node.set("results", this.getResults());
+        boolean success = true;
+        ArrayNode results=this.getResults();
+        for(int item =0; item< results.size(); item++){
+            if(results.get(item).isObject()){
+                ObjectNode objectNode = (ObjectNode)results.get(item);
+                if(objectNode.hasNonNull("status") && !objectNode.get("status").textValue().equalsIgnoreCase("OK")){
+                    success=false;
+                    log.trace("detected false on item {}", item);
+                    break;
+                }
+            }
+        }
+        node.put("completeSuccess", success);
         node.put("totalRecords", this.totalRecords);
         node.put("completedRecordCount", this.completedRecordCount);
 

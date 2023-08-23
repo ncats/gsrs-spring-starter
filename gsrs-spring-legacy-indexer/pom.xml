@@ -117,13 +117,13 @@
     </dependencies>
     <build>
         <plugins>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
                 <version>1.18.0.0</version>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
-                    <!--outputDirectory>${delombok.output}</outputDirectory-->
+                    &lt;!&ndash;outputDirectory>${delombok.output}</outputDirectory&ndash;&gt;
                     <outputDirectory>${project.build.directory}/delombok</outputDirectory>
                     <addOutputDirectory>false</addOutputDirectory>
                 </configuration>
@@ -135,16 +135,16 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
+            </plugin>-->
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9</version>
                 <configuration>
-                    <!--sourcepath>${delombok.output}</sourcepath-->
+                    &lt;!&ndash;sourcepath>${delombok.output}</sourcepath&ndash;&gt;
                     <sourcepath>${project.build.directory}/delombok</sourcepath>
                 </configuration>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 </project>
