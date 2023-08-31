@@ -6,6 +6,7 @@ import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.security.*;
+import ix.core.util.EntityUtils.Key;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
 import lombok.Builder;
@@ -49,6 +50,10 @@ public interface GsrsEntityService<T, I> {
      * @return a number &ge;0.
      */
     long count();
+    
+    default List<Key> getKeys(){
+    	return new ArrayList<Key>();
+    }
 
     default List<I> getIDs(){
     	return new ArrayList<I>();

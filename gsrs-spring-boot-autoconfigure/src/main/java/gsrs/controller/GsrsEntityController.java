@@ -71,4 +71,5 @@ public interface GsrsEntityController<T, I> {
         private String url;
 
     }
+	
 }
