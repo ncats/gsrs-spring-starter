@@ -405,6 +405,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @GetGsrsRestApiMapping("/@keys")
     public List<Key> getKeys(){    	
     	List<I> IDs = getEntityService().getIDs();
+    	System.out.println("GET IDS!");
+    	IDs.forEach(id -> System.out.println("ID " + id.toString()));
     	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
         return keys;
     }

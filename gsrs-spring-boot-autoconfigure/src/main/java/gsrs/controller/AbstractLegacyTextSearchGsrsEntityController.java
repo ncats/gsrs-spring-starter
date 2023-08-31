@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -24,6 +26,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -31,13 +34,18 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
@@ -95,7 +103,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     private EntityManager localEntityManager;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(4);    
-   
+    
+    
     @Data
     private class ReindexStatus{
     	private UUID statusID;
@@ -387,10 +396,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         top.ifPresent( t-> builder.top(t));
         skip.ifPresent( t-> builder.skip(t));
         fdim.ifPresent( t-> builder.fdim(t));
+        
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        for(String s : parameterMap.keySet())
+        	System.out.println(s + " "+ parameterMap.get(s).toString());
 
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
 
+       for(String s:queryParameters.keySet()) {
+    	   System.out.println("queryP " + s + " "+ parameterMap.get(s).toString());
+       }
+        
         this.instrumentSearchRequest(searchRequest);
         
         SearchResult result = null;
@@ -438,6 +455,40 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 //    protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
 
 
+    @GetGsrsRestApiMapping(value = "/databaseIndexSync", apiVersions = 1)
+    public ResponseEntity<String>  getDifferenceBetweenDatabaseAndIndexes(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
+    	List<Key> keysInDatabase = getKeys();
+//    	List<Tuple<String,String>> tuples = keysInDatabase.stream().map(k->new Tuple<String,String>(k.getKind(),k.getIdString()))
+//    			.collect(Collectors.toList());
+//    	Map<String, Set<String>> databaseRecords = tuples.stream()
+//    			.collect(Collectors.groupingBy(t->t.k(), Collectors.mapping(t->t.v(), Collectors.toSet())));
+    	    
+    	Map<String, Set<String>> databaseRecords = keysInDatabase.stream().map(k->new Tuple<String,String>(k.getKind(),k.getIdString()))
+		.collect(Collectors.groupingBy(t->t.k(), Collectors.mapping(t->t.v(), Collectors.toSet())));
+    	RestTemplate restTemplate = new RestTemplate();
+    	
+    	for(String kind:databaseRecords.keySet()) {
+    		System.out.println(kind);
+    		databaseRecords.get(kind).forEach(System.out::println);
+    	}
+    	
+//    	request.
+//    	/api/v1/substances/databaseIndexDiff    	
+    	String indexSearchUrl = request.getRequestURL().toString().replaceAll("databaseIndexSync", "search?simpleSearchOnly=true&view=key&top=999999");
+    	
+    	String baseURL = request.getRequestURL().toString();
+    			
+    	ResponseEntity<String> response  =  restTemplate.getForEntity(indexSearchUrl,String.class);
+    	ObjectMapper mapper = new ObjectMapper();
+		
+		JsonNode rootNode= mapper.readTree(response.getBody());				
+		String keyListJsonStr = mapper.writeValueAsString(rootNode.path("content"));		
+			
+		
+//		keyList.forEach(key->System.out.println("kind: " + key.getKind() + " id: " + key.getIdString()));
+    	return  new ResponseEntity<>(keyListJsonStr, HttpStatus.OK); 	
+    }
+    
     @PostGsrsRestApiMapping(value="/@bulkQuery")
     public ResponseEntity<String> saveQueryList(@RequestBody String query,
     									@RequestParam("top") Optional<Integer> top,
