@@ -1,6 +1,7 @@
 package gsrs.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
@@ -92,6 +93,10 @@ public interface ImportAdapterFactory<T> {
     void setEntityServiceClass(Class newClass);
 
     void setInputParameters(JsonNode parameters);
+
+    default JsonNode getInputParameters(){
+        return JsonNodeFactory.instance.objectNode();
+    }
 
     String getDescription();
 
