@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -406,6 +407,14 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     	return getEntityService().getKeys();
     }
 
+    @Override
+    @GetGsrsRestApiMapping("/@keys")
+    public List<Key> getKeys(){    	
+    	List<I> IDs = getEntityService().getIDs();
+    	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
+        return keys;
+    }
+    
     @Override
     @GetGsrsRestApiMapping("")
     @Transactional(readOnly = true)

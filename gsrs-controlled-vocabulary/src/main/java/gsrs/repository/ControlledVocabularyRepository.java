@@ -30,4 +30,8 @@ public interface ControlledVocabularyRepository extends GsrsVersionedRepository<
 
         String getDomain();
     }
+    
+    @Query("select cv.id from ControlledVocabulary cv")
+    List<Long> getAllIDs();
+    
 }
