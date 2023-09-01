@@ -250,8 +250,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     private StagingAreaService getStagingAreaService(ImportTaskMetaData<T> task) throws Exception {
         return gsrsImportAdapterFactoryFactory.getStagingAreaService(this.getEntityService().getContext());
-        /*Objects.requireNonNull(task.adapter, "Cannot predict settings with null import adapter");
-        return getStagingAreaService(task.getAdapter());*/
     }
 
     protected StagingAreaService getStagingAreaService(String adapterName) throws Exception {
@@ -268,7 +266,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             throw new IOException(message);
         }
-        stagingAreaServiceMap.computeIfAbsent(adaptFac.getStagingAreaService().getName(), (cls)->{
+        stagingAreaServiceMap.computeIfAbsent(adaptFac.getStagingAreaService().getName(), cls->{
             Class<T> c = adaptFac.getStagingAreaService();
             log.trace("in getStagingAreaService, instantiating StagingAreaService: {}", c.getName());
             Constructor<T> constructor = null;
@@ -319,7 +317,16 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     private ImportTaskMetaData<T> predictSettings(ImportTaskMetaData<T> task, Map<String, String> inputParameters) throws Exception {
         log.trace("in predictSettings, task for file: {}  with payload: {}", task.getFilename(), task.payloadID);
         ImportAdapterFactory<T> adaptFac = fetchAdapterFactory(task);
-        adaptFac.setInputParameters(task.inputSettings);
+        if(adaptFac.getInputParameters()==null) {
+            adaptFac.setInputParameters(task.inputSettings);
+        } else if(task.getInputSettings().isObject()){
+            ObjectNode objectNode = (ObjectNode)task.getInputSettings();
+            log.trace("copying input parameters to new adapter factory");
+            objectNode.fieldNames().forEachRemaining(fn->{
+                ((ObjectNode) adaptFac.getInputParameters()).put(fn, objectNode.get(fn));
+            });
+
+        }
         log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
         ObjectMapper mapper = new ObjectMapper();
@@ -334,6 +341,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
             messageNode.put("message", "Error predicting settings");
         }
+        newMeta.setInputSettings(adaptFac.getInputParameters());
         return newMeta;
     }
 
@@ -407,19 +415,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-/*
-        if(_stagingAreaService == null) {
-            lock.lock();
-            try {
-                if(_stagingAreaService==null) {
-                    _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-                }
-            }finally {
-                lock.unlock();
-            }
-        }
-        return _stagingAreaService;
-*/
     }
 
     //STEP 0: list adapter classes
@@ -437,7 +432,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         List<ClientFriendlyImportAdapterConfig> outputList = getConfiguredImportAdapters().stream()
                 .filter(a -> a.getAdapterKey().equals(adapterKey))
                 .collect(Collectors.toList());
-        if ( outputList.size() > 0) {
+        if ( outputList.isEmpty()) {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(outputList,
                     queryParameters), HttpStatus.OK);
         }
@@ -505,10 +500,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             ((ObjectNode) itmd.getAdapterSettings()).set("parameters", queryParameterNode);
             log.trace("set parameter node");
-            itmd = saveImportTaskToCache(itmd).get();
+            itmd =  saveImportTaskToCache(itmd).get();
 
             if (itmd != null && itmd.adapterSettings != null) {
-                //log.trace("itmd.adapterSettings: {}", itmd.adapterSettings.toPrettyString());
             } else {
                 log.warn("itmd.adapterSettings null");
             }
@@ -604,7 +598,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         if (requestedDataItem != null) {
             log.trace(" found data ");
-            //log.trace(requestedDataItem.getData());
             matchingMetadata = service.getImportMetaData(requestedDataItem.getRecordId().toString(), 0);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode realData = mapper.readTree(requestedDataItem.getData());
@@ -615,7 +608,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 log.trace(EntityUtils.EntityWrapper.of(nativeObject).toFullJson());
                 EntityUtils.EntityWrapper nativeObjectWrapped = EntityUtils.EntityWrapper.of(nativeObject);
                 PojoPointer p = PojoPointer.fromURIPath(segment);
-                Optional<EntityUtils.EntityWrapper> specific = nativeObjectWrapped.at(p);
+                Optional<EntityUtils.EntityWrapper<T>> specific = nativeObjectWrapped.at(p);
                 if (specific.isPresent()) {
                     log.trace("specific data tree found: ");
                     log.trace(EntityUtils.EntityWrapper.of(specific.get()).toFullJson());
@@ -629,7 +622,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             if (realData instanceof ObjectNode) {
                 ImportUtilities.enhanceWithMetadata((ObjectNode) realData, matchingMetadata, service);
             }
-            //log.trace("readData type {} {}", realData.getNodeType(),  realData.toPrettyString());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(realData, queryParameters), HttpStatus.OK);
         }
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
@@ -756,7 +748,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         int version = 0;//todo: retrieve from parameters
         if (queryParameters.get("version") != null) {
             try {
-                int versionValue = Integer.valueOf(queryParameters.get("version"));
+                int versionValue = Integer.parseInt(queryParameters.get("version"));
                 version = versionValue;
             } catch (NumberFormatException ex) {
                 //we just fall back on the original 0 value
@@ -776,13 +768,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in deleteRecords");
         log.trace("retrieved service");
-        int version = 0;//possible to retrieve from parameters
         log.trace("idSet: {}", idSet);
-        String[] ids =idSet.split("[,\\r\\n]{1,2}");//idSet.split("\r{0,1}\n|\r");;
-        boolean removeFromIndex = true;
-        if( queryParameters.containsKey("skipIndex") && queryParameters.get("skipIndex").equalsIgnoreCase("true")){
-            removeFromIndex=false;
-        }
+        String[] ids =idSet.split("[,\\r\\n]{1,2}");
+        boolean removeFromIndex = !queryParameters.containsKey("skipIndex") || !queryParameters.get("skipIndex").equalsIgnoreCase("true");
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
                 stagingAreaService);
@@ -815,7 +803,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                      @RequestBody JsonNode updatedJson,
                                                      @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("starting executeImport");
-        ImportTaskMetaData<T> updatedTask = null;
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
                 stagingAreaService);
@@ -975,7 +962,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ObjectMapper mapper = new ObjectMapper();
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);
-        List results = (List) transactionTemplate.execute(stats -> {
+        List results = transactionTemplate.execute(stats -> {
             //the top and skip settings  look wrong, because we're not skipping
             //anything, but it's actually right,
             //because the original request did the skipping.

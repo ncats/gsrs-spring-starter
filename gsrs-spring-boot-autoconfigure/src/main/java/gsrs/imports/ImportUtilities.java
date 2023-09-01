@@ -663,9 +663,22 @@ public class ImportUtilities<T> {
             }
             log.trace("creating rarelyUsedSettings node");
             ((ObjectNode)task.getAdapterSettings()).set("rarelyUsedSettings", rareSettings);
+        } else if(task.getInputSettings()!=null){
+            log.trace("task has inputSettings");
+            ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
+            if(task.getInputSettings().hasNonNull("skipValidation")) {
+                rareSettings.put("skipValidation", task.getInputSettings().get("skipValidation").booleanValue());
+            }
+            if(task.getInputSettings().hasNonNull("skipIndexing")) {
+                rareSettings.put("skipIndexing", task.getInputSettings().get("skipIndexing").booleanValue());
+            }
+            if(task.getInputSettings().hasNonNull("skipMatching")) {
+                rareSettings.put("skipMatching", task.getInputSettings().get("skipMatching").booleanValue());
+            }
+            ((ObjectNode)task.getAdapterSettings()).set("rarelyUsedSettings", rareSettings);
         }
         log.trace("saved init job");
-        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername().isPresent())
             ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
             : null;
         executor.execute(()-> {
