@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +45,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.google.common.collect.Sets;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -457,36 +460,49 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
     @GetGsrsRestApiMapping(value = "/databaseIndexSync", apiVersions = 1)
     public ResponseEntity<String>  getDifferenceBetweenDatabaseAndIndexes(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
-    	List<Key> keysInDatabase = getKeys();
+    	
+    	List<Key> keysInDatabase = getKeys();    	
+    	Set<KeyStringFormat> keysFromDatabase = keysInDatabase.stream()
+    			.map(k->new KeyStringFormat(k.getKind(),k.getIdString()))
+    			.collect(Collectors.toSet());
+    	keysFromDatabase.forEach(System.out::println);
+    	
 //    	List<Tuple<String,String>> tuples = keysInDatabase.stream().map(k->new Tuple<String,String>(k.getKind(),k.getIdString()))
 //    			.collect(Collectors.toList());
 //    	Map<String, Set<String>> databaseRecords = tuples.stream()
 //    			.collect(Collectors.groupingBy(t->t.k(), Collectors.mapping(t->t.v(), Collectors.toSet())));
     	    
-    	Map<String, Set<String>> databaseRecords = keysInDatabase.stream().map(k->new Tuple<String,String>(k.getKind(),k.getIdString()))
-		.collect(Collectors.groupingBy(t->t.k(), Collectors.mapping(t->t.v(), Collectors.toSet())));
-    	RestTemplate restTemplate = new RestTemplate();
-    	
-    	for(String kind:databaseRecords.keySet()) {
-    		System.out.println(kind);
-    		databaseRecords.get(kind).forEach(System.out::println);
-    	}
+//    	Map<String, Set<String>> databaseRecords = keysInDatabase.stream().map(k->new Tuple<String,String>(k.getKind(),k.getIdString()))
+//		.collect(Collectors.groupingBy(t->t.k(), Collectors.mapping(t->t.v(), Collectors.toSet())));
+//    	RestTemplate restTemplate = new RestTemplate();
+//    	
+//    	for(String kind:databaseRecords.keySet()) {
+//    		System.out.println(kind);
+//    		databaseRecords.get(kind).forEach(System.out::println);
+//    	}
     	
 //    	request.
 //    	/api/v1/substances/databaseIndexDiff    	
-    	String indexSearchUrl = request.getRequestURL().toString().replaceAll("databaseIndexSync", "search?simpleSearchOnly=true&view=key&top=999999");
-    	
-    	String baseURL = request.getRequestURL().toString();
-    			
+    	String indexSearchUrl = request.getRequestURL().toString().replaceAll("databaseIndexSync", "search?simpleSearchOnly=true&view=key&top=999999");   	
+        		
+    	RestTemplate restTemplate = new RestTemplate();
     	ResponseEntity<String> response  =  restTemplate.getForEntity(indexSearchUrl,String.class);
     	ObjectMapper mapper = new ObjectMapper();
 		
 		JsonNode rootNode= mapper.readTree(response.getBody());				
 		String keyListJsonStr = mapper.writeValueAsString(rootNode.path("content"));		
-			
+		KeyStringFormat[] keysInIndex = mapper.readValue(keyListJsonStr, KeyStringFormat[].class);
+		Set<KeyStringFormat> keysFromIndex = new HashSet<>(Arrays.asList(keysInIndex));
+		keysFromIndex.forEach(System.out::println);
 		
-//		keyList.forEach(key->System.out.println("kind: " + key.getKind() + " id: " + key.getIdString()));
-    	return  new ResponseEntity<>(keyListJsonStr, HttpStatus.OK); 	
+		Set<KeyStringFormat> extraInDatabase = Sets.difference(keysFromDatabase, keysFromIndex);
+		Set<KeyStringFormat> extraInIndex = Sets.difference(keysFromIndex, keysFromDatabase);		
+		
+		ObjectNode baseNode = mapper.createObjectNode();    	
+    	baseNode.put("databaseOnly", mapper.writeValueAsString(extraInDatabase));
+    	baseNode.put("indexOnly", mapper.writeValueAsString(extraInIndex));	
+
+    	return  new ResponseEntity<>(baseNode.toPrettyString(), HttpStatus.OK); 	
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
@@ -1281,4 +1297,19 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	node.put("id", id);
     	return node.toPrettyString();    	
     }    
+    
+    @Data
+    public static class KeyStringFormat{
+    	String kind;
+    	String idString;
+    	public KeyStringFormat(){
+    		kind="";
+    		idString="";
+    	}
+    	
+    	public KeyStringFormat(String kind, String id){
+    		this.kind = kind;
+    		this.idString = id;
+    	}
+    }
 }
