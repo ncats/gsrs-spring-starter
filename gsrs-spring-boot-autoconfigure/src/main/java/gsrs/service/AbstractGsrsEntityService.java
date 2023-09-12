@@ -497,6 +497,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 			if ("remove".equals(c.getOp())) {
                 				removed.add(c.getOldValue());
                 			}
+                            if("add".equals(c.getOp())){
+                                Object o = c.getNewValue();
+                                log.warn("adding {}", o.getClass());
+                            }
                 			LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
                 		});
                 		if (changeStack.isEmpty()) {
@@ -521,7 +525,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                                     ((ForceUpdatableModel)o).forceUpdate();
                                 }
 
-                                entityManager.merge(o);
+                                //entityManager.merge(o);
                             }
                         }
 

@@ -346,7 +346,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
             log.trace("no ImportData found by recordId; looking by instanceId");
             try {
-                ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
+                ImportData dataItem = importDataRepository.getOne(UUID.fromString(id));
+                        //getReferenceById(UUID.fromString(id));
                 if (dataItem != null) {
                     importDataList = new ArrayList<>();
                     importDataList.add(dataItem);
