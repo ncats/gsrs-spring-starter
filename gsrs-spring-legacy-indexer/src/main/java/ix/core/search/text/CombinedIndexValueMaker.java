@@ -21,6 +21,12 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     }
     
     @Override
+    public Set<String> getFieldNames(){
+    	return list.stream().flatMap(ss->ss.getFieldNames().stream()).collect(Collectors.toSet());
+    }
+    
+    
+    @Override
     public IndexValueMaker<T> restrictedForm(Set<String> fields){
     	List<IndexValueMaker<T>> filteredList=list.stream()
     	.filter(ivm->ivm.getFieldNames().stream().anyMatch(fn->fields.contains(fn)))
