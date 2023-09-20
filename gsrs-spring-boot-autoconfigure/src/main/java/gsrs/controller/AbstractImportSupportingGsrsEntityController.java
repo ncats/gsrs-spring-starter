@@ -1073,7 +1073,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         String userName = "";
         if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
             userName = GsrsSecurityUtils.getCurrentUsername().get();
-            userLists= userSavedListService.getUserSearchResultLists(userName);
+            userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));

@@ -2387,10 +2387,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
 		
-		List<String> userLists = new ArrayList<>();
-		if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+		List<String> userLists = new ArrayList<>();		
+		if(GsrsSecurityUtils.getCurrentUsername().isPresent() && options.getKind()!=null) {
 			String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
-			userLists = userSavedListService.getUserSearchResultLists(currentUserName);
+			userLists = userSavedListService.getUserSearchResultLists(currentUserName, options.getKind().getName());
 		}
 		
 		if(options.getIncludeFacets()) {
