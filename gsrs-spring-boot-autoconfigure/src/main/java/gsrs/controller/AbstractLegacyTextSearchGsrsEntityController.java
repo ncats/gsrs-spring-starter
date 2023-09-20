@@ -1010,10 +1010,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list =  userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, kind);
     	userSavedListService.deleteBulkSearchResultList(userName, listName, kind);
     	UserListStatus listStatus = createUserListStatus();  
-		listStatus.total=list.size();
-		executor.execute(()->{   			  	
-			reIndexWithKeys(listStatus,list);    			
-		});      	    	
+    	listStatus.total=list.size();
+    	executor.execute(()->{   			  	
+    		reIndexWithKeys(listStatus,list);    			
+    	});      	    	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
@@ -1030,10 +1030,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list =  userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, kind);
     	userSavedListService.deleteBulkSearchResultList(userName, listName, kind);
     	UserListStatus listStatus = createUserListStatus();  
-		listStatus.total=list.size();
-		executor.execute(()->{   			  	
-			reIndexWithKeys(listStatus,list);    			
-		});      	    	
+    	listStatus.total=list.size();
+    	executor.execute(()->{   			  	
+    		reIndexWithKeys(listStatus,list);    			
+    	});      	    	
     	       	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
