@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -32,8 +34,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -54,20 +54,20 @@ import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.EntityFetcher;
 import ix.core.models.ETag;
-import ix.core.models.BaseModel;
 import ix.core.search.GsrsLegacySearchController;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.core.search.bulk.UserSavedListService;
-import ix.core.search.bulk.UserSavedListService.Operation;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.ResultListRecord;
 import ix.core.search.bulk.ResultListRecordGenerator;
+import ix.core.search.bulk.UserSavedListService;
+import ix.core.search.bulk.UserSavedListService.Operation;
 import ix.core.search.text.FacetMeta;
 import ix.core.search.text.TextIndexer;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil;
@@ -1212,7 +1212,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     private void reIndexWithKeys(UserListStatus status, List<String> keyIds) { 
     	
     	int total = status.getTotal();
-    	for(String id: keyIds) {    		
+    	
+    	//TODO: should use indexing event instead
+    	TextIndexerFactory tif = StaticContextAccessor.getBean(TextIndexerFactory.class);
+    	Set<String> userFieldSet = new HashSet<>();
+    	userFieldSet.add("User List");
+    	
+    	
+    	keyIds.parallelStream().forEach(id->{
     		try {
 
     			Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
@@ -1220,8 +1227,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     			if(entityID.isPresent()) {    			
     				Class eclass = getEntityService().getEntityClass();
                     Key k = Key.ofStringId(eclass, entityID.get());
-                    Object o = EntityFetcher.of(k).call();                    
-    				getlegacyGsrsSearchService().reindex(o, true);    				
+                    Object o = EntityFetcher.of(k).call();      
+                    
+                    tif.getDefaultInstance().updateFields(EntityWrapper.of(o), userFieldSet);
+    				//getlegacyGsrsSearchService().reindex(o, true);    				
     			
     			}else {
     				log.warn("Cannot get the object during reindexing id: " + id);
@@ -1240,7 +1249,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     			log.warn("trouble reindexing id: " + id, e);
 			
     		}   
-    	}
+    	});
+    	
 		
     	
     }
