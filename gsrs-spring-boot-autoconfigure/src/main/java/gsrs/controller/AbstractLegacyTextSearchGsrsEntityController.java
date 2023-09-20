@@ -1006,9 +1006,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);  
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	    	
-    	userSavedListService.deleteBulkSearchResultList(userName, listName, getEntityService().getEntityClass().getName());
-    	    	
+    	String kind = getEntityService().getEntityClass().getName();    	
+    	List<String> list =  userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, kind);
+    	userSavedListService.deleteBulkSearchResultList(userName, listName, kind);
+    	UserListStatus listStatus = createUserListStatus();  
+		listStatus.total=list.size();
+		executor.execute(()->{   			  	
+			reIndexWithKeys(listStatus,list);    			
+		});      	    	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
@@ -1021,8 +1026,15 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
     	   	
-    	userSavedListService.deleteBulkSearchResultList(userName, listName, getEntityService().getEntityClass().getName());  
-       	
+    	String kind = getEntityService().getEntityClass().getName();    	
+    	List<String> list =  userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, kind);
+    	userSavedListService.deleteBulkSearchResultList(userName, listName, kind);
+    	UserListStatus listStatus = createUserListStatus();  
+		listStatus.total=list.size();
+		executor.execute(()->{   			  	
+			reIndexWithKeys(listStatus,list);    			
+		});      	    	
+    	       	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
@@ -1223,7 +1235,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     			}
     			
     			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
-			
+    			log.info(status.status);
     		}catch(Exception e) {
     			log.warn("trouble reindexing id: " + id, e);
 			
