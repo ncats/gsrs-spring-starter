@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
-import org.checkerframework.checker.units.qual.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
