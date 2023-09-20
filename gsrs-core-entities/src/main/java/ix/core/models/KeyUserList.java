@@ -34,13 +34,16 @@ public class KeyUserList {
 	@Column(nullable = false, name = "list_name")
 	public String listName;	
 	
+	private String kind;
+	
 	public KeyUserList() {}
 	
-	public KeyUserList(String key, Principal user, String name) {
+	public KeyUserList(String key, Principal user, String name, String kind) {
 		this.entityKey = key;
         this.principal = user;
-        this.listName = name;        
-    }
+        this.listName = name;
+        this.kind = kind;
+    }	
 	
 	@Override
 	public boolean equals(Object o) {

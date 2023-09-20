@@ -305,7 +305,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         String userName = "";
         if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
-        	userLists= userSavedListService.getUserSearchResultLists(userName);
+        	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
 
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
@@ -337,7 +337,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         String userName = "";
         if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
-        	userLists= userSavedListService.getUserSearchResultLists(userName);
+        	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
 
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
@@ -766,7 +766,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> list = userSavedListService.getUserSearchResultLists(name);
+    	List<String> list = userSavedListService.getUserSearchResultLists(name, getEntityService().getEntityClass().getName());
     	
     	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK);   	
     	
@@ -780,9 +780,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	List<String> list; 
     	if(!name.isPresent())
-    		list = userSavedListService.getAllUserSearchResultLists();
+    		list = userSavedListService.getAllUserSearchResultLists(getEntityService().getEntityClass().getName());
     	else 
-    		list = userSavedListService.getUserSearchResultLists(name.get());
+    		list = userSavedListService.getUserSearchResultLists(name.get(), getEntityService().getEntityClass().getName());
     	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);    	    	
@@ -866,7 +866,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    	    	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip, 
+    			getEntityService().getEntityClass().getName());
     	    	
     	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
     	
@@ -883,7 +884,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
      	String listName = pathVarsMap.get("list");
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
-    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, rTop, rSkip);
+    	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, rTop, rSkip,
+    			getEntityService().getEntityClass().getName());
     	   	
     	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
     	
@@ -926,12 +928,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	UserListStatus status = createUserListStatus(); 
     	status.total=list.size();
     	
-    	String message = userSavedListService.validateUsernameAndListname(userName, listName);
+    	String kind = getEntityService().getEntityClass().getName();
+    	
+    	String message = userSavedListService.validateUsernameAndListname(userName, listName, kind);
     	if(message.length()>0)
     		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST); 
     	
     	executor.execute(()->{      
-    		userSavedListService.createBulkSearchResultList(userName, listName, list);
+    		userSavedListService.createBulkSearchResultList(userName, listName, list, kind);
     		reIndexWithKeys(status,list);    		
     	});
     	
@@ -971,7 +975,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	String message = userSavedListService.validateUsernameAndListname(userName, listName);
+    	String kind = getEntityService().getEntityClass().getName();
+    	
+    	String message = userSavedListService.validateUsernameAndListname(userName, listName, kind);
     	if(message.length()>0)
     		return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);     	
     	
@@ -979,7 +985,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	listStatus.total=keyList.size();
     	
     	executor.execute(()->{   
-    		userSavedListService.createBulkSearchResultList(userName, listName, keyList);       	
+    		userSavedListService.createBulkSearchResultList(userName, listName, keyList, kind);       	
     		reIndexWithKeys(listStatus,keyList);
     	});    	
 
@@ -1001,7 +1007,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	    	
-    	userSavedListService.deleteBulkSearchResultList(userName, listName);
+    	userSavedListService.deleteBulkSearchResultList(userName, listName, getEntityService().getEntityClass().getName());
     	    	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
@@ -1015,7 +1021,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	} 
     	   	
-    	userSavedListService.deleteBulkSearchResultList(userName, listName);  
+    	userSavedListService.deleteBulkSearchResultList(userName, listName, getEntityService().getEntityClass().getName());  
        	
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
@@ -1042,7 +1048,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(!validStringParamater(listName) ) {
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);}
     	
-    	boolean listExists = userSavedListService.userListExists(userName,listName);
+    	String kind = getEntityService().getEntityClass().getName();
+    	boolean listExists = userSavedListService.userListExists(userName,listName, kind);
     	if(!listExists) {
     		return new ResponseEntity<Object>(
     				GsrsControllerConfiguration.createStatusJson("List does not exist!", HttpStatus.NOT_FOUND.value()), 
@@ -1058,7 +1065,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(keyList.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, keyList, Operation.ADD);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, keyList, Operation.ADD, kind);
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  
         	listStatus.total=keyList.size();
@@ -1093,7 +1100,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	String userName = GsrsSecurityUtils.getCurrentUsername().get();
     	
-    	boolean listExists = userSavedListService.userListExists(userName,listName);
+    	String kind = getEntityService().getEntityClass().getName();
+    	boolean listExists = userSavedListService.userListExists(userName, listName, kind);
     	if(!listExists) {
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
@@ -1107,7 +1115,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(list.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	    	
-    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op, kind);
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  
         	listStatus.total=list.size();
@@ -1138,7 +1146,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	}
     	
-    	boolean listExists = userSavedListService.userListExists(userName,listName);
+    	String kind = getEntityService().getEntityClass().getName();
+    	boolean listExists = userSavedListService.userListExists(userName, listName, kind);
     	if(!listExists) {
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
@@ -1152,7 +1161,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(list.size() ==0)
     		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     	
-    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op);
+    	boolean updated = userSavedListService.updateBulkSearchResultList(userName, listName, list, op, kind);
     	
     	if(updated) {
     		UserListStatus listStatus = createUserListStatus();  

@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.checkerframework.checker.units.qual.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -59,7 +60,7 @@ public class TextIndexerIndexedRecordTest {
 		conf.setFieldsuggest(true);
 		conf.setShouldLog(false);
 		UserSavedListService userSavedListService = mock(UserSavedListService.class);
-		Mockito.when(userSavedListService.getUserSearchResultLists(ArgumentMatchers.anyString())).thenReturn(new ArrayList<String>());
+		Mockito.when(userSavedListService.getUserSearchResultLists(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).thenReturn(new ArrayList<String>());
 				
 		
 		IndexValueMakerFactory singleIVMMaker = new IndexValueMakerFactory() {
