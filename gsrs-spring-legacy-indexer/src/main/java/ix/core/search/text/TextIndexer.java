@@ -2941,6 +2941,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
+	    	//Removal is now done right before the final add to reduce time where the document is not
+	    	//found in the index
             //remove(ew);
             add(ew, true);
         }finally{
@@ -2955,20 +2957,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    l.lock();
 	    
 	    try{
-	    	//as it was before
+	    	//retrieve the indexed record as it was before so it can be directly
+	    	//modified
 	    	IndexRecord ix =getIndexRecord(ew.getKey());
 	    	
 	    	
+	    	//remove the fields and facets which have the supplied name
 	    	ix.facets=ix.facets.stream().filter(iff->!fields.contains(iff.getFacetName())).collect(Collectors.toList());
 	    	ix.fields=ix.fields.stream().filter(iff->!fields.contains(iff.getFieldName())).collect(Collectors.toList());
 	    	ix.suggest=ix.suggest.stream().filter(iff->!fields.contains(iff.getSuggestName())).collect(Collectors.toList());
 	    	
 	    	
-	    		    	
-            remove(ew);
-            add(ew,fields,ix);
+	    	//No longer remove the documents here. Now remove the document right before saving the new one to reduce
+	    	//the time where the index is incomplete
+//            remove(ew);
+	    	
+	    	
+            add(ew,fields,ix, true);
         } catch (Exception e) {
-			e.printStackTrace();
+			log.warn("problem doing partial index update", e);
 			//fallback to normal indexing
 			update(ew);
 		}finally{
@@ -2982,7 +2989,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * recursively index any object annotated with Entity, only use selected IVMs and store the delta
 	 * 
 	 */
-	private void add(EntityWrapper ew, Set<String> filters,IndexRecord ix) throws IOException {
+	private void add(EntityWrapper ew, Set<String> filters,IndexRecord ix, boolean removeOld) throws IOException {
 		ew.toInternalJson();
         Document doc = new Document();
         Document docExact = new Document();
@@ -3031,6 +3038,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 		
 
+		if(removeOld) {
+			remove(ew);
+		}
+		
 		// now index
 		addDoc(doc);
 		
