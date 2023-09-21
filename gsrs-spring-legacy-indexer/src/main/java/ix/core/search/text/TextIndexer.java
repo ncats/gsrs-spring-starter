@@ -2941,8 +2941,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
-            remove(ew);
-            add(ew);
+            //remove(ew);
+            add(ew, true);
         }finally{
 	        l.unlock();
         }
@@ -3084,8 +3084,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	}
     
+	public void add(EntityWrapper ew) throws IOException {
+		add(ew, false);
+    }
 		
-    public void add(EntityWrapper ew) throws IOException {
+    public void add(EntityWrapper ew, boolean removeFirst) throws IOException {
         //Don't index if any of the following:
         // 1. The entity doesn't have an Indexable annotation OR
         // 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
@@ -3094,7 +3097,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
                 (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()));
         
-        add(ew,!shouldNotAdd);
+        add(ew,!shouldNotAdd, removeFirst);
         
     }
     
@@ -3445,7 +3448,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	/**
 	 * recursively index any object annotated with Entity
 	 */
-	private void add(EntityWrapper ew, boolean force) throws IOException {
+	private void add(EntityWrapper ew, boolean force, boolean removeFirst) throws IOException {
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
@@ -3518,6 +3521,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 				  }
 				});
 			
+			if(removeFirst) {
+				remove(ew);
+			}
 
 			// now index
 			addDoc(doc);
