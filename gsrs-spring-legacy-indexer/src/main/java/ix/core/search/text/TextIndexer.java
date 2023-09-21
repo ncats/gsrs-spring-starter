@@ -2941,8 +2941,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
-            remove(ew);
-            add(ew);
+	    	//Removal is now done right before the final add to reduce time where the document is not
+	    	//found in the index
+            //remove(ew);
+            add(ew, true);
         }finally{
 	        l.unlock();
         }
@@ -2955,20 +2957,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    l.lock();
 	    
 	    try{
-	    	//as it was before
+	    	//retrieve the indexed record as it was before so it can be directly
+	    	//modified
 	    	IndexRecord ix =getIndexRecord(ew.getKey());
 	    	
 	    	
+	    	//remove the fields and facets which have the supplied name
 	    	ix.facets=ix.facets.stream().filter(iff->!fields.contains(iff.getFacetName())).collect(Collectors.toList());
 	    	ix.fields=ix.fields.stream().filter(iff->!fields.contains(iff.getFieldName())).collect(Collectors.toList());
 	    	ix.suggest=ix.suggest.stream().filter(iff->!fields.contains(iff.getSuggestName())).collect(Collectors.toList());
 	    	
 	    	
-	    		    	
-            remove(ew);
-            add(ew,fields,ix);
+	    	//No longer remove the documents here. Now remove the document right before saving the new one to reduce
+	    	//the time where the index is incomplete
+//            remove(ew);
+	    	
+	    	
+            add(ew,fields,ix, true);
         } catch (Exception e) {
-			e.printStackTrace();
+			log.warn("problem doing partial index update", e);
 			//fallback to normal indexing
 			update(ew);
 		}finally{
@@ -2982,7 +2989,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * recursively index any object annotated with Entity, only use selected IVMs and store the delta
 	 * 
 	 */
-	private void add(EntityWrapper ew, Set<String> filters,IndexRecord ix) throws IOException {
+	private void add(EntityWrapper ew, Set<String> filters,IndexRecord ix, boolean removeOld) throws IOException {
 		ew.toInternalJson();
         Document doc = new Document();
         Document docExact = new Document();
@@ -3031,6 +3038,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 			});
 		
 
+		if(removeOld) {
+			remove(ew);
+		}
+		
 		// now index
 		addDoc(doc);
 		
@@ -3084,8 +3095,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	}
     
+	public void add(EntityWrapper ew) throws IOException {
+		add(ew, false);
+    }
 		
-    public void add(EntityWrapper ew) throws IOException {
+    public void add(EntityWrapper ew, boolean removeFirst) throws IOException {
         //Don't index if any of the following:
         // 1. The entity doesn't have an Indexable annotation OR
         // 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
@@ -3094,7 +3108,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
                 (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()));
         
-        add(ew,!shouldNotAdd);
+        add(ew,!shouldNotAdd, removeFirst);
         
     }
     
@@ -3445,7 +3459,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	/**
 	 * recursively index any object annotated with Entity
 	 */
-	private void add(EntityWrapper ew, boolean force) throws IOException {
+	private void add(EntityWrapper ew, boolean force, boolean removeFirst) throws IOException {
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
@@ -3518,6 +3532,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 				  }
 				});
 			
+			if(removeFirst) {
+				remove(ew);
+			}
 
 			// now index
 			addDoc(doc);
