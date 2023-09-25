@@ -939,7 +939,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		reIndexWithKeys(status,list);    		
     	});
     	
-    	log.warn("testing ");
+//    	log.warn("testing ");
     	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);	
     }
     //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
@@ -1244,7 +1244,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     			}
     			
     			gsrscache.setRaw("UserSavedList/" + status.getStatusID(), status);
-    			log.info(status.status);
+//    			log.info(status.status);
     		}catch(Exception e) {
     			log.warn("trouble reindexing id: " + id, e);
 			
