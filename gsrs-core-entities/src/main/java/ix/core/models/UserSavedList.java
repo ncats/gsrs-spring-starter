@@ -17,7 +17,7 @@ import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "ix_core_user_saved_list", 
-	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id"})})
+	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id", "kind"})})
 @Indexable(indexed = false)
 public class UserSavedList {
 	

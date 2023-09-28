@@ -103,8 +103,10 @@ public interface IndexableValue {
 	    return Math.max(0, 1000-t.length());
 	}
 
-	
 	default IndexableValue suggestable(){
+		return suggestable(true);
+	}
+	default IndexableValue suggestable(boolean sug){
 		IndexableValue me = this;
 		return new IndexableValue(){
 
@@ -158,7 +160,7 @@ public interface IndexableValue {
 			}
 
 			public  boolean suggest() {
-				return true;
+				return sug;
 			}
 
 			public  boolean sequence() {
