@@ -77,7 +77,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 rawMaker.createIndexableValues(dataObject,(iv)->{
                     //don't daisy chain suggestion indexes
                     if(!((IndexableValue)iv).suggest()){
-                        consumer.accept(((IndexableValue)iv));
+                        consumer.accept(((IndexableValue)iv).suggestable(false));
                     }
                 });
                 log.trace("called createIndexableValues");
