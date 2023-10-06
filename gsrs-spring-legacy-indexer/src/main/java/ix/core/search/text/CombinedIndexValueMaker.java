@@ -1,7 +1,11 @@
 package ix.core.search.text;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.SetUtils;
 
 public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     private final List<IndexValueMaker<? super T>> list;
@@ -14,6 +18,22 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     @Override
     public Class<T> getIndexedEntityClass() {
         return clazz;
+    }
+    
+    @Override
+    public Set<String> getFieldNames(){
+    	return list.stream().flatMap(ss->ss.getFieldNames().stream()).collect(Collectors.toSet());
+    }
+    
+    
+    @Override
+    public IndexValueMaker<T> restrictedForm(Set<String> fields){
+    	List<IndexValueMaker<T>> filteredList=list.stream()
+    	.filter(ivm->ivm.getFieldNames().stream().anyMatch(fn->fields.contains(fn)))
+    	.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(fields))
+    	.collect(Collectors.toList());
+    	
+    	return new CombinedIndexValueMaker(clazz,filteredList);
     }
 
     @Override

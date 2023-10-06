@@ -173,7 +173,7 @@ public class SearchRequest {
 		}
 
 		public Builder simpleSearchOnly(boolean s) {
-			this.opBuilder.promoteSpecialMatches(s);
+			this.opBuilder.simpleSearchOnly(s);
 			return this;
 		}
 

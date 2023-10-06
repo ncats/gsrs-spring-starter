@@ -55,7 +55,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 log.trace("looking for a staging area service for context {}", contextName);
                 stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
                         //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
-                log.trace("got service {{}", stagingAreaService);
+                log.trace("got service {}", stagingAreaService);
             } catch (Exception e) {
                 log.error("Error obtaining staging area service", e);
                 throw new RuntimeException(e);
@@ -69,9 +69,17 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                     log.warn("deserialized object is null! (importMetadata.getInstanceId(): {}", importMetadata.getInstanceId());
                     return;
                 }
+                log.trace("deserialized object of class {}", dataObject.getClass().getName());
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
                 log.trace("instantiated IndexValueMaker");
-                rawMaker.createIndexableValues(dataObject,consumer);
+                //rawMaker.createIndexableValues(dataObject,consumer);
+                //based on suggestion from Tyler P:
+                rawMaker.createIndexableValues(dataObject,(iv)->{
+                    //don't daisy chain suggestion indexes
+                    if(!((IndexableValue)iv).suggest()){
+                        consumer.accept(((IndexableValue)iv).suggestable(false));
+                    }
+                });
                 log.trace("called createIndexableValues");
             } else {
                 log.info("No import data found for instance ID: {}", importMetadata.getInstanceId() != null ? importMetadata.getInstanceId().toString()

@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -128,6 +129,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -151,6 +153,7 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.TextService;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -165,6 +168,7 @@ import ix.core.search.SearchOptions.DrillAndPath;
 import ix.core.search.SearchResult;
 import ix.core.search.SuggestResult;
 import ix.core.search.bulk.UserSavedListService;
+import ix.core.search.bulk.UserSavedListService.UserListIndexedValue;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -187,17 +191,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TextIndexer implements Closeable, ProcessListener {
+	
 	private static final String FACET_DELIMITER = "!!";
 
 	public static final String TERM_VEC_PREFIX = "F";
 
     public static final String IX_BASE_PACKAGE = "ix";
-
-
-    private TextIndexerConfig textIndexerConfig;
-
-    @Autowired
-    private TextService textService;
   
 
 //	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
@@ -239,10 +238,13 @@ public class TextIndexer implements Closeable, ProcessListener {
     private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-
+		
 	@Autowired
 	GsrsCache gsrscache;
-
+	
+	private TextIndexerConfig textIndexerConfig;
+	
+	private UserSavedListService userSavedListService;
     /**
      * DO NOT CALL UNLESS YOU KNOW WHAT YOU ARE DOING.
      * This is exposed for dependency injection from
@@ -425,7 +427,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             };
         }
 
-        public FacetMeta getFacet(int top, int skip, String filter, String uri) throws ParseException {
+        public FacetMeta getFacet(int top, int skip, String filter, String uri, String userName, List<String> userLists) throws ParseException {
             FacetImpl fac = new FacetImpl(getField(), null);
             
             String field = getField(); //name
@@ -436,15 +438,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 QueryParser parser = new IxQueryParser("label");
                 filt = getPredicate(parser.parse(filter));
             }
-
-            String userName;
-            Optional<String> nameOptional = GsrsSecurityUtils.getCurrentUsername();
-            if(nameOptional.isPresent()) {
-            	userName = nameOptional.get();
-            }else {
-            	userName="";
-            }
-
+            
             terms.entrySet()
                 .stream()
                 .parallel()
@@ -453,15 +447,17 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .map(t->new FV(fac,t.k(),t.v()))
                 .filter(fv->{
                 	if(field.equalsIgnoreCase("User List")) {
-                		// check the current user, filter facet by user name 
-                		String nameInLabel = UserSavedListService.getUserNameFromIndexedValue(fv.getLabel());
-                		log.error("user name: "+  userName + " facet label name: "+ nameInLabel);
-                		if(userName.isEmpty())
-                			return false;
-                		else if(userName.equalsIgnoreCase(nameInLabel))
+                		// check the current user, filter facet by user name
+                		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
+                		String nameInLabel = dataItem.getUserName();
+                		String listName = dataItem.getListName();                		
+                		if(userName.isEmpty() || userLists.size() == 0) {
+                			return false;                		
+                		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
                 			return true;
-                		else
+                		}else {
                 			return false;
+                		}
                 	}else {
                 		return true;
                 	}                		
@@ -472,7 +468,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .forEach(fv->{
                     fac.add(fv);
                 });
-
+          
             return new FacetMeta.Builder()
 					            .facets(fac)
 					            .ffilter(filter)
@@ -1241,7 +1237,9 @@ public class TextIndexer implements Closeable, ProcessListener {
         return taxonWriter;
     }
 
-    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction) {
+    private TextIndexer(IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory, Function<EntityWrapper, Boolean> deepKindFunction,
+    			UserSavedListService userSavedListService) {
 
         // empty instance should only be used for
 		// facet subsearching so we only need to have
@@ -1255,8 +1253,11 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.textIndexerConfig = textIndexerConfig;
         this.indexerService = indexerService;
         this.deepKindFunction = deepKindFunction;
+        this.userSavedListService = userSavedListService;
     }
-    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, Function<EntityWrapper, Boolean> deepKindFunction) throws IOException{
+    public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
+    			IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, 
+    			Function<EntityWrapper, Boolean> deepKindFunction, UserSavedListService userSavedListService) throws IOException{
         this.gsrscache=cache;
         this.textIndexerConfig = textIndexerConfig;
         this.indexValueMakerFactory = indexValueMakerFactory;
@@ -1269,6 +1270,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         this.deepKindFunction = deepKindFunction;
         this.indexerService = indexerService;
         this.indexerServiceFactory = indexerServiceFactory;
+        this.userSavedListService = userSavedListService;
         
         initialSetup();
 
@@ -1446,7 +1448,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * subset of the documents stored.
 	 */
 	public TextIndexer createEmptyInstance() throws IOException {
-	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, indexValueMakerFactory, deepKindFunction );
+	    TextIndexer indexer = new TextIndexer(indexerServiceFactory, indexerServiceFactory.createInMemory(),textIndexerConfig, 
+	    		indexValueMakerFactory, deepKindFunction, userSavedListService );
 		indexer.taxonDir = new RAMDirectory();
 		return config(indexer);
 	}
@@ -1920,22 +1923,43 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 
-	public static void collectBasicFacets(Facets facets, SearchResult sr) throws IOException{
+	public static void collectBasicFacets(Facets facets, SearchResult sr, List<String> userLists) throws IOException{
 		Map<String,List<DrillAndPath>> providedDrills = sr.getOptions().getEnhancedDrillDownsMap();
 
 		int fdim=sr.getOptions().getFdim();
 		if(fdim<=0)return;
+		
+		List<LabelAndValue> userListInResult = new ArrayList<>();
 
-		List<FacetResult> facetResults = facets.getAllDims(fdim);
+		List<FacetResult> facetResults = facets.getAllDims(fdim);		
+		FacetResult userListFacet = facets.getTopChildren(sr.getOptions().getUserListFetchSize(), "User List");
+		
+		if(userListFacet != null) {			
+			for(LabelAndValue lv:userListFacet.labelValues){				
+				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
+				String userName = dataItem.getUserName();
+				String listName = dataItem.getListName();
+//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+						userLists.size() > 0 && userLists.contains(listName)) {
+					userListInResult.add(lv);					
+//					log.info("adding facet: username: " + userName + "  listName: " + listName );
+				}									
+			}	
+		}
+		
+		
 //		if (DEBUG(1)) {
 //			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
 //		}
 
+		
 		//Convert FacetResult -> Facet, and add to
 		//search result
 		facetResults.stream()
 			.filter(Objects::nonNull)
-			.map(result -> {
+			.map(result -> {			
+			
 				Facet fac = new FacetImpl(result.dim, sr);
 
 				// make sure the facet value is returned
@@ -1960,18 +1984,19 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 					fac.setSelectedLabels(selected);
-				}
+				}				
 
-				for(LabelAndValue lv:result.labelValues){
-					if(result.dim.equalsIgnoreCase("User List")) {
-						String userName = UserSavedListService.getUserNameFromIndexedValue(lv.label);						
-						if(userName.equalsIgnoreCase(sr.getUserName())) {
-							fac.add(lv.label, lv.value.intValue());
-						}											
-					}else {
+				if(result.dim.equalsIgnoreCase("User List")) {
+					int fcount = 0;
+					for(LabelAndValue lv:userListInResult){	
+						if(fcount >= fdim) break;						
 						fac.add(lv.label, lv.value.intValue());
-					}
-									
+						fcount++;
+					}								
+				}else {				
+					for(LabelAndValue lv:result.labelValues){					
+						fac.add(lv.label, lv.value.intValue());
+					}	
 				}
 
 				fac.getMissingSelections().stream().forEach(l->{
@@ -2362,9 +2387,15 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		LuceneSearchProviderResult lspResult=lsp.search(searcher, taxon,qactual,facetCollector);
 		hits=lspResult.getTopDocs();
-
+		
+		List<String> userLists = new ArrayList<>();		
+		if(GsrsSecurityUtils.getCurrentUsername().isPresent() && options.getKind()!=null) {
+			String currentUserName = GsrsSecurityUtils.getCurrentUsername().get();
+			userLists = userSavedListService.getUserSearchResultLists(currentUserName, options.getKind().getName());
+		}
+		
 		if(options.getIncludeFacets()) {
-		     collectBasicFacets(lspResult.getFacets(), searchResult);
+		     collectBasicFacets(lspResult.getFacets(), searchResult, userLists);
 		     collectLongRangeFacets(facetCollector, searchResult);
 		}
 
@@ -2910,15 +2941,165 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
-            remove(ew);
-            add(ew);
+	    	//Removal is now done right before the final add to reduce time where the document is not
+	    	//found in the index
+            //remove(ew);
+            add(ew, true);
         }finally{
 	        l.unlock();
         }
 
     }
+	
+	public void updateFields(EntityWrapper ew, Set<String> fields) throws IOException{
+        log.trace("starting in update, key: {}", ew.getKey());
+	    Lock l = stripedLock.get(ew.getKey());
+	    l.lock();
+	    
+	    try{
+	    	//retrieve the indexed record as it was before so it can be directly
+	    	//modified
+	    	IndexRecord ix =getIndexRecord(ew.getKey());
+	    	
+	    	
+	    	//remove the fields and facets which have the supplied name
+	    	ix.facets=ix.facets.stream().filter(iff->!fields.contains(iff.getFacetName())).collect(Collectors.toList());
+	    	ix.fields=ix.fields.stream().filter(iff->!fields.contains(iff.getFieldName())).collect(Collectors.toList());
+	    	ix.suggest=ix.suggest.stream().filter(iff->!fields.contains(iff.getSuggestName())).collect(Collectors.toList());
+	    	
+	    	
+	    	//No longer remove the documents here. Now remove the document right before saving the new one to reduce
+	    	//the time where the index is incomplete
+//            remove(ew);
+	    	
+	    	
+            add(ew,fields,ix, true);
+        } catch (Exception e) {
+			log.warn("problem doing partial index update", e);
+			//fallback to normal indexing
+			update(ew);
+		}finally{
+	        l.unlock();
+        }
+
+    }
+	
+    
+    /**
+	 * recursively index any object annotated with Entity, only use selected IVMs and store the delta
+	 * 
+	 */
+	private void add(EntityWrapper ew, Set<String> filters,IndexRecord ix, boolean removeOld) throws IOException {
+		ew.toInternalJson();
+        Document doc = new Document();
+        Document docExact = new Document();
+        if(textIndexerConfig.isShouldLog()){
+            LogUtil.debug(()->{
+                String beanId;
+                if(ew.hasIdField()){
+                    beanId = ew.getKey().toString();
+                }else{
+                    beanId = ew.toString();
+                }
+                return "[LOG_INDEX] =======================\nINDEXING BEAN "+ beanId;
+            });
+
+        }
+        Key kk = ew.getKey().toRootKey();
+        
+        
+        
+        //make a version that only does the fields in question
+		IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew)
+				                                                  .restrictedForm(filters);
+		valueMaker.createIndexableValues(ew.getValue(), iv->{
+			this.instrumentIndexableValue(ix, iv, ie->{
+				return filters.contains(ie.getIndexFieldName());
+			});
+		});
+        
+		// Now that the record is built,
+		// we need to process it
+		IndexRecordProcessor irp = new IndexRecordProcessor(doc, ix, kk.getEntityInfo(),  this);
+		irp.process();
 		
-    public void add(EntityWrapper ew) throws IOException {
+//		fieldCollector.accept(new StringField(FIELD_KIND, ew.getKind(), YES));
+//		fieldCollector.accept(new StringField(ANALYZER_MARKER_FIELD, "false", YES));
+		
+		irp.numericFieldList.forEach((n,v)->{
+			  if(v.size()==1) {
+			      doc.add(v.get(0));
+			  }else {
+			      v.forEach(iff->{
+			          double d =iff.numericValue().doubleValue();
+			          doc.add(new DoubleField(n, d, NO));
+			      });
+			  }
+			});
+		
+
+		if(removeOld) {
+			remove(ew);
+		}
+		
+		// now index
+		addDoc(doc);
+		
+
+		Tuple<String,String> luceneKey = kk.asLuceneIdTuple();
+		
+		//ID
+		docExact.add(new StringField(FULL_DOC_PREFIX + luceneKey.k() , luceneKey.v(),YES));
+		
+		docExact.add(new StringField(FIELD_KIND, FULL_DOC_PREFIX + kk.getKind(),YES));
+		docExact.add(new SortedDocValuesField(FIELD_KIND,new BytesRef(FULL_DOC_PREFIX + kk.getKind())));
+		docExact.add(new StoredField(FIELD_KIND, new BytesRef(FULL_DOC_PREFIX + kk.getKind())));
+		
+		docExact.add(new StoredField("FULL_INDEX", new BytesRef(EntityWrapper.of(ix).toInternalJson())));
+		docExact.add(new StringField(ANALYZER_MARKER_FIELD, "false",YES));
+		
+		indexerService.addDocument(docExact);
+		
+		if(ix.isDeepAnalyzed()){
+			
+			if(!kk.getIdString().equals("")){  //probably not needed
+				StringField toAnalyze=new StringField(FIELD_KIND, ANALYZER_VAL_PREFIX + kk.getKind(),YES);
+				SortedDocValuesField toAnalyze2= new SortedDocValuesField(FIELD_KIND,new BytesRef(ANALYZER_VAL_PREFIX + kk.getKind()));
+				StoredField toAnalyze3= new StoredField(FIELD_KIND, new BytesRef(ANALYZER_VAL_PREFIX + kk.getKind()));
+				StringField analyzeMarker=new StringField(ANALYZER_MARKER_FIELD, "true",YES);
+
+
+				StringField docParent=new StringField(ANALYZER_VAL_PREFIX+luceneKey.k(),luceneKey.v(),YES);
+				FacetField docParentFacet =new FacetField(ANALYZER_VAL_PREFIX+luceneKey.k(),luceneKey.v());
+				//This is a test of a terrible idea, which just. might. work.
+				irp.fullText.forEach((name,group)->{
+						try{
+                            Document fielddoc = new Document();
+							fielddoc.add(toAnalyze);
+							fielddoc.add(toAnalyze2);
+							fielddoc.add(toAnalyze3);
+							fielddoc.add(analyzeMarker);
+							fielddoc.add(docParent);
+							fielddoc.add(docParentFacet);
+							fielddoc.add(new FacetField(ANALYZER_FIELD,name));
+							for(String f:group){
+									fielddoc.add(new TextField(FULL_TEXT_FIELD, f, NO));
+							}
+							addDoc(fielddoc);
+						}catch(Exception e){
+							log.error("Analyzing index failed", e);
+						}
+					});
+			}
+		}
+
+	}
+    
+	public void add(EntityWrapper ew) throws IOException {
+		add(ew, false);
+    }
+		
+    public void add(EntityWrapper ew, boolean removeFirst) throws IOException {
         //Don't index if any of the following:
         // 1. The entity doesn't have an Indexable annotation OR
         // 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
@@ -2927,7 +3108,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
                 (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()));
         
-        add(ew,!shouldNotAdd);
+        add(ew,!shouldNotAdd, removeFirst);
         
     }
     
@@ -2948,7 +3129,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     
     
 
-    @Builder
+//    @Builder
     @AllArgsConstructor(access = AccessLevel.PACKAGE)
     @NoArgsConstructor(access = AccessLevel.PACKAGE)
     @Setter(value = AccessLevel.PACKAGE)
@@ -2977,6 +3158,8 @@ public class TextIndexer implements Closeable, ProcessListener {
     
     static interface IndexedElement{
     	
+    	@JsonIgnore
+    	public String getIndexFieldName();
     }
 
     static enum IndexedFieldType{
@@ -3011,6 +3194,11 @@ public class TextIndexer implements Closeable, ProcessListener {
     	private boolean stored;
     	private boolean sortable;
     	private boolean exactText;
+    	
+    	@JsonIgnore
+    	public String getIndexFieldName() {
+    		return this.getFieldName();
+    	}
     	
     	@JsonIgnore
     	public boolean isTextual() {
@@ -3048,6 +3236,11 @@ public class TextIndexer implements Closeable, ProcessListener {
     	private String suggestName;
     	private String suggestValue;
     	private int suggestWeight;
+    	
+    	@JsonIgnore
+    	public String getIndexFieldName() {
+    		return this.getSuggestName();
+    	}
 	}
 
     
@@ -3066,6 +3259,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     	private String format;
     	private boolean hierarchical;
 
+    	@JsonIgnore
+    	public String getIndexFieldName() {
+    		return this.getFacetName();
+    	}
     	
     	@JsonIgnore
     	public String getFirstValue() {
@@ -3258,13 +3455,11 @@ public class TextIndexer implements Closeable, ProcessListener {
     			}
     	 }
     }
-    
-    
-    
+
 	/**
 	 * recursively index any object annotated with Entity
 	 */
-	private void add(EntityWrapper ew, boolean force) throws IOException {
+	private void add(EntityWrapper ew, boolean force, boolean removeFirst) throws IOException {
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
@@ -3337,6 +3532,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 				  }
 				});
 			
+			if(removeFirst) {
+				remove(ew);
+			}
 
 			// now index
 			addDoc(doc);
@@ -3947,37 +4145,55 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	//make the fields for the dynamic facets
 
-	public void createDynamicField(IndexRecord record, IndexableValue iv) {
+	public void createDynamicField(IndexRecord record, IndexableValue iv, Predicate<IndexedElement> allowAdding) {
 		facetsConfig.setMultiValued(iv.name(), true);
 		facetsConfig.setRequireDimCount(iv.name(), true);
 		String val= iv.value().toString();
 		
-		record.facets.add(IndexedFacet.builder().type(IndexedFieldType.STRING).facetName(iv.name()).facetValue(val).build());
+		IndexedFacet ifac=IndexedFacet.builder().type(IndexedFieldType.STRING).facetName(iv.name()).facetValue(val).build();
+		if(allowAdding.test(ifac)) {
+			record.facets.add(ifac);
+		}
+		
+		
 		
 		//for all fields we need to add 2 versions that are exact/continuous
-		record.fields.add(IndexedField.builder()
+		IndexedField iff =IndexedField.builder()
 				.type(IndexedFieldType.TEXT)
 				.fieldName(iv.path())
 				.fieldValue(val)
 				.exactText(true)
 				.sortable(iv.sortable())
-				.build());
+				.build();
+		
+		if(allowAdding.test(iff)) {
+			record.fields.add(iff);
+		}
+		
+		
 //		record.fields.add(IndexedField.builder().fieldName(iv.path()).fieldValue(toExactMatchString(val)).build());
 //		record.fields.add(IndexedField.builder().fieldName(iv.path()).fieldValue(toExactMatchStringContinuous(val)).build());
 		
 		if(iv.suggest()){
-			record.suggest.add(IndexedSuggestField.builder()
+			IndexedSuggestField isf=IndexedSuggestField.builder()
 					.suggestName(iv.name())
 					.suggestValue(iv.value().toString())
 					.suggestWeight(iv.suggestWeight())
-					.build());
+					.build();
+			if(allowAdding.test(isf)) {
+				record.suggest.add(isf);
+			}
 		}
 
 	}
 
 	//make the fields for the primitive fields
-
 	public void instrumentIndexableValue(IndexRecord record, IndexableValue indexableValue) {
+		instrumentIndexableValue(record, indexableValue, (ie)->true);
+		
+	}
+	
+	public void instrumentIndexableValue(IndexRecord record, IndexableValue indexableValue, Predicate<IndexedElement> allowAdding) {
 
 
 		//TODO: may need to change
@@ -3990,32 +4206,44 @@ public class TextIndexer implements Closeable, ProcessListener {
 				if(ifx instanceof TextField) type = IndexedFieldType.TEXT;
 				if(ifx instanceof StringField) type = IndexedFieldType.STRING;
 				
-				record.fields.add(IndexedField.builder()
-						.fieldName(ifx.name())
-						.fieldValue(ifx.stringValue())
-						.stored(ifx.fieldType().stored())
-						.type(type)
-						.build());
+				IndexedField iff= IndexedField.builder()
+												.fieldName(ifx.name())
+												.fieldValue(ifx.stringValue())
+												.stored(ifx.fieldType().stored())
+												.type(type)
+												.build();
+				
+				if(allowAdding.test(iff)) {
+					record.fields.add(iff);
+				}
 			}else if(ifx instanceof FacetField) {
 				FacetField ff = (FacetField)ifx;
 				String key=ff.dim;
 				String val=ff.path[0];
 				
+				IndexedFacet iff=IndexedFacet.builder()
+				.facetName(key)
+				.facetValue(val)
+				.type(IndexedFieldType.STRING)
+				.build();
 				
-				record.facets.add(IndexedFacet.builder()
-						.facetName(key)
-						.facetValue(val)
-						.type(IndexedFieldType.STRING)
-						.build());
+				if(allowAdding.test(iff)) {
+					record.facets.add(iff);
+				}
 			}else if(ifx instanceof LongField) {
 				LongField lf = (LongField)ifx;
 				
-				record.fields.add(IndexedField.builder()
+				IndexedField iff = IndexedField.builder()
 						.fieldName(lf.name())
 						.fieldValue(lf.numericValue().longValue()+"")
 						.stored(lf.fieldType().stored())
 						.type(IndexedFieldType.INTEGER)
-						.build());
+						.build();
+				
+				
+				if(allowAdding.test(iff)) {
+					record.fields.add(iff);
+				}
 			}else {
 				
 				throw new IllegalStateException("Does not support direct lucene fields of type:" + ifx.getClass().getName());
@@ -4024,7 +4252,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		if(indexableValue.isDynamicFacet()){
-			createDynamicField(record,indexableValue);
+			createDynamicField(record,indexableValue,allowAdding);
 			//TODO
 //			if(indexableValue.sortable()){
 //			    String f=SORT_PREFIX + indexableValue.name();
@@ -4064,19 +4292,26 @@ public class TextIndexer implements Closeable, ProcessListener {
 			boolean addedFacet = false;
 			if(nvalue instanceof Long  || nvalue instanceof Integer || (indexableValue.ranges()!=null && indexableValue.ranges().length>0)){
 			    Long lval =  dval.longValue();
-			    record.fields.add(IndexedField.builder()
-			    		.type(IndexedFieldType.INTEGER)
-						.fieldName(full)
-						.fieldValue(lval+"")
-						.build());
+			    IndexedField iff=IndexedField.builder()
+								    		.type(IndexedFieldType.INTEGER)
+											.fieldName(full)
+											.fieldValue(lval+"")
+											.build();
+			    if(allowAdding.test(iff)) {
+			    	record.fields.add(iff);
+			    }
 //			    fields.accept(new NumericDocValuesField(full, lval));
 			    asText = indexableValue.facet();
 			    if (!asText && !name.equals(full)) {
-			    	record.fields.add(IndexedField.builder()
+			    	IndexedField iff2 = IndexedField.builder()
 				    		.type(IndexedFieldType.INTEGER)
 							.fieldName(name)
 							.fieldValue(lval+"")
-							.build());
+							.build();
+			    	if(allowAdding.test(iff2)) {
+			    		record.fields.add(iff2);
+			    	}
+			    	
 //			        fields.accept(new NumericDocValuesField(name, lval));
 			    }
 			    if(indexableValue.facet()){
@@ -4084,12 +4319,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    	if(buck!=null && buck.length>0) {
 				    	double[] buck2 = Arrays.stream(buck).mapToDouble(i->(double)i).toArray();
 				    	
-				    	record.facets.add(IndexedFacet.builder()
+				    	IndexedFacet ifac2=IndexedFacet.builder()
 				    			.type(IndexedFieldType.INTEGER)
 					    		.facetName(fname)
 					    		.facetValue(lval+"")
 					    		.buckets(buck2)
-								.build());
+								.build();
+				    	
+				    	if(allowAdding.test(ifac2)) {
+				    		record.facets.add(ifac2);
+				    	}
 				    	
 				        //FacetField ffl = getRangeFacet(fname, indexableValue.ranges(), lval);
 				        asText = false;
@@ -4098,38 +4337,55 @@ public class TextIndexer implements Closeable, ProcessListener {
 			    }
 			}
 
-			record.fields.add(IndexedField.builder()
-		    		.type(IndexedFieldType.DOUBLE)
-					.fieldName("D_" +full)
-					.fieldValue(dval.doubleValue()+"")
-					.build());
+			IndexedField iffD= IndexedField.builder()
+							    		.type(IndexedFieldType.DOUBLE)
+										.fieldName("D_" +full)
+										.fieldValue(dval.doubleValue()+"")
+										.build();
+			if(allowAdding.test(iffD)) {
+				record.fields.add(iffD);
+			}
 			
 			if (indexableValue.sortable()) {
 				sorterAdded = true;
-				record.fields.add(IndexedField.builder()
-						.type(IndexedFieldType.DOUBLE)
-						.fieldName(full)
-						.fieldValue(dval.doubleValue()+"")
-						.sortable(true)
-						.build());
+				
+				IndexedField iffS=IndexedField.builder()
+				.type(IndexedFieldType.DOUBLE)
+				.fieldName(full)
+				.fieldValue(dval.doubleValue()+"")
+				.sortable(true)
+				.build();
+				
+				if(allowAdding.test(iffS)) {
+					record.fields.add(iffS);
+				}
 			}
 
 			if (!name.equals(full)) {
-				record.fields.add(IndexedField.builder()
-						.type(IndexedFieldType.DOUBLE)
-						.fieldName("D_" +name)
-						.fieldValue(dval.doubleValue()+"")
-						.build());
+				IndexedField iffD2=IndexedField.builder()
+				.type(IndexedFieldType.DOUBLE)
+				.fieldName("D_" +name)
+				.fieldValue(dval.doubleValue()+"")
+				.build();
+				if(allowAdding.test(iffD2)) {
+					record.fields.add(iffD2);
+				}				
 			}
 			
 			if(indexableValue.facet() && !addedFacet){
-				record.facets.add(IndexedFacet.builder()
-		    			.type(IndexedFieldType.DOUBLE)
-			    		.facetName(fname)
-			    		.facetValue(dval.doubleValue()+"")
-			    		.buckets(indexableValue.dranges())
-			    		.format(indexableValue.format())
-						.build());
+				
+				IndexedFacet ifac2= IndexedFacet.builder()
+    			.type(IndexedFieldType.DOUBLE)
+	    		.facetName(fname)
+	    		.facetValue(dval.doubleValue()+"")
+	    		.buckets(indexableValue.dranges())
+	    		.format(indexableValue.format())
+				.build();
+				
+				if(allowAdding.test(ifac2)) {
+					record.facets.add(ifac2);
+				}
+				
 //			    FacetField ff = getRangeFacet(fname, indexableValue.dranges(), dval.doubleValue(), indexableValue.format());
 //			    if (ff != null) {
 //			        facetsConfig.setMultiValued(fname, true);
@@ -4168,25 +4424,35 @@ public class TextIndexer implements Closeable, ProcessListener {
 //					facetsConfig.setHierarchical(dim, true);
 					String val = Arrays.stream(indexableValue.splitPath(text))
 					      .collect(Collectors.joining(FACET_DELIMITER));
-					record.facets.add(IndexedFacet.builder()
-							.type(IndexedFieldType.STRING)
-							.facetName(dim)
-							.facetValue(val)
-							.hierarchical(true)
-							.build());
+					IndexedFacet ifacTax= IndexedFacet.builder()
+													.type(IndexedFieldType.STRING)
+													.facetName(dim)
+													.facetValue(val)
+													.hierarchical(true)
+													.build();
+					if(allowAdding.test(ifacTax)) {
+						record.facets.add(ifacTax);
+					}
 				} else {
                     if(indexableValue.useFullPath()){
-                        record.facets.add(IndexedFacet.builder()
+                    	IndexedFacet ifacP=IndexedFacet.builder()
     							.facetName(full)
     							.facetValue(text)
     							.type(IndexedFieldType.STRING)
-    							.build());
+    							.build();
+                    	if(allowAdding.test(ifacP)) {
+                    		 record.facets.add(ifacP);
+                    	}                       
                     }else {
-                    	record.facets.add(IndexedFacet.builder()
+                    	IndexedFacet ifacN =IndexedFacet.builder()
     							.facetName(dim)
     							.facetValue(text)
     							.type(IndexedFieldType.STRING)
-    							.build());
+    							.build();
+                    	if(allowAdding.test(ifacN)) {
+                    		record.facets.add(ifacN);	
+                    	}
+                    	
                     }
 				}
 			}
@@ -4194,17 +4460,25 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (indexableValue.suggest()) {
 				// also index the corresponding text field with the
 				// dimension name
-				record.fields.add(IndexedField.builder()
-						.fieldName(dim)
-						.fieldValue(text)
-						.type(IndexedFieldType.TEXT) // text?
-						.build());
+				IndexedField iffNonSugg = IndexedField.builder()
+				.fieldName(dim)
+				.fieldValue(text)
+				.type(IndexedFieldType.TEXT) // text?
+				.build();
+				if(allowAdding.test(iffNonSugg)) {
+					record.fields.add(iffNonSugg);
+				}
 				
-				record.suggest.add(IndexedSuggestField.builder()
+				IndexedSuggestField iffSugg =IndexedSuggestField.builder()
 						.suggestName(dim)
 						.suggestValue(text)
 						.suggestWeight(indexableValue.suggestWeight())
-						.build());
+						.build();
+				
+				if(allowAdding.test(iffSugg)) {
+					record.suggest.add(iffSugg);	
+				}
+				
 //				fields.accept(new TextField(dim, text, NO));
 //				addSuggestedField(dim, text, indexableValue.suggestWeight());
 			}
@@ -4215,26 +4489,31 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if (!(value instanceof Number)) {
 				if (!full.equals(name)){
 					// Added exact match
-					record.fields.add(IndexedField.builder()
-							.fieldName(name)
-							.fieldValue(text)
-							.type(IndexedFieldType.TEXT)
-							.exactText(true)
-							.build());
+					IndexedField iffExa= IndexedField.builder()
+													.fieldName(name)
+													.fieldValue(text)
+													.type(IndexedFieldType.TEXT)
+													.exactText(true)
+													.build();
+					if(allowAdding.test(iffExa)) {
+						record.fields.add(iffExa);
+					}
 //					fields.accept(new TextField(name,exactMatchStr, NO));
 //					fields.accept(new TextField(name,exactMatchStrContinuous , NO));
 				}
 			}
 
-
+			IndexedField iffExact2 = IndexedField.builder()
+			.fieldName(full)
+			.fieldValue(text)
+			.type(IndexedFieldType.TEXT)
+			.exactText(true)
+			.sortable(indexableValue.sortable() && !sorterAdded)
+			.build();
 			
-			record.fields.add(IndexedField.builder()
-					.fieldName(full)
-					.fieldValue(text)
-					.type(IndexedFieldType.TEXT)
-					.exactText(true)
-					.sortable(indexableValue.sortable() && !sorterAdded)
-					.build());
+			if(allowAdding.test(iffExact2)) {
+				record.fields.add(iffExact2);
+			}
 			
 			// Added exact match
 //			fields.accept(new TextField(full, exactMatchStr , store));

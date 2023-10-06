@@ -18,9 +18,12 @@ import java.util.List;
 public class BasicImportFactory implements ImportAdapterFactory<GinasCommonData> {
     private String fileName;
     private Class stagingAreaService;
+
     private List<Class> services;
+
     private Class serviceClass;
 
+    private JsonNode adapterSchema;
     private JsonNode originalParameters;
 
     @Override

@@ -14,8 +14,11 @@ import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.dataexchange.model.ProcessingActionConfig;
 import gsrs.dataexchange.model.ProcessingActionConfigSet;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
+import gsrs.indexer.IndexRemoveEntityEvent;
+import gsrs.repository.PrincipalRepository;
 import gsrs.repository.TextRepository;
 import gsrs.security.AdminService;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.stagingarea.model.ImportData;
@@ -25,8 +28,11 @@ import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportProcessingJobRepository;
 import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
+import ix.core.models.Principal;
 import ix.core.models.Text;
+import ix.core.search.text.TextIndexerEntityListener;
 import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationMessage;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
@@ -40,7 +46,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +77,13 @@ public class ImportUtilities<T> {
     @Autowired
     private AdminService adminService;
 
-    private String contextName ="";
+    @Autowired
+    private TextIndexerEntityListener textIndexerEntityListener;
+
+    @Autowired
+    PrincipalRepository principalRepository;
+
+    private String contextName;
 
     private Class<T> entityClass;
 
@@ -87,7 +98,6 @@ public class ImportUtilities<T> {
         this.entityClass=entityClass;
         this.stagingAreaService=service;
     }
-
 
     //for a unit test - not general use
     public ImportUtilities(String contextName, Class<T> entityClass) {
@@ -105,7 +115,8 @@ public class ImportUtilities<T> {
             String metadataAsString;
             try {
                 EntityUtils.EntityInfo<ImportMetadata> eics= EntityUtils.getEntityInfoFor(ImportMetadata.class);
-                if (metadata.validations == null || metadata.validations.isEmpty()) {
+                log.trace("before changed code");
+                if (metadata.getValidations() == null || metadata.getValidations().isEmpty()) {
                     log.trace("going to fill in validations");
                     service.fillCollectionsForMetadata(metadata);
                 }
@@ -197,6 +208,7 @@ public class ImportUtilities<T> {
             } catch (JsonProcessingException e) {
                 log.error("Error", e);
             }
+            assert config != null;
             return config.getExporterKey() != null && config.getExporterKey().equalsIgnoreCase(importerId);
         });
     }
@@ -241,9 +253,7 @@ public class ImportUtilities<T> {
         job.setTotalRecords(configSet.getStagingAreaRecords().size());
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
         log.trace("handleActionsAsync create job {}", job);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
@@ -256,7 +266,8 @@ public class ImportUtilities<T> {
                 final ObjectNode[] singleReturn = new ObjectNode[1];
                 try {
                     Unchecked.ThrowingRunnable runnable = ()->singleReturn[0] = processOneRecord(stagingAreaService, stagingAreaId, databaseRecordId, version, persist,
-                            configSet.getProcessingActions());;
+                            configSet.getProcessingActions());
+                    log.trace("about to call runnable to call processOneRecord");
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
                 } catch (Exception e) {
@@ -274,6 +285,25 @@ public class ImportUtilities<T> {
                 log.trace("appending node to returnNodes");
             }
             returnFromInnerLambda[0] =returnNodes;
+            //now synchronize all records -- tidy up relationships and other entity-entity links
+            if(needToSave(configSet.getProcessingActions())){
+                log.trace("going to synchronize entities");
+                returnNodes.forEach(n->{
+                    if( n instanceof ObjectNode){
+                        if(n.get("status").textValue().equalsIgnoreCase("OK")){
+                            if(n.hasNonNull("PersistedEntityId")) {
+                                log.trace("found PersistedEntityId");
+                                String entityId = n.get("PersistedEntityId").asText();
+                                Unchecked.ThrowingRunnable runnable2 = ()-> stagingAreaService.synchronizeRecord(entityId, entityClass.getName(), contextName);
+                                log.trace("About to call runnable2 to call synchronizeRecord");
+                                adminService.runAs(auth, runnable2);
+                            } else {
+                                log.warn("entity id not found!!");
+                            }
+                        }
+                    }
+                });
+            }
             job.setStatusMessage("Processing completed");
             log.trace("finished processing in handleActionsAsync");
             TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
@@ -306,6 +336,7 @@ public class ImportUtilities<T> {
 
     private ObjectNode processOneRecord(StagingAreaService stagingAreaService, String stagingRecordId, String matchedEntityId,
                                         int version, String persist, List<ProcessingActionConfig> processingActions) throws Exception {
+        log.trace("starting in processOneRecord");
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
@@ -399,6 +430,7 @@ public class ImportUtilities<T> {
                 recordImportStatus = ImportMetadata.RecordImportStatus.rejected;
             }
         }
+        boolean updateMetadataState = true;
         log.trace(whatHappened.toString());
         if (persist != null && persist.equalsIgnoreCase("TRUE") && isSaveNecessary(recordImportStatus)) {
             //check whether we have something to save... otherwise, skip to the next step in the processing
@@ -406,28 +438,46 @@ public class ImportUtilities<T> {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
                 if (!result.isSaved()) {
                     log.error("Error! Saved object is null");
+                    String errorMessage;
+                    if(result.getThrowable()!=null ){
+                        errorMessage=result.getThrowable().getMessage();
+                    } else if( result.getValidationResponse().hasError()) {
+                        errorMessage = result.getValidationResponse().getValidationMessages().stream()
+                                .filter(m->m.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR)
+                                .map(m->m.getMessage())
+                                .collect(Collectors.joining("|"));
+                    } else {
+                        errorMessage= "Unknown error!";
+                    }
+                    updateMetadataState=false;
                     messageNode.put("stagingAreaId", stagingRecordId);
-                    messageNode.put("message", "Object failed to save");
-                    messageNode.put("error", result.getThrowable().getMessage());
-                    messageNode.put("status", "INTERNAL_SERVER_ERROR");
+                    messageNode.put("message","Object failed to save");
+                    messageNode.put("error", errorMessage);
+                    messageNode.put("status","INTERNAL_SERVER_ERROR");
                     return messageNode;
                 }
                 currentObject = result.getEntity();
+                messageNode.put("PersistedEntityId", result.getEntityId().toString());
                 log.trace("saved new or updated entity");
-
             }
-            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
-            UUID indexingEventId = UUID.randomUUID();
-            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
-            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-            ImportMetadata refetchedMetadata=(ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
-            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
-            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
-                    reWrappedObject);
-            log.trace("reindexing importmetadata object");
+
         } else {
             log.trace("skipped saving/processing");
         }
+
+        if(updateMetadataState) {
+            stagingAreaService.updateRecordImportStatus(recordId, recordImportStatus);
+            ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
+            EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+            ImportMetadata refetchedMetadata = (ImportMetadata) EntityFetcher.of(wrappedObject.getKey()).getIfPossible().get();
+            refetchedMetadata.setImportStatus(recordImportStatus);
+            EntityUtils.EntityWrapper<ImportMetadata> reWrappedObject = EntityUtils.EntityWrapper.of(refetchedMetadata);
+            UUID indexingEventId = UUID.randomUUID();
+            ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(reWrappedObject),
+                    reWrappedObject);
+            log.trace("reindexing importmetadata object");
+        }
+
         if( currentObject!=null) {
             log.trace("currentObject not null");
             //messageNode.put("object", mapper.writeValueAsString(currentObject));
@@ -453,15 +503,16 @@ public class ImportUtilities<T> {
         if (task.getAdapter() == null) {
             throw new IOException("Cannot predict settings with null import adapter");
         }
-        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task.getAdapter())
+        ImportAdapterFactory<T> adaptFac = getImportAdapterFactory(task)
                 .orElse(null);
         if (adaptFac == null) {
             throw new IOException("Cannot predict settings with unknown import adapter:\"" + task.getAdapter() + "\"");
         }
         log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac);
-        log.trace("in fetchAdapterFactory, adaptFac: {}, ", adaptFac.getClass().getName());
+        log.trace("in fetchAdapterFactory, adaptFac: {}", adaptFac.getClass().getName());
         //log.trace("in fetchAdapterFactory, staging area service: {}", adaptFac.getStagingAreaService().getName());
         adaptFac.setFileName(task.getFilename());
+        log.trace("passed file name {} to adapter factory", task.getFilename());
         return adaptFac;
     }
 
@@ -474,15 +525,15 @@ public class ImportUtilities<T> {
         return importAdapterFactories.get();
     }
 
-    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(String name) {
-        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", name, getImportAdapters().size());
+    public Optional<ImportAdapterFactory<T>> getImportAdapterFactory(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task) {
+        log.trace("In getImportAdapterFactory, looking for adapter with name '{}' among {}", task.getAdapter(), getImportAdapters().size());
         if (getImportAdapters() != null) {
             getImportAdapters().forEach(a -> log.trace("adapter with name: '{}', key: '{}'", a.getAdapterName(), a.getAdapterKey()));
         }
-        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterName())).findFirst();
+        Optional<ImportAdapterFactory<T>> adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterName())).findFirst();
         if (!adapterFactory.isPresent()) {
             log.trace("searching for adapter by name failed; using key");
-            adapterFactory = getImportAdapters().stream().filter(n -> name.equals(n.getAdapterKey())).findFirst();
+            adapterFactory = getImportAdapters().stream().filter(n -> task.getAdapter().equals(n.getAdapterKey())).findFirst();
             log.trace("success? {}", adapterFactory.isPresent());
         }
         return adapterFactory;
@@ -502,7 +553,7 @@ public class ImportUtilities<T> {
         Optional<InputStream> streamHolder = payloadService.getPayloadAsInputStream(task.getPayloadID());
         if (streamHolder.isPresent()) {
             InputStream stream = streamHolder.get();
-            return adapter.parse(stream, settingsNode);
+            return adapter.parse(stream, settingsNode, task.getAdapterSchema());
         }
         return Stream.empty();
     }
@@ -517,12 +568,16 @@ public class ImportUtilities<T> {
         List<Integer> errorRecords = new ArrayList<>();
         List<String> importDataRecordIds = new ArrayList<>();
         ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+                ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+                : null;
+
         objectStream.forEach(object -> {
             recordCount.incrementAndGet();
             log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
             log.trace(object.toString());
             try {
-                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
                 importDataRecordIds.add(newRecordId);
                     /*if (recordCount.get() < limit) {
                         if (object instanceof Supplier) {
@@ -567,6 +622,7 @@ public class ImportUtilities<T> {
                                          Map<String, String> queryParameters) {
 
         log.trace("starting in handleObjectCreationAsync");
+        log.trace("task: {}", task.toString());
         ObjectMapper mapper = new ObjectMapper();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
@@ -580,17 +636,15 @@ public class ImportUtilities<T> {
         job.setCategory("Push to Staging Area");
         job.setStatusMessage("Processing started");
         if( task.getAdapterSettings().hasNonNull("RecordCount")) {
-            job.setTotalRecords(((ObjectNode)task.getAdapterSettings()).get("RecordCount").asInt());
+            job.setTotalRecords((task.getAdapterSettings()).get("RecordCount").asInt());
         }
 
         job.setCompletedRecordCount(0);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(r->{
-            jobRepository.saveAndFlush(job);
-        });
+        transactionTemplate.executeWithoutResult(r-> jobRepository.saveAndFlush(job));
 
         if(queryParameters.containsKey("skipValidation") || queryParameters.containsKey("skipIndexing") || queryParameters.containsKey("skipMatching")) {
-            log.trace("keys : {}", queryParameters.keySet().stream().collect(Collectors.joining()));
+            log.trace("keys : {}", String.join("||", queryParameters.keySet()));
             ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
             if(queryParameters.containsKey("skipValidation") && queryParameters.get("skipValidation").length()>0) {
                 boolean value = queryParameters.get("skipValidation").equalsIgnoreCase("true");
@@ -611,6 +665,9 @@ public class ImportUtilities<T> {
             ((ObjectNode)task.getAdapterSettings()).set("rarelyUsedSettings", rareSettings);
         }
         log.trace("saved init job");
+        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+            ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+            : null;
         executor.execute(()-> {
             log.trace("starting in handleObjectCreationAsync execute lambda");
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
@@ -625,23 +682,8 @@ public class ImportUtilities<T> {
                 log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
                 log.trace(object.toString());
                 try {
-                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task);
+                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
                     importDataRecordIds.add(newRecordId);
-                    /*if (recordCount.get() < limit) {
-                        if (object instanceof Supplier) {
-                            log.trace("going to invoke supplier on object");
-                            object = (T) ((Supplier) object).get();
-                        }
-                        //previewNode.add(mapper.writeValueAsString(object));
-                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
-                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
-                        singleRecord.set("data", dataAsNode);
-                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
-                                newRecordId);
-                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
-                        singleRecord.set("matches", matchesAsNode);
-                        previewNode.add(singleRecord);
-                    }*/
                 } catch (JsonProcessingException e) {
                     objectProcessingOK.set(false);
                     errorRecords.add(recordCount.get());
@@ -685,7 +727,7 @@ public class ImportUtilities<T> {
         return job.toNode();
     }
 
-    public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData) {
+    public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
         log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
@@ -694,7 +736,8 @@ public class ImportUtilities<T> {
                 .entityClassName(importTaskMetaData.getEntityType())
                 .formatType(importTaskMetaData.getMimeType())
                 .source(importTaskMetaData.getFilename())
-                .adapterName(importTaskMetaData.getAdapter());
+                .adapterName(importTaskMetaData.getAdapter())
+                 .importingUser(creatingUser);
         if(importTaskMetaData.getAdapterSettings().hasNonNull("rarelyUsedSettings")) {
             JsonNode rareSettings = importTaskMetaData.getAdapterSettings().get("rarelyUsedSettings");
             log.trace("processing rarelyUsedSettings {}", rareSettings.toPrettyString());
@@ -712,5 +755,58 @@ public class ImportUtilities<T> {
             return action.getOptions();
         }
         return Collections.EMPTY_LIST;
+    }
+
+    public JsonNode getSchemaForAction(String actionName){
+        ProcessingAction action =gsrsImportAdapterFactoryFactory.getMatchingProcessingAction(this.contextName, actionName);
+        if( action!=null) {
+            return action.getAvailableSettingsSchema();
+        }
+        return JsonNodeFactory.instance.objectNode();
+    }
+
+    private boolean needToSave(List<ProcessingActionConfig> actionConfigs){
+        return actionConfigs.stream().anyMatch(c->c.getProcessingActionName().toUpperCase().contains("CREATE"));
+    }
+
+    public JsonNode handleDeletion(String[] ids, boolean reindex){
+        log.trace("in handleDeletion");
+        ArrayNode deleted = JsonNodeFactory.instance.arrayNode();
+        int version = 0;//possible to retrieve from parameters. For now, assume latest
+        Arrays.stream(ids)
+                .filter(id->id!=null)
+                .map(id->id.replace("\"", "")
+                        .replace(",","")
+                        .replaceAll(" ","")
+                        .replace("\r","")
+                        .replace("\n","")
+                        .replace("\t",""))
+                .filter(id->id.length()>0)
+                .forEach(id->{
+                    if(reindex){
+                        removeImportMetadataFromIndex(id, version);
+                    }
+                    stagingAreaService.deleteRecord(id, version);
+                    log.trace("deleted record with ID {}", id);
+                    deleted.add(id);
+                });
+
+        ObjectNode response = JsonNodeFactory.instance.objectNode();
+        response.set("deleted records", deleted);
+        return response;
+    }
+
+    public void removeImportMetadataFromIndex(String metadataId, int version) {
+        ImportMetadata object= stagingAreaService.getImportMetaData(metadataId, version);
+        if( object !=null) {
+            try {
+                textIndexerEntityListener.deleteEntity(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(object)));
+            } catch (Exception e) {
+                log.error("error removing ImportMetadata object from index: ", e);
+            }
+            log.trace("submitted index deletion");
+        } else{
+            log.warn("Error retrieving ImportMetadata with ID {}", metadataId);
+        }
     }
 }

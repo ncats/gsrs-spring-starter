@@ -4,21 +4,17 @@ package gsrs.controller;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.*;
+//import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Pattern;
 
+import gsrs.GsrsFactoryConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -35,7 +32,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -50,7 +46,6 @@ import ix.core.models.Text;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -65,7 +60,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
+@Validated
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractImportSupportingGsrsEntityController<C, T,I> {
+
 
 //    public EtagLegacySearchEntityController(String context, Pattern pattern) {
 //        super(context, pattern);
@@ -97,7 +94,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
 
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
-    
+
+    @Autowired
+    private GsrsFactoryConfiguration factoryConfiguration;
+
 //    public EtagLegacySearchEntityController() {super();}
 //    
 //    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
@@ -109,7 +109,7 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
         return saveAsEtag(results, result, request);
     }
 
-    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
+//    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 
@@ -177,8 +177,8 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/{etagId}/{format}")
-    public ResponseEntity<Object> createExport(@PathVariable("etagId") String etagId,
-                                               @PathVariable("format") String format,
+    public ResponseEntity<Object> createExport(@PathVariable("etagId") @Pattern(regexp="^[a-fA-F0-9]{16}$") String etagId, 
+                                               @PathVariable("format") @Pattern(regexp="^[a-zA-Z0-9-.]*$") String format,
                                                @RequestParam(value = "publicOnly", required = false) Boolean publicOnlyObj,
                                                @RequestParam(value ="filename", required= false) String fileName,
                                                @RequestParam(value="exportConfigId", required = false) String exportConfigId,
@@ -232,14 +232,13 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         RecordExpander<T> expander = getExpanderFactory().createExpander(exportConfig.get().getExpanderSettings());
         log.trace("got RecordExpander of type {}", expander.getClass().getName());
 
+        Comparator<T> comparator = getComparator();
+        log.trace("got comparator of type {}", comparator.getClass().getName());
+
         boolean publicOnly = publicOnlyObj==null? true: publicOnlyObj;
 
         if (!etagObj.isPresent()) {
-            if(ALPHANUMERIC.matcher(etagId).matches()) {
-                return new ResponseEntity<>("could not find etag with Id " + etagId, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-            } else {
-                return new ResponseEntity<>("invalid input ", gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, parameters));
-            }
+            return GsrsControllerConfiguration.createResponseEntity("could not find etag with Id " + etagId, HttpStatus.BAD_REQUEST.value());
         }
         ExportMetaData emd=new ExportMetaData(etagId, etagObj.get().uri, prof.getName(), publicOnly, format);
         //Not ideal, but gets around user problem
@@ -247,7 +246,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 .generateExportFrom(getEntityService().getContext(), etagObj.get())
                 .get();
 
-        Stream<T> effectivelyFinalStream = filterStream(mstream, publicOnly, parameters)
+        Stream<T> workingStream = filterStream(mstream, publicOnly, parameters)
                 .map(t->  scrubber.scrub(t))
                 .filter(o->o.isPresent())
                 .flatMap(t->expander.expandRecord(t.get()))
@@ -255,7 +254,16 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                 .map(t->  scrubber.scrub(t))
                 .filter(o->o.isPresent())
                 .map(o->o.get());
-        log.trace("computed effectivelyFinalStream using distinct");
+
+        if(getSortOutput()){
+            log.trace("sorting stream");
+            workingStream= workingStream.sorted(comparator);
+        } else {
+            log.trace("skipping sort of stream");
+        }
+        Stream<T> effectivelyFinalStream = workingStream;
+
+        log.trace("computed effectivelyFinalStream using sorted and distinct");
 
         if(fileName!=null){
             emd.setDisplayFilename(fileName);
@@ -436,4 +444,20 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
         }
     }
 
+    private boolean getSortOutput(){
+        boolean answer=true;
+        String simpleKey =getEntityService().getContext();
+        //todo: figure out why the surprisingKey is necessary!
+        String surprisingKey=getEntityService().getContext()+".0";
+        if(gsrsExportConfiguration.getSortOutput() !=null ){
+            if( gsrsExportConfiguration.getSortOutput().containsKey(simpleKey) ){
+                answer= gsrsExportConfiguration.getSortOutput().get(simpleKey);
+                log.trace("using gsrsExportConfiguration simpleKey {}", answer);
+            } else if( gsrsExportConfiguration.getSortOutput().containsKey(surprisingKey) ){
+                answer= gsrsExportConfiguration.getSortOutput().get(surprisingKey);
+                log.trace("using gsrsExportConfiguration using surprisingKey {}", answer);
+            }
+        }
+        return answer;
+    }
 }

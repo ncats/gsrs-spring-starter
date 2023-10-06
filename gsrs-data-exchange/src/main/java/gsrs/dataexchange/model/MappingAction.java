@@ -1,5 +1,6 @@
 package gsrs.dataexchange.model;
 
+
 /*
 adds something to a domain object of class T
  */

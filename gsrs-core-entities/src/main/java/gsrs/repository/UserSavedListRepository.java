@@ -13,26 +13,26 @@ import ix.core.models.UserSavedList;
 @Transactional
 public interface UserSavedListRepository extends GsrsRepository<UserSavedList, Long> {
 	
-	@Query("select name from UserSavedList where user_id = ?1 order by name")	
-	public List<String> getUserSearchResultListsByUserId(Long userId);
+	@Query("select name from UserSavedList where user_id = ?1 and kind = ?2 order by name")	
+	public List<String> getUserSearchResultListsByUserId(Long userId, String kind);
 	
-	@Query("select name from UserSavedList order by name")	
-	public List<String> getAllUserSearchResultLists();
+	@Query("select name from UserSavedList where kind = ?1 order by name")	
+	public List<String> getAllUserSearchResultLists(String kind);
 			
 	@Modifying
 	@Transactional
-	@Query("delete from UserSavedList ubsr where user_id = ?1 and name = ?2")
-	public void removeUserSearchResultList(Long userId, String listName);
+	@Query("delete from UserSavedList ubsr where user_id = ?1 and name = ?2 and kind = ?3")
+	public void removeUserSearchResultList(Long userId, String listName, String kind);
 	
-	@Query("select list from UserSavedList where user_id = ?1 and name = ?2")
-	public String getUserSavedBulkSearchResult(Long userId, String listName);
+	@Query("select list from UserSavedList where user_id = ?1 and name = ?2 and kind = ?3")
+	public String getUserSavedBulkSearchResult(Long userId, String listName, String kind);
 	
-	@Query("select count(*) from UserSavedList where user_id = ?1 and name = ?2")
-	public int userSavedBulkSearchResultExists(Long userId, String listName);
+	@Query("select count(*) from UserSavedList where user_id = ?1 and name = ?2 and kind = ?3")
+	public int userSavedBulkSearchResultExists(Long userId, String listName, String kind);
 		
 	@Modifying
 	@Transactional
-	@Query("update UserSavedList set list = ?3 where user_id = ?1 and name = ?2")
-	public void updateUserSavedBulkSearchResult(Long userId, String listName, String listString);
+	@Query("update UserSavedList set list = ?3 where user_id = ?1 and name = ?2 and kind = ?4")
+	public void updateUserSavedBulkSearchResult(Long userId, String listName, String listString, String kind);
 	
 }

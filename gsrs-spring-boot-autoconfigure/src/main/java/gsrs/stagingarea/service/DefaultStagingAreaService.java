@@ -3,8 +3,10 @@ package gsrs.stagingarea.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.*;
 import gsrs.stagingarea.repository.*;
@@ -75,16 +77,15 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private IndexValueMakerFactory factory;
 
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
 
     //private ValidatorFactory validatorFactory;
 
     private TextIndexer indexer;
-
-    private MatchableCalculationConfig matchableCalculationConfig;
-
-    //public final static String CURRENT_SOURCE = "Staging Area";
 
     private Map<String, StagingAreaEntityService> _entityServiceRegistry = new HashMap<>();
 
@@ -147,6 +148,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         metadata.setVersionCreationDate(new Date());
         metadata.setDataFormat(parameters.getFormatType());
         metadata.setImportAdapter(parameters.getAdapterName());
+        if(parameters.getImportingUser()!=null){
+            metadata.setImportedBy( parameters.getImportingUser());
+        }else{
+            log.warn("Unable to retrieve current user!");
+        }
+
         metadataRepository.saveAndFlush(metadata);
 
         //step 3: save raw data, when available
@@ -172,7 +179,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return recordId.toString();
         }
         log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
-        //_entityServiceRegistry.get(parameters.getEntityClassName()).IndexEntity(indexer, domainObject);
 
         //step 4: validate
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
@@ -198,23 +204,17 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         if( performValidation) {
             log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
             ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
-            domainObject = response.getNewObject();
             if (response != null) {
-                List<UUID> savedResult = persistValidationInfo(response, 1, instanceId);
+                domainObject = response.getNewObject();
+                persistValidationInfo(response, 1, instanceId);
                 overallStatus = getOverallValidationStatus(response);
+                try {
+                    importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
+                    log.trace("updating record after validation");
+                } catch (JsonProcessingException e) {
+                    log.error("Error serializing validated substance", e);
+                }
             }
-
-            //save the updated object
-        /*try {
-            log.trace("going to save updated domain object post-validation");
-            data.setData(serializeObject(domainObject));
-            data.setVersion(data.getVersion() + 1);
-            data.setInstanceId(UUID.randomUUID());
-            data.setSaveDate(new Date());
-            importDataRepository.save(data);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }*/
 
             log.trace("overallStatus: " + overallStatus);
             updateImportValidationStatus(recordId, overallStatus);
@@ -229,23 +229,21 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
             persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
 
-
             //event driven: each step in process sends an event (pub/sub) look in ... indexing
-            //  validation, when done would trigger the next event
+            //  validation, when done would trigger the next event via
             //  event manager type of thing
             // passively: daemon running in background looks for records with a given status and then performs
             // the next step
             // will
-            //todo: run duplicate check
-            try {
-                MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
+            //try {
+            //    MatchedRecordSummary summary = findMatches(domainObject.getClass().getName(), definitionalValueTuples, recordId.toString());
                 //log.trace("Matches: ");
-                summary.getMatches().forEach(m -> {
+                //summary.getMatches().forEach(m -> {
                     //log.trace("Matching key: {} = {}", m.getTupleUsedInMatching().getKey(), m.getTupleUsedInMatching().getValue());
-                });
-            } catch (ClassNotFoundException e) {
-                log.error("Error looking for matches", e);
-            }
+                //});
+            //} catch (ClassNotFoundException e) {
+            //    log.error("Error looking for matches", e);
+            //}
         }
         if( performIndexing ) {
             log.trace("going to index");
@@ -276,14 +274,25 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         ImportData latestExisting = importData.stream().max(Comparator.comparing(ImportData::getVersion)).get();
         log.trace("located object with latest version {}", latestExisting.getVersion());
         UUID latestInstanceId=UUID.randomUUID();
+
+        ImportMetadata importMetadata = metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
+        String cleanJson;
+        try {
+            //deserializing and re-serializing will allow us to reset the '_name' field of substances
+            Object data = deserializeObject(importMetadata.getEntityClassName(), jsonData);
+            cleanJson= serializeObject(data);
+        } catch (JsonProcessingException e) {
+            log.error("Error deserializing JSON", e);
+            throw new RuntimeException(e);
+        }
         ImportData newVersion = latestExisting.toBuilder()
                 .instanceId(latestInstanceId)
                 .version(latestExisting.getVersion()+1)
-                .data(jsonData)
+                .data(cleanJson)
                 .saveDate( new Date())
                 .build();
         log.trace("cloned");
-        ImportMetadata importMetadata = metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
+
         log.trace("retrieved importMetadata with {} mappings and {} validations", importMetadata.keyValueMappings.size(), importMetadata.validations.size());
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
         transactionDelete.executeWithoutResult(r -> {
@@ -294,7 +303,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 ImportMetadata updatedImportMetadata= metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
                 //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
                 updatedImportMetadata.setInstanceId(latestInstanceId);
-                metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));;
+                metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));
                 //ImportMetadata saved=metadataRepository.save(updatedImportMetadata);
                 //metadataRepository.saveAndFlush(updatedImportMetadata);
                 //handleIndexing(updatedImportMetadata);
@@ -333,10 +342,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
             log.trace("no ImportData found by recordId; looking by instanceId");
             try {
-                ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
-                if (dataItem != null) {
+                Optional<ImportData> dataItem = importDataRepository.findById(UUID.fromString(id));
+                if (dataItem.isPresent()) {
                     importDataList = new ArrayList<>();
-                    importDataList.add(dataItem);
+                    importDataList.add(dataItem.get());
                 }
             } catch (NoSuchMethodError error) {
                 //have observed this error several times when attempting to retrieve a non-existent ID
@@ -451,10 +460,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public <T> SearchResult findRecords(SearchRequest searchRequest, Class<T> cls) {
+        log.trace("in findRecords");
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
             try {
+                log.trace("going to instantiate importMetadataLegacySearchService");
                 importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
+                AutowireHelper.getInstance().autowire(importMetadataLegacySearchService);
                 SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
                 return searchResult;
             } catch (Exception e) {
@@ -535,38 +547,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return importDataRepository.retrieveByInstanceID(UUID.fromString(instanceId));
     }
 
-    /*@Override
-    public <T> String persistEntity(String instanceId){
-        log.trace("in persistEntity, instanceId: {}", instanceId);
-        Optional<ImportData> data= importDataRepository.findById(UUID.fromString(instanceId));
-        if( data.isPresent()) {
-            log.trace("found data");
-            String entityJson = data.get().getData();
-            String entityType = data.get().getEntityClassName();
-            try {
-                Object domainObject = deserializeObject(entityType, entityJson);
-                ValidationResponse<T> response = validateRecord(entityType, entityJson);
-                List<ValidationMessage> messages = response.getValidationMessages();
-                if (messages.stream().noneMatch(m -> m.isError())) {
-                    Object savedObject = _entityServiceRegistry.get(entityType).persistEntity(domainObject);
-                    metadataRepository.updateRecordImportStatus(UUID.fromString(instanceId), ImportMetadata.RecordImportStatus.imported);
-                    ObjectMapper mapper = new ObjectMapper();
-                    String json = mapper.writeValueAsString(savedObject);
-                    JsonNode objectNode= mapper.readTree(json);
-                    if(objectNode.hasNonNull("uuid")) {
-                        return objectNode.get("uuid").asText();
-                    }
-
-                    return "Object saved!";
-                }
-                return "One or more errors exist. Please validate and take action!";
-            } catch (JsonProcessingException e) {
-                log.error("Error in persistEntity", e);
-            }
-        }
-        return "";
-    }*/
-
     @Override
     public <T> T retrieveEntity(String entityType, String entityId) {
         log.trace("going to retrieve entity of type {} - id {}", entityType, entityId);
@@ -615,9 +595,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return matches;
     }
 
-    public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
+    /*public void setMatchableCalculationConfig(MatchableCalculationConfig matchableCalculationConfig) {
         this.matchableCalculationConfig = matchableCalculationConfig;
-    }
+    }*/
 
     private <T> List<MatchableKeyValueTuple> getMatchables(T entity) {
         String lookupClass = entity.getClass().getName();
@@ -760,6 +740,19 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Override
     public Page page(Pageable pageable) {
         return metadataRepository.findAll(pageable);
+    }
+
+    @Override
+    public void synchronizeRecord(String entityId, String entityType, String entityContext) {
+        log.trace("synchronizeRecord entityId {}", entityId);
+        StringBuilder builder = new StringBuilder();
+        ObjectNode settings = JsonNodeFactory.instance.objectNode();
+        log.trace("getUuidCodeSystem from config: {}", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refUuidCodeSystem", gsrsFactoryConfiguration.getUuidCodeSystem().get(entityContext));
+        settings.put("refApprovalIdCodeSystem", gsrsFactoryConfiguration.getApprovalIdCodeSystem().get(entityContext));
+        log.trace("About to call synchronizeEntity");
+        _entityServiceRegistry.get(entityType).synchronizeEntity(entityId, builder::append, settings);
+        log.trace("result of synchronizeEntity: {}", builder);
     }
 
     private String serializeObject(Object object) throws JsonProcessingException {

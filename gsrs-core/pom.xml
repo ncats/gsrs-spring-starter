@@ -40,7 +40,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>ncats-common</artifactId>
-            <version>0.3.6-SNAPSHOT</version>
+            <version>0.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>
@@ -91,7 +91,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.0.1-jre</version>
+            <version>32.0.1-jre</version>
         </dependency>
     </dependencies>
 </project>

@@ -34,6 +34,7 @@ public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
     private ObjectMapper mapper = new ObjectMapper();
 
 
+    //This test fails when run along with the others but passes when run by itself
     @Test
     public void jsonCreateConfigUsingParameters() throws ClassNotFoundException, JsonProcessingException {
 

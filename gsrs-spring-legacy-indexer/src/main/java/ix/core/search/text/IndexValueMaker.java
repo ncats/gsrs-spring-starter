@@ -1,9 +1,8 @@
 package ix.core.search.text;
 
-import lombok.extern.slf4j.Slf4j;
-
-
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -38,6 +37,14 @@ public interface IndexValueMaker<T> {
 	 */
 	void createIndexableValues(T t, Consumer<IndexableValue> consumer);
 	
+	
+	default Set<String> getFieldNames(){
+		return new HashSet<>();
+	}
+	
+	default IndexValueMaker<T> restrictedForm(Set<String> fields){
+		return this;
+	}
 	
 	/**
 	 * Combine 2 IndexValueMakers together, so that
