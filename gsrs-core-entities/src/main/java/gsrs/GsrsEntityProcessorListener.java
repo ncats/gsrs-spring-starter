@@ -39,7 +39,6 @@ public class GsrsEntityProcessorListener {
     public GsrsEntityProcessorListener() {
         counter++;
         processorId = counter;
-        System.out.println("I am one GsrsEntityProcessorListener" + processorId);
     }
 
     public int getProcessorId() {
@@ -77,9 +76,9 @@ public class GsrsEntityProcessorListener {
     @Transactional
     @PreUpdate
     public void preUpdate(Object o){
-        System.out.println("Inside preUpdate, the Thread name is " + Thread.currentThread().getName());
-        System.out.println("Inside preUpdate, tempString is: " + this.tempString.get());
-        System.out.println("The processorId is: " + this.getProcessorId());
+        // System.out.println("Inside preUpdate, the Thread name is " + Thread.currentThread().getName());
+        // System.out.println("Inside preUpdate, tempString is: " + this.tempString.get());
+        // System.out.println("The processorId is: " + this.getProcessorId());
         if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
