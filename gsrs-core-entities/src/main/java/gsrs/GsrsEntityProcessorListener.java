@@ -58,11 +58,6 @@ public class GsrsEntityProcessorListener {
     private static boolean PREVENT_RECURSION=true;
 
     private static ThreadLocal<Boolean> enabledHooks = ThreadLocal.withInitial(()->true);
-    private static ThreadLocal<String> tempString = ThreadLocal.withInitial(()->"unspecified");
-
-    public void setTempString(String t) {
-        this.tempString.set(t);
-    }
 
     public void runWithDisabledHooks(Runnable r) {
     	this.enabledHooks.set(false);
@@ -77,7 +72,6 @@ public class GsrsEntityProcessorListener {
     @PreUpdate
     public void preUpdate(Object o){
         // System.out.println("Inside preUpdate, the Thread name is " + Thread.currentThread().getName());
-        // System.out.println("Inside preUpdate, tempString is: " + this.tempString.get());
         // System.out.println("The processorId is: " + this.getProcessorId());
         if(!enabledHooks.get())return;
         Key k=null;
