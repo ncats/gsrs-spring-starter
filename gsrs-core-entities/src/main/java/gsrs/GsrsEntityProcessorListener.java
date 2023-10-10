@@ -34,7 +34,16 @@ public class GsrsEntityProcessorListener {
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
+    static int counter = 0;
+    public int processorId = 0;
+    public GsrsEntityProcessorListener() {
+        counter++;
+        processorId = counter;
+    }
 
+    public int getProcessorId() {
+            return this.processorId;
+    }
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()->AutowireHelper.getInstance().autowire(this));
    
     private HashSet<Key> working =new LinkedHashSet<>();
@@ -47,11 +56,24 @@ public class GsrsEntityProcessorListener {
     // At the time of this comment it's not necessary in any known code
     // to have this on. But it may turn out to be necessary.
     private static boolean PREVENT_RECURSION=true;
-    
+
+    private static ThreadLocal<Boolean> enabledHooks = ThreadLocal.withInitial(()->true);
+
+    public void runWithDisabledHooks(Runnable r) {
+    	this.enabledHooks.set(false);
+    	try {
+    		r.run();
+    	}finally {
+    		this.enabledHooks.set(true);
+    	}
+    }
     
     @Transactional
     @PreUpdate
     public void preUpdate(Object o){
+        // System.out.println("Inside preUpdate, the Thread name is " + Thread.currentThread().getName());
+        // System.out.println("The processorId is: " + this.getProcessorId());
+        if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getKey();
@@ -80,6 +102,7 @@ public class GsrsEntityProcessorListener {
     @PostUpdate
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postUpdate(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             //TODO where should oldvalues come from?
@@ -93,7 +116,7 @@ public class GsrsEntityProcessorListener {
     @PrePersist
     @Transactional
     public void prePersist(Object o){
-        
+    	if(!enabledHooks.get())return;
         Key k=null;
         if(PREVENT_RECURSION) {
             k=EntityWrapper.of(o).getOptionalKey().orElse(null);
@@ -122,6 +145,7 @@ public class GsrsEntityProcessorListener {
     @PostPersist
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postPersist(Object o) {
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postPersist(o);
@@ -137,6 +161,7 @@ public class GsrsEntityProcessorListener {
     @PreRemove
     @Transactional
     public void preRemove(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).preRemove(o);
@@ -147,6 +172,7 @@ public class GsrsEntityProcessorListener {
     @PostRemove
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void postRemove(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
             epf.getCombinedEntityProcessorFor(o).postRemove(o);
@@ -157,6 +183,7 @@ public class GsrsEntityProcessorListener {
     @PostLoad
     @Transactional
     public void postLoad(Object o){
+    	if(!enabledHooks.get())return;
         try {
             initializer.get();
 //            if(o instanceof AbstractGsrsEntity){
