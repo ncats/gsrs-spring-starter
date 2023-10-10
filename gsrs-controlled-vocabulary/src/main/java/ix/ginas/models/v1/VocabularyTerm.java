@@ -109,4 +109,8 @@ public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
         this.setIsAllDirty();
     }
 
+    @Override
+    public Object parentObject() {
+        return owner;
+    }
 }

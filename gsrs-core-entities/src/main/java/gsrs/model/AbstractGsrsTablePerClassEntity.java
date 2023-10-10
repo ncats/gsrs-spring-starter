@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import gsrs.BackupEntityProcessorListener;
 import gsrs.GSRSEntityTraits;
 import gsrs.GsrsEntityProcessorListener;
+import gsrs.ParentAware;
 import gsrs.indexer.IndexerEntityListener;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -24,7 +25,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
-public abstract class AbstractGsrsTablePerClassEntity implements GSRSEntityTraits{
+public abstract class AbstractGsrsTablePerClassEntity implements GSRSEntityTraits, ParentAware{
 
 
 }

@@ -61,7 +61,7 @@ public abstract class GSRSDataSourceConfig {
         Optional<String> ddlSetting = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.ddl-auto", "spring.jpa.hibernate.ddl-auto", "update");
         Optional<String> showSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".hibernate.show_sql", "hibernate.show_sql", "false");
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
-        Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
+        Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy");
         Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
 
         // Allows schema generation for both default and non-default datasources; perviously worked only for default

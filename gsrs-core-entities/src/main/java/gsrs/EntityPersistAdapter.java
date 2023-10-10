@@ -40,13 +40,9 @@ public class EntityPersistAdapter {
 
 
     public boolean isReindexing = false;
-    
-    @Autowired
-    Environment env;
-    
 
     @Autowired
-    private OutsideTransactionUtil outsideTransactionUtil;
+    Environment env;
 
     private ConcurrentHashMap<Key, Integer> alreadyLoaded = new ConcurrentHashMap<>(10000);;
 

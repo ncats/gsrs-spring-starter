@@ -1,16 +1,19 @@
 package gsrs.model;
 
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
-
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import gsrs.BackupEntityProcessorListener;
 import gsrs.GSRSEntityTraits;
 import gsrs.GsrsEntityProcessorListener;
+import gsrs.GsrsEntityInsertEventListener;
+import gsrs.GsrsEntityUpdateAndDeleteEventListener;
+import gsrs.ParentAware;
 import gsrs.indexer.IndexerEntityListener;
+
+import javax.persistence.EntityListeners;
+import javax.persistence.MappedSuperclass;
+
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Base abstract class for Gsrs Entities should extend,
@@ -20,9 +23,12 @@ import gsrs.indexer.IndexerEntityListener;
 @MappedSuperclass
 //hibernate proxies add some extra fields we want to ignore during json serialization
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@EntityListeners(value= {AuditingEntityListener.class, GsrsEntityProcessorListener.class, IndexerEntityListener.class, BackupEntityProcessorListener.class})
-public abstract class AbstractGsrsEntity implements GSRSEntityTraits{
-
-
+@EntityListeners(value= {AuditingEntityListener.class,
+                        BackupEntityProcessorListener.class,
+                        GsrsEntityProcessorListener.class,
+                        GsrsEntityInsertEventListener.class,
+                        GsrsEntityUpdateAndDeleteEventListener.class,
+                        IndexerEntityListener.class})
+public abstract class AbstractGsrsEntity implements GSRSEntityTraits, ParentAware{
 
 }

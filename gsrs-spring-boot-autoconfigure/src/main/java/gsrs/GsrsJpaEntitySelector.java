@@ -15,7 +15,6 @@ public class GsrsJpaEntitySelector implements ImportSelector {
                 GsrsEntityProcessorListener.class.getName(),
 
                 EntityPersistAdapter.class.getName(),
-                OutsideTransactionUtil.class.getName(),
                 GsrsEditEventListener.class.getName()
         };
     }

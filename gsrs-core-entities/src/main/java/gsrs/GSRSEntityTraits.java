@@ -14,6 +14,4 @@ public interface GSRSEntityTraits {
     default Key fetchKey() {
         return fetchEntityWrapper().getKey();
     }
-    
-
 }
