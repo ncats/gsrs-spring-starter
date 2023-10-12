@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import gsrs.BackupEntityProcessorListener;
 import gsrs.GSRSEntityTraits;
 import gsrs.GsrsEntityProcessorListener;
-import gsrs.GsrsEntityInsertEventListener;
-import gsrs.GsrsEntityUpdateAndDeleteEventListener;
 import gsrs.ParentAware;
 import gsrs.indexer.IndexerEntityListener;
 
@@ -26,8 +24,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(value= {AuditingEntityListener.class,
                         BackupEntityProcessorListener.class,
                         GsrsEntityProcessorListener.class,
-                        GsrsEntityInsertEventListener.class,
-                        GsrsEntityUpdateAndDeleteEventListener.class,
                         IndexerEntityListener.class})
 public abstract class AbstractGsrsEntity implements GSRSEntityTraits, ParentAware{
 

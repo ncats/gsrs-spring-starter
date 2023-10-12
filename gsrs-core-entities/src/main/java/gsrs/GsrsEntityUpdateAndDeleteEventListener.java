@@ -1,5 +1,6 @@
 package gsrs;
 
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -9,26 +10,17 @@ import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.persister.entity.EntityPersister;
-import org.springframework.beans.factory.annotation.Autowired;
 
-
+@Slf4j
 public class GsrsEntityUpdateAndDeleteEventListener implements FlushEntityEventListener {
 
     public static final GsrsEntityUpdateAndDeleteEventListener INSTANCE = new GsrsEntityUpdateAndDeleteEventListener();
-    private boolean enabled = true;
-
-    @Autowired
-    public void setDefaultDataSourceConfig(DefaultDataSourceConfig defaultDataSourceConfig) {
-        if (defaultDataSourceConfig.additionalJpaProperties("spring").get("hibernate.entity_dirtiness_strategy") != null) {
-            enabled = false;
-        }
-    }
 
     @Override
     public void onFlushEntity(FlushEntityEvent event) throws HibernateException {
-        if (!enabled) return;
         final EntityEntry entry = event.getEntityEntry();
         final Object entity = event.getEntity();
+        log.debug("GsrsEntityUpdateAndDeleteEventListener onFlushEntity called for: " + entity.getClass().getName());
         final boolean mightBeDirty = entry.requiresDirtyCheck(entity);
 
         if(mightBeDirty && entity instanceof ParentAware) {

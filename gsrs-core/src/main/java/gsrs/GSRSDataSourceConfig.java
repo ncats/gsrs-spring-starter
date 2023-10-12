@@ -1,10 +1,13 @@
 package gsrs;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
+import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.jpa.boot.spi.IntegratorProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -54,7 +57,7 @@ public abstract class GSRSDataSourceConfig {
         // 2. If there is no specific property, look for the more generic one, use it if not null
 
 
-        Map<String,String> map = new HashMap<>();
+        Map<String,Object> map = new HashMap<>();
         //spring.jpa.hibernate.use-new-id-generator-mappings
 
         Optional<String> dialect = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.database-platform", "spring.jpa.database-platform");
@@ -73,7 +76,6 @@ public abstract class GSRSDataSourceConfig {
         log.debug("Show SQL:" + showSQL.orElse(null));
         log.debug("DDL:" + ddlSetting.orElse(null));
         log.debug("use-new-id-generator-mappings:" + newIDGen.orElse(null));
-        
         log.debug("dirtiness Strat:" + dirtiness.orElse(null));
 
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
@@ -84,7 +86,17 @@ public abstract class GSRSDataSourceConfig {
         newIDGen.ifPresent(d->map.put("hibernate.id.new_generator_mappings", d));
         formatSQL.ifPresent(d->map.put("hibernate.format_sql", d));
 
-        dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
+        if (dirtiness.isPresent()) {
+            map.put("hibernate.entity_dirtiness_strategy", dirtiness.get());
+        } else {
+            try {
+                Integrator integrator = (Integrator) Class.forName("gsrs.ParentAwareEventListenerIntegrator").getField("INSTANCE").get(null);
+                map.put("hibernate.integrator_provider", (IntegratorProvider) () -> Collections.singletonList(integrator));
+                log.debug("integrator provider: gsrs.ParentAwareEventListenerIntegrator");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         schemaGenerationCreateSource.ifPresent(d->map.put("javax.persistence.schema-generation.create-source", d));
         schemaGenerationScriptsAction.ifPresent(d->map.put("javax.persistence.schema-generation.scripts.action", d));
@@ -93,7 +105,7 @@ public abstract class GSRSDataSourceConfig {
         //This doesn't seem ideal ... but it may be the only way
         map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
         map.put("hibernate.implicit_naming_strategy", EbeanLikeImplicitNamingStategy.class.getName());
-        
+
         return map;
     }
 }
