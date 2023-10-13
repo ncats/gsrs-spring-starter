@@ -1,6 +1,7 @@
 package gsrs.tasks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import gsrs.config.EntityContextLookup;
 import gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
@@ -23,13 +24,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskInitializer {
-    public static final String STAGING_AREA_PRIMARY_OBJECT_CLASS = ImportMetadata.class.getName();
 
     public static final String STAGING_AREA_LOCATION = "Staging Area";
 
@@ -55,18 +56,12 @@ public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskIn
         threadCount=count;
     }
 
-    private final Map<String, StagingAreaService> servicesByContext = new HashMap<>();
+    private final Map<String, StagingAreaService> servicesByContext = new ConcurrentHashMap<>();
 
     private StagingAreaService getStagingAreaService(String contextName) {
-        String contextNameToUse =contextName;
-        if(contextNameToUse.contains(".")) {
-            String[] parts =contextNameToUse.split("\\.");
-            contextNameToUse = parts[parts.length-1].toLowerCase() + "s";
-        }
+        String contextNameToUse = EntityContextLookup.getContextFromEntityClass(contextName);
         log.trace("supplied contextName: {}, used {}", contextName, contextNameToUse);
         return servicesByContext.computeIfAbsent(contextNameToUse, n-> {
-            Class stagingAreaServiceClass=importAdapterFactoryFactory.getDefaultStagingAreaService(n);
-            Constructor<StagingAreaService> constructor= null;
             try {
                 return gsrsImportAdapterFactoryFactory.getStagingAreaService(n);
             } catch (Exception e) {
@@ -140,6 +135,7 @@ public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskIn
                         }
                     } catch (Exception ignore){
                         log.warn("error processing record {}; continuing to next.", uuid);
+                        ignore.printStackTrace();
                     }
                 });
 

@@ -1,6 +1,7 @@
 package gsrs.imports.indexers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.repository.ImportDataRepository;
@@ -46,12 +47,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
         }
         if( stagingAreaService == null) {
             try {
-                String contextName = importMetadata.getEntityClassName();
-                //hack!
-                if(contextName.contains(".")) {
-                    String[] parts =contextName.split("\\.");
-                    contextName = parts[parts.length-1].toLowerCase() + "s";
-                }
+                String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
                 log.trace("looking for a staging area service for context {}", contextName);
                 stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
                         //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
