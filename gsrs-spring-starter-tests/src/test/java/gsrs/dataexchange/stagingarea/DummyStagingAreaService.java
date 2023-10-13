@@ -136,6 +136,11 @@ public class DummyStagingAreaService implements StagingAreaService {
     }
 
     @Override
+    public <T> StagingAreaEntityService<T> getEntityService(String entityName) {
+        return null;
+    }
+
+    @Override
     public MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId) {
         return null;
     }

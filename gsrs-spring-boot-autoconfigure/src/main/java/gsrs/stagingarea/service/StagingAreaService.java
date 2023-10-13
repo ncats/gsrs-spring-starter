@@ -51,6 +51,8 @@ public interface StagingAreaService {
 
     <T> void registerEntityService(StagingAreaEntityService<T> service);
 
+    <T> StagingAreaEntityService<T> getEntityService(String entityName);
+
     MatchedRecordSummary findMatchesForJson(String qualifiedEntityType, String entityJson, String startingRecordId);
 
     <T> T retrieveEntity(String entityType, String entityId);

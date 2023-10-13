@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -57,5 +58,8 @@ public interface ImportMetadataRepository extends GsrsVersionedRepository<Import
     @Modifying(clearAutomatically = true)
     @Query("update ImportMetadata i set instanceId= ?1 where i.recordId = ?2")
     public void setInstanceIdForRecord(UUID newInstanceId, UUID recordId);
+
+    @Query("select i.recordId from ImportMetadata i")
+    List<UUID> getAllRecordIds();
 
 }
