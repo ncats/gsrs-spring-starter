@@ -110,17 +110,18 @@ public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskIn
                         EntityUtils.Key substanceKey = EntityUtils.Key.of(ImportMetadata.class, uuid);
                         Optional<?> retrieved = EntityFetcher.of(substanceKey).getIfPossible();
                         if(retrieved.isPresent()) {
-                            ImportMetadata s = (ImportMetadata) retrieved.get();
-                            ImportData relatedData = getStagingAreaService(s.getEntityClassName()).getImportDataByInstanceIdOrRecordId(uuid.toString(), 0);
-                            Object domainObject= getStagingAreaService(s.getEntityClassName()).deserializeObject(s.getEntityClassName(), relatedData.getData());
-                            List<MatchableKeyValueTuple> matchables = getEntityService(s.getEntityClassName()).extractKVM(domainObject);
+                            ImportMetadata importMetadata = (ImportMetadata) retrieved.get();
+                            ImportData relatedData = getStagingAreaService(importMetadata.getEntityClassName()).getImportDataByInstanceIdOrRecordId(uuid.toString(), 0);
+                            Object domainObject= getStagingAreaService(importMetadata.getEntityClassName()).deserializeObject(importMetadata.getEntityClassName(), relatedData.getData());
+                            List<MatchableKeyValueTuple> matchables = getEntityService(importMetadata.getEntityClassName()).extractKVM(domainObject);
                             List<KeyValueMapping> kvmaps = matchables.stream().map(kv -> {
                                         KeyValueMapping mapping = new KeyValueMapping();
                                         mapping.setKey(kv.getKey());
                                         mapping.setValue(kv.getValue());
                                         mapping.setQualifier(kv.getQualifier());
-                                        mapping.setRecordId(s.getRecordId());
-                                        mapping.setEntityClass(domainObject.getClass().getName());
+                                        mapping.setRecordId(importMetadata.getRecordId());
+                                        mapping.setEntityClass(importMetadata.getEntityClassName());
+                                        mapping.setInstanceId(relatedData.getInstanceId());
                                         mapping.setDataLocation(STAGING_AREA_LOCATION);
                                         return mapping;
                                     })
@@ -133,7 +134,7 @@ public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskIn
                                 keyValueMappingRepository.flush();
                             });
 
-                            listen.recordProcessed(s);
+                            listen.recordProcessed(importMetadata);
                         } else {
                             log.warn("error retrieving substance with ID {}", uuid);
                         }
