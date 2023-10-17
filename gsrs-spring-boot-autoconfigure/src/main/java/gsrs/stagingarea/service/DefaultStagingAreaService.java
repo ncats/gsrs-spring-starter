@@ -428,6 +428,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
+    public <T> StagingAreaEntityService<T> getEntityService(String entityName) {
+        return _entityServiceRegistry.get(entityName);
+    }
+
+    @Override
     public <T> List<MatchableKeyValueTuple> calculateMatchables(T object) {
         log.trace("in calculateMatchables of class {}", object.getClass().getName());
         StagingAreaEntityService entityService = getStagingAreaEntityService(object.getClass());

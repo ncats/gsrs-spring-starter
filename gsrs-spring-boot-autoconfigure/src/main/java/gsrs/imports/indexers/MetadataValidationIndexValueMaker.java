@@ -1,5 +1,6 @@
 package gsrs.imports.indexers;
 
+import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.ImportValidation;
@@ -36,12 +37,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
         log.trace("In createIndexableValues");
         if(stagingAreaService ==null) {
             try {
-                String contextName = importMetadata.getEntityClassName();
-                //hack!
-                if(contextName.contains(".")) {
-                    String[] parts =contextName.split("\\.");
-                    contextName = parts[parts.length-1].toLowerCase() + "s";
-                }
+                String contextName = EntityContextLookup.getContextFromEntityClass( importMetadata.getEntityClassName());
                 stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
                 log.error("Error creating staging area service!");

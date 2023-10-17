@@ -245,13 +245,29 @@ public class EntityPersistAdapter {
         return true;
     }
 
+    public ThreadLocal<Boolean> historyEnabled = ThreadLocal.withInitial(()->true);
 
+    // Pass a runnable to this method, and it will be run with historyEnabled=false.
+    // Should only be used in threads that don't spawn other threads.
+    // Useful for big bulk automated tasks where capturing edits is less important.
+    public void runWithDisabledHistory(Runnable r) {
 
+        this.historyEnabled.set(false);
+        try {
+            r.run();
+        }finally {
+            this.historyEnabled.set(true);
+        }
+    }
 
     public <E extends Exception> void postUpdateBeanDirect(Object bean, Object oldvalues, boolean storeEdit,  Unchecked.ThrowingRunnable<E> runnable) throws E{
 
         boolean shouldStore =  !env.getProperty(GSRS_HISTORY_DISABLED , Boolean.class,  false);
-        
+
+        if(!historyEnabled.get()) {
+            shouldStore=false;
+        }
+
         EntityWrapper<?> ew = EntityWrapper.of(bean);
         EditLock ml = lockMap.get(ew.getKey().toRootKey());
 
@@ -261,6 +277,8 @@ public class EntityPersistAdapter {
         if (ew.ignorePostUpdateHooks()) {
             return;
         }
+
+
         try {
             if (storeEdit && (ew.isEntity() && ew.storeHistory() && ew.hasKey() && shouldStore)) {
 
