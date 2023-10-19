@@ -89,6 +89,8 @@ public abstract class GSRSDataSourceConfig {
         if (dirtiness.isPresent()) {
             map.put("hibernate.entity_dirtiness_strategy", dirtiness.get());
         } else {
+            // WIP: for tests only
+            map.put("hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
             try {
                 Integrator integrator = (Integrator) Class.forName("gsrs.ParentAwareEventListenerIntegrator").getField("INSTANCE").get(null);
                 map.put("hibernate.integrator_provider", (IntegratorProvider) () -> Collections.singletonList(integrator));

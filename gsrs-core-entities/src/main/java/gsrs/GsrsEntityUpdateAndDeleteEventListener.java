@@ -20,22 +20,27 @@ public class GsrsEntityUpdateAndDeleteEventListener implements FlushEntityEventL
     public void onFlushEntity(FlushEntityEvent event) throws HibernateException {
         final EntityEntry entry = event.getEntityEntry();
         final Object entity = event.getEntity();
-        log.debug("GsrsEntityUpdateAndDeleteEventListener onFlushEntity called for: " + entity.getClass().getName());
         final boolean mightBeDirty = entry.requiresDirtyCheck(entity);
 
         if(mightBeDirty && entity instanceof ParentAware) {
             Object parent = ((ParentAware) entity).parentObject();
-            if (parent == null) {
-                return;
-            } else if(updated(event)) {
+            //if (parent == null) {
+            //    return;
+            //}
+            if(updated(event)) {
+                log.debug("GsrsEntityUpdateAndDeleteEventListener onFlushEntity called for updated: " + entity.getClass().getName());
                 incrementParentVersion(event, parent);
             } else if (deleted(event)) {
+                log.debug("GsrsEntityUpdateAndDeleteEventListener onFlushEntity called for deleted: " + entity.getClass().getName());
                 incrementParentVersion(event, parent);
             }
         }
     }
 
     private void incrementParentVersion(FlushEntityEvent event, Object parent) {
+        if (parent == null) {
+            return;
+        }
         EntityEntry entityEntry = event.getSession().getPersistenceContext().getEntry(Hibernate.unproxy(parent));
         if(entityEntry.getStatus() != Status.DELETED) {
             event.getSession().lock(parent, LockMode.OPTIMISTIC_FORCE_INCREMENT);
