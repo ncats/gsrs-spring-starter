@@ -103,9 +103,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             try {
                 log.trace("going to create indexerFactory");
                 TextIndexerFactory indexerFactory = new TextIndexerFactory();
-
                 AutowireHelper.getInstance().autowireAndProxy(indexerFactory);
-                //indexer = indexerFactory.getDefaultInstance();
+                tif=indexerFactory;
                 log.trace("textIndexerFactorDefaultDir: {}", textIndexerFactorDefaultDir);
                 indexer =indexerFactory.getInstance(new File(textIndexerFactorDefaultDir +"/imports"));
                 log.trace("got indexer from indexerFactory.getDefaultInstance(): " + indexer);
