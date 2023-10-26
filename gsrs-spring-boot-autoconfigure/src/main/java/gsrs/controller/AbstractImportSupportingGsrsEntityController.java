@@ -688,6 +688,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         Objects.requireNonNull(entityType, "Must supply entityType (class of object to create)");
         String adapterName = queryParameters.get("adapter");
 
+        String fileName = queryParameters.containsKey("fileName") ? queryParameters.get("fileName") : "POSTed JSON";
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
                 stagingAreaService);
@@ -695,7 +696,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ImportTaskMetaData task = new ImportTaskMetaData();
         task.setAdapter(adapterName);
         task.setEntityType(entityType);
-        task.setFilename("POSTed JSON");
+        task.setFilename(fileName);
         task.setInternalUuid(UUID.randomUUID());
         task.setSize((long) newEntity.length());
         task.setAdapterSettings(JsonNodeFactory.instance.objectNode());
