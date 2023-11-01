@@ -16,18 +16,18 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.1-SNAPSHOT</version>
+            <version>0.6.5-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.8-SNAPSHOT</version>
+            <version>1.0.14-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>structure-indexer</artifactId>
-            <version>0.0.14-SNAPSHOT</version>
+            <version>0.0.15-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
