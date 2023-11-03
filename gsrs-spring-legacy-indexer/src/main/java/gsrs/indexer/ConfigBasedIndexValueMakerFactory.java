@@ -23,22 +23,19 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
     private CachedSupplier<List<IndexValueMaker>> indexers = CachedSupplier.runOnce(()->{
         ObjectMapper mapper = new ObjectMapper();
         List<IndexValueMaker> ivms = confList.stream()
-                .map(c ->{
-                    IndexValueMaker indexer =null;
-                    if(c.getParameters() !=null){
-                        indexer= (IndexValueMaker) mapper.convertValue(c.getParameters(), c.getIndexer());
-                    }else{
-                        try {
-                            indexer= (IndexValueMaker) c.getIndexer().newInstance();
-                        } catch (Exception e) {
-                            throw new IllegalStateException("error creating indexer for " + c, e);
-                        }
-                    }
-                    if(indexer !=null) {
-                        indexer = AutowireHelper.getInstance().autowireAndProxy(indexer);
-                    }
-                    return indexer;
-                })
+        		.map(c ->{
+        			try {
+        				IndexValueMaker indexer = (IndexValueMaker)c.newIndexValueMaker(mapper, AutowireHelper.getInstance().getClassLoader());
+        				if(indexer !=null) {
+        					indexer = AutowireHelper.getInstance().autowireAndProxy(indexer);
+        				}
+
+        				return (IndexValueMaker)indexer;
+        			} catch (Exception e) {
+        				throw new IllegalStateException("error creating indexer for " + c, e);
+        			}
+
+        		})
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return ivms;
