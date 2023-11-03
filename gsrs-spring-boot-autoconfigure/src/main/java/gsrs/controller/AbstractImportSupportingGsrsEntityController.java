@@ -679,6 +679,34 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(itmd, queryParameters), HttpStatus.OK);
     }
 
+    @hasAdminRole
+    @PostGsrsRestApiMapping(value = {"/stagingArea"})
+    public ResponseEntity<Object> createEntity(@RequestBody String newEntity,
+                                               @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in createEntity");
+        String entityType = queryParameters.get("entityType");//type of domain object to create
+        Objects.requireNonNull(entityType, "Must supply entityType (class of object to create)");
+        String adapterName = queryParameters.get("adapter");
+
+        String fileName = queryParameters.containsKey("fileName") ? queryParameters.get("fileName") : "POSTed JSON";
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportUtilities<T> importUtilities = new ImportUtilities<>(getEntityService().getContext(), getEntityService().getEntityClass(),
+                stagingAreaService);
+        AutowireHelper.getInstance().autowire(importUtilities);
+        ImportTaskMetaData task = new ImportTaskMetaData();
+        task.setAdapter(adapterName);
+        task.setEntityType(entityType);
+        task.setFilename(fileName);
+        task.setInternalUuid(UUID.randomUUID());
+        task.setSize((long) newEntity.length());
+        task.setAdapterSettings(JsonNodeFactory.instance.objectNode());
+        String result= importUtilities.saveStagingAreaRecord(newEntity, task, null);
+
+        ObjectNode resultsNode = JsonNodeFactory.instance.objectNode();
+        resultsNode.put("results", result);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultsNode, queryParameters), HttpStatus.OK);
+    }
+
     //STEP 3.5: Preview import
     //May required additional work
     @hasAdminRole

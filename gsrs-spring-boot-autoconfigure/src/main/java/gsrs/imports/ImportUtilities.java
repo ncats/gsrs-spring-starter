@@ -730,6 +730,11 @@ public class ImportUtilities<T> {
     public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
         log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
+        if(creatingUser==null ){
+            creatingUser= (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+                    ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+                    : null;
+        }
         ImportRecordParameters.ImportRecordParametersBuilder builder=
          ImportRecordParameters.builder()
                 .jsonData(json)
