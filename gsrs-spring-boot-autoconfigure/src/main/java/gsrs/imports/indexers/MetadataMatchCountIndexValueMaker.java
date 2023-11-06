@@ -3,7 +3,6 @@ package gsrs.imports.indexers;
 import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
-import gsrs.stagingarea.model.MatchedKeyValue;
 import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportDataRepository;
 import gsrs.stagingarea.service.StagingAreaService;
@@ -11,12 +10,8 @@ import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import scala.collection.immutable.List;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 
 @Slf4j
