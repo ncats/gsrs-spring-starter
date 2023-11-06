@@ -10,7 +10,7 @@
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-discovery</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.1</version>
     <name>gsrs-discovery</name>
     <description>Demo project for Spring Boot</description>
 
