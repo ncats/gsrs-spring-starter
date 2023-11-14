@@ -47,6 +47,8 @@ public interface GsrsEntityService<T, I> {
      */
     long count();
 
+//    String getConfigurationProperties();
+
     /**
      * Remove the given entity from the repository.
      * @param id the id of the entity to delete.

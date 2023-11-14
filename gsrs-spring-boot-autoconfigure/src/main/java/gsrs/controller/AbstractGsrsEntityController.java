@@ -392,6 +392,12 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
     }
 
+//    @Override
+//    @GetGsrsRestApiMapping("/@configurationProperties")
+//    public String getConfigurationProperties(){
+//        return getEntityService().getConfigurationProperties();
+//    }
+
 
 
     @Override
