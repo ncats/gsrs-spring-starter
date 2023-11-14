@@ -818,11 +818,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 resultNode.put("Error!", String.format("Attempt to update configuration created by %s", retrievedSettings.getOwner()));
                 status=HttpStatus.UNAUTHORIZED;
             } else {
-                /*ImportTaskMetaData importerSettingsFromInput = ImportTaskMetaData.fromText(retrievedText);
-                if( retrievedSettings.getOwner() == null || retrievedSettings.getOwner().length()==0){
-                    log.info("retrieved import configuration without an owner; setting to current user ");
-                    retrievedSettings.setOwner(currentUser);
-                }*/
                 retrievedText.setValue(importConfigJson);
                 log.trace("made call to setValue");
                 TransactionTemplate transactionTemplateUpdate = new TransactionTemplate(transactionManager);
