@@ -179,7 +179,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @DeleteGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigDelete(@PathVariable("id") Long id,
                                                            @RequestParam Map<String, String> queryParameters) {
-        log.trace("starting in handleExportConfigFetch");
+        log.trace("starting in handleExportConfigDelete");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
 
 
