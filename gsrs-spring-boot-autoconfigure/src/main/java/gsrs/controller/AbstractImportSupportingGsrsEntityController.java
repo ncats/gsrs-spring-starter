@@ -723,6 +723,53 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
+    @GetGsrsRestApiMapping({"/import/conf({id})", "/import/conf/{id}"})
+    public ResponseEntity<Object> handleImportConfigFetch(@PathVariable("id") Long id,
+                                                          @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+        log.trace("starting in handleImportConfigFetch");
+        Objects.requireNonNull(id, "Must supply the ID of an existing import configuration");
+        Optional<Text> configurationHolder = textRepository.findById(id);
+        Object returnObject;
+        HttpStatus status;
+        if (configurationHolder.isPresent()) {
+            ImportTaskMetaData config = ImportTaskMetaData.fromText(configurationHolder.get());
+            returnObject=config;
+            status = HttpStatus.OK;
+        } else {
+            ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
+            resultNode.put("Error", String.format("No configuration found with id %d", id));
+            returnObject= resultNode;
+            status=HttpStatus.BAD_REQUEST;
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returnObject, queryParameters), status);
+    }
+
+
+    @hasAdminRole
+    @PostGsrsRestApiMapping(value = {"/import/conf"})
+    public ResponseEntity<Object> saveImportConfig(@RequestBody JsonNode configJson,
+                                               @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("in saveImportConfig");
+
+        ObjectMapper om = new ObjectMapper();
+        ImportTaskMetaData itmd = om.treeToValue(configJson, ImportTaskMetaData.class);
+
+        ObjectMapper mapper = new ObjectMapper();
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        Text textObject=itmd.asText();
+        Text savedText = transactionTemplate.execute(t -> textRepository.saveAndFlush(textObject));
+        log.trace("completed save of Text with ID {}", savedText.id);
+        itmd.setTextId(savedText.id);
+        savedText.setText(mapper.writeValueAsString(itmd));
+        savedText.setIsDirty("id");
+        log.trace("called savedText.setIsDirty(");
+        TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
+        transactionTemplate2.executeWithoutResult(t -> textRepository.saveAndFlush(savedText));
+        log.trace("completed 2nd save of Text");
+
+        ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
+        resultNode.put("Newly created import configuration", savedText.id);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);    }
 
     //search for records that have the same values for key fields
     @hasAdminRole
