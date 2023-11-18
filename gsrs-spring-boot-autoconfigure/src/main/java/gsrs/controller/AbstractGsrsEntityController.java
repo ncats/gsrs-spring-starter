@@ -394,7 +394,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
 
-
     @Override
     @GetGsrsRestApiMapping("/@count")
     public long getCount(){
