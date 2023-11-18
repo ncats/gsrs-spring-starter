@@ -13,6 +13,8 @@ import java.util.List;
 
 public class ApplicationContextChecker {
 
+    // JUST trying something out in this class
+
     public boolean enabled;
 
     public String getBeanDefinitionNames(ApplicationContext ctx) {
