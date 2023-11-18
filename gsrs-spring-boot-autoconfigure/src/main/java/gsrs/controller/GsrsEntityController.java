@@ -35,9 +35,6 @@ public interface GsrsEntityController<T, I> {
     @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**"  })
     ResponseEntity<Object> getFieldById(@PathVariable String id, @RequestParam(value="urldecode", required = false) Boolean urlDecode, @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException;
 
-//    @GetGsrsRestApiMapping("/@configurationProperties")
-//    public String getConfigurationProperties();
-
     @GetGsrsRestApiMapping("/@count")
     long getCount();
 
