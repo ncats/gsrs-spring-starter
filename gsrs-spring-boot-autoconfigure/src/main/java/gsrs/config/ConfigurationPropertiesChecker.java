@@ -14,6 +14,9 @@ import pl.jalokim.propertiestojson.util.PropertiesToJsonConverterBuilder;
 // https://www.adam-bien.com/roller/abien/entry/java_ee_8_converting_java
 // https://github.com/mikolajmitura/java-properties-to-json
 
+// https://stackoverflow.com/questions/23506471/access-all-environment-properties-as-a-map-or-properties-object
+// https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/env/ConfigurableEnvironment.html
+
 @Slf4j
 @Data
 public class ConfigurationPropertiesChecker {
@@ -39,6 +42,7 @@ public class ConfigurationPropertiesChecker {
                 }
             });
             Map<String, Object> properties = new HashMap<>();
+
             propertySources.stream()
             .map(propertySource -> propertySource.getSource().keySet())
             .flatMap(Collection::stream)
@@ -83,7 +87,7 @@ public class ConfigurationPropertiesChecker {
             sb.append("Groups:").append("\n\n");
 
             configurableEnvironment.getPropertySources().forEach(it -> {
-                //&& it.getName().contains("applicationConfig")
+                // it.getName().equals("systemEnvironment") &&
                 if (it instanceof MapPropertySource) {
                     sb.append(it.getName()).append("\n");
                     propertySources.add((MapPropertySource) it);
