@@ -30,15 +30,19 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <gsrs.version>3.1-SNAPSHOT</gsrs.version>
+        <gsrs.version>3.1</gsrs.version>
         <spring-boot.version>2.4.5</spring-boot.version>
         <log4j2.version>2.17.2</log4j2.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.1</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
+    <url>https://github.com/ncats/gsrs-spring-starter</url>
+    <scm>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+    </scm>
     
 	<dependencies>
 		<dependency>
@@ -83,10 +87,10 @@
             <id>oss.sonatype.org-snapshot</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </releases>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
@@ -101,6 +105,8 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
+
 
 
 </project>
