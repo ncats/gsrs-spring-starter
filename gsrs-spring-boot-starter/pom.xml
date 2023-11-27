@@ -36,6 +36,7 @@
                     <target>${java.version}</target>
                 </configuration>
             </plugin>
+            <!-- Uncomment this for maven public release deployment
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -62,7 +63,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>            
+            </plugin>    -->        
         </plugins>
     </build>
 </project>

@@ -80,7 +80,7 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
-
+    <!-- Uncomment this for maven public release deployment
     <build>
         <plugins>
             <plugin>
@@ -114,5 +114,5 @@
                 </executions>
             </plugin>
         </plugins>
-    </build>
+    </build> -->
 </project>

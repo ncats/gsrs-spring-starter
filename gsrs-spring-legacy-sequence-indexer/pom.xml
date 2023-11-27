@@ -38,6 +38,7 @@
         <artifactId>spring-boot-starter-test</artifactId>
     </dependency>
 </dependencies>
+    <!-- Uncomment this for maven public release deployment
     <build>
         <plugins>
             <plugin>
@@ -71,5 +72,5 @@
                 </executions>
             </plugin>
         </plugins>
-    </build>
+    </build> -->
 </project>

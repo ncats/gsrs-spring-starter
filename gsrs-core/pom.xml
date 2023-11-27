@@ -94,7 +94,7 @@
             <version>32.0.1-jre</version>
         </dependency>
     </dependencies>
-
+    <!-- Uncomment this for maven public release deployment
     <build>
         <plugins>
             <plugin>
@@ -128,5 +128,5 @@
                 </executions>
             </plugin>
         </plugins>
-    </build>
+    </build> -->
 </project>

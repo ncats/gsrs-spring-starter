@@ -54,6 +54,7 @@
             <version>${gsrs.version}</version>
         </dependency>
     </dependencies>
+    <!-- Uncomment this for maven public release deployment
     <build>
         <plugins>
             <plugin>
@@ -87,5 +88,5 @@
                 </executions>
             </plugin>
         </plugins>
-    </build>
+    </build> -->
 </project>
