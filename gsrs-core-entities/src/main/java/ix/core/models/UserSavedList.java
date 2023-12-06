@@ -17,7 +17,7 @@ import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "ix_core_user_saved_list", 
-	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id"})})
+	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id", "kind"})})
 @Indexable(indexed = false)
 public class UserSavedList {
 	
@@ -33,16 +33,19 @@ public class UserSavedList {
 	@Column(nullable=false)
 	public String name; 
 	
+	private String kind;
+	
 	@Lob
 	@Basic(fetch= FetchType.EAGER)
 	public String list;	
 	
 	public UserSavedList() {}
 	
-	public UserSavedList(Principal user, String name, String list) {
+	public UserSavedList(Principal user, String name, String list, String kind) {
         this.principal = user;
-        this.name = name;
+        this.name = name;        
         this.list = list;
+        this.kind = kind;
     }
 	
 	@Override

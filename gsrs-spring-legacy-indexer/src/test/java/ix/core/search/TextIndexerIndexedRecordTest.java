@@ -59,7 +59,7 @@ public class TextIndexerIndexedRecordTest {
 		conf.setFieldsuggest(true);
 		conf.setShouldLog(false);
 		UserSavedListService userSavedListService = mock(UserSavedListService.class);
-		Mockito.when(userSavedListService.getUserSearchResultLists(ArgumentMatchers.anyString())).thenReturn(new ArrayList<String>());
+		Mockito.when(userSavedListService.getUserSearchResultLists(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).thenReturn(new ArrayList<String>());
 				
 		
 		IndexValueMakerFactory singleIVMMaker = new IndexValueMakerFactory() {

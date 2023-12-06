@@ -15,7 +15,7 @@ import javax.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "ix_core_key_user_list", 
-	uniqueConstraints={@UniqueConstraint(columnNames={"entity_key","list_name","user_id"})})
+	uniqueConstraints={@UniqueConstraint(columnNames={"entity_key", "list_name", "user_id", "kind"})})
 @Indexable(indexed = false)
 public class KeyUserList {
 	
@@ -34,13 +34,16 @@ public class KeyUserList {
 	@Column(nullable = false, name = "list_name")
 	public String listName;	
 	
+	private String kind;
+	
 	public KeyUserList() {}
 	
-	public KeyUserList(String key, Principal user, String name) {
+	public KeyUserList(String key, Principal user, String name, String kind) {
 		this.entityKey = key;
         this.principal = user;
-        this.listName = name;        
-    }
+        this.listName = name;
+        this.kind = kind;
+    }	
 	
 	@Override
 	public boolean equals(Object o) {

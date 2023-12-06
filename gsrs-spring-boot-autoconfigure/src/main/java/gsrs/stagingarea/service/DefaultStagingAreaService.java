@@ -342,10 +342,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
             log.trace("no ImportData found by recordId; looking by instanceId");
             try {
-                ImportData dataItem = importDataRepository.getById(UUID.fromString(id));
-                if (dataItem != null) {
+                Optional<ImportData> dataItem = importDataRepository.findById(UUID.fromString(id));
+                if (dataItem.isPresent()) {
                     importDataList = new ArrayList<>();
-                    importDataList.add(dataItem);
+                    importDataList.add(dataItem.get());
                 }
             } catch (NoSuchMethodError error) {
                 //have observed this error several times when attempting to retrieve a non-existent ID
@@ -425,6 +425,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         log.trace("registered entity service class {} for entity class {}", service.getClass().getName(),
                 service.getEntityClass().getName());
         _entityServiceRegistry.put(service.getEntityClass().getName(), service);
+    }
+
+    @Override
+    public <T> StagingAreaEntityService<T> getEntityService(String entityName) {
+        return _entityServiceRegistry.get(entityName);
     }
 
     @Override

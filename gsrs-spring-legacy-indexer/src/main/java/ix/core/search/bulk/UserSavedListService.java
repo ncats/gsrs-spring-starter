@@ -38,47 +38,48 @@ public class UserSavedListService {
 	}
 	
 	//All the validation checking of parameters are done at the controller
-	public List<String> getUserSearchResultLists(String userName){
+	public List<String> getUserSearchResultLists(String userName, String kind){
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return new ArrayList<String>();
 		}
-		return 	getUserSearchResultLists(user.id);
+		return 	getUserSearchResultLists(user.id, kind);
 	} 
 	
-	public List<String> getUserSearchResultLists(Long userId){
-		return 	userSavedListRepository.getUserSearchResultListsByUserId(userId);
+	public List<String> getUserSearchResultLists(Long userId, String kind){
+		
+		return 	userSavedListRepository.getUserSearchResultListsByUserId(userId, kind);
 	} 
 	
-	public List<String> getAllUserSearchResultLists(){
-		return 	userSavedListRepository.getAllUserSearchResultLists();
+	public List<String> getAllUserSearchResultLists(String kind){
+		return 	userSavedListRepository.getAllUserSearchResultLists(kind);
 	}
 	
-	public List<String> getListNamesByKey(String key, Long userId){
-		return keyUserListRepository.getAllListNamesFromKey(key, userId);
+	public List<String> getListNamesByKey(String key, Long userId, String kind){
+		return keyUserListRepository.getAllListNamesFromKey(key, userId, kind);
 	}
 	
-	public void removeUserSearchResultList(Long userId, String listName) {
-		userSavedListRepository.removeUserSearchResultList(userId, listName);
-		keyUserListRepository.removeList(userId, listName);
+	public void removeUserSearchResultList(Long userId, String listName, String kind) {
+		userSavedListRepository.removeUserSearchResultList(userId, listName, kind);
+		keyUserListRepository.removeList(userId, listName, kind);
 	}
 	
 	
-	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, int top, int skip){
+	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, int top, int skip, String kind){
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return new ArrayList<String>();
 		}
 		
-		return getUserSavedBulkSearchResultListContent(user.id, listName, top, skip);		
+		return getUserSavedBulkSearchResultListContent(user.id, listName, top, skip, kind);		
 	}
 	
 	
-	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, int top, int skip){
+	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, int top, int skip, String kind){
 		List<String> keyList = new ArrayList<String>();
-		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		
 		if(listString == null || listString.trim().isEmpty())
 			return keyList;
@@ -95,7 +96,7 @@ public class UserSavedListService {
 		return keyList.subList(skip, endIndex);
 	}
 	
-	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName){
+	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, String kind){
 		List<String> keyList = new ArrayList<String>();
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
@@ -103,13 +104,13 @@ public class UserSavedListService {
 			return keyList;
 		}
 		
-		keyList = getUserSavedBulkSearchResultListContent(user.id, listName);
+		keyList = getUserSavedBulkSearchResultListContent(user.id, listName, kind);
 		return keyList;		
 	}
 		
-	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName){
+	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, String kind){
 		List<String> keyList = new ArrayList<String>();
-		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		if(listString == null || listString.trim().isEmpty())
 			return keyList;
 		
@@ -117,27 +118,27 @@ public class UserSavedListService {
 		return keyList;
 	}
 	
-	public boolean userListExists(String userName, String listName) {
+	public boolean userListExists(String userName, String listName, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return false;
 		}		
-		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName) > 0) {			
+		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName, kind) > 0) {			
 			return true;
 		}else 
 			return false;		
 	} 
 	
 	// Error message or empty string to indicate no error
-	public String validateUsernameAndListname(String userName, String listName) {
+	public String validateUsernameAndListname(String userName, String listName, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return "Cannot find user " + userName;
 		}
 		
-		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName) > 0) {			
+		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName, kind) > 0) {			
 			return "User list with name as " + userName + " already exists.";
 		}
 		else 
@@ -145,7 +146,7 @@ public class UserSavedListService {
 	} 
 	
 	
-	public void createBulkSearchResultList(String userName, String listName, List<String> keyList ) {		
+	public void createBulkSearchResultList(String userName, String listName, List<String> keyList, String kind ) {		
 		
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);		
 		
@@ -157,31 +158,32 @@ public class UserSavedListService {
 		String listString = processedList.stream()				
 				.reduce("", (substring, key)-> substring.concat(","+key));
 		listString = listString.substring(listString.indexOf(",")+1);
-		UserSavedList record = new UserSavedList(user, listName, listString);
+		UserSavedList record = new UserSavedList(user, listName, listString, kind);
 		userSavedListRepository.saveAndFlush(record);
 		
 		//todo: use batch insert here
 		for(String key: processedList)	{		
-			keyUserListRepository.saveAndFlush(new KeyUserList(key, user, listName));
+			keyUserListRepository.saveAndFlush(new KeyUserList(key, user, listName, kind));
 		}		
 	}	
 		
-	public void deleteBulkSearchResultList(String userName, String listName) {
+	public void deleteBulkSearchResultList(String userName, String listName, String kind) {
 		
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return; 
 		}
-		userSavedListRepository.removeUserSearchResultList(user.id, listName);
+		userSavedListRepository.removeUserSearchResultList(user.id, listName, kind);
 				
-		keyUserListRepository.removeList(user.id, listName);
+		keyUserListRepository.removeList(user.id, listName, kind);
 	}
 	
-	public List<String> updateBulkSearchResultList(Long userId, String listName, List<String> keyList, Operation operation) {
+	public List<String> updateBulkSearchResultList(Long userId, String listName, List<String> keyList, 
+			Operation operation, String kind) {
 		List<String> list;
 		List<String> changeSet = new ArrayList<>();
-		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName);
+		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		if(listString == null || listString.trim().isEmpty())
 			return changeSet;
 		list = Arrays.asList(listString.split(","));
@@ -213,23 +215,23 @@ public class UserSavedListService {
 		List<String> sortedList = new ArrayList<>(sortedSet);
 	    String resultString = sortedList.stream().reduce("", (substring, key)-> substring.concat(","+key));
 	    resultString = resultString.substring(resultString.indexOf(",")+1);
-	    userSavedListRepository.updateUserSavedBulkSearchResult(userId, listName, resultString);	
+	    userSavedListRepository.updateUserSavedBulkSearchResult(userId, listName, resultString, kind);	
 	    
 	    return changeSet; 
 	    	    
 	}
 	
-	public void updateBulkSearchResultKey(Principal user, String listName, Operation operation, List<String> changeSet) {
+	public void updateBulkSearchResultKey(Principal user, String listName, Operation operation, List<String> changeSet, String kind) {
 		
 		switch(operation) {
 		case ADD:
 			for(String string: changeSet) {
-				keyUserListRepository.saveAndFlush(new KeyUserList(string, user, listName));
+				keyUserListRepository.saveAndFlush(new KeyUserList(string, user, listName, kind));
 			}
 			break;
 		case REMOVE:
 			for(String string: changeSet) {
-				keyUserListRepository.removeKey(string, user.id, listName);
+				keyUserListRepository.removeKey(string, user.id, listName, kind);
 			}
 			break;	
 		default:
@@ -238,15 +240,15 @@ public class UserSavedListService {
 		
 	}
 	
-	public boolean updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation) {
+	public boolean updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
 			log.warn("User saved list service: cannot find user " + userName);
 			return false; 
 		}
-		List<String> changeSet = updateBulkSearchResultList(user.id, listName, keyList, operation);	
+		List<String> changeSet = updateBulkSearchResultList(user.id, listName, keyList, operation, kind);	
 		if(changeSet.size()>0) {
-			updateBulkSearchResultKey(user, listName, operation, changeSet);
+			updateBulkSearchResultKey(user, listName, operation, changeSet, kind);
 			return true;
 		}else {
 			return false;

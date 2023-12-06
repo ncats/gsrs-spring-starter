@@ -1,6 +1,7 @@
 package gsrs.imports.indexers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.repository.ImportDataRepository;
@@ -46,12 +47,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
         }
         if( stagingAreaService == null) {
             try {
-                String contextName = importMetadata.getEntityClassName();
-                //hack!
-                if(contextName.contains(".")) {
-                    String[] parts =contextName.split("\\.");
-                    contextName = parts[parts.length-1].toLowerCase() + "s";
-                }
+                String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
                 log.trace("looking for a staging area service for context {}", contextName);
                 stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
                         //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
@@ -72,7 +68,14 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
                 log.trace("deserialized object of class {}", dataObject.getClass().getName());
                 IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
                 log.trace("instantiated IndexValueMaker");
-                rawMaker.createIndexableValues(dataObject,consumer);
+                //rawMaker.createIndexableValues(dataObject,consumer);
+                //based on suggestion from Tyler P:
+                rawMaker.createIndexableValues(dataObject,(iv)->{
+                    //don't daisy chain suggestion indexes
+                    if(!((IndexableValue)iv).suggest()){
+                        consumer.accept(((IndexableValue)iv).suggestable(false));
+                    }
+                });
                 log.trace("called createIndexableValues");
             } else {
                 log.info("No import data found for instance ID: {}", importMetadata.getInstanceId() != null ? importMetadata.getInstanceId().toString()
