@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -259,6 +260,7 @@ public class ImportUtilities<T> {
         ArrayNode[] returnFromInnerLambda = new ArrayNode[1];
         executor.execute(()-> {
             ArrayNode returnNodes = JsonNodeFactory.instance.arrayNode();
+            BooleanNode successNode= JsonNodeFactory.instance.booleanNode(true);
             for (int r = 0; r < configSet.getStagingAreaRecords().size(); r++) {
                 String stagingAreaId = configSet.getStagingAreaRecords().get(r).getId();
                 String databaseRecordId = configSet.getStagingAreaRecords().get(r).getMatchingID();
@@ -270,12 +272,18 @@ public class ImportUtilities<T> {
                     log.trace("about to call runnable to call processOneRecord");
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
+                    if(singleReturn[0].get("message")!=null && singleReturn[0].get("message").textValue().startsWith("Error:")) {
+                        singleReturn[0].put("success", false);
+                    }else {
+                        singleReturn[0].put("success", true);
+                    }
                 } catch (Exception e) {
                     log.error("error during import processing: ", e);
                     singleReturn[0] = JsonNodeFactory.instance.objectNode();
                     singleReturn[0].put("id", stagingAreaId);
                     singleReturn[0].put("status", "INTERNAL_SERVER_ERROR");
                     singleReturn[0].put("message", "error: " + e.getMessage());
+                    singleReturn[0].put("success", false);
                 }
                 int finalishRecord = r+1;
                 TransactionTemplate transactionTemplateUpdateCount = new TransactionTemplate(transactionManager);
@@ -285,6 +293,7 @@ public class ImportUtilities<T> {
                 log.trace("appending node to returnNodes");
             }
             returnFromInnerLambda[0] =returnNodes;
+
             //now synchronize all records -- tidy up relationships and other entity-entity links
             if(needToSave(configSet.getProcessingActions())){
                 log.trace("going to synchronize entities");
