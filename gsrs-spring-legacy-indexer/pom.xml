@@ -117,10 +117,17 @@
     </dependencies>
     <build>
         <plugins>
-            <plugin>
+    <!--             <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.18.0.0</version>
+                <version>1.18.20.0</version>
+                 <dependencies>
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>1.18.22</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
                     <outputDirectory>${project.build.directory}/delombok</outputDirectory>
@@ -135,7 +142,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Uncomment this for maven public release deployment
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
