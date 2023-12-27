@@ -44,7 +44,7 @@
     <scm>
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
-    
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
