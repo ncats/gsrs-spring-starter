@@ -209,9 +209,9 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
      */
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
+    @CollectionTable(name="ix_import_mapping",
+        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
+    )
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @ToString.Exclude
@@ -226,9 +226,9 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
+    @CollectionTable(name="ix_import_validation",
+        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
+    )
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
     @Builder.Default
