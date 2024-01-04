@@ -78,7 +78,7 @@ public class HttpRequestHolder {
     public static HttpRequestHolder fromRequest(HttpServletRequest req) {
         HttpRequestHolder holder=HttpRequestHolder.builder()
         .url(req.getRequestURL() + Optional.ofNullable(req.getQueryString()).map(qq->"?"+qq).orElse(""))
-        .method(HttpMethod.resolve(req.getMethod()))
+        .method(HttpMethod.valueOf(req.getMethod()))
         .build();
         GsrsSpringUtils.toHeadersMap(req).forEach((k,v)->{
             for(String v2:v) {
