@@ -151,7 +151,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
                 if(up !=null && up.active){
                     auth = new UserProfilePasswordAuthentication(up);
-
+                    userTokenCache.updateUserCache(up);
                 }
             }
         }
@@ -175,7 +175,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     if(up.acceptPassword(pass)){
                         //valid password!
                         auth = new UserProfilePasswordAuthentication(up);
-
+                        userTokenCache.updateUserCache(up);
                     }else{
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
@@ -208,7 +208,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     if (up.acceptKey(key)) {
                         //valid key!
                         auth = new LegacyUserKeyAuthentication(up, key);
-
+                        userTokenCache.updateUserCache(up);
                     } else {
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
