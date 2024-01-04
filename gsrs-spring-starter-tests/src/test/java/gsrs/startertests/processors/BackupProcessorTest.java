@@ -7,6 +7,7 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.History;
 import ix.core.models.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Backup
     @Indexable(indexed = false)
     @History(store = false)
+    @EqualsAndHashCode(callSuper=false)
     public static class MyBackedUpEntity extends BaseModel {
 
         @Id
@@ -61,6 +63,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Indexable(indexed = false)
     @History(store = false)
+    @EqualsAndHashCode(callSuper=false)
     public static class NotBackedupEntity extends LongBaseModel {
 
 

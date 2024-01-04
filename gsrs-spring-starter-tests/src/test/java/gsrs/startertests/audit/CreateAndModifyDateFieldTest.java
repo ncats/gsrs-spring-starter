@@ -6,6 +6,7 @@ import gsrs.model.AbstractGsrsEntity;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.GsrsJpaTest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class MyEntity extends AbstractGsrsEntity {
         @Id
         @GeneratedValue

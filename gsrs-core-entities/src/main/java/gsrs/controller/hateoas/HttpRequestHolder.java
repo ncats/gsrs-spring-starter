@@ -25,15 +25,15 @@ import lombok.Builder;
 public class HttpRequestHolder {
 //    @Builder.Default
 //    private HttpEntity<String> entity = new HttpEntity<>("body");
-    
+
     @Builder.Default
     private Map<String,List<String>> headers = new LinkedHashMap<>();
-    
+
     @Builder.Default
     private HttpMethod method = HttpMethod.GET;
-    @Builder.Default
+
     private String url;
-    
+
     public String getUrl() {
         return url;
     }
@@ -46,16 +46,15 @@ public class HttpRequestHolder {
     public void setMethod(HttpMethod method) {
         this.method = method;
     }
-    
+
     public void addHeader(String key, String v) {
         if(headers==null) {
             headers= new LinkedHashMap<>();
         }
        headers.computeIfAbsent(key, kk-> new ArrayList<>())
               .add(v);
-       
     }
-    
+
     public ResponseEntity<String> execute(RestTemplate restTemplate) {
         String curl=url;
         // Tyler Peryea: This section is unfortunately necessary as

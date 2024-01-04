@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 public class ProcessingActionConfigSet {
 
+    @Builder.Default
     List<ProcessingActionConfig> processingActions = new ArrayList<>();
 
     List<MatchedIDs> stagingAreaRecords;

@@ -154,6 +154,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable(facet=true, sortable = true, name = "Load Date")
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
+    @Builder.Default
     private Date versionCreationDate =null;
 
     /**
@@ -215,6 +216,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @EntityMapperOptions(linkoutInCompactView = true)
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER) //testing out eager fetch 05 May 2023
+    @Builder.Default
     public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
     /**
@@ -229,6 +231,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     })
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
+    @Builder.Default
     public List<ImportValidation> validations = new ArrayList<>();
 
     /**

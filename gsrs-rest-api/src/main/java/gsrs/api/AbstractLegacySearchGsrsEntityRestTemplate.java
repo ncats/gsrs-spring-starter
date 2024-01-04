@@ -104,6 +104,7 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         private String name;
         private boolean enchanced;
         private String prefix;
+        @Builder.Default
         private List<FacetValue> values = new ArrayList<>();
 
         public Optional<FacetValue> getFacetValue(String label){
