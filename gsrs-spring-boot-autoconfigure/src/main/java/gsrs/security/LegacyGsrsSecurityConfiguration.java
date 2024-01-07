@@ -110,7 +110,7 @@ public class LegacyGsrsSecurityConfiguration {
 
         return http
             .addFilterBefore(legacyAuthenticationFilter(), LogoutFilter.class)
-            .authorizeRequests((authorizeRequests) -> authorizeRequests
+            .authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests
                 .requestMatchers(permited).permitAll()
                 .anyRequest().authenticated())
             .csrf((csrf) -> csrf.disable())
