@@ -1,5 +1,6 @@
 package gsrs.config;
 
+// import gsrs.security.GsrsSecurityUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -28,10 +29,11 @@ public class ConfigurationPropertiesChecker2 {
         // Aside from password, this is temporary to prevent exceptions.
         List<String> omissionFragments = Arrays.asList("password", "pattern", "regex", "relaxed");
 
-
         //  CONSIDER how to handle security
+        // having problems calling this from gateway because it does not have gsrs-core-entities and including it
+        // makes it want to have a database.
         boolean isAdmin = true;
-        // isAdmin = GsrsSecurityUtils.isAdmin();
+        // boolean isAdmin = GsrsSecurityUtils.isAdmin();
 
         if (enabled && isAdmin) {
             List<MapPropertySource> propertySources = new ArrayList<MapPropertySource>();
