@@ -23,7 +23,7 @@ public class Principal extends AbstractNonAuditingGsrsEntity implements Fetchabl
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "ix_core_principal_seq")
     public Long id;
     @Version
-    public Long version;
+    public Long version = 0L;
 
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)

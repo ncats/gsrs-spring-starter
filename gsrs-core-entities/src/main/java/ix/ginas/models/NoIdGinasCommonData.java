@@ -45,7 +45,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
 
     @Version
-    private Long internalVersion;
+    private Long internalVersion = 0L;
 
 
 

@@ -499,7 +499,7 @@ public class Util {
 	
 	public static Object getAsNativeID(String idv){
     	if(idv.chars().allMatch( Character::isDigit )){
-    		return new Long(Long.parseLong(idv));
+    		return Long.valueOf(Long.parseLong(idv));
     	}else{
     		return idv;
     	}

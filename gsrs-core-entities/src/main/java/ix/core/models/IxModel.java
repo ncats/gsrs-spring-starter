@@ -25,7 +25,7 @@ public class IxModel extends BaseModel {
     @Column(unique = true)
     public Long id;
     @Version
-    public Long version;
+    public Long version = 0L;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonView(BeanViews.Full.class)
