@@ -39,8 +39,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;

@@ -8,8 +8,8 @@ import gsrs.model.AbstractNonAuditingGsrsEntity;
 import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.GsrsDateSerializer;
 
-import javax.persistence.*;
-import javax.validation.constraints.Email;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import java.util.Date;
 
 @Entity

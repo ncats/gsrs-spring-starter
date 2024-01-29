@@ -22,7 +22,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 

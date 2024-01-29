@@ -4,7 +4,7 @@ import org.hibernate.CustomEntityDirtinessStrategy;
 import org.hibernate.Session;
 import org.hibernate.persister.entity.EntityPersister;
 
-import javax.persistence.Version;
+import jakarta.persistence.Version;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

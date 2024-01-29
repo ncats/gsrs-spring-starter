@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 //import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.validation.ConstraintViolationException;
-import javax.validation.constraints.Pattern;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * Controller for managing and downloading export results

@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity

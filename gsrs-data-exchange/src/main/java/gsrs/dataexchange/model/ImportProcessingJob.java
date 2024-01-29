@@ -12,7 +12,7 @@ import ix.core.models.Indexable;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
