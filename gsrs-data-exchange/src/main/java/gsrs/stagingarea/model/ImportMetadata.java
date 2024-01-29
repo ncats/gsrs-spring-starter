@@ -23,7 +23,7 @@ import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.*;
 
@@ -116,21 +116,16 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
         indexed
     }
 
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     private UUID instanceId; //always unique!  changes when data change
 
     /**
      * Primary key.  value is assigned in code
      */
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     //@OneToOne
     private UUID recordId; //stays the same for a given record
 
@@ -154,6 +149,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable(facet=true, sortable = true, name = "Load Date")
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
+    @Builder.Default
     private Date versionCreationDate =null;
 
     /**
@@ -208,13 +204,14 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
      */
     @JSONEntity(title = "KeyValueMappings")
     @OneToMany()
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
+    @CollectionTable(name="ix_import_mapping",
+        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
+    )
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER) //testing out eager fetch 05 May 2023
+    @Builder.Default
     public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
     /**
@@ -224,11 +221,12 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @OneToMany
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
+    @CollectionTable(name="ix_import_validation",
+        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
+    )
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
+    @Builder.Default
     public List<ImportValidation> validations = new ArrayList<>();
 
     /**

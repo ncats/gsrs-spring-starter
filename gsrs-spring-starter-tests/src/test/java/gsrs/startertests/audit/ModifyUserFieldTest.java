@@ -13,6 +13,7 @@ import gsrs.startertests.jupiter.ResetAllEntityProcessorBeforeEachExtension;
 import ix.core.EntityProcessor;
 import ix.core.models.Principal;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,10 +29,10 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
@@ -163,6 +164,7 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @Entity
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class MyEntity extends AbstractGsrsEntity {
         @Id
         @GeneratedValue

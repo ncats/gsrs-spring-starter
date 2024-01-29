@@ -20,12 +20,12 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@RequestMapping
-@GsrsRestApiRequestMapping
+@GsrsRestApiRequestMapping(method=RequestMethod.PUT)
 public @interface PutGsrsRestApiMapping {
     /**
      * Alias for {@link GsrsRestApiRequestMapping#apiVersions()}.
      */
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     int[] apiVersions() default {1, 2};
     /**
      * Alias for {@link GsrsRestApiRequestMapping#value()}.
@@ -35,10 +35,12 @@ public @interface PutGsrsRestApiMapping {
     /**
      * Alias for {@link GsrsRestApiRequestMapping#idPlaceholder()}.
      */
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String idPlaceholder() default "$ID";
     /**
      * Alias for {@link GsrsRestApiRequestMapping#notIdPlaceholder()}.
      */
+    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String notIdPlaceholder() default "$NOT_ID";
 
     /**
@@ -78,8 +80,4 @@ public @interface PutGsrsRestApiMapping {
      */
     @AliasFor(annotation = GsrsRestApiRequestMapping.class)
     String[] produces() default {};
-
-    @AliasFor(annotation = GsrsRestApiRequestMapping.class)
-    RequestMethod[] method() default {RequestMethod.PUT};
-
 }

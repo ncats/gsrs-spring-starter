@@ -1,6 +1,6 @@
 package gsrs.model;
 
-import javax.persistence.EntityListeners;
+import jakarta.persistence.EntityListeners;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 

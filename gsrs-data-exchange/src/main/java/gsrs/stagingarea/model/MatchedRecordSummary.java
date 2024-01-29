@@ -30,7 +30,9 @@ public class MatchedRecordSummary {
                                    get all entity.keys that map, given a set of matchableKeys (fields)
                                     which have a matchable key found in a set of field names.
      */
+    @Builder.Default
     private List<MatchableKeyValueTuple> query = new ArrayList<>();
+    @Builder.Default
     private List<MatchedKeyValue> matches = new ArrayList<>();
 
     public List<String> getMultiplyMatchedKeys(){

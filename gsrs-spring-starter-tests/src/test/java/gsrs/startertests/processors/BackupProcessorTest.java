@@ -7,6 +7,7 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.History;
 import ix.core.models.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved
@@ -32,6 +33,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Backup
     @Indexable(indexed = false)
     @History(store = false)
+    @EqualsAndHashCode(callSuper=false)
     public static class MyBackedUpEntity extends BaseModel {
 
         @Id
@@ -61,6 +63,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Indexable(indexed = false)
     @History(store = false)
+    @EqualsAndHashCode(callSuper=false)
     public static class NotBackedupEntity extends LongBaseModel {
 
 

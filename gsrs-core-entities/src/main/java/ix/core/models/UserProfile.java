@@ -13,7 +13,7 @@ import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @Slf4j

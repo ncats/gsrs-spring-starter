@@ -31,7 +31,6 @@ import ix.utils.LinkedReferenceSet;
 import lombok.extern.slf4j.Slf4j;
 //import org.apache.lucene.document.Document;
 
-import org.jboss.jandex.Index;
 import org.reflections.Reflections;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -41,7 +40,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import gov.nih.ncats.common.Tuple;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;

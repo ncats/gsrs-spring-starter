@@ -6,6 +6,7 @@ import gsrs.model.AbstractGsrsEntity;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.GsrsJpaTest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,9 +16,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.test.annotation.DirtiesContext;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class MyEntity extends AbstractGsrsEntity {
         @Id
         @GeneratedValue
