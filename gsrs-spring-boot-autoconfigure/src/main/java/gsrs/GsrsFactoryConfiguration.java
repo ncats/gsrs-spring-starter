@@ -14,6 +14,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @ConfigurationProperties("gsrs")
@@ -21,7 +22,23 @@ import java.util.*;
 @Slf4j
 public class GsrsFactoryConfiguration {
 
-    private Map<String, List<Map<String, Object>>> validators;
+/*
+gsrs.validators = {
+"substances": {
+    "IgnoreValidator": {
+         "priority" : 10,
+         "disabled": false,
+         "validatorClass" = "ix.ginas.utils.validation.validators.IgnoreValidator",
+         "newObjClass" = "ix.ginas.models.v1.Substance",
+         "configClass" = "SubstanceValidatorConfig"
+       }
+
+
+*/
+
+// maybe allow for a list if the map does not exist only if really needed.
+
+    private Map<String, Map<String,Map<String, Object>>> validators;
     private Map<String, List<Map<String, Object>>> importAdapterFactories;
 
     private Map<String, List<Map<String, Object>>> matchableCalculators;
@@ -65,11 +82,21 @@ public class GsrsFactoryConfiguration {
         }
         ObjectMapper mapper = new ObjectMapper();
         try {
-            List<Map<String, Object>> list = validators.get(context);
 
-            if (list == null || list.isEmpty()) {
+            Map<String,Map<String, Object>> map = validators.get(context);
+
+            if (map == null || map.isEmpty()) {
                 return Collections.emptyList();
             }
+/*
+By the time we are here all conf files have been processed
+instantiate something that is a list, then iterate through everything
+in the map, sort based on priority, and exclude anything that has disabled is true
+map has a map.values.stream().sort(priority)  then filter(disabled=true).collect
+*/
+
+List<Object> list = map.values().stream().collect(Collectors.toList());
+
             List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
             });
 
@@ -140,3 +167,4 @@ public class GsrsFactoryConfiguration {
         return configs;
     }
 }
+
