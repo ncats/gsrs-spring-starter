@@ -16,29 +16,17 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
+
 @Component
 @ConfigurationProperties("gsrs")
 @Data
 @Slf4j
 public class GsrsFactoryConfiguration {
 
-/*
-gsrs.validators = {
-"substances": {
-    "IgnoreValidator": {
-         "priority" : 10,
-         "disabled": false,
-         "validatorClass" = "ix.ginas.utils.validation.validators.IgnoreValidator",
-         "newObjClass" = "ix.ginas.models.v1.Substance",
-         "configClass" = "SubstanceValidatorConfig"
-       }
-
-
-*/
-
-// maybe allow for a list if the map does not exist only if really needed.
-
     private Map<String, Map<String,Map<String, Object>>> validators;
+
     private Map<String, List<Map<String, Object>>> importAdapterFactories;
 
     private Map<String, List<Map<String, Object>>> matchableCalculators;
@@ -74,7 +62,6 @@ gsrs.validators = {
         return new ArrayList<>(entityProcessors);
     }
 
-
     public List<? extends ValidatorConfig> getValidatorConfigByContext(String context) {
         if (validators == null) {
             //nothing set
@@ -83,42 +70,39 @@ gsrs.validators = {
         ObjectMapper mapper = new ObjectMapper();
         try {
 
-            Map<String,Map<String, Object>> map = validators.get(context);
+            Map<String,Map<String, Object>> map = (Map<String, Map<String, Object>>) validators.get(context);
 
             if (map == null || map.isEmpty()) {
                 return Collections.emptyList();
             }
-/*
-By the time we are here all conf files have been processed
-instantiate something that is a list, then iterate through everything
-in the map, sort based on priority, and exclude anything that has disabled is true
-map has a map.values.stream().sort(priority)  then filter(disabled=true).collect
-*/
 
-List<Object> list = map.values().stream().collect(Collectors.toList());
+            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
+            for (String k: map.keySet()) {
+                map.get(k).put("key", k);
+            }
+
+            // By the time we are here all conf files have been processed
+
+            List<Object> list = map.values().stream().collect(Collectors.toList());
 
             List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
             });
 
-//            List<ValidatorConfig> configs = new ArrayList<>();
-//            for (Map<String,Object> n : list) {
-//
-//                Class<? extends ValidatorConfig> configClass = (Class<? extends ValidatorConfig>) n.get("configClass");
-//                if(configClass ==null) {
-//                    configs.add(mapper.convertValue(n, ValidatorConfig.class));
-//                }else{
-//                    configs.add(mapper.convertValue(n, configClass));
-//                }
-//            }
+            System.out.println("Validator configurations found before filtering: " + configs.size());
+
+            configs = configs.stream().filter(v->!v.isDisabled()).sorted(Comparator.comparing(v->v.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+
+            System.out.println("Validator configurations active after filtering: " + configs.size());
+
+            for (ValidatorConfig config : configs) {
+                System.out.println(String.format("%s|%s|%s|%s", "Validator", "class", "key", "order", "isDisabled"));
+                System.out.println(String.format("%s|%s|%s|%s", "Validator", config.getValidatorClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+            }
+
             return configs;
         } catch (Throwable t) {
             throw t;
         }
-//        ValidatorConfigList list = (ValidatorConfigList) validators.get(context);
-//        if(list ==null){
-//            return Collections.emptyList();
-//        }
-//        return list.getConfigList();
     }
 
     /*
