@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -126,7 +125,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         try {
             Query q= indexer.extractFullFacetQuery(query, options, field);
             log.trace("getTermVectorsFromQuery using kind {}", options.getKind());
-            return indexer.getTermVectors(entityClass, field, (Filter)null, q);
+            return indexer.getTermVectors(entityClass, field, (Query)null, q);
         } catch (ParseException e) {
             throw new IOException("error parsing lucene query '" + query + "'", e);
         }catch(Exception e){
@@ -139,7 +138,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         try {
             Query q= indexer.extractFullFacetQuery(query, options, field);
             log.trace("getTermVectorsFromQuery using kind {}", options.getKind());
-            return indexer.getTermVectors(options.getKind()!=null ? options.getKind() : entityClass, field, (Filter)null, q);
+            return indexer.getTermVectors(options.getKind()!=null ? options.getKind() : entityClass, field, (Query)null, q);
         } catch (ParseException e) {
             throw new IOException("error parsing lucene query '" + query + "'", e);
         }catch(Exception e){

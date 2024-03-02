@@ -41,7 +41,7 @@ class LuceneSearchResultPopulator {
 		this.hits = hits;
 		this.searcher = searcher;
 		this.options = result.getOptions();
-		result.setCount(hits.totalHits);
+		result.setCount((int)hits.totalHits.value);
 		total  = Math.max(0, Math.min(options.max(), result.getCount()));
 		offset = Math.min(options.getSkip(), total);
 //		this.gsrsRepository = gsrsRepository;

@@ -11,7 +11,7 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
@@ -424,10 +424,10 @@ public class SequenceIndexer {
             kmerWriter = new IndexWriter
                     (kmerDir, new IndexWriterConfig
                             ( indexAnalyzer));
-            kmerSearchManager = new SearcherManager (kmerWriter, true, null);
-            seqSearchManager = new SearcherManager (indexWriter, true, null);
-            _kmerReader = DirectoryReader.open(kmerWriter, true);
-            _indexReader = DirectoryReader.open(indexWriter, true);
+            kmerSearchManager = new SearcherManager (kmerWriter, true, true, null);
+            seqSearchManager = new SearcherManager (indexWriter, true, true, null);
+            _kmerReader = DirectoryReader.open(kmerWriter, true, true);
+            _indexReader = DirectoryReader.open(indexWriter, true, true);
         }else {
             _kmerReader = DirectoryReader.open(kmerDir);
             _indexReader = DirectoryReader.open(indexDir);
@@ -464,7 +464,7 @@ public class SequenceIndexer {
         if (indexWriter == null)
             return _indexReader.numDocs();
         try{
-            return indexWriter.numDocs();
+            return indexWriter.getDocStats().numDocs;
         } catch(AlreadyClosedException e){
             log.trace("Index already closed",e);
             return 0;
@@ -610,7 +610,8 @@ public class SequenceIndexer {
 
 
             doc.add(idf);
-            doc.add(new IntField (FIELD_LENGTH, seq.length(), YES));
+            doc.add(new IntPoint (FIELD_LENGTH, seq.length()));
+            doc.add(new StoredField (FIELD_LENGTH, seq.length()));
             doc.add(new StoredField (FIELD_SEQ, seq.toString())); //why toString?
             
             
@@ -637,8 +638,8 @@ public class SequenceIndexer {
                 }
                 for (int i = positions.nextSetBit(0);
                         i>=0; i = positions.nextSetBit(i+1)) {
-                    doc2.add(new IntField (FIELD_POSITION, i, YES));
-                  
+                    doc2.add(new IntPoint (FIELD_POSITION, i));
+                    doc2.add(new StoredField (FIELD_POSITION, i));
                 }
                 kmerWriter.addDocument(doc2);
             }
@@ -845,21 +846,21 @@ public class SequenceIndexer {
 	            Query fullQ=tq;
             	
             	if(!tags.isEmpty()){
-            		BooleanQuery bq=new BooleanQuery();
-            		bq.setMinimumNumberShouldMatch(1);
+            		BooleanQuery.Builder bqb=new BooleanQuery.Builder();
+            		bqb.setMinimumNumberShouldMatch(1);
             		for(String tag: tags){
-                		bq.add(new TermQuery (new Term (FIELD_TAGS, tag)),Occur.SHOULD);
+                		bqb.add(new TermQuery (new Term (FIELD_TAGS, tag)),Occur.SHOULD);
                 	}
-            		BooleanQuery fq=new BooleanQuery();
-            		fq.add(fullQ,Occur.MUST);
-            		fq.add(bq,Occur.MUST);
-            		fullQ=fq;
+            		BooleanQuery.Builder fqb=new BooleanQuery.Builder();
+            		fqb.add(fullQ,Occur.MUST);
+            		fqb.add(bqb.build(),Occur.MUST);
+            		fullQ=fqb.build();
             	}
 	            
 	            TopDocs docs = kmerSearcher.search(fullQ, ndocs);
 		            //BitSet positions = entry.getValue();
 	
-	            for (int i = 0; i < docs.totalHits; ++i) {
+	            for (int i = 0; i < docs.totalHits.value; ++i) {
 	                Document doc = kmerSearcher.doc(docs.scoreDocs[i].doc);
 	                final String id = doc.get(FIELD_ID);
 
@@ -1135,7 +1136,7 @@ public class SequenceIndexer {
                                 try {
                                     TopDocs docs = searcher.search
                                             (new TermQuery (new Term (FIELD_ID, id)), 1);
-                                    if (docs.totalHits > 0) {
+                                    if (docs.totalHits.value > 0) {
                                         Document d = searcher.doc
                                                 (docs.scoreDocs[0].doc);
                                         return d.get(FIELD_SEQ);
@@ -1183,27 +1184,27 @@ public class SequenceIndexer {
                                 seqSearchManager.maybeRefresh();
                                 IndexSearcher searcher = seqSearchManager.acquire();
                                 try {
-                                	NumericRangeQuery<Integer> q= NumericRangeQuery.newIntRange(FIELD_LENGTH, lowerBound, upperbound, true, true);
+                                	Query q= IntPoint.newRangeQuery(FIELD_LENGTH, lowerBound, upperbound);
 
                                 	Query fullQ=q;
                                 	
                                 	if(!mustHaveAtLeastOneTag.isEmpty()){
-                                		BooleanQuery bq=new BooleanQuery();
-                                		bq.setMinimumNumberShouldMatch(1);
+                                		BooleanQuery.Builder bqb=new BooleanQuery.Builder();
+                                		bqb.setMinimumNumberShouldMatch(1);
                                 		for(String tag: mustHaveAtLeastOneTag){
                                     		TermQuery tq = new TermQuery (new Term (FIELD_TAGS, tag));
-                                    		bq.add(tq,Occur.SHOULD);
+                                    		bqb.add(tq,Occur.SHOULD);
                                     	}
-                                		BooleanQuery fq=new BooleanQuery();
-                                		fq.add(fullQ,Occur.MUST);
-                                		fq.add(bq,Occur.MUST);
-                                		fullQ=fq;
+                                		BooleanQuery.Builder fqb=new BooleanQuery.Builder();
+                                		fqb.add(fullQ,Occur.MUST);
+                                		fqb.add(bqb.build(),Occur.MUST);
+                                		fullQ=fqb.build();
                                 	}
                                 	
                                     TopDocs docs = searcher.search
                                             (fullQ, Integer.MAX_VALUE);
                                     //System.out.println("Hits:" + docs.totalHits);
-                                    if (docs.totalHits > 0) {
+                                    if (docs.totalHits.value > 0) {
                                     	return Arrays.stream(docs.scoreDocs)
                                     	      .map(d-> {
                                     	    	  try{
@@ -1403,7 +1404,7 @@ public class SequenceIndexer {
 
     public boolean isClosed() {
         try{
-            indexWriter.numDocs();
+            indexWriter.numRamDocs();
             return false;
         }catch(AlreadyClosedException e){
             System.out.println("Already closed");

@@ -5,7 +5,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -81,11 +81,11 @@ public class Lucene4IndexService implements IndexerService {
 
     @Override
     public SearcherManager createSearchManager() throws IOException{
-        return new SearcherManager(indexWriter, true, null);
+        return new SearcherManager(indexWriter, true, true, null);
     }
     @Override
     public IndexReader createIndexReader() throws IOException{
-        return  DirectoryReader.open(indexWriter, true);
+        return  DirectoryReader.open(indexWriter, true, true);
     }
     @Override
     public Document addDocument(Document doc) {
