@@ -33,7 +33,7 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, Map<String, Object>> search;
 
-    private List<EntityProcessorConfig> entityProcessors;
+    private Map<String, EntityProcessorConfig> entityProcessors;
 
     private boolean createUnknownUsers = false;
 
@@ -59,7 +59,38 @@ public class GsrsFactoryConfiguration {
             //nothing set
             return Collections.emptyList();
         }
-        return new ArrayList<>(entityProcessors);
+        Map<String,EntityProcessorConfig> map =  entityProcessors;
+
+        if (map == null || map.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Copy the key into the Object for quality control and maybe as a way to access by key from the list
+        for (String k: map.keySet()) {
+            map.get(k).setKey(k);
+        }
+
+        // By the time we are here all conf files have been processed
+
+        List<EntityProcessorConfig> configs = map.values().stream().collect(Collectors.toList());
+
+//      Can this be omitted for processors?
+//      https://fasterxml.github.io/jackson-core/javadoc/2.2.0/com/fasterxml/jackson/core/type/TypeReference.html
+//      List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
+//      });
+
+        System.out.println("Entity processor configurations found before filtering: " + configs.size());
+
+        configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(v->v.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+
+        System.out.println("Validator configurations active after filtering: " + configs.size());
+
+        System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", "class", "key", "order", "isDisabled"));
+        for (EntityProcessorConfig config : configs) {
+            System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", config.getProcessor(), config.getKey(), config.getOrder(), config.isDisabled()));
+        }
+
+        return configs;
     }
 
     public List<? extends ValidatorConfig> getValidatorConfigByContext(String context) {
@@ -94,8 +125,8 @@ public class GsrsFactoryConfiguration {
 
             System.out.println("Validator configurations active after filtering: " + configs.size());
 
+            System.out.println(String.format("%s|%s|%s|%s", "Validator", "class", "key", "order", "isDisabled"));
             for (ValidatorConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", "Validator", "class", "key", "order", "isDisabled"));
                 System.out.println(String.format("%s|%s|%s|%s", "Validator", config.getValidatorClass(), config.getKey(), config.getOrder(), config.isDisabled()));
             }
 

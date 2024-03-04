@@ -11,10 +11,12 @@ import java.lang.reflect.Constructor;
 import java.util.Map;
 @Data
 public class EntityProcessorConfig {
-
+    private String key;
     private Class entityClassName;
-
     private Class processor;
+    private Double order;
+    private boolean disabled = false;
+
     /**
      * Legacy method of passing parameters to a constructor with a Map parameter
      */
@@ -36,4 +38,7 @@ public class EntityProcessorConfig {
         }
 
     }
+
+
+
 }
