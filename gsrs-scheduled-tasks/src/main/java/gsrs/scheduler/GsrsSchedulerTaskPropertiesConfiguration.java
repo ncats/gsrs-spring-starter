@@ -13,31 +13,37 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
 
 @Configuration
 @ConfigurationProperties("gsrs.scheduled-tasks")
 public class GsrsSchedulerTaskPropertiesConfiguration {
 
-    private List<ScheduledTaskConfig> list = new ArrayList<>();
+    // private List<ScheduledTaskConfig> _list = new ArrayList<>();
 
-    public List<ScheduledTaskConfig> getList() {
+    private Map<String, ScheduledTaskConfig> list = new HashMap<String, ScheduledTaskConfig>();
+
+    public Map<String, ScheduledTaskConfig> getList() {
         return list;
     }
 
-    public void setList(List<ScheduledTaskConfig> list) {
+    public void setList(Map<String, ScheduledTaskConfig> list) {
         this.list = list;
     }
 
-
+    // public void setList(List<ScheduledTaskConfig> list) { this.list = list; }
 
     @Data
     public static class ScheduledTaskConfig{
         private String scheduledTaskClass;
+        private String key;
+        private Double order;
+        private boolean disabled = false;
         private Map<String, Object> parameters;
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private Map<String, Object> unknownParameters = new ConcurrentHashMap<>();
@@ -51,8 +57,29 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
+
         ObjectMapper mapper = new ObjectMapper();
-        for(ScheduledTaskConfig config : list){
+
+        // For quality control and maybe an accessor
+        for (String k: list.keySet()) {
+            ScheduledTaskConfig config =  list.get(k);
+            config.setKey(k);
+        }
+
+        List<ScheduledTaskConfig> configs = list.values().stream().collect(Collectors.toList());
+
+        System.out.println("Scheduled task configurations found before filtering: " + configs.size());
+
+        configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+
+        System.out.println("Scheduled task configurations active after filtering: " + configs.size());
+
+        System.out.println(String.format("%s|%s|%s|%s", "ScheduledTaskConfig", "class", "key", "order", "isDisabled"));
+        for (ScheduledTaskConfig config : configs) {
+            System.out.println(String.format("%s|%s|%s|%s", "ScheduledTaskConfig", config.getScheduledTaskClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+        }
+
+        for(ScheduledTaskConfig config : configs){
 
             Map<String, Object> params;
             if(config.parameters ==null) {
@@ -78,8 +105,6 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
             //TODO: need to fix this to happen in a more modular way, not with static methods
             // this is a hack to have things work for now.
             SchedulerPlugin.submit(st);
-
-
         }
         return l;
 
