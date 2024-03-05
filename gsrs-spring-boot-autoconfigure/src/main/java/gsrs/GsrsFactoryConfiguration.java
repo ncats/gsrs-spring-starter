@@ -83,7 +83,7 @@ public class GsrsFactoryConfiguration {
 
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(v->v.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
 
-        System.out.println("Validator configurations active after filtering: " + configs.size());
+        System.out.println("Entity processor configurations active after filtering: " + configs.size());
 
         System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", "class", "key", "order", "isDisabled"));
         for (EntityProcessorConfig config : configs) {
