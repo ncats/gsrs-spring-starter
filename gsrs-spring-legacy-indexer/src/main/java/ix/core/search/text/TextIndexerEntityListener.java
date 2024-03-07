@@ -73,7 +73,7 @@ public class TextIndexerEntityListener {
                     if (event.shouldDeleteFirst()) {
                         indexer.remove(ew);
                     }
-                    indexer.add(ew);
+                    indexer.add(ew, true); //exclude external IVMs
                 }
             }
         } catch (Throwable e) {
@@ -90,10 +90,10 @@ public class TextIndexerEntityListener {
         if(opt.isPresent()){
         	if(event.isRequiresDelete()) {
                 log.trace("updating");
-        		textIndexerFactory.getDefaultInstance().update(opt.get());
+        		textIndexerFactory.getDefaultInstance().update(opt.get(), event.isExcludeExternal());
         	}else {
                 log.trace("adding");
-        		textIndexerFactory.getDefaultInstance().add(opt.get());	
+        		textIndexerFactory.getDefaultInstance().add(opt.get(), event.isExcludeExternal());	
         	}
             
         }
@@ -142,7 +142,7 @@ public class TextIndexerEntityListener {
             if(indexer !=null) {
                 try {
                     EntityUtils.EntityWrapper ew = event.getOptionalFetchedEntity().orElse(null);
-                    indexer.update(ew);
+                    indexer.update(ew, true); // exclude external 
                 }catch(Throwable t){
                     log.warn("trouble updating index for:" + event.getSource().toString(), t);
                 }

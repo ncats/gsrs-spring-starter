@@ -171,7 +171,7 @@ public class ImportMetadataReindexer {
                                                                 // however, you could argue there SHOULD be a controller for them
                                                                 if (seen.add(keyString)) {
                                                                     //indexOneItem(reindexId, eventConsumer, key, child);
-                                                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(child), false);
+                                                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(child), false, true);
                                                                     eventConsumer.accept(event);
                                                                 }
                                                             } catch (Throwable t) {

@@ -187,7 +187,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
                                 EntityFetcher ef = EntityFetcher.of(ew.getKey());
                                 v = ef.call();
                             }
-                            indexer.add(EntityWrapper.of(v));
+                            indexer.add(EntityWrapper.of(v), false); //reindex event: including external IVMs
                         } catch (Exception e) {
                             log.warn("Error reindexing:" + ew.getOptionalKey(),e);
                         }
@@ -202,6 +202,10 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     }
     
     public void reindex(Object entity, boolean deleteFirst){
+    	reindex(entity, deleteFirst, true);    	
+    }
+    
+    public void reindex(Object entity, boolean deleteFirst, boolean excludeExternal){
     	//this ensures that the reindexing is done recursively
     	//TODO: technically this will not handle the cases where 
     	// a child element which is indexed at root had been deleted via the database
@@ -225,7 +229,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
 
             if (isEntity && isRootIndexed) {
                 try {
-                    indexerEntityListener.reindexEntity(wrapped.getRawValue(), deleteFirst);
+                    indexerEntityListener.reindexEntity(wrapped.getRawValue(), deleteFirst, excludeExternal);
                 } catch (Throwable t) {
                     log.warn("indexing error handling:" + wrapped, t);
                 }

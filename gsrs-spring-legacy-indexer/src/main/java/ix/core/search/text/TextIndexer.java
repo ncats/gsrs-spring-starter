@@ -2936,7 +2936,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return doc;
 	}
 
-	public void update(EntityWrapper ew) throws IOException{
+	public void update(EntityWrapper ew, boolean excludeExternal) throws IOException{
         log.trace("starting in update, key: {}", ew.getKey());
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
@@ -2944,7 +2944,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    	//Removal is now done right before the final add to reduce time where the document is not
 	    	//found in the index
             //remove(ew);
-            add(ew, true);
+            add(ew, true, excludeExternal);
         }finally{
 	        l.unlock();
         }
@@ -2977,7 +2977,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         } catch (Exception e) {
 			log.warn("problem doing partial index update", e);
 			//fallback to normal indexing
-			update(ew);
+			update(ew, true);
 		}finally{
 	        l.unlock();
         }
@@ -3011,7 +3011,7 @@ public class TextIndexer implements Closeable, ProcessListener {
         
         //make a version that only does the fields in question
 		IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew)
-				                                                  .restrictedForm(filters);
+				                                                  .restrictedForm(filters, true);
 		valueMaker.createIndexableValues(ew.getValue(), iv->{
 			this.instrumentIndexableValue(ix, iv, ie->{
 				return filters.contains(ie.getIndexFieldName());
@@ -3095,11 +3095,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	}
     
-	public void add(EntityWrapper ew) throws IOException {
-		add(ew, false);
+	public void add(EntityWrapper ew, boolean excludeExternal) throws IOException {
+		add(ew, false, excludeExternal);
     }
 		
-    public void add(EntityWrapper ew, boolean removeFirst) throws IOException {
+    public void add(EntityWrapper ew, boolean removeFirst, boolean excludeExternal ) throws IOException {
         //Don't index if any of the following:
         // 1. The entity doesn't have an Indexable annotation OR
         // 2. The config is set to only index things with Indexable Root annotation and the entity doesn't have that annotation
@@ -3108,7 +3108,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 (textIndexerConfig.isRootIndexOnly() && !ew.isRootIndex()) ||
                 (isReindexing.get() && !alreadySeenDuringReindexingMode.add(ew.getKey().toString()));
         
-        add(ew,!shouldNotAdd, removeFirst);
+        add(ew,!shouldNotAdd, removeFirst, excludeExternal);
         
     }
     
@@ -3459,7 +3459,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	/**
 	 * recursively index any object annotated with Entity
 	 */
-	private void add(EntityWrapper ew, boolean force, boolean removeFirst) throws IOException {
+	private void add(EntityWrapper ew, boolean force, boolean removeFirst, boolean excludeExternal) throws IOException {
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
@@ -3494,7 +3494,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             ix.idField=kk.getEntityInfo().getInternalIdField();
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
-			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
+			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew).restrictedForm(Collections.<String>emptySet(), excludeExternal);
 //			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
 //				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
