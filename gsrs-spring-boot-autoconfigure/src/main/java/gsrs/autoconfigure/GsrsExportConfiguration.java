@@ -131,9 +131,7 @@ public class GsrsExportConfiguration {
                 String context = entryFull.getKey();//this is the type
                 log.trace("context: {}", context);
 
-
-
-                // if remove factories delete this next line
+                // After this line expList points this.exporters.get(context)
                 List<ExporterFactory> expList = exporters.computeIfAbsent(context, k -> new ArrayList<>());
 
 
