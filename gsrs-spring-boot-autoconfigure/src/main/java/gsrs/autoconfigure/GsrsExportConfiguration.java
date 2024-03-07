@@ -1,17 +1,10 @@
 package gsrs.autoconfigure;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -29,6 +22,9 @@ import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
+
 @Component
 @Configuration
 @ConfigurationProperties("ix.ginas.export")
@@ -41,9 +37,10 @@ public class GsrsExportConfiguration {
 
     //Parsed from config
     
-    private Map<String, List<Class>> factories;//legacy as of 3.0.3+
-    private Map<String, List<ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
+    private Map<String, Map<String, Class>> factories; //legacy as of 3.0.3+
+    private Map<String, Map<String, ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
     
+    // AW: will/did this work as linked hash map with hocon?
     private Map<String, LinkedHashMap<String,Map<String,Object>>> settingsPresets;
     
     private Map<String, ExpanderFactoryConfig> expanderFactory; //placeholder, not used yet
@@ -55,6 +52,11 @@ public class GsrsExportConfiguration {
     private Map<String, Boolean> sortOutput = new HashMap<>();
 
     @JsonIgnore
+    // AW can we remove this if we remove "factories"?
+    // don't understand how get methods below include ExporterFactories in expList but not in exporters
+    // see getExporterFor, getAllSupportedFormats
+
+
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
 
     @JsonIgnore
@@ -62,13 +64,46 @@ public class GsrsExportConfiguration {
 
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
+
         log.trace("inside initializer");
+
+        // The configuration (Hocon maps) need to be read first so that overrides occur in the right order
+        // Then, we put them in these MapLists
+        Map<String, List<Class>> factoriesMapList = new HashMap<String, List<Class>>();
+        Map<String, List<ExporterFactoryConfig>> exporterFactoriesMapList = new HashMap<String, List<ExporterFactoryConfig>>();
+
+        if(exporterFactories !=null) {
+            for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
+                Map<String, ExporterFactoryConfig> m = entry1.getValue();
+                for (Map.Entry<String, ExporterFactoryConfig> entry2 : m.entrySet()) {
+                    entry2.getValue().setKey(entry2.getKey());
+                }
+            }
+            for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
+                Map<String, ExporterFactoryConfig> map = entry1.getValue();
+                String mapKey = entry1.getKey();
+                List<ExporterFactoryConfig> configs = map.values().stream().collect(Collectors.toList());
+                System.out.println("Exporter factory configurations for [" + mapKey + "] found before filtering: " + configs.size());
+                configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
+                System.out.println("Exporter factory configurations for [" + mapKey + "] found after filtering: " + configs.size());
+                exporterFactoriesMapList.put(mapKey, configs);
+                System.out.println(String.format("%s|%s|%s|%s|%s", "ScheduledTaskConfig", "context", "class", "key", "order", "isDisabled"));
+                for (ExporterFactoryConfig config : configs) {
+                    System.out.println(String.format("%s|%s|%s|%s|%s", "context", "ExporterFactoryConfig", config.getExporterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+                }
+            }
+        }
+
         //normally, classes are autowired by the calling class but we think this was put here to work around an
         //  issue.  May remove this in the future.
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
-        if(factories !=null) {
+
+
+        // we should not use "factories" config anymore?
+
+        if(!factoriesMapList.isEmpty()) {
             //legacy stuff
-            for (Map.Entry<String, List<Class>> entry : factories.entrySet()) {
+            for (Map.Entry<String, List<Class>> entry : factoriesMapList.entrySet()) {
                 String context = entry.getKey();
                 List<ExporterFactory> list = new ArrayList<>();
                 for (Class c : entry.getValue()) {
@@ -85,15 +120,23 @@ public class GsrsExportConfiguration {
                 exporters.put(context, list);
             }
         }
+
+
+
         ObjectMapper mapper = new ObjectMapper();
 
-        if( exporterFactories!=null) {
+        if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");
-            for (Map.Entry<String, List<ExporterFactoryConfig>> entryFull : exporterFactories.entrySet()) {
+            for (Map.Entry<String, List<ExporterFactoryConfig>> entryFull : exporterFactoriesMapList.entrySet()) {
                 String context = entryFull.getKey();//this is the type
                 log.trace("context: {}", context);
 
+
+
+                // if remove factories delete this next line
                 List<ExporterFactory> expList = exporters.computeIfAbsent(context, k -> new ArrayList<>());
+
+
                 entryFull.getValue().forEach(exConf -> {
                     log.trace("exConf.getExporterFactoryClass(): {}", exConf.getExporterFactoryClass().getName());
                     ExporterFactory exporterFac = null;
@@ -117,7 +160,7 @@ public class GsrsExportConfiguration {
                 });
             }
         } else {
-            log.warn("exporterFactories null");
+            log.warn("exporterFactories is empty");
         }
         
         //
