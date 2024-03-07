@@ -15,6 +15,7 @@ import gsrs.util.LegacyTypeSalter;
 import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.*;
 import java.util.*;
@@ -27,6 +28,7 @@ import java.util.*;
 public class UserProfile extends IxModel{
     private static ObjectMapper om = new ObjectMapper();
 
+	//todo: look into autowiring the salter and hasher
 	private static Salter salter = new LegacyTypeSalter(new GsrsPasswordHasher());
 
 	private static Hasher hasher = new GsrsPasswordHasher();
