@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
@@ -404,6 +405,16 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return getEntityService().count();
     }
 
+    @Override
+    @GetGsrsRestApiMapping("/@keys")
+    public List<Key> getKeys(){    	
+    	List<I> IDs = getEntityService().getIDs();
+//    	System.out.println("GET IDS!");
+//    	IDs.forEach(id -> System.out.println("ID " + id.toString()));
+    	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
+        return keys;
+    }
+    
     @Override
     @GetGsrsRestApiMapping("")
     @Transactional(readOnly = true)

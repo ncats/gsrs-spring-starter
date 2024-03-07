@@ -109,7 +109,7 @@ public class TextIndexerIndexedRecordTest {
 		
 		TestEntity addTest = TestEntity.builder().id(1l).field("demo").build();
 		EntityWrapper wrapped = EntityWrapper.of(addTest);
-		ti.add(wrapped);
+		ti.add(wrapped, true);
 		IndexRecord ir = ti.getIndexRecord(wrapped.getKey());
 		Assertions.assertNotNull(ir);
 		Assertions.assertEquals(addTest.getId().toString(),ir.getId());
@@ -123,7 +123,7 @@ public class TextIndexerIndexedRecordTest {
 		TextIndexer ti=getNewTextIndexer();
 		TestEntity addTest = TestEntity.builder().id(1l).field("demo").build();
 		EntityWrapper wrapped = EntityWrapper.of(addTest);
-		ti.add(wrapped);
+		ti.add(wrapped, true);
 		IndexRecord ir = ti.getIndexRecord(wrapped.getKey());
 		Assertions.assertNotNull(ir);
 		Assertions.assertEquals(addTest.getId().toString(),ir.getId());
@@ -140,7 +140,7 @@ public class TextIndexerIndexedRecordTest {
 		TextIndexer ti=getNewTextIndexer();
 		TestEntity addTest = TestEntity.builder().id(1l).field("demo").build();
 		EntityWrapper wrapped = EntityWrapper.of(addTest);
-		ti.add(wrapped);
+		ti.add(wrapped, true);
 
 		//Simple searches
 		SearchResult srMiss = ti.search(null, "foofoo:bar", 50);

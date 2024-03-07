@@ -42,9 +42,13 @@ public interface IndexValueMaker<T> {
 		return new HashSet<>();
 	}
 	
-	default IndexValueMaker<T> restrictedForm(Set<String> fields){
+	default IndexValueMaker<T> restrictedForm(Set<String> fields, boolean excludeExternal){
 		return this;
 	}
+	
+	default boolean isExternal() {
+		return false;
+	} 
 	
 	/**
 	 * Combine 2 IndexValueMakers together, so that

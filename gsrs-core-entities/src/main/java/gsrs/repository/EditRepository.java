@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import ix.core.models.Edit;
@@ -22,6 +23,9 @@ public interface EditRepository extends GsrsRepository<Edit, UUID> {
     Optional<Edit> findFirstByRefidOrderByCreatedDesc(String refId);   
 
     List<Edit> findByRefidAndVersion(String refId, String version);
+    
+    @Query("select e.id from Edit e")
+    List<UUID> getAllIDs();
     
     default Optional<Edit> findFirstByRefidOrderByCreatedDescAndKinds(String refId, Set<String> kinds){
         return findByRefidOrderByCreatedDesc(refId)

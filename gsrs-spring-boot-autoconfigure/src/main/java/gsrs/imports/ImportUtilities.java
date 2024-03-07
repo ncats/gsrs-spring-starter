@@ -270,7 +270,7 @@ public class ImportUtilities<T> {
                     log.trace("about to call runnable to call processOneRecord");
                     adminService.runAs(auth, runnable);
                     log.trace("got back singleReturn {}", singleReturn[0].toPrettyString());
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.error("error during import processing: ", e);
                     singleReturn[0] = JsonNodeFactory.instance.objectNode();
                     singleReturn[0].put("id", stagingAreaId);
@@ -296,7 +296,12 @@ public class ImportUtilities<T> {
                                 String entityId = n.get("PersistedEntityId").asText();
                                 Unchecked.ThrowingRunnable runnable2 = ()-> stagingAreaService.synchronizeRecord(entityId, entityClass.getName(), contextName);
                                 log.trace("About to call runnable2 to call synchronizeRecord");
-                                adminService.runAs(auth, runnable2);
+                                try {
+									adminService.runAs(auth, runnable2);
+								} catch (Throwable e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
                             } else {
                                 log.warn("entity id not found!!");
                             }

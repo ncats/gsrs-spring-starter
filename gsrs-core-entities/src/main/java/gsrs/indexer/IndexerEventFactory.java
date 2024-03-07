@@ -53,6 +53,10 @@ public interface IndexerEventFactory extends Ordered {
         return new ReindexEntityEvent(UUID.randomUUID(), ew.getKey() ,Optional.of(ew),deleteFirst);
     }
     
+    default Object newReindexEventFor(EntityUtils.EntityWrapper ew, boolean deleteFirst, boolean excludeExternal){
+        return new ReindexEntityEvent(UUID.randomUUID(), ew.getKey() ,Optional.of(ew),deleteFirst,excludeExternal);
+    }
+    
     /**
      * Create a new UpdateIndexEvent object for the given wrapped Entity.
      * The returned Object will be published to the {@link org.springframework.context.ApplicationEventPublisher}.
