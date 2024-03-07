@@ -13,6 +13,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import gsrs.model.UserProfileAuthenticationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -172,10 +173,13 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
                 }
                 if(up!=null && up.active){
-                    if(up.acceptPassword(pass)){
+                    UserProfileAuthenticationResult authenticationResult =up.acceptPassword(pass);
+                    if(authenticationResult.matchesRepository()){
+                        if(authenticationResult.needsSave()){
+                            repository.saveAndFlush(up);
+                        }
                         //valid password!
                         auth = new UserProfilePasswordAuthentication(up);
-
                     }else{
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }

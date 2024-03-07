@@ -1,17 +1,20 @@
 package ix.core.models;
 
 
-import ch.qos.logback.core.rolling.helper.TokenConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.security.TokenConfiguration;
 import gsrs.springUtils.StaticContextAccessor;
+import gsrs.util.GsrsPasswordHasher;
+import gsrs.util.Hasher;
+import gsrs.util.LegacyTypeSalter;
+import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.*;
 import java.util.*;
@@ -23,6 +26,10 @@ import java.util.*;
 @EntityListeners(UserProfileEntityProcessor.class)
 public class UserProfile extends IxModel{
     private static ObjectMapper om = new ObjectMapper();
+
+	private static Salter salter = new LegacyTypeSalter(new GsrsPasswordHasher());
+
+	private static Hasher hasher = new GsrsPasswordHasher();
 
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
@@ -182,21 +189,32 @@ public class UserProfile extends IxModel{
 		return false;
 	}
 
-	public boolean acceptPassword(String password) {
-		if (this.hashp == null || this.salt == null)
-			return false;
-		return this.hashp.equals(Util.encrypt(password, this.salt));
+	public UserProfileAuthenticationResult acceptPassword(String password) {
+		UserProfileAuthenticationResult result = new UserProfileAuthenticationResult(false, false);
+		result.setNeedsSave(false);
+		if (this.hashp == null || this.salt == null) {
+			return result;
+		}
+		boolean pwOk = this.hashp.equals(Util.encrypt(password, this.salt));
+		result.setMatchesRepository(true);
+		if( pwOk && !salter.mayBeOneOfMine(this.salt)){
+			log.trace("going to redo password");
+			setPassword(password);
+			result.setNeedsSave(true);
+		}
+		return result;
 	}
 
 	public void setPassword(String password) {
 		if (password == null || password.length() <= 0) {
 			password = UUID.randomUUID().toString();
 		}
-		this.salt = Util.generateSalt();
-		this.hashp = Util.encrypt(password, this.salt);
+		this.salt = salter.generateSalt();
+		this.hashp = hasher.hash(password, salt);  //Util.encrypt(password, this.salt);
 		setIsDirty("salt");
 		setIsDirty("hashp");
 	}
+
 	@Indexable(indexed = false)
 	@JsonIgnore
 	public String getEncodePassword(){

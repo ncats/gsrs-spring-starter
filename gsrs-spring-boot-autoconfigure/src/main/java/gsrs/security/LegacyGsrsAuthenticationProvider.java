@@ -1,6 +1,6 @@
 package gsrs.security;
 
-import gsrs.repository.PrincipalRepository;
+import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
@@ -11,12 +11,10 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 //@Component
 public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider {
@@ -83,11 +81,13 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             }
             if(up!=null){
                 String rawPassword = (String) auth.getCredentials();
-                if(up.acceptPassword(rawPassword)){
+                UserProfileAuthenticationResult authenticationResult =up.acceptPassword(rawPassword);
+                if(authenticationResult.matchesRepository()   ){
                     //valid password!
-
+                    if( authenticationResult.needsSave()) {
+                        repository.saveAndFlush(up);
+                    }
                     return new UserProfilePasswordAuthentication(up);
-
                 }else{
                     throw new BadCredentialsException("invalid credentials for username" + auth.getUsername());
                 }
