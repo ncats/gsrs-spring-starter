@@ -15,6 +15,7 @@ public class LegacySalterTests {
     void testGenerateSalt() {
         String salt1 = salter.generateSalt();
         Assertions.assertNotNull(salt1);
+        System.out.printf("salt: %s\n", salt1);
     }
 
     @Test

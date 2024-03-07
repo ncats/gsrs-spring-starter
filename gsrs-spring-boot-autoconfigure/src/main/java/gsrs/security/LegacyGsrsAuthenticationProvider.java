@@ -6,17 +6,21 @@ import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Optional;
 import java.util.UUID;
 
 //@Component
+@Slf4j
 public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
@@ -30,6 +34,10 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
 
     @Autowired(required = false)
     private UserTokenCache userTokenCache;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
     @Override
     @Transactional
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -84,8 +92,11 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
                 UserProfileAuthenticationResult authenticationResult =up.acceptPassword(rawPassword);
                 if(authenticationResult.matchesRepository()   ){
                     //valid password!
+                    UserProfile finalUp = up;
                     if( authenticationResult.needsSave()) {
-                        repository.saveAndFlush(up);
+                        log.trace("going to save up within transaction");
+                        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                        transactionTemplate.executeWithoutResult(u->repository.saveAndFlush(finalUp));
                     }
                     return new UserProfilePasswordAuthentication(up);
                 }else{

@@ -176,7 +176,12 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     UserProfileAuthenticationResult authenticationResult =up.acceptPassword(pass);
                     if(authenticationResult.matchesRepository()){
                         if(authenticationResult.needsSave()){
-                            repository.saveAndFlush(up);
+                            UserProfile finalUp = up;
+                            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                            transactionTemplate.executeWithoutResult(status ->{
+                                log.trace("saving up within transaction");
+                                repository.saveAndFlush(finalUp);
+                            });
                         }
                         //valid password!
                         auth = new UserProfilePasswordAuthentication(up);

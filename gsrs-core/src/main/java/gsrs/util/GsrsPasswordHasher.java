@@ -55,6 +55,6 @@ public class GsrsPasswordHasher implements Hasher {
         SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
 
         byte[] hash = skf.generateSecret(spec).getEncoded();
-        return new String(hash);
+        return toHex(hash);
     }
 }
