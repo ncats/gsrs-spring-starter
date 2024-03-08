@@ -20,6 +20,16 @@ public interface ImportAdapterFactoryConfig {
 
     void setImportAdapterFactoryClass(Class importAdapterFactoryClass);
 
+    String getKey();
+    void setKey(String key);
+
+
+    Double getOrder();
+    void setOrder(Double order);
+
+    boolean isDisabled();
+    void setDisabled(boolean disabled);
+
     Map<String, Object> getParameters();
     void setParameters(Map<String, Object> params);
 

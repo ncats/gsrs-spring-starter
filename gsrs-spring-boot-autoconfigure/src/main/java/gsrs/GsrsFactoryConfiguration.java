@@ -25,9 +25,9 @@ import static java.util.Comparator.nullsFirst;
 @Slf4j
 public class GsrsFactoryConfiguration {
 
-    private Map<String, Map<String,Map<String, Object>>> validators;
+    private Map<String, Map<String, Map<String, Object>>> validators;
 
-    private Map<String, List<Map<String, Object>>> importAdapterFactories;
+    private Map<String, Map<String, Map<String, Object>>> importAdapterFactories;
 
     private Map<String, List<Map<String, Object>>> matchableCalculators;
 
@@ -146,16 +146,40 @@ public class GsrsFactoryConfiguration {
             return Collections.emptyList();
         }
         try {
-            List<Map<String, Object>> list = importAdapterFactories.get(context);
-            log.trace("list (before):");
-            list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
+            Map<String, Map<String, Object>> map = importAdapterFactories.get(context);
+            log.trace("map (before):");
 
-            if (list == null || list.isEmpty()) {
+            // fix this later
+            // list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
+
+            if (map == null || map.isEmpty()) {
                 log.warn("no import adapter factory configuration info found!");
                 return Collections.emptyList();
             }
+
+            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
+            for (String k: map.keySet()) {
+                map.get(k).put("key", k);
+            }
+
+            // By the time we are here all conf files have been processed
+
+            List<Object> list = map.values().stream().collect(Collectors.toList());
+
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
             });
+
+            System.out.println("Import adapter factory configurations found before filtering: " + configs.size());
+
+            configs = configs.stream().filter(a->!a.isDisabled()).sorted(Comparator.comparing(a->a.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+
+            System.out.println("Import adapter factory configurations active after filtering: " + configs.size());
+
+            System.out.println(String.format("%s|%s|%s|%s", "ImportAdapterFactoryConfig", "class", "key", "order", "isDisabled"));
+            for (ImportAdapterFactoryConfig config : configs) {
+                System.out.println(String.format("%s|%s|%s|%s", "ImportAdapterFactoryConfig", config.getImportAdapterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+            }
+
             //log.trace("list (after):");
             //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
             return configs;

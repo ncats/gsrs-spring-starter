@@ -14,6 +14,10 @@ public class TestDefaultImportAdapterFactoryConfig {
     @Test
     @Disabled
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
+        // AW: this test does not work, I modified it a bit to not cause build error
+        // The test was "disabled" before I made these code changes.
+        // AW: to check with MM on why it was disabled.
+
         String substanceContext="substances";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
         Map<String, String> stagingAreaService = new HashMap<>();
@@ -24,15 +28,17 @@ public class TestDefaultImportAdapterFactoryConfig {
         entityService.put("substances", "gsrs.stagingarea.service.StagingAreaEntityService");
         config.setDefaultStagingAreaEntityService(entityService);
 
-        Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();
+        Map<String, Map<String,Map<String,Object>>> adapterConfig = new HashMap<>();
         Map<String,Object> oneAdapter = new HashMap<>();
+
+        oneAdapter.put("key", "SDFImportAdaptorFactory");
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdaptorFactory");
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", new String[] {"sdf", "sd"});
         oneAdapter.put("parameters", buildConfigParameters());
         oneAdapter.put("description", "general description");
-        List<Map<String,Object>> adapters = new ArrayList<>();
-        adapters.add(oneAdapter);
+        Map<String, Map<String,Object>> adapters = new HashMap<>();
+        adapters.put((String)oneAdapter.get("key"), oneAdapter);
         adapterConfig.put(substanceContext, adapters);
         config.setImportAdapterFactories(adapterConfig);
 
