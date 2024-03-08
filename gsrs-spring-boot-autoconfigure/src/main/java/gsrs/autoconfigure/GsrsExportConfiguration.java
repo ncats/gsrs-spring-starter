@@ -52,11 +52,6 @@ public class GsrsExportConfiguration {
     private Map<String, Boolean> sortOutput = new HashMap<>();
 
     @JsonIgnore
-    // AW can we remove this if we remove "factories"?
-    // don't understand how get methods below include ExporterFactories in expList but not in exporters
-    // see getExporterFor, getAllSupportedFormats
-
-
     private Map<String, List<ExporterFactory>> exporters = new HashMap<>();
 
     @JsonIgnore
@@ -98,8 +93,9 @@ public class GsrsExportConfiguration {
         //  issue.  May remove this in the future.
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
 
-
-        // we should not use "factories" config anymore?
+        // AW: We should not use "factories" config anymore because we can't
+        // include order, disabled properties with raw Class, right?
+        // If so delete this block and other related code
 
         if(!factoriesMapList.isEmpty()) {
             //legacy stuff
