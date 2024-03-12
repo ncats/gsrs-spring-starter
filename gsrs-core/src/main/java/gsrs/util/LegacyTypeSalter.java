@@ -12,6 +12,7 @@ public class LegacyTypeSalter implements Salter {
 
     String prefix = "G";
 
+    //todo: default prefix to be hullable; add a prefix to constructor
     public LegacyTypeSalter(Hasher newHasher) {
         hasher= newHasher;
     }

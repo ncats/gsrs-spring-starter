@@ -200,8 +200,8 @@ public class UserProfile extends IxModel{
 		boolean pwOk = this.hashp.equals(Util.encrypt(password, this.salt));
 		result.setMatchesRepository(true);
 		if( pwOk && !salter.mayBeOneOfMine(this.salt)){
-			log.trace("going to rehash password");
-			setPassword(password);
+			log.trace("going to request rehash of password");
+			//setPassword(password);
 			result.setNeedsSave(true);
 		}
 		return result;
