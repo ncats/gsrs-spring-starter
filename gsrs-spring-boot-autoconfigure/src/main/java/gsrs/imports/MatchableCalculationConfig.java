@@ -15,6 +15,15 @@ public interface MatchableCalculationConfig<T> {
 
     Class<? extends MatchableKeyValueTupleExtractor> getMatchableCalculationClass();
 
+    String getKey();
+    void setKey(String key);
+
+    Double getOrder();
+    void setOrder(Double order);
+
+    boolean isDisabled();
+    void setDisabled(boolean disabled);
+
     void setMatchableCalculationClass(Class<? extends MatchableKeyValueTupleExtractor> calculatorClass);
 
     void setConfig(JsonNode config);

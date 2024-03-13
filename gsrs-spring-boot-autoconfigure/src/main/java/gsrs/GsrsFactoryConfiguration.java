@@ -29,7 +29,7 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, Map<String, Map<String, Object>>> importAdapterFactories;
 
-    private Map<String, List<Map<String, Object>>> matchableCalculators;
+    private Map<String, Map<String, Map<String, Object>>> matchableCalculators;
 
     private Map<String, Map<String, Object>> search;
 
@@ -55,81 +55,53 @@ public class GsrsFactoryConfiguration {
     }
 
     public List<EntityProcessorConfig> getEntityProcessors() {
+        String reportTag = "EntityProcessorConfig";
         if (entityProcessors == null) {
             //nothing set
             return Collections.emptyList();
         }
         Map<String,EntityProcessorConfig> map =  entityProcessors;
-
         if (map == null || map.isEmpty()) {
             return Collections.emptyList();
         }
-
-        // Copy the key into the Object for quality control and maybe as a way to access by key from the list
         for (String k: map.keySet()) {
             map.get(k).setKey(k);
         }
-
-        // By the time we are here all conf files have been processed
-
         List<EntityProcessorConfig> configs = map.values().stream().collect(Collectors.toList());
-
-//      Can this be omitted for processors?
-//      https://fasterxml.github.io/jackson-core/javadoc/2.2.0/com/fasterxml/jackson/core/type/TypeReference.html
-//      List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
-//      });
-
         System.out.println("Entity processor configurations found before filtering: " + configs.size());
-
-        configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(v->v.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-
+        configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println("Entity processor configurations active after filtering: " + configs.size());
-
         System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", "class", "key", "order", "isDisabled"));
         for (EntityProcessorConfig config : configs) {
             System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", config.getProcessor(), config.getKey(), config.getOrder(), config.isDisabled()));
         }
-
         return configs;
     }
 
     public List<? extends ValidatorConfig> getValidatorConfigByContext(String context) {
+        String reportTag = "ValidatorConfig";
         if (validators == null) {
             //nothing set
             return Collections.emptyList();
         }
         ObjectMapper mapper = new ObjectMapper();
         try {
-
             Map<String,Map<String, Object>> map = (Map<String, Map<String, Object>>) validators.get(context);
-
             if (map == null || map.isEmpty()) {
                 return Collections.emptyList();
             }
-
-            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
             for (String k: map.keySet()) {
                 map.get(k).put("key", k);
             }
-
-            // By the time we are here all conf files have been processed
-
             List<Object> list = map.values().stream().collect(Collectors.toList());
-
-            List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() {
-            });
-
-            System.out.println("Validator configurations found before filtering: " + configs.size());
-
-            configs = configs.stream().filter(v->!v.isDisabled()).sorted(Comparator.comparing(v->v.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-
-            System.out.println("Validator configurations active after filtering: " + configs.size());
-
-            System.out.println(String.format("%s|%s|%s|%s", "Validator", "class", "key", "order", "isDisabled"));
+            List<? extends ValidatorConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ValidatorConfig>>() { });
+            System.out.println( reportTag + "found before filtering: " + configs.size());
+            configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+            System.out.println(reportTag + " active after filtering: " + configs.size());
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
             for (ValidatorConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", "Validator", config.getValidatorClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getValidatorClass(), config.getKey(), config.getOrder(), config.isDisabled()));
             }
-
             return configs;
         } catch (Throwable t) {
             throw t;
@@ -141,6 +113,7 @@ public class GsrsFactoryConfiguration {
     context -- the name of a type of entity that the Adapters will create.
      */
     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
+        String reportTag = "ImportAdapterFactoryConfig";
         log.trace("starting in getImportAdapterFactories");
         if (importAdapterFactories == null) {
             return Collections.emptyList();
@@ -152,32 +125,25 @@ public class GsrsFactoryConfiguration {
             // fix this later
             // list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
 
+//            map.keySet().forEach(k1->{
+//                map.get(k1).keySet().forEach(k2-> log.trace("key: {}; value: {}", k2, map.get(k1).get(k2)));
+//            });
+
             if (map == null || map.isEmpty()) {
                 log.warn("no import adapter factory configuration info found!");
                 return Collections.emptyList();
             }
-
-            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
             for (String k: map.keySet()) {
                 map.get(k).put("key", k);
             }
-
-            // By the time we are here all conf files have been processed
-
             List<Object> list = map.values().stream().collect(Collectors.toList());
-
-            List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() {
-            });
-
-            System.out.println("Import adapter factory configurations found before filtering: " + configs.size());
-
-            configs = configs.stream().filter(a->!a.isDisabled()).sorted(Comparator.comparing(a->a.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-
-            System.out.println("Import adapter factory configurations active after filtering: " + configs.size());
-
-            System.out.println(String.format("%s|%s|%s|%s", "ImportAdapterFactoryConfig", "class", "key", "order", "isDisabled"));
+            List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() { });
+            System.out.println(reportTag + "  found before filtering: " + configs.size());
+            configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+            System.out.println(reportTag + " active after filtering: " + configs.size());
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
             for (ImportAdapterFactoryConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", "ImportAdapterFactoryConfig", config.getImportAdapterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getImportAdapterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
             }
 
             //log.trace("list (after):");
@@ -191,19 +157,34 @@ public class GsrsFactoryConfiguration {
 
     public List<? extends MatchableCalculationConfig> getMatchableCalculationConfig(String context) {
         log.trace("in ");
+        String reportTag = "MatchableCalculationConfig";
         if(matchableCalculators==null){
             return Collections.emptyList();
         }
-        List<Map<String, Object>> list = matchableCalculators.get(context);
-        if (list == null || list.isEmpty()) {
-            log.warn("no matchable calculation configuration info found!");
-            return Collections.emptyList();
+        try {
+            Map<String, Map<String, Object>> map = matchableCalculators.get(context);
+            if (map == null || map.isEmpty()) {
+                log.warn("no matchable calculation configuration info found!");
+                return Collections.emptyList();
+            }
+            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
+            for (String k: map.keySet()) {
+                map.get(k).put("key", k);
+            }
+            List<Object> list = map.values().stream().collect(Collectors.toList());
+            List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() { });
+            System.out.println(reportTag + " found before filtering: " + configs.size());
+            configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+            System.out.println(reportTag + " active after filtering: " + configs.size());
+            System.out.println(String.format("%s|%s|%s|%s", "MatchableCalculator", "class", "key", "order", "isDisabled"));
+            for (MatchableCalculationConfig config : configs) {
+                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getMatchableCalculationClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+            }
+            return configs;
+        } catch (Throwable t) {
+            throw t;
         }
-        List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() {
-        });
-        //log.trace("list (after):");
-        //configs.forEach(c-> log.trace("name: {}; desc: {}; ext: {}", c.getAdapterName(), c.getDescription(), c.getSupportedFileExtensions()));
-        return configs;
     }
+
 }
 

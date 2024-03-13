@@ -40,31 +40,21 @@ public class ConfigBasedIndexValueMakerConfiguration {
     @ConditionalOnMissingBean
     @Order
     public IndexValueMakerFactory indexValueMakerFactory(){
-
-        Map<String, IndexValueMakerConf> map =  list;
-
+        String reportTag = "IndexValueMakerConf";
+        Map<String, IndexValueMakerConf> map = list;
         if(map==null){
             return new ConfigBasedIndexValueMakerFactory(Collections.emptyList());
         }
-
-        // Copy the key into the Object for quality control and maybe as a way to access by key from the list
         for (String k: map.keySet()) {
             map.get(k).setKey(k);
         }
-
-        // By the time we are here all conf files have been processed
-
         List<IndexValueMakerConf> configs = map.values().stream().collect(Collectors.toList());
-
         System.out.println("Indexer configurations found before filtering: " + configs.size());
-
-        configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-
-        System.out.println("Indexer configurations active after filtering: " + configs.size());
-
-        System.out.println(String.format("%s|%s|%s|%s", "Indexer", "class", "key", "order", "isDisabled"));
+        configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+        System.out.println(reportTag + " active after filtering: " + configs.size());
+        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
         for (IndexValueMakerConf config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", "Indexer", config.getIndexer(), config.getKey(), config.getOrder(), config.isDisabled()));
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getIndexer(), config.getKey(), config.getOrder(), config.isDisabled()));
         }
         return new ConfigBasedIndexValueMakerFactory(configs);
     }

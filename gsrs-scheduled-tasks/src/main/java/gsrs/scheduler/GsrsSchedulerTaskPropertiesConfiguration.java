@@ -56,27 +56,20 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     }
 
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
+        String reportTag = "ScheduledTaskConfig";
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
-
         ObjectMapper mapper = new ObjectMapper();
-
-        // For quality control and maybe an accessor
         for (String k: list.keySet()) {
             ScheduledTaskConfig config =  list.get(k);
             config.setKey(k);
         }
-
         List<ScheduledTaskConfig> configs = list.values().stream().collect(Collectors.toList());
-
-        System.out.println("Scheduled task configurations found before filtering: " + configs.size());
-
+        System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-
-        System.out.println("Scheduled task configurations active after filtering: " + configs.size());
-
-        System.out.println(String.format("%s|%s|%s|%s", "ScheduledTaskConfig", "class", "key", "order", "isDisabled"));
+        System.out.println(reportTag + " active after filtering: " + configs.size());
+        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
         for (ScheduledTaskConfig config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", "ScheduledTaskConfig", config.getScheduledTaskClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getScheduledTaskClass(), config.getKey(), config.getOrder(), config.isDisabled()));
         }
 
         for(ScheduledTaskConfig config : configs){
