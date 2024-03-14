@@ -68,12 +68,12 @@ public class GsrsFactoryConfiguration {
             map.get(k).setKey(k);
         }
         List<EntityProcessorConfig> configs = map.values().stream().collect(Collectors.toList());
-        System.out.println("Entity processor configurations found before filtering: " + configs.size());
+        System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-        System.out.println("Entity processor configurations active after filtering: " + configs.size());
-        System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", "class", "key", "order", "isDisabled"));
+        System.out.println(reportTag + " active after filtering: " + configs.size());
+        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
         for (EntityProcessorConfig config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", "EntityProcessor", config.getProcessor(), config.getKey(), config.getOrder(), config.isDisabled()));
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getProcessor(), config.getKey(), config.getOrder(), config.isDisabled()));
         }
         return configs;
     }
