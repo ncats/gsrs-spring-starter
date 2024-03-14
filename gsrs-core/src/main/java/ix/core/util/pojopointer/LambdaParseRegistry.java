@@ -1,18 +1,24 @@
 package ix.core.util.pojopointer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.RegisteredFunctionProperties;
 import gsrs.springUtils.AutowireHelper;
 
+import gsrs.util.RegisteredFunctionConfig;
 import ix.core.util.pojopointer.extensions.RegisteredFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ClassUtils;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
 
 @Component
 public class LambdaParseRegistry implements ApplicationListener<ContextRefreshedEvent> {
@@ -69,12 +75,14 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			map.put("skip", LongBasedLambdaArgumentParser.of("skip", (p) -> new SkipPath(p)));
 
 			if(registeredFunctionProperties !=null) {
-				for (Map<String, Object> m : registeredFunctionProperties.getRegisteredfunctions()) {
-					try {
-						String className = (String) m.get("class");
-						Class<?> c = ClassUtils.forName(className, null);
-						RegisteredFunction rf = AutowireHelper.getInstance().autowireAndProxy( (RegisteredFunction)  c.getDeclaredConstructor().newInstance());
 
+				List<? extends RegisteredFunctionConfig> configs = loadRegisteredFunctionsFromConfiguration();
+
+				for (RegisteredFunctionConfig config : configs) {
+					try {
+						RegisteredFunction rf = AutowireHelper.getInstance().autowireAndProxy(
+							(RegisteredFunction) config.getRegisteredFunctionClass().getDeclaredConstructor().newInstance()
+						);
 						LambdaArgumentParser p = rf.getFunctionURIParser();
 						System.out.println("Found special Function:" + p.getKey());
 						map.put(p.getKey(), p);
@@ -84,7 +92,6 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 					}
 				}
 			}
-
 
 //			try {
 //				functionFactory
@@ -103,6 +110,33 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 		instance = this;
 	}
+
+	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
+		String reportTag = "RegisteredFunctionConfig";
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredfunctions();
+			if (map == null || map.isEmpty()) {
+				return Collections.emptyList();
+			}
+			for (String k: map.keySet()) {
+				map.get(k).put("key", k);
+			}
+			List<Object> list = map.values().stream().collect(Collectors.toList());
+			List<? extends RegisteredFunctionConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends RegisteredFunctionConfig>>() { });
+			System.out.println( reportTag + "found before filtering: " + configs.size());
+			configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+			System.out.println(reportTag + " active after filtering: " + configs.size());
+			System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
+			for (RegisteredFunctionConfig config : configs) {
+				System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getRegisteredFunctionClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+			}
+			return configs;
+		} catch (Throwable t) {
+			throw t;
+		}
+	}
+
 
 	public Optional<Function<String,? extends PojoPointer>> getPojoPointerParser(final String key) throws NoSuchElementException {
 		Function<String,? extends PojoPointer> parser= subURIparsers.get().get(key);

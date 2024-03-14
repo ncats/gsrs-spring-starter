@@ -59,11 +59,9 @@ public class GsrsExportConfiguration {
 
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
-
+        String reportTag = "ExporterFactoryConfig";
         log.trace("inside initializer");
 
-        // The configuration (Hocon maps) need to be read first so that overrides occur in the right order
-        // Then, we put them in these MapLists
         Map<String, List<Class>> factoriesMapList = new HashMap<String, List<Class>>();
         Map<String, List<ExporterFactoryConfig>> exporterFactoriesMapList = new HashMap<String, List<ExporterFactoryConfig>>();
 
@@ -78,13 +76,13 @@ public class GsrsExportConfiguration {
                 Map<String, ExporterFactoryConfig> map = entry1.getValue();
                 String mapKey = entry1.getKey();
                 List<ExporterFactoryConfig> configs = map.values().stream().collect(Collectors.toList());
-                System.out.println("Exporter factory configurations for [" + mapKey + "] found before filtering: " + configs.size());
+                System.out.println(reportTag + " for [" + mapKey + "] found before filtering: " + configs.size());
                 configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
-                System.out.println("Exporter factory configurations for [" + mapKey + "] found after filtering: " + configs.size());
+                System.out.println(reportTag + " for [" + mapKey + "] found after filtering: " + configs.size());
                 exporterFactoriesMapList.put(mapKey, configs);
-                System.out.println(String.format("%s|%s|%s|%s|%s", "ScheduledTaskConfig", "context", "class", "key", "order", "isDisabled"));
+                System.out.println(String.format("%s|%s|%s|%s", reportTag, "context", "class", "key", "order", "isDisabled"));
                 for (ExporterFactoryConfig config : configs) {
-                    System.out.println(String.format("%s|%s|%s|%s|%s", "context", "ExporterFactoryConfig", config.getExporterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+                    System.out.println(String.format("%s|%s|%s|%s", "reportTag",  mapKey, config.getExporterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
                 }
             }
         }

@@ -11,14 +11,14 @@ import java.util.Map;
 
 public class RegisteredFunctionProperties {
 
-    private List<Map<String, Object>> registeredfunctions;
+    private Map<String, Map<String, Object>> registeredfunctions;
 
 
-    public List<Map<String, Object>> getRegisteredfunctions() {
+    public Map<String, Map<String, Object>> getRegisteredfunctions() {
         return registeredfunctions;
     }
 
-    public void setRegisteredfunctions(List<Map<String, Object>> registeredfunctions) {
+    public void setRegisteredfunctions(Map<String, Map<String, Object>> registeredfunctions) {
         this.registeredfunctions = registeredfunctions;
     }
 
