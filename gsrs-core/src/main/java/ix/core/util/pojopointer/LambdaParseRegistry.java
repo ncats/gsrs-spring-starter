@@ -110,7 +110,15 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 		instance = this;
 	}
+	public void printData() {
 
+		if(this.subURIparsers.get() != null && !this.subURIparsers.get().isEmpty()) {
+			System.out.println("LambdaParseRegistry.subURIparsers is NOT null or empty.");
+			System.out.println(this.subURIparsers.get().toString());
+		} else {
+			System.out.println("LambdaParseRegistry.subURIparsers IS null or empty.");
+		}
+	}
 	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
 		String reportTag = "RegisteredFunctionConfig";
 		ObjectMapper mapper = new ObjectMapper();
