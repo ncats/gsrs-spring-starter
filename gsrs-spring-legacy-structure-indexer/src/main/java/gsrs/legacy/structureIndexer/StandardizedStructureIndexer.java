@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 
 import gov.nih.ncats.molwitch.Atom;
@@ -163,11 +162,11 @@ public class StandardizedStructureIndexer {
         delegate.remove(source);
     }
 
-    public ResultEnumeration search(Filter... filters) throws Exception {
+    public ResultEnumeration search(Query... filters) throws Exception {
         return delegate.search(filters);
     }
 
-    public ResultEnumeration search(Query query, int max, Filter... filters) throws Exception {
+    public ResultEnumeration search(Query query, int max, Query... filters) throws Exception {
         return delegate.search(query, max, filters);
     }
 
@@ -175,7 +174,7 @@ public class StandardizedStructureIndexer {
         return delegate.search(query);
     }
 
-    public ResultEnumeration search(String query, int max, Filter... filters) throws Exception {
+    public ResultEnumeration search(String query, int max, Query... filters) throws Exception {
         return delegate.search(query, max, filters);
     }
 
@@ -196,11 +195,11 @@ public class StandardizedStructureIndexer {
         delegate.shutdown();
     }
 
-    public ResultEnumeration similarity(Chemical query, double threshold, Filter... filters) throws Exception {
+    public ResultEnumeration similarity(Chemical query, double threshold, Query... filters) throws Exception {
         return delegate.similarity(getStandardized(query), threshold, filters);
     }
 
-    public ResultEnumeration similarity(Chemical query, double threshold, int max, int nthreads, Filter... filters)
+    public ResultEnumeration similarity(Chemical query, double threshold, int max, int nthreads, Query... filters)
             throws Exception {
         return delegate.similarity(getStandardized(query), threshold, max, nthreads, filters);
     }
@@ -209,7 +208,7 @@ public class StandardizedStructureIndexer {
         return delegate.similarity(getStandardized(query), threshold, max, nthreads);
     }
 
-    public ResultEnumeration similarity(String query, double threshold, Filter... filters) throws Exception {
+    public ResultEnumeration similarity(String query, double threshold, Query... filters) throws Exception {
         return this.similarity(getMolecule(query), threshold, filters);
     }
 
@@ -229,11 +228,11 @@ public class StandardizedStructureIndexer {
         delegate.stats(ps);
     }
 
-    public ResultEnumeration substructure(Chemical query, Filter... filters) throws Exception {
+    public ResultEnumeration substructure(Chemical query, Query... filters) throws Exception {
         return delegate.substructure(getSSSStandardized(query), filters);
     }
 
-    public ResultEnumeration substructure(Chemical query, int max, int nthreads, Filter... filters)
+    public ResultEnumeration substructure(Chemical query, int max, int nthreads, Query... filters)
             throws Exception {
         return delegate.substructure(getSSSStandardized(query), max, nthreads, filters);
     }
@@ -246,11 +245,11 @@ public class StandardizedStructureIndexer {
         return delegate.substructure(getSSSStandardized(query));
     }
 
-    public ResultEnumeration substructure(String query, Filter... filters) throws Exception {
+    public ResultEnumeration substructure(String query, Query... filters) throws Exception {
         return this.substructure(getMolecule(query), filters);
     }
 
-    public ResultEnumeration substructure(String query, int max, int nthreads, Filter... filters) throws Exception {
+    public ResultEnumeration substructure(String query, int max, int nthreads, Query... filters) throws Exception {
         return this.substructure(getMolecule(query), max, nthreads, filters);
     }
 
