@@ -128,16 +128,16 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 				return Collections.emptyList();
 			}
 			for (String k: map.keySet()) {
-				map.get(k).put("key", k);
+				map.get(k).put("parentKey", k);
 			}
 			List<Object> list = map.values().stream().collect(Collectors.toList());
 			List<? extends RegisteredFunctionConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends RegisteredFunctionConfig>>() { });
 			System.out.println( reportTag + "found before filtering: " + configs.size());
 			configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
 			System.out.println(reportTag + " active after filtering: " + configs.size());
-			System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
+			System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
 			for (RegisteredFunctionConfig config : configs) {
-				System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getRegisteredFunctionClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+				System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getRegisteredFunctionClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
 			}
 			return configs;
 		} catch (Throwable t) {

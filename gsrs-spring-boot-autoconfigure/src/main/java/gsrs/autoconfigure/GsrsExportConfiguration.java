@@ -69,7 +69,7 @@ public class GsrsExportConfiguration {
             for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
                 Map<String, ExporterFactoryConfig> m = entry1.getValue();
                 for (Map.Entry<String, ExporterFactoryConfig> entry2 : m.entrySet()) {
-                    entry2.getValue().setKey(entry2.getKey());
+                    entry2.getValue().setParentKey(entry2.getKey());
                 }
             }
             for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
@@ -80,9 +80,9 @@ public class GsrsExportConfiguration {
                 configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
                 System.out.println(reportTag + " for [" + mapKey + "] found after filtering: " + configs.size());
                 exporterFactoriesMapList.put(mapKey, configs);
-                System.out.println(String.format("%s|%s|%s|%s", reportTag, "context", "class", "key", "order", "isDisabled"));
+                System.out.println(String.format("%s|%s|%s|%s", reportTag, "context", "class", "parentKey", "order", "isDisabled"));
                 for (ExporterFactoryConfig config : configs) {
-                    System.out.println(String.format("%s|%s|%s|%s", "reportTag",  mapKey, config.getExporterFactoryClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+                    System.out.println(String.format("%s|%s|%s|%s", "reportTag",  mapKey, config.getExporterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
                 }
             }
         }

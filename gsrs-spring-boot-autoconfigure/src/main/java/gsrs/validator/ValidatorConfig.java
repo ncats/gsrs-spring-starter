@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import gsrs.util.ExtensionConfig;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 @JsonTypeIdResolver(InheritanceTypeIdResolver.class)
 
 
-public interface ValidatorConfig { // extend ExtensionConfig that has general structure
+public interface ValidatorConfig extends ExtensionConfig {
     Map<String, Object> getParameters();
 
     void setParameters(Map<String, Object> parameters);
@@ -25,27 +26,13 @@ public interface ValidatorConfig { // extend ExtensionConfig that has general st
 
     Class getNewObjClass();
 
-    String getKey();
-
-    Double getOrder();
-
-    boolean isDisabled();
-
     METHOD_TYPE getMethodType();
 
     void setValidatorClass(Class validatorClass);
 
     void setNewObjClass(Class newObjClass);
 
-    void setKey(String key);
-
-    void setOrder(Double order);
-
-    void setDisabled(boolean disabled);
-
     void setMethodType(METHOD_TYPE methodType);
-
-
 
 
     enum METHOD_TYPE{

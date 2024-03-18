@@ -8,7 +8,7 @@ public class DefaultMatchableCalculationConfig<T> implements MatchableCalculatio
 
     private Class extractorClass;
 
-    private String key;
+    private String parentKey;
     private Double order;
     private boolean disabled = false;
 
@@ -20,13 +20,13 @@ public class DefaultMatchableCalculationConfig<T> implements MatchableCalculatio
     }
 
     @Override
-    public String getKey() {
-        return key;
+    public String getParentKey() {
+        return parentKey;
     }
 
     @Override
-    public void setKey(String key) {
-        this.key = key;
+    public void setParentKey(String parentKey) {
+        this.parentKey = parentKey;
     }
 
     @Override

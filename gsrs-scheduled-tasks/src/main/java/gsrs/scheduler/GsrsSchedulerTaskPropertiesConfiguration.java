@@ -9,6 +9,7 @@ import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduledTasks.SchedulerPlugin.ScheduledTask;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.util.ExtensionConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -24,8 +25,6 @@ import static java.util.Comparator.nullsFirst;
 @ConfigurationProperties("gsrs.scheduled-tasks")
 public class GsrsSchedulerTaskPropertiesConfiguration {
 
-    // private List<ScheduledTaskConfig> _list = new ArrayList<>();
-
     private Map<String, ScheduledTaskConfig> list = new HashMap<String, ScheduledTaskConfig>();
 
     public Map<String, ScheduledTaskConfig> getList() {
@@ -39,9 +38,9 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     // public void setList(List<ScheduledTaskConfig> list) { this.list = list; }
 
     @Data
-    public static class ScheduledTaskConfig{
+    public static class ScheduledTaskConfig implements ExtensionConfig {
         private String scheduledTaskClass;
-        private String key;
+        private String parentKey;
         private Double order;
         private boolean disabled = false;
         private Map<String, Object> parameters;
@@ -61,15 +60,15 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         for (String k: list.keySet()) {
             ScheduledTaskConfig config =  list.get(k);
-            config.setKey(k);
+            config.setParentKey(k);
         }
         List<ScheduledTaskConfig> configs = list.values().stream().collect(Collectors.toList());
         System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
-        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "key", "order", "isDisabled"));
+        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
         for (ScheduledTaskConfig config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getScheduledTaskClass(), config.getKey(), config.getOrder(), config.isDisabled()));
+            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getScheduledTaskClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
         }
 
         for(ScheduledTaskConfig config : configs){

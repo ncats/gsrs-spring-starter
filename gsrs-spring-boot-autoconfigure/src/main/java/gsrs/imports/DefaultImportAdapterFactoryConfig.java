@@ -27,7 +27,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     private List<String> extensions;
     private String adapterName;
 
-    private String key;
+    private String parentKey;
     private Double order;
     private boolean disabled = false;
 
@@ -84,13 +84,13 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public String getKey() {
-        return this.key;
+    public String getParentKey() {
+        return this.parentKey;
     }
 
     @Override
-    public void setKey(String key) {
-        this.key = key;
+    public void setParentKey(String key) {
+        this.parentKey = parentKey;
     }
 
     @Override

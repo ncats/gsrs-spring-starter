@@ -31,14 +31,14 @@ public class TestDefaultImportAdapterFactoryConfig {
         Map<String, Map<String,Map<String,Object>>> adapterConfig = new HashMap<>();
         Map<String,Object> oneAdapter = new HashMap<>();
 
-        oneAdapter.put("key", "SDFImportAdaptorFactory");
+        oneAdapter.put("parentKey", "SDFImportAdaptorFactory");
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdaptorFactory");
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", new String[] {"sdf", "sd"});
         oneAdapter.put("parameters", buildConfigParameters());
         oneAdapter.put("description", "general description");
         Map<String, Map<String,Object>> adapters = new HashMap<>();
-        adapters.put((String)oneAdapter.get("key"), oneAdapter);
+        adapters.put((String)oneAdapter.get("parentKey"), oneAdapter);
         adapterConfig.put(substanceContext, adapters);
         config.setImportAdapterFactories(adapterConfig);
 

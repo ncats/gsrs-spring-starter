@@ -37,7 +37,7 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     private Map<String, Object> unknownParameters = new ConcurrentHashMap<>();
 
     private Class newObjClass;
-    private String key;
+    private String parentKey;
     private Double order;
     private boolean disabled = false;
 
