@@ -9,8 +9,12 @@ import org.junit.jupiter.api.Test;
 
 public class LegacySalterTests {
 
-    private Hasher hasher = new GsrsPasswordHasher();
-    private Salter salter = new LegacyTypeSalter(hasher);
+    private final String SALT_PREFIX = "G";
+
+    private final Hasher hasher = new GsrsPasswordHasher();
+
+    private final Salter salter = new LegacyTypeSalter(hasher, SALT_PREFIX);
+
     @Test
     void testGenerateSalt() {
         String salt1 = salter.generateSalt();

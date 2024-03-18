@@ -10,11 +10,11 @@ public class LegacyTypeSalter implements Salter {
 
     Hasher hasher;
 
-    String prefix = "G";
+    String prefix = "";
 
-    //todo: default prefix to be hullable; add a prefix to constructor
-    public LegacyTypeSalter(Hasher newHasher) {
-        hasher= newHasher;
+    public LegacyTypeSalter(Hasher newHasher, String newPrefix) {
+        hasher = newHasher;
+        prefix = newPrefix;
     }
     @Override
     public void setHasher(Hasher hasher) {
