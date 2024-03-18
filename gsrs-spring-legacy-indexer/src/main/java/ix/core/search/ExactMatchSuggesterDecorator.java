@@ -15,7 +15,6 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
@@ -184,18 +183,14 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         SearcherManager manager=null;
         try{
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, num, true, false, false);
-
-            // We sorted postings by weight during indexing, so we
-            // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num,SORT2);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, num, Integer.MAX_VALUE);
             manager = searcherMgr.get();
             searcher = manager.acquire();
-            searcher.search(tq, c2);
+            searcher.search(tq, c);
 
             TopFieldDocs hits = (TopFieldDocs) c.topDocs();
 
-            if(hits.totalHits ==0){
+            if(hits.totalHits.value ==0){
                 return Collections.emptyList();
             }
             BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
@@ -203,7 +198,7 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             List<LookupResult> exactMatches = new ArrayList<>();
             for (int i=0;i<hits.scoreDocs.length;i++) {
                 FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
-                BytesRef term = textDV.get(fd.doc);
+                BytesRef term = textDV.binaryValue();
                 String text = term.utf8ToString();
                 long score = (Long) fd.fields[0];
                 //don't return negative scores
@@ -243,17 +238,13 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             TermQuery tq=new TermQuery(t);
 
             // Sort by weight, descending:
-            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, true, false, false);
-
-            // We sorted postings by weight during indexing, so we
-            // only retrieve the first num hits now:
-            Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
+            TopFieldCollector c = TopFieldCollector.create(SORT2, 2, Integer.MAX_VALUE);
             manager = searcherMgr.get();
             searcher = manager.acquire();
-            searcher.search(tq, c2);
+            searcher.search(tq, c);
 
             TopFieldDocs hits = (TopFieldDocs) c.topDocs();
-            if(hits.totalHits>=1){
+            if(hits.totalHits.value>=1){
                 int i=0;
                 FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
                 long score = (Long) fd.fields[0];

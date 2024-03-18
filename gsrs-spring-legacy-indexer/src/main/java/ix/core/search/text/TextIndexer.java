@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -58,11 +59,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -90,8 +92,6 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -100,17 +100,17 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesTermsQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -392,17 +392,13 @@ public class TextIndexer implements Closeable, ProcessListener {
                     return (t.v()< max) && (t.v()>min);
                   };
 
-            }else if(q instanceof NumericRangeQuery){
-                NumericRangeQuery nq = (NumericRangeQuery)q;
-                nq.includesMax();
-                nq.includesMin();
+            }else if(q instanceof PointRangeQuery){
+                PointRangeQuery nq = (PointRangeQuery)q;
 
-                Integer max=((NumericRangeQuery)q)
-                                .getMax()
-                                .intValue() + ((nq.includesMax())?1:0);
-                Integer min=((NumericRangeQuery)q)
-                                .getMin()
-                                .intValue() - ((nq.includesMin())?1:0);
+                Integer max= new BigInteger(((PointRangeQuery)q).getUpperPoint())
+                                .intValue() + 1;
+                Integer min=new BigInteger(((PointRangeQuery)q).getLowerPoint())
+                                .intValue() - 1;
 
                 return (t)->{
                   return (t.v()< max) && (t.v()>min);
@@ -642,7 +638,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         public TermVectors termVectors () { return tvec; }
 
-        public static <T> TermVectorsCollector<T> make(Class<T> kind, String originalField, IndexSearcher searcher, Filter filter, Query q) throws IOException{
+        public static <T> TermVectorsCollector<T> make(Class<T> kind, String originalField, IndexSearcher searcher, Query filter, Query q) throws IOException{
             return new TermVectorsCollector<T>(kind,originalField, searcher, filter,q);
         }
 
@@ -657,7 +653,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             return new LeafCollector() {
 
                 @Override
-                public void setScorer(Scorer scorer) throws IOException {}
+                public void setScorer(Scorable scorer) throws IOException {}
 
                 @Override
                 public void collect(int doc) throws IOException {
@@ -669,8 +665,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
         @Override
-        public boolean needsScores() {
-            return false;
+        public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
         }
     }
 
@@ -1588,9 +1584,9 @@ public class TextIndexer implements Closeable, ProcessListener {
                 try {
                     double low = Double.parseDouble(lower);
                     double high = Double.parseDouble(higher);
-                    q = NumericRangeQuery.newDoubleRange("D_" + trq.getField(),
-                            low, high, trq.includesLower(),
-                            trq.includesUpper());
+                    q = DoublePoint.newRangeQuery("D_" + trq.getField(),
+                            (trq.includesLower()?low:DoublePoint.nextUp(low)),
+                            (trq.includesUpper()?high:DoublePoint.nextDown(high)));
                 } catch (Exception e) {
                     log.warn("problem parsing numeric range", e);
                 }
@@ -1730,8 +1726,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return searchResult;
 	}	
   
-	private static Query getTermsQuery(List<Term> terms) {				
-		return new TermsQuery(terms);
+	private static Query getTermsQuery(List<Term> terms) {
+		BooleanQuery.Builder bqb = new BooleanQuery.Builder();
+		for (Term t : terms) {
+			bqb.add(new TermQuery(t), Occur.SHOULD);
+		}
+		return new ConstantScoreQuery(bqb.build());
 	}
 	
   private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
@@ -1825,12 +1825,12 @@ public class TextIndexer implements Closeable, ProcessListener {
                 .collect(Collectors.toList());
     }
 
-	protected TermsFilter getTermsFilter(Collection<?> subset) {
-		return new TermsFilter(getTerms(subset));
+	protected Query getTermsFilter(Collection<?> subset) {
+		return getTermsQuery(getTerms(subset));
 	}
 
-	protected TermsFilter getTermKeysFilter(Collection<Key> keyset) {
-        return new TermsFilter(getTermsFromKeys(keyset));
+	protected Query getTermKeysFilter(Collection<Key> keyset) {
+		return getTermsQuery(getTermsFromKeys(keyset));
     }
 
 
@@ -1839,11 +1839,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public SearchResult range(GsrsRepository gsrsRepository, SearchOptions options, String field, Integer min, Integer max) throws Exception {
-		Query query = NumericRangeQuery.newIntRange(field, min, max, true /* minInclusive? */, true/* maxInclusive? */);
+		Query query = IntPoint.newRangeQuery(field, min, max);
 		return search(gsrsRepository, new SearchResult(options), query, null);
 	}
 
-	protected SearchResult filter(GsrsRepository gsrsRepository, SearchOptions options, Filter filter) throws Exception {
+	protected SearchResult filter(GsrsRepository gsrsRepository, SearchOptions options, Query filter) throws Exception {
 		return search(gsrsRepository, new SearchResult(options), new MatchAllDocsQuery(), filter);
 	}
 
@@ -1857,7 +1857,7 @@ public class TextIndexer implements Closeable, ProcessListener {
             options.removeAndConsumeRangeFilters((f, r) -> {
                 filters
                         .computeIfAbsent(f, k -> new ArrayList<Query>())
-                        .add(DocValuesRangeQuery.newLongRange(f, r[0], r[1], true, false));
+                        .add(LongPoint.newRangeQuery(f, r[0], Math.addExact(r[1], -1)));
             });
         }
 		return filters;
@@ -2119,7 +2119,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 			DrillSideways.DrillSidewaysResult swResult = sideway.search(ddq, filter, null, options.max(),
-					sorter, false, false);
+					sorter, false);
 			
 
 
@@ -2191,7 +2191,7 @@ public class TextIndexer implements Closeable, ProcessListener {
      * @return
      * @throws IOException
      */
-    public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Filter ifilter, Query query
+    public TopDocs firstPassLuceneSearch(IndexSearcher searcher, TaxonomyReader taxon, SearchResult searchResult, Query ifilter, Query query
             
             ) throws IOException{
         return firstPassLuceneSearch(searcher, taxon, searchResult,ifilter,query, null);
@@ -2243,7 +2243,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		options.getTermFilters()
 		    .stream()
-			.map(k-> new TermsFilter(new Term(k.getField(), k.getTerm())))
+			.map(k-> new TermQuery(new Term(k.getField(), k.getTerm())))
 			.forEach(f->filtersFromOptions.add(f));
 
 
@@ -2605,13 +2605,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 		List<Tuple<Query,MATCH_TYPE>> suggestedQueries = new ArrayList<Tuple<Query,MATCH_TYPE>>();
 
 		Function<Stream<Term>, PhraseQuery> exactQueryMaker = lterms->{
-			PhraseQuery exactQuery = new PhraseQuery();
-			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
+			PhraseQuery.Builder exactQueryB = new PhraseQuery.Builder();
+			exactQueryB.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
 			lterms.forEach(tq->{
-				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
+				exactQueryB.add(new Term(FULL_TEXT_FIELD,tq.text()));
 			});
-			exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
-			return exactQuery;
+			exactQueryB.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
+			return exactQueryB.build();
 		};
 		Function<Stream<Term>, PhraseQuery> phraseQueryMaker = lterms->{
 			PhraseQuery.Builder exactQueryB = new PhraseQuery.Builder();
@@ -2635,10 +2635,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		if(q instanceof TermQuery){
 			Term tq=((TermQuery)q).getTerm();
 			if(isGeneric.test(tq)){
-				PhraseQuery exactQuery = new PhraseQuery();
-				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.START_WORD.trim().toLowerCase()));
-				exactQuery.add(new Term(FULL_TEXT_FIELD,tq.text()));
-				exactQuery.add(new Term(FULL_TEXT_FIELD, TextIndexer.STOP_WORD.trim().toLowerCase()));
 				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(exactQueryMaker.apply(Stream.of(tq)),MATCH_TYPE.FULL));
 				suggestedQueries.add(new Tuple<Query,MATCH_TYPE>(new TermQuery(new Term(FULL_TEXT_FIELD,tq.text())),MATCH_TYPE.WORD));
 			}
@@ -2747,8 +2743,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private static List<BooleanClause> flattenToLinkedOr(BooleanQuery bq){
 		List<BooleanClause> bqs= new ArrayList<BooleanClause>();
-		for(BooleanClause bcl: bq.getClauses()){
-			if(bcl.getOccur() != Occur.SHOULD) return null;
+		for(BooleanClause bcl: bq.clauses()){
+			if(!Occur.SHOULD.equals(bcl.getOccur())) return null;
 			if(bcl.getQuery() instanceof BooleanQuery){
 				List<BooleanClause> sublist = flattenToLinkedOr((BooleanQuery) bcl.getQuery());
 				if(sublist==null){
@@ -2831,10 +2827,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 				 .toRootKey()
 				 .asLuceneIdTuple();
 		 
-		 BooleanQuery q = new BooleanQuery();
-         q.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-         q.add(new TermQuery(new Term(FIELD_KIND, key.toRootKey().getKind())), BooleanClause.Occur.MUST);
-         return q;
+		 BooleanQuery.Builder qb = new BooleanQuery.Builder();
+         qb.add(new TermQuery(new Term(docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+         qb.add(new TermQuery(new Term(FIELD_KIND, key.toRootKey().getKind())), BooleanClause.Occur.MUST);
+         return qb.build();
 	}
 	private Query getUniqueEntityFullDocQuery(Key key) {
 		 Tuple<String, String> docKey = key
@@ -2842,10 +2838,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 				 .asLuceneIdTuple();
 		 
 
-		BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term(FULL_DOC_PREFIX + docKey.k() , docKey.v())), BooleanClause.Occur.MUST);
-        q.add(new TermQuery(new Term(FIELD_KIND, FULL_DOC_PREFIX + key.toRootKey().getKind())), BooleanClause.Occur.MUST);
-        return q;
+		BooleanQuery.Builder qb = new BooleanQuery.Builder();
+        qb.add(new TermQuery(new Term(FULL_DOC_PREFIX + docKey.k() , docKey.v())), BooleanClause.Occur.MUST);
+        qb.add(new TermQuery(new Term(FIELD_KIND, FULL_DOC_PREFIX + key.toRootKey().getKind())), BooleanClause.Occur.MUST);
+        return qb.build();
 	}
 
 	private Query getUniqueEntityAnalyzerQuery(Key key) {
@@ -2853,10 +2849,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 				.toRootKey()
 				.asLuceneIdTuple();
 	 
-	  	BooleanQuery qa = new BooleanQuery();
-      	qa.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
-      	qa.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.toRootKey().getKind())), BooleanClause.Occur.MUST);
-        return qa;
+	  	BooleanQuery.Builder qb = new BooleanQuery.Builder();
+      	qb.add(new TermQuery(new Term(ANALYZER_VAL_PREFIX + docKey.k(), docKey.v())), BooleanClause.Occur.MUST);
+      	qb.add(new TermQuery(new Term(FIELD_KIND, ANALYZER_VAL_PREFIX + key.toRootKey().getKind())), BooleanClause.Occur.MUST);
+        return qb.build();
 	}
 
 	public IndexRecord getIndexRecord(Key k) throws Exception {
@@ -2874,7 +2870,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		// IndexSearcher searcher = getSearcher ();
 		return withSearcher(searcher -> {
 			TopDocs docs = searcher.search(uq, 1);
-			if (docs.totalHits > 0) {
+			if (docs.totalHits.value > 0) {
 				return searcher.doc(docs.scoreDocs[0].doc);
 			}
 			return null;
@@ -2886,7 +2882,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		// IndexSearcher searcher = getSearcher ();
 		return withSearcher(searcher -> {
 			TopDocs docs = searcher.search(uq, 1);
-			if (docs.totalHits > 0) {
+			if (docs.totalHits.value > 0) {
 				return searcher.doc(docs.scoreDocs[0].doc);
 			}
 			return null;
@@ -3032,7 +3028,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			  }else {
 			      v.forEach(iff->{
 			          double d =iff.numericValue().doubleValue();
-			          doc.add(new DoubleField(n, d, NO));
+			          doc.add(new DoublePoint(n, d));
 			      });
 			  }
 			});
@@ -3397,8 +3393,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     				case BINARY:
     					break;
     				case DOUBLE:
-    					DoubleField df=new DoubleField(fname,f.asDouble(),store);
-    					doc.add(df);
+    					doc.add(new DoublePoint(fname,f.asDouble()));
+    					if (YES.equals(store)) {
+    						doc.add(new StoredField(fname,f.asDouble()));
+    					}
     					break;
     				case INTEGER:
     					NumericDocValuesField nf= new NumericDocValuesField(fname, f.asLong());
@@ -3527,7 +3525,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				  }else {
 				      v.forEach(iff->{
 				          double d =iff.numericValue().doubleValue();
-				          doc.add(new DoubleField(n, d, NO));
+				          doc.add(new DoublePoint(n, d));
 				      });
 				  }
 				});
@@ -4100,7 +4098,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	public TermVectors getTermVectors (Class kind, String field) throws Exception{
-	    return getTermVectors(kind,field, (Filter)null, null);
+	    return getTermVectors(kind,field, (Query)null, null);
 	}
 
 	public TermVectors getTermVectors(Class kind, String field, List<Object> subset, Query q) throws Exception{
@@ -4119,7 +4117,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 
 
-	public TermVectors getTermVectors (Class kind, String field, Filter luceneFilter, Query query)
+	public TermVectors getTermVectors (Class kind, String field, Query luceneFilter, Query query)
 	                throws Exception {
 
 	    return withSearcher(searcher -> {
@@ -4230,8 +4228,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 				if(allowAdding.test(iff)) {
 					record.facets.add(iff);
 				}
-			}else if(ifx instanceof LongField) {
-				LongField lf = (LongField)ifx;
+			}else if(ifx instanceof LongPoint) {
+				LongPoint lf = (LongPoint)ifx;
 				
 				IndexedField iff = IndexedField.builder()
 						.fieldName(lf.name())
