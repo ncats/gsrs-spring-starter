@@ -54,6 +54,12 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     }
 
+    // Use this to hold configs list before they are made into tasks.
+    // That way we can share this list via an api endpoint
+    // Make sure this values is always quashed each time
+    // The cached supplier is refreshed
+    private List<ScheduledTaskConfig> configs = null;
+
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
         String reportTag = "ScheduledTaskConfig";
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
@@ -62,7 +68,8 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
             ScheduledTaskConfig config =  list.get(k);
             config.setParentKey(k);
         }
-        List<ScheduledTaskConfig> configs = list.values().stream().collect(Collectors.toList());
+        // This variable has class scope, is there any problem with that?
+        configs = list.values().stream().collect(Collectors.toList());
         System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
@@ -102,6 +109,10 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     });
 
+    // __aw__ come back to this, good idea, rename?
+    public List<ScheduledTaskConfig> getConfigs()  {
+        return this.configs;
+    }
 
     public List<SchedulerPlugin.ScheduledTask> getTasks(){
         return new ArrayList<>(tasks.get());

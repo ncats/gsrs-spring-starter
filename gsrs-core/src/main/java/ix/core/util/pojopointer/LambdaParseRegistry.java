@@ -43,10 +43,16 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 		instance = registry;
 	}
 
+	public List<? extends RegisteredFunctionConfig> configs = null;
+
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
+		System.out.println("Event fired ... ");
+
 
 		subURIparsers = CachedSupplier.of(() -> {
+			System.out.println("Cached supplier executing ... ");
+
 			final Map<String, Function<String, ? extends PojoPointer>> map = new HashMap<>();
 
 
@@ -75,8 +81,8 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			map.put("skip", LongBasedLambdaArgumentParser.of("skip", (p) -> new SkipPath(p)));
 
 			if(registeredFunctionProperties !=null) {
-
-				List<? extends RegisteredFunctionConfig> configs = loadRegisteredFunctionsFromConfiguration();
+				// Whole class  scope
+				configs = loadRegisteredFunctionsFromConfiguration();
 
 				for (RegisteredFunctionConfig config : configs) {
 					try {
@@ -110,19 +116,19 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 		instance = this;
 	}
-	public void printData() {
 
-		if(this.subURIparsers.get() != null && !this.subURIparsers.get().isEmpty()) {
-			System.out.println("LambdaParseRegistry.subURIparsers is NOT null or empty.");
-			System.out.println(this.subURIparsers.get().toString());
-		} else {
-			System.out.println("LambdaParseRegistry.subURIparsers IS null or empty.");
-		}
+
+	// __aw__ come back to this, good idea, rename?
+	public List<? extends RegisteredFunctionConfig> getConfigs() {
+		return configs;
 	}
+
 	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
 		String reportTag = "RegisteredFunctionConfig";
 		ObjectMapper mapper = new ObjectMapper();
 		try {
+
+
 			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredfunctions();
 			if (map == null || map.isEmpty()) {
 				return Collections.emptyList();

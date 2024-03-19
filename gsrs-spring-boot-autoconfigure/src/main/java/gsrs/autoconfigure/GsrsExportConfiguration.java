@@ -57,6 +57,8 @@ public class GsrsExportConfiguration {
     @JsonIgnore
     private Map<String, List<Text>> settingsPresetsAsText = new HashMap<>();
 
+    // __aw__ come back to this, good idea, rename?
+    private  List<ExporterFactoryConfig> configs = null;
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
@@ -75,7 +77,7 @@ public class GsrsExportConfiguration {
             for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
                 Map<String, ExporterFactoryConfig> map = entry1.getValue();
                 String mapKey = entry1.getKey();
-                List<ExporterFactoryConfig> configs = map.values().stream().collect(Collectors.toList());
+                configs = map.values().stream().collect(Collectors.toList());
                 System.out.println(reportTag + " for [" + mapKey + "] found before filtering: " + configs.size());
                 configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
                 System.out.println(reportTag + " for [" + mapKey + "] found after filtering: " + configs.size());
