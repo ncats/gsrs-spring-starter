@@ -9,6 +9,7 @@ import gsrs.events.listeners.ReindexEventListener;
 import gsrs.imports.ConfigBasedImportAdapterFactoryFactoryConfiguration;
 import gsrs.indexer.ComponentScanIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
+import gsrs.indexer.HibernateIndexer;
 import gsrs.search.SearchResultController;
 import gsrs.springUtils.StartupInitializer;
 import gsrs.springUtils.StaticContextAccessor;
@@ -67,6 +68,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
         componentsToInclude.add(RelativePathController.class);
+        componentsToInclude.add(HibernateIndexer.class);
         switch(indexerType){
             case LEGACY: {
                 componentsToInclude.add(SpecialFieldsProperties.class);

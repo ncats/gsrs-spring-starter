@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableJpaRepositories(
+        repositoryBaseClass = gsrs.repository.GsrsRepositoryImpl.class,
         entityManagerFactoryRef = DefaultDataSourceConfig.NAME_ENTITY_MANAGER,
         transactionManagerRef = DefaultDataSourceConfig.NAME_TRANSACTION_MANAGER,
         basePackages = {"ix", "gsrs", "gov.nih.ncats"}
