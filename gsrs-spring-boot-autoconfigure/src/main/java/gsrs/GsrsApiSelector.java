@@ -64,6 +64,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
         componentsToInclude.add(BuildInfoController.class);
+        componentsToInclude.add(ExtensionConfigurationController.class);
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
         componentsToInclude.add(RelativePathController.class);
