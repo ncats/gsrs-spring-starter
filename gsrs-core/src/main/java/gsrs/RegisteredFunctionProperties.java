@@ -1,5 +1,6 @@
 package gsrs;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -8,19 +9,13 @@ import java.util.Map;
 
 @Component
 @ConfigurationProperties("ix.api")
-
+@Data
 public class RegisteredFunctionProperties {
 
-    private Map<String, Map<String, Object>> registeredfunctions;
+    private RegisteredFunctions registeredFunctions;
 
-
-    public Map<String, Map<String, Object>> getRegisteredfunctions() {
-        return registeredfunctions;
+    @Data
+    public static class RegisteredFunctions {
+        private Map<String, Map<String, Object>> list;
     }
-
-    public void setRegisteredfunctions(Map<String, Map<String, Object>> registeredfunctions) {
-        this.registeredfunctions = registeredfunctions;
-    }
-
-
 }

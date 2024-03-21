@@ -8,6 +8,9 @@ import gsrs.springUtils.AutowireHelper;
 
 import gsrs.util.RegisteredFunctionConfig;
 import ix.core.util.pojopointer.extensions.RegisteredFunction;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -43,14 +46,22 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 		instance = registry;
 	}
 
-	public List<? extends RegisteredFunctionConfig> configs = null;
+	@Getter(AccessLevel.NONE)
+	@Setter(AccessLevel.NONE)
+	// This should only be populated if the CachedSupplier lambda is executed.
+	public List<? extends RegisteredFunctionConfig> _configs = null;
+
+	public List<? extends RegisteredFunctionConfig> reportConfigs() {
+		return _configs;
+	}
 
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
+		// __aw__ remove
 		System.out.println("Event fired ... ");
 
-
 		subURIparsers = CachedSupplier.of(() -> {
+			// __aw__ remove
 			System.out.println("Cached supplier executing ... ");
 
 			final Map<String, Function<String, ? extends PojoPointer>> map = new HashMap<>();
@@ -80,9 +91,11 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			map.put("limit", LongBasedLambdaArgumentParser.of("limit", (p) -> new LimitPath(p)));
 			map.put("skip", LongBasedLambdaArgumentParser.of("skip", (p) -> new SkipPath(p)));
 
-			if(registeredFunctionProperties !=null) {
-				// Whole class  scope
-				configs = loadRegisteredFunctionsFromConfiguration();
+			if(registeredFunctionProperties.getRegisteredFunctions().getList() != null) {
+
+				List<? extends RegisteredFunctionConfig> configs = loadRegisteredFunctionsFromConfiguration();
+				// Point to new value of configs for reporting
+                _configs = configs;
 
 				for (RegisteredFunctionConfig config : configs) {
 					try {
@@ -113,23 +126,14 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 			return map;
 		});
-
 		instance = this;
-	}
-
-
-	// __aw__ come back to this, good idea, rename?
-	public List<? extends RegisteredFunctionConfig> getConfigs() {
-		return configs;
 	}
 
 	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
 		String reportTag = "RegisteredFunctionConfig";
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-
-
-			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredfunctions();
+			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredFunctions().getList();
 			if (map == null || map.isEmpty()) {
 				return Collections.emptyList();
 			}
@@ -141,9 +145,9 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			System.out.println( reportTag + "found before filtering: " + configs.size());
 			configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
 			System.out.println(reportTag + " active after filtering: " + configs.size());
-			System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
+			System.out.printf("%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
 			for (RegisteredFunctionConfig config : configs) {
-				System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getRegisteredFunctionClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+				System.out.printf("%s|%s|%s|%s\n", reportTag, config.getRegisteredFunctionClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
 			}
 			return configs;
 		} catch (Throwable t) {

@@ -53,9 +53,9 @@ public class ConfigBasedIndexValueMakerConfiguration {
         System.out.println("Indexer configurations found before filtering: " + configs.size());
         configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
-        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
+        System.out.printf("%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
         for (IndexValueMakerConf config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getIndexer(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+            System.out.printf("%s|%s|%s|%s\n", reportTag, config.getIndexer(), config.getParentKey(), config.getOrder(), config.isDisabled());
         }
         return new ConfigBasedIndexValueMakerFactory(configs);
     }

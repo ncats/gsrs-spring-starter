@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,11 +94,17 @@ public class BuildInfoController {
         JsonNode node = mapper.valueToTree(list);
         return node;
     }
+
     @GetMapping("/api/v1/@exporterFactoryConfigs")
     public JsonNode getExporterFactoryConfigs() {
         ObjectMapper mapper = new ObjectMapper();
-        List<? extends ExporterFactoryConfig> list = gsrsExportConfiguration.getConfigs();
-        JsonNode node = mapper.valueToTree(list);
+        Map<String, List<? extends ExporterFactoryConfig>> mapList = gsrsExportConfiguration.reportConfigs();
+        JsonNode node;
+        if (mapList==null || mapList.isEmpty()) {
+            node = mapper.createObjectNode();
+        } else {
+            node = mapper.valueToTree(mapList);
+        }
         return node;
     }
 
@@ -120,8 +127,9 @@ public class BuildInfoController {
     // can't get this to work?
     @GetMapping("/api/v1/@registeredFunctionConfigs")
     public JsonNode getRegisteredFunctionConfigs() {
+        // A good way to get these configs set by the CachedSupplier is to load a chemical in display mode in the UI.
         ObjectMapper mapper = new ObjectMapper();
-        List<? extends RegisteredFunctionConfig> list = lambdaParseRegistry.getConfigs();
+        List<? extends RegisteredFunctionConfig> list = lambdaParseRegistry.reportConfigs();
         JsonNode node = mapper.valueToTree(list);
         return node;
     }

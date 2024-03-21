@@ -4,7 +4,11 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
+import gsrs.validator.ValidatorConfig;
+import lombok.AccessLevel;
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -38,7 +42,7 @@ public class GsrsExportConfiguration {
     //Parsed from config
     
     private Map<String, Map<String, Class>> factories; //legacy as of 3.0.3+
-    private Map<String, Map<String, ExporterFactoryConfig>> exporterFactories; //new/preferred for 3.0.3+
+    private Map<String, Map<String, Map<String, ExporterFactoryConfig>>> exporterFactories; //new/preferred for 3.0.3+
     
     // AW: will/did this work as linked hash map with hocon?
     private Map<String, LinkedHashMap<String,Map<String,Object>>> settingsPresets;
@@ -57,38 +61,43 @@ public class GsrsExportConfiguration {
     @JsonIgnore
     private Map<String, List<Text>> settingsPresetsAsText = new HashMap<>();
 
-    // __aw__ come back to this, good idea, rename?
-    private  List<ExporterFactoryConfig> configs = null;
+    @Getter(AccessLevel.NONE)
+    private Map<String, List<Class>> factoriesMapList = new HashMap<String, List<Class>>();
 
+    @Getter(AccessLevel.NONE)
+    private Map<String, List<? extends ExporterFactoryConfig>> exporterFactoriesMapList = new HashMap<String, List<? extends ExporterFactoryConfig>>();
+
+    public Map<String, List<? extends ExporterFactoryConfig>> reportConfigs() {
+        return exporterFactoriesMapList;
+    }
+ObjectMapper mapper = new ObjectMapper();
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
         log.trace("inside initializer");
 
-        Map<String, List<Class>> factoriesMapList = new HashMap<String, List<Class>>();
-        Map<String, List<ExporterFactoryConfig>> exporterFactoriesMapList = new HashMap<String, List<ExporterFactoryConfig>>();
 
-        if(exporterFactories !=null) {
-            for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
-                Map<String, ExporterFactoryConfig> m = entry1.getValue();
-                for (Map.Entry<String, ExporterFactoryConfig> entry2 : m.entrySet()) {
+        if(exporterFactories != null) {
+            for (Map.Entry<String, Map<String, Map<String, ExporterFactoryConfig>>> entry1 : exporterFactories.entrySet()) {
+                Map<String, Map<String, ExporterFactoryConfig>> c = entry1.getValue();
+                String context = entry1.getKey();
+                Map<String, ExporterFactoryConfig> map = new HashMap<String, ExporterFactoryConfig>();
+                for (Map.Entry<String, ExporterFactoryConfig> entry2 : c.get("list").entrySet()) {
                     entry2.getValue().setParentKey(entry2.getKey());
+                    map.put(entry2.getKey(), entry2.getValue());
                 }
-            }
-            for (Map.Entry<String, Map<String, ExporterFactoryConfig>> entry1 : exporterFactories.entrySet()) {
-                Map<String, ExporterFactoryConfig> map = entry1.getValue();
-                String mapKey = entry1.getKey();
-                configs = map.values().stream().collect(Collectors.toList());
-                System.out.println(reportTag + " for [" + mapKey + "] found before filtering: " + configs.size());
+                List<ExporterFactoryConfig> list = map.values().stream().collect(Collectors.toList());
+                List<? extends ExporterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ExporterFactoryConfig>>() { });
+                System.out.println(reportTag + " for [" + context + "] found before filtering: " + configs.size());
                 configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
-                System.out.println(reportTag + " for [" + mapKey + "] found after filtering: " + configs.size());
-                exporterFactoriesMapList.put(mapKey, configs);
-                System.out.println(String.format("%s|%s|%s|%s", reportTag, "context", "class", "parentKey", "order", "isDisabled"));
+                System.out.println(reportTag + " for [" + context + "] found after filtering: " + configs.size());
+                exporterFactoriesMapList.put(context, configs);
+                System.out.printf("%s|%s|%s|%s\n", reportTag, "context", "class", "parentKey", "order", "isDisabled");
                 for (ExporterFactoryConfig config : configs) {
-                    System.out.println(String.format("%s|%s|%s|%s", "reportTag",  mapKey, config.getExporterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+                    System.out.printf("%s|%s|%s|%s\n", "reportTag", context, config.getExporterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
                 }
+
             }
         }
-
         //normally, classes are autowired by the calling class but we think this was put here to work around an
         //  issue.  May remove this in the future.
         AutowireHelper.getInstance().autowire(GsrsExportConfiguration.this);
@@ -123,7 +132,7 @@ public class GsrsExportConfiguration {
 
         if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");
-            for (Map.Entry<String, List<ExporterFactoryConfig>> entryFull : exporterFactoriesMapList.entrySet()) {
+            for (Map.Entry<String, List<? extends ExporterFactoryConfig>> entryFull : exporterFactoriesMapList.entrySet()) {
                 String context = entryFull.getKey();//this is the type
                 log.trace("context: {}", context);
 

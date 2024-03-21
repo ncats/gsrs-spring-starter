@@ -24,16 +24,16 @@ import static java.util.Comparator.nullsFirst;
 @Data
 @Slf4j
 public class GsrsFactoryConfiguration {
+    //          validators->context->list->parentKey = { }
+    private Map<String, Map<String, Map<String, Map<String, Object>>>> validators;
 
-    private Map<String, Map<String, Map<String, Object>>> validators;
+    private Map<String, Map<String, Map<String, Map<String, Object>>>> importAdapterFactories;
 
-    private Map<String, Map<String, Map<String, Object>>> importAdapterFactories;
-
-    private Map<String, Map<String, Map<String, Object>>> matchableCalculators;
+    private Map<String, Map<String, Map<String, Map<String, Object>>>> matchableCalculators;
 
     private Map<String, Map<String, Object>> search;
 
-    private Map<String, EntityProcessorConfig> entityProcessors;
+    private Map<String, Map<String, EntityProcessorConfig>> entityProcessors;
 
     private boolean createUnknownUsers = false;
 
@@ -60,7 +60,7 @@ public class GsrsFactoryConfiguration {
             //nothing set
             return Collections.emptyList();
         }
-        Map<String,EntityProcessorConfig> map =  entityProcessors;
+        Map<String,EntityProcessorConfig> map =  entityProcessors.get("list");
         if (map == null || map.isEmpty()) {
             return Collections.emptyList();
         }
@@ -71,9 +71,9 @@ public class GsrsFactoryConfiguration {
         System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
-        System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
+        System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
         for (EntityProcessorConfig config : configs) {
-            System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getProcessor(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getProcessor(), config.getParentKey(), config.getOrder(), config.isDisabled());
         }
         return configs;
     }
@@ -85,7 +85,7 @@ public class GsrsFactoryConfiguration {
         }
         ObjectMapper mapper = new ObjectMapper();
         try {
-            Map<String,Map<String, Object>> map = (Map<String, Map<String, Object>>) validators.get(context);
+            Map<String, Map<String, Object>> map = (Map<String, Map<String, Object>>) validators.get(context).get("list");
             if (map == null || map.isEmpty()) {
                 return Collections.emptyList();
             }
@@ -97,9 +97,9 @@ public class GsrsFactoryConfiguration {
             System.out.println( reportTag + "found before filtering: " + configs.size());
             configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
             System.out.println(reportTag + " active after filtering: " + configs.size());
-            System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
+            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
             for (ValidatorConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getValidatorClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+                System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getValidatorClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
             }
             return configs;
         } catch (Throwable t) {
@@ -107,26 +107,19 @@ public class GsrsFactoryConfiguration {
         }
     }
 
-    /*
-    retrieve a set of configuration items for the creation of AdapterFactory/ies based on
-    context -- the name of a type of entity that the Adapters will create.
-     */
-    public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
+     public List<? extends ImportAdapterFactoryConfig> getImportAdapterFactories(String context) {
         String reportTag = "ImportAdapterFactoryConfig";
         log.trace("starting in getImportAdapterFactories");
         if (importAdapterFactories == null) {
             return Collections.emptyList();
         }
         try {
-            Map<String, Map<String, Object>> map = importAdapterFactories.get(context);
+            Map<String, Map<String, Object>> map = importAdapterFactories.get(context).get("list");
             log.trace("map (before):");
 
-            // fix this later
-            // list.forEach(i -> i.keySet().forEach(k -> log.trace("key: {}; value: {}", k, i.get(k))));
-
-//            map.keySet().forEach(k1->{
-//                map.get(k1).keySet().forEach(k2-> log.trace("key: {}; value: {}", k2, map.get(k1).get(k2)));
-//            });
+            map.keySet().forEach(k1->{
+                map.get(k1).keySet().forEach(k2-> log.trace("key: {}; value: {}", k2, map.get(k1).get(k2)));
+            });
 
             if (map == null || map.isEmpty()) {
                 log.warn("no import adapter factory configuration info found!");
@@ -136,13 +129,24 @@ public class GsrsFactoryConfiguration {
                 map.get(k).put("parentKey", k);
             }
             List<Object> list = map.values().stream().collect(Collectors.toList());
+
             List<? extends ImportAdapterFactoryConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends ImportAdapterFactoryConfig>>() { });
+
+
             System.out.println(reportTag + "  found before filtering: " + configs.size());
-            configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
+            configs = configs.stream().filter(
+                c->!c.isDisabled()
+            ).sorted(
+                Comparator.comparing(
+                 c->c.getOrder(),nullsFirst(naturalOrder())
+                )
+            ).collect(
+                Collectors.toList()
+            );
             System.out.println(reportTag + " active after filtering: " + configs.size());
-            System.out.println(String.format("%s|%s|%s|%s", reportTag, "class", "parentKey", "order", "isDisabled"));
+            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
             for (ImportAdapterFactoryConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getImportAdapterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+                System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getImportAdapterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
             }
 
             //log.trace("list (after):");
@@ -161,7 +165,7 @@ public class GsrsFactoryConfiguration {
             return Collections.emptyList();
         }
         try {
-            Map<String, Map<String, Object>> map = matchableCalculators.get(context);
+            Map<String, Map<String, Object>> map = matchableCalculators.get(context).get("list");
             if (map == null || map.isEmpty()) {
                 log.warn("no matchable calculation configuration info found!");
                 return Collections.emptyList();
@@ -175,9 +179,9 @@ public class GsrsFactoryConfiguration {
             System.out.println(reportTag + " found before filtering: " + configs.size());
             configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
             System.out.println(reportTag + " active after filtering: " + configs.size());
-            System.out.println(String.format("%s|%s|%s|%s", "MatchableCalculator", "class", "parentKey", "order", "isDisabled"));
+            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
             for (MatchableCalculationConfig config : configs) {
-                System.out.println(String.format("%s|%s|%s|%s", reportTag, config.getMatchableCalculationClass(), config.getParentKey(), config.getOrder(), config.isDisabled()));
+                System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getMatchableCalculationClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
             }
             return configs;
         } catch (Throwable t) {
