@@ -10,13 +10,10 @@ import ix.core.models.Group;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.core.AuthenticationException;
@@ -157,7 +154,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals(1, userProfileRepository.count());
         assertEquals(1, principalRepository.count());
 
-        assertFalse(up.acceptPassword("fakepass"));
+        assertFalse(up.acceptPassword("fakepass").matchesRepository());
     }
 
     @Test
@@ -199,7 +196,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
 
     }
 
@@ -215,8 +212,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
-        assertFalse(up.acceptPassword("newPass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
+        assertFalse(up.acceptPassword("newPass").matchesRepository());
 
         UserProfile up2 = userProfileService.updateUserProfile(UserProfileService.NewUserRequest.builder()
                 .username("myUser")
@@ -226,8 +223,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals(up2.id,up.id);
         assertEquals(up2.user.id, up.user.id);
 
-        assertFalse(up2.acceptPassword("mypass"));
-        assertTrue(up2.acceptPassword("newPass"));
+        assertFalse(up2.acceptPassword("mypass").matchesRepository());
+        assertTrue(up2.acceptPassword("newPass").matchesRepository());
 
     }
 
@@ -243,8 +240,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
-        assertFalse(up.acceptPassword("newPass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
+        assertFalse(up.acceptPassword("newPass").matchesRepository());
 
         UserProfile up2 = userProfileService.updateUserProfile(UserProfileService.NewUserRequest.builder()
                 .username("myUser")
@@ -275,8 +272,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
-        assertFalse(up.acceptPassword("newPass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
+        assertFalse(up.acceptPassword("newPass").matchesRepository());
 
         UserProfile up2 = userProfileService.updateUserProfile(UserProfileService.NewUserRequest.builder()
                 .username("myUser")
@@ -313,8 +310,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
-        assertFalse(up.acceptPassword("newPass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
+        assertFalse(up.acceptPassword("newPass").matchesRepository());
 
         UserProfile up2 = userProfileService.updateUserProfile(UserProfileService.NewUserRequest.builder()
                 .username("myUser")
@@ -351,8 +348,8 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertNotNull(up.id);
         assertNotNull(up.user.id);
 
-        assertTrue(up.acceptPassword("mypass"));
-        assertFalse(up.acceptPassword("newPass"));
+        assertTrue(up.acceptPassword("mypass").matchesRepository());
+        assertFalse(up.acceptPassword("newPass").matchesRepository());
 
         UserProfile up2 = userProfileService.updateUserProfile(UserProfileService.NewUserRequest.builder()
                 .username("myUser")

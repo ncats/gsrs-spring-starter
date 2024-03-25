@@ -1,24 +1,26 @@
 package gsrs.security;
 
-import gsrs.repository.PrincipalRepository;
+import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import ix.core.models.Principal;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 //@Component
+@Slf4j
 public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
@@ -32,6 +34,10 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
 
     @Autowired(required = false)
     private UserTokenCache userTokenCache;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
     @Override
     @Transactional
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -83,11 +89,16 @@ public class LegacyGsrsAuthenticationProvider implements AuthenticationProvider 
             }
             if(up!=null){
                 String rawPassword = (String) auth.getCredentials();
-                if(up.acceptPassword(rawPassword)){
+                UserProfileAuthenticationResult authenticationResult =up.acceptPassword(rawPassword);
+                if(authenticationResult.matchesRepository()   ){
                     //valid password!
-
+                    UserProfile finalUp = up;
+                    if( authenticationResult.needsSave()) {
+                        log.trace("going to save up within transaction");
+                        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                        transactionTemplate.executeWithoutResult(u->repository.saveAndFlush(finalUp));
+                    }
                     return new UserProfilePasswordAuthentication(up);
-
                 }else{
                     throw new BadCredentialsException("invalid credentials for username" + auth.getUsername());
                 }

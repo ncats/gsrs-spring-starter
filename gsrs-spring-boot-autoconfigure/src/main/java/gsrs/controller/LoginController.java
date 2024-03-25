@@ -2,6 +2,7 @@ package gsrs.controller;
 
 import gsrs.cache.GsrsCache;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
@@ -10,7 +11,6 @@ import ix.core.models.Group;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -135,7 +135,8 @@ public class LoginController {
                 return gsrsControllerConfiguration.handleBadRequest(400,"password can not be blank or all whitespace", queryParameters);
             }
             //check old password
-            if(!up.acceptPassword(passwordChangeRequest.getOldPassword())){
+            UserProfileAuthenticationResult authenticationResult =up.acceptPassword(passwordChangeRequest.getOldPassword());
+            if(!authenticationResult.matchesRepository()){
                 return gsrsControllerConfiguration.unauthorized("incorrect password", queryParameters);
             }
             up.setPassword(passwordChangeRequest.getNewPassword());
