@@ -194,17 +194,23 @@ public class UserProfile extends IxModel{
 
 	public UserProfileAuthenticationResult acceptPassword(String password) {
 		UserProfileAuthenticationResult result = new UserProfileAuthenticationResult(false, false);
-		result.setNeedsSave(false);
 		if (this.hashp == null || this.salt == null) {
 			return result;
 		}
-		boolean pwOk = this.hashp.equals(Util.encrypt(password, this.salt));
-		result.setMatchesRepository(true);
-		if( pwOk && !salter.mayBeOneOfMine(this.salt)){
+		boolean pwOk = this.hashp.equals(hasher.hash(password, this.salt));
+		log.trace("pwOk: {}", pwOk);
+		boolean legacyPwOk = false;
+		//when authentication using latest algorithms fails, see if the password works with the legacy methods
+		if( !pwOk) {
+			legacyPwOk= this.hashp.equals(Util.encrypt(password, this.salt));
+		}
+		if( legacyPwOk && !salter.mayBeOneOfMine(this.salt)) {
+			//we have a pw assigned using the older algorithm so we need to resalt and rehash
 			log.trace("going to request rehash of password");
-			//setPassword(password);
+			setPassword(password);
 			result.setNeedsSave(true);
 		}
+		result.setMatchesRepository(pwOk || legacyPwOk);
 		return result;
 	}
 

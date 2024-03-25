@@ -16,6 +16,8 @@ public class GsrsPasswordHasher implements Hasher {
     static int iterations = 1000;
     static String characterSet ="utf8";
 
+    private final static String HASHING_ALGORITHM = "PBKDF2WithHmacSHA512";
+
     @Override
     public String getHashType() {
         return this.preferredHashAlgorithm;
@@ -52,7 +54,7 @@ public class GsrsPasswordHasher implements Hasher {
     public static String hash(String input, String salt, int iterations) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
         PBEKeySpec spec = new PBEKeySpec(input.toCharArray(), salt != null ? salt.getBytes(characterSet) :
                 input.getBytes(characterSet), iterations, 64 * 8);
-        SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        SecretKeyFactory skf = SecretKeyFactory.getInstance(HASHING_ALGORITHM);
 
         byte[] hash = skf.generateSecret(spec).getEncoded();
         return toHex(hash);
