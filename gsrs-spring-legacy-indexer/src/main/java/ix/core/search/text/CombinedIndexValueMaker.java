@@ -1,5 +1,6 @@
 package ix.core.search.text;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,19 +31,37 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     
     
     @Override
-    public IndexValueMaker<T> restrictedForm(Set<String> fields, boolean excludeExternal){
+    public Set<String> getTags() {
+    	return list.stream().flatMap(ivm->ivm.getTags().stream()).collect(Collectors.toSet());
+    }
+    
+    @Override
+    public IndexValueMaker<T> restrictedForm(Set<String> tags, boolean include){
     	
+    	if(tags.size() ==0) return this;    	
+    	List<IndexValueMaker<T>> filteredList;    	
     	
-    	List<IndexValueMaker<T>> filteredList=list.stream()
-    	.filter(ivm->fields.size()>0?ivm.getFieldNames().stream().anyMatch(fn->fields.contains(fn)):true)
-    	.filter(ivm->excludeExternal?!ivm.isExternal():true)
-    	.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(fields,excludeExternal))
-    	.collect(Collectors.toList());
+    	if(include) {
+    		System.out.println("in include combined");
+    		filteredList=list.stream()
+    			.filter(ivm->ivm.getTags().stream().anyMatch(tag->tags.contains(tag)))
+    			.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
+    		    	.collect(Collectors.toList());			
+    	}else {
+    		System.out.println("in exclude combined");
+    		filteredList=list.stream()
+        		.filter(ivm->!ivm.getTags().stream().anyMatch(tn->tags.contains(tn)))
+        		.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
+        		    .collect(Collectors.toList());    		
+    		
+    	}
     	
     	//Todo for Lihui:  Remove after testing
     	Set<IndexValueMaker<T>> filteredOut = Sets.difference(new HashSet(list), new HashSet(filteredList)); 
-    	System.out.println("In Combined index value maker: ");
-    	filteredOut.forEach(ivm->System.out.println(ivm.getClass().getSimpleName()));
+    	if(filteredOut.size()>0) {
+    		System.out.println("IVMs are filtered out in combined index value maker: ");    	
+    		filteredOut.forEach(ivm->System.out.println(ivm.getClass().getSimpleName()));
+    	}
     	
     	return new CombinedIndexValueMaker(clazz,filteredList);
     }

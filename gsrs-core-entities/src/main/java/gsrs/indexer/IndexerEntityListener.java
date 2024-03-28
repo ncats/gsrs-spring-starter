@@ -57,7 +57,7 @@ public class IndexerEntityListener {
     }
     
     public void reindexEntity(Object obj, boolean deleteFirst) {
-    	reindexEntity(obj, deleteFirst, true);
+    	reindexEntity(obj, deleteFirst, false);
     }
     
     public void reindexEntity(Object obj, boolean deleteFirst, boolean excludeExternal) {

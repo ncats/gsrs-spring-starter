@@ -1,6 +1,7 @@
 package ix.core.search.text;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -25,6 +26,9 @@ public interface IndexValueMaker<T> {
 	 *
 	 * @since 3.0
 	 */
+	// Todo:
+	// Each ivm should specify the indexable fields and input fields. 
+	// Have a flag to show if the IVM has dynamic input or indexable fields.
 	Class<T> getIndexedEntityClass();
 	/**
 	 * Creates IndexableValues out of the given Entity T, and returns them
@@ -40,14 +44,55 @@ public interface IndexValueMaker<T> {
 	
 	default Set<String> getFieldNames(){
 		return new HashSet<>();
-	}
+	}	
 	
-	default IndexValueMaker<T> restrictedForm(Set<String> fields, boolean excludeExternal){
-		return this;
-	}
-	
-	default boolean isExternal() {
+	default boolean areInputFieldsDynamic() {
 		return false;
+	}
+	
+	default boolean areIndexableFieldsDynamic() {
+		return false;
+	}
+	
+	default IndexValueMaker<T> restrictedForm(Set<String> tags, boolean include){
+		
+		// include this ivm
+		if(include) {
+			if(tags.size()>0 && this.getTags().size()>0) {
+				System.out.println("in include");
+				// include tags match the current ivm tags
+				if(this.getTags().stream().anyMatch(tag->tags.contains(tag))) { 
+					return this;
+				}			
+			}			
+		}else{  // not exclude this ivm
+			
+			System.out.println("in exclude");
+			if(tags.size()==0 || this.getTags().size() ==0 || 
+					!this.getTags().stream().anyMatch(tag->tags.contains(tag))) {			
+				return this;
+			}
+		}	
+		
+		return new IndexValueMaker() {
+			
+			@Override
+			public Class getIndexedEntityClass() {
+				// TODO Auto-generated method stub
+				return this.getIndexedEntityClass();
+			}
+
+			@Override
+			public void createIndexableValues(Object t, Consumer consumer) {
+				// TODO Auto-generated method stub			
+			}
+			
+		};	
+	}
+	
+	// external, chemical ... 
+	default Set<String> getTags() {
+		return Collections.<String>emptySet();
 	} 
 	
 	/**

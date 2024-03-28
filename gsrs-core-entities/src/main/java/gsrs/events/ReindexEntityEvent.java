@@ -14,8 +14,8 @@ public class ReindexEntityEvent implements ReindexEvent {
 
 	private UUID reindexId;
 	private EntityUtils.Key entityKey;
-	private boolean requiresDelete=false;
-	private boolean excludeExternal=true;
+	private boolean requiresDelete = false;
+	private boolean excludeExternal = false;	
 	private Optional<EntityWrapper<?>> optionalEntityWrapper = Optional.empty();
 
 	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean requiresDelete, boolean excludeExternal) {
@@ -27,10 +27,10 @@ public class ReindexEntityEvent implements ReindexEvent {
 	}
 
 	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean b) {
-		this(reindexId,entityKey,of,b,true);
+		this(reindexId,entityKey,of,b,false);
 	}
 	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of) {
-		this(reindexId,entityKey,of,false,true);
+		this(reindexId,entityKey,of,false,false);
 	}
 
 

@@ -171,7 +171,7 @@ public class ImportMetadataReindexer {
                                                                 // however, you could argue there SHOULD be a controller for them
                                                                 if (seen.add(keyString)) {
                                                                     //indexOneItem(reindexId, eventConsumer, key, child);
-                                                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(child), false, true);
+                                                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(child), false);
                                                                     eventConsumer.accept(event);
                                                                 }
                                                             } catch (Throwable t) {
@@ -237,7 +237,7 @@ public class ImportMetadataReindexer {
     public static void indexOneItem(UUID reindexId, Consumer<Object> eventConsumer, EntityUtils.Key key,
                                     EntityUtils.EntityWrapper<ImportMetadata> wrappedEntity) {
         log.trace("indexOneItem will process reindex of key {}",  key);
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(wrappedEntity), true);
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key, Optional.of(wrappedEntity), false);
         eventConsumer.accept(event);
         log.trace("submitted index event");
     }

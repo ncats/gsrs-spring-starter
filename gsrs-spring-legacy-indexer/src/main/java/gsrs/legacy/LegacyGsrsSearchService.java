@@ -187,7 +187,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
                                 EntityFetcher ef = EntityFetcher.of(ew.getKey());
                                 v = ef.call();
                             }
-                            indexer.add(EntityWrapper.of(v), false); //reindex event: including external IVMs
+                            indexer.add(EntityWrapper.of(v));
                         } catch (Exception e) {
                             log.warn("Error reindexing:" + ew.getOptionalKey(),e);
                         }
@@ -202,7 +202,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
     }
     
     public void reindex(Object entity, boolean deleteFirst){
-    	reindex(entity, deleteFirst, true);    	
+    	reindex(entity, deleteFirst, false);    	
     }
     
     public void reindex(Object entity, boolean deleteFirst, boolean excludeExternal){

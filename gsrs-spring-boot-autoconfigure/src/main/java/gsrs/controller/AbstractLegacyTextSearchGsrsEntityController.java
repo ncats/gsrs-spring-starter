@@ -73,6 +73,8 @@ import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.bulk.UserSavedListService.Operation;
 import ix.core.search.text.FacetMeta;
+import ix.core.search.text.RestrictedIVMSpecification;
+import ix.core.search.text.RestrictedIVMSpecification.RestrictedType;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -193,7 +195,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
-    public ResponseEntity bulkReindex(@RequestBody String ids, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity bulkReindex(@RequestBody String ids, 
+    		@RequestParam(value= "excludeExternal", defaultValue = "false") boolean excludeExternal, 
+    		@RequestParam Map<String, String> queryParameters){
     	List<String> queries = Arrays.asList(ids.split("\n"));
     	  
     	List<String> list = queries.stream()    			
@@ -236,7 +240,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    		stat.finshed = TimeUtil.getCurrentTimeMillis();
 //    	});    	
     	
-        return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
+        return new ResponseEntity<>(bulkReindexListOfIDs(list, excludeExternal), HttpStatus.OK);
     }
     
     private ReindexStatus bulkReindexListOfIDs(List<String> list, boolean excludeExternal) {
@@ -303,13 +307,14 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
     public ResponseEntity reindex(@PathVariable("id") String id,
+    							  @RequestParam(value= "excludeExternal", defaultValue = "false") boolean excludeExternal,	
     		    		  		  @RequestParam Map<String, String> queryParameters){
         //this needs to trigger a reindex
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             Key k = EntityWrapper.of(obj.get()).getKey();
             
-            getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/);
+            getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/, excludeExternal);
             //TODO: invent a better response?           
             return getIndexData(k.getIdString(),queryParameters);
         }    	
@@ -436,19 +441,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         fdim.ifPresent( t-> builder.fdim(t));
         
         Map<String, String[]> parameterMap = request.getParameterMap();
-        for(String s : parameterMap.keySet())
-        	System.out.println(s + " "+ parameterMap.get(s)[0]);
-        
-        for(String s:queryParameters.keySet()) {
-        	System.out.println("queryParameters " + s + " "+ queryParameters.get(s));
-        }
-
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
-
-       for(String s:queryParameters.keySet()) {
-    	   System.out.println("queryP " + s + " "+ parameterMap.get(s).toString());
-       }
         
         this.instrumentSearchRequest(searchRequest);
         
@@ -540,7 +534,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	keysInDatabase.forEach(System.out::println);
     	
     	List<Key> keysInIndex = searchEntityInIndex();
-    	System.out.println("Lsit from index");
+    	System.out.println("List from index");
     	keysInIndex.forEach(System.out::println);
     	
     	
@@ -1353,10 +1347,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	//TODO: should use indexing event instead
     	TextIndexerFactory tif = StaticContextAccessor.getBean(TextIndexerFactory.class);
-    	Set<String> userFieldSet = new HashSet<>();
-    	userFieldSet.add("User List");
-    	
-    	
+    	    	
     	keyIds.parallelStream().forEach(id->{
     		try {
 
@@ -1367,7 +1358,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                     Key k = Key.ofStringId(eclass, entityID.get());
                     Object o = EntityFetcher.of(k).call();      
                     
-                    tif.getDefaultInstance().updateFields(EntityWrapper.of(o), userFieldSet);
+                    tif.getDefaultInstance().updateFields(EntityWrapper.of(o), RestrictedIVMSpecification.getRestrictedIVMSpecs(RestrictedType.INCLUDE_USER_LIST));
     				//getlegacyGsrsSearchService().reindex(o, true);    				
     			
     			}else {
