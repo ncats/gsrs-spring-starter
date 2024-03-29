@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.config.ConfigurationPropertiesReporter;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.HttpLoopBackConfig;
 import gsrs.controller.hateoas.LoopbackWebRequestHelper;
@@ -66,6 +67,7 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(BuildInfoController.class);
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
+        componentsToInclude.add(ConfigurationPropertiesReporter.class);
         componentsToInclude.add(RelativePathController.class);
         switch(indexerType){
             case LEGACY: {

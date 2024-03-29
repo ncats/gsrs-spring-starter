@@ -9,20 +9,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
-
-import gsrs.config.ConfigurationPropertiesChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.jdbc.metadata.HikariDataSourcePoolMetadata;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -49,12 +43,6 @@ public class HealthController {
     @Autowired(required = false)
     private GsrsCache gsrsCache;
 
-    @Autowired
-    ConfigurableEnvironment configurableEnvironment;
-
-    @Autowired
-    Environment env;
-
     private long startTime =System.currentTimeMillis();
 
     @EventListener(ApplicationReadyEvent.class)
@@ -64,12 +52,9 @@ public class HealthController {
     @Data
     public static class UpStatus{
         public static UpStatus INSTANCE = new UpStatus();
-
         public String status = "UP";
-
-
-
     }
+
     @GetMapping("api")
     public ResponseEntity landingPage(){
 	//String script = "var _w=window;_w.$||(_w.$=function(e){var n={off:function(){},remove:function(){for(var n=document.getElementsByTagName(e),o=0;o<n.length;o++)n[o].parentNode.removeChild(n[o])}};return n});";
@@ -81,34 +66,6 @@ public class HealthController {
     public List<GsrsControllerInfo> getControllerInfo(){
         return controllerMapper.getControllerInfos().collect(Collectors.toList());
     }
-
-    // Need to edit all health end points to include a context url path variable
-    @GetMapping("api/v1/clinicaltrialsus/health")
-    public UpStatus isCtUp(){
-        return UpStatus.INSTANCE;
-    }
-
-    @GetMapping(value="api/v1/{context}/health/@configurableEnvironment1", produces = MediaType.TEXT_PLAIN_VALUE)
-    public @ResponseBody
-    String checkConfigurationProperties(@PathVariable(value="context") String context) {
-        ConfigurationPropertiesChecker c = new ConfigurationPropertiesChecker();
-        c.setEnabled(
-            Boolean.parseBoolean(env.getProperty("gsrs.config.report.properties.enabled"))
-        );
-        return c.getActivePropertiesAsTextBlock(configurableEnvironment);
-    }
-
-    @GetMapping(value="api/v1/{context}/health/@configurableEnvironment2", produces = MediaType.TEXT_PLAIN_VALUE)
-    public @ResponseBody
-    String checkConfigurationProperties2(@PathVariable(value="context") String context) {
-        ConfigurationPropertiesChecker c = new ConfigurationPropertiesChecker();
-        c.setEnabled(
-        Boolean.parseBoolean(env.getProperty("gsrs.config.report.properties.enabled"))
-        );
-        return c.getActivePropertiesAsJson(configurableEnvironment);
-    }
-
-
 
     @GetMapping("api/v1/health")
     public UpStatus isUp(){
