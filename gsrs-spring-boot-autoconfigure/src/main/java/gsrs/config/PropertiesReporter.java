@@ -15,7 +15,7 @@ import pl.jalokim.propertiestojson.util.PropertiesToJsonConverterBuilder;
 // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/env/ConfigurableEnvironment.html
 
 @Slf4j
-public class ConfigurationPropertiesReporter {
+public class PropertiesReporter {
 
     // IMPORTANT: In this class, we assume all security has been handled apriori.
 
