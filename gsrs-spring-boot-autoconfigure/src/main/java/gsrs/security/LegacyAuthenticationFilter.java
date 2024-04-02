@@ -12,7 +12,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
+import gsrs.model.UserProfileAuthenticationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -172,10 +174,22 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
 
                 }
                 if(up!=null && up.active){
-                    if(up.acceptPassword(pass)){
+                    UserProfileAuthenticationResult authenticationResult =up.acceptPassword(pass);
+                    if(authenticationResult.matchesRepository()){
                         //valid password!
-                        auth = new UserProfilePasswordAuthentication(up);
-                        userTokenCache.updateUserCache(up);
+                        if(authenticationResult.needsSave()){
+                            UserProfile finalUp = up;
+                            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                            UserProfile savedUp=transactionTemplate.execute(status -> {
+                                Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(finalUp.user.username));
+                                opt.get().setPassword(pass);
+                                saveUserProfile(opt.get());
+                                return opt.get();
+                            });
+                            auth = new UserProfilePasswordAuthentication(savedUp);
+                        } else {
+                            auth = new UserProfilePasswordAuthentication(up);
+                        }
                     }else{
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
@@ -262,5 +276,11 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         //should cascade new Principal
         repository.saveAndFlush(up);
         return up;
+    }
+
+    @Transactional
+    private void saveUserProfile(UserProfile profile) {
+       log.trace("saving up within transaction");
+       repository.saveAndFlush(profile);
     }
 }

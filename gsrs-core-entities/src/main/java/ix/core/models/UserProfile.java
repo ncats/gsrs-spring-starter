@@ -1,17 +1,20 @@
 package ix.core.models;
 
 
-import ch.qos.logback.core.rolling.helper.TokenConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.security.TokenConfiguration;
 import gsrs.springUtils.StaticContextAccessor;
+import gsrs.util.GsrsPasswordHasher;
+import gsrs.util.Hasher;
+import gsrs.util.LegacyTypeSalter;
+import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.persistence.*;
 import java.util.*;
@@ -22,7 +25,14 @@ import java.util.*;
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_userprof_seq", allocationSize = 1)
 @EntityListeners(UserProfileEntityProcessor.class)
 public class UserProfile extends IxModel{
-    private static ObjectMapper om = new ObjectMapper();
+	private final static String SALT_PREFIX = "G";
+
+	private static ObjectMapper om = new ObjectMapper();
+
+	//todo: look into autowiring the salter and hasher
+	private static Salter salter = new LegacyTypeSalter(new GsrsPasswordHasher(), SALT_PREFIX);
+
+	private static Hasher hasher = new GsrsPasswordHasher();
 
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
@@ -182,21 +192,38 @@ public class UserProfile extends IxModel{
 		return false;
 	}
 
-	public boolean acceptPassword(String password) {
-		if (this.hashp == null || this.salt == null)
-			return false;
-		return this.hashp.equals(Util.encrypt(password, this.salt));
+	public UserProfileAuthenticationResult acceptPassword(String password) {
+		UserProfileAuthenticationResult result = new UserProfileAuthenticationResult(false, false);
+		if (this.hashp == null || this.salt == null) {
+			return result;
+		}
+		boolean pwOk = this.hashp.equals(hasher.hash(password, this.salt));
+		log.trace("pwOk: {}", pwOk);
+		boolean legacyPwOk = false;
+		//when authentication using latest algorithms fails, see if the password works with the legacy methods
+		if( !pwOk) {
+			legacyPwOk= this.hashp.equals(Util.encrypt(password, this.salt));
+		}
+		if( legacyPwOk && !salter.mayBeOneOfMine(this.salt)) {
+			//we have a pw assigned using the older algorithm so we need to resalt and rehash
+			log.trace("going to request rehash of password");
+			setPassword(password);
+			result.setNeedsSave(true);
+		}
+		result.setMatchesRepository(pwOk || legacyPwOk);
+		return result;
 	}
 
 	public void setPassword(String password) {
 		if (password == null || password.length() <= 0) {
 			password = UUID.randomUUID().toString();
 		}
-		this.salt = Util.generateSalt();
-		this.hashp = Util.encrypt(password, this.salt);
+		this.salt = salter.generateSalt();
+		this.hashp = hasher.hash(password, salt);  //Util.encrypt(password, this.salt);
 		setIsDirty("salt");
 		setIsDirty("hashp");
 	}
+
 	@Indexable(indexed = false)
 	@JsonIgnore
 	public String getEncodePassword(){
