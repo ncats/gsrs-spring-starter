@@ -182,9 +182,11 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
     public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
-    		HttpServletRequest request){    	
+    		HttpServletRequest request){
+    	
+    	String self_url = StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString();
     	return Optional.ofNullable(reindexing.get(id)).map(o->{
-    		o.set_self(request.getRequestURL().toString());
+    		o.set_self(self_url);
     		return new ResponseEntity<>(o, HttpStatus.OK);	
     	})
     	.map(oo->(ResponseEntity)oo)

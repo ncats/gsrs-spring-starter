@@ -3,6 +3,8 @@ package gsrs.controller;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -16,8 +18,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Id;
+import javax.persistence.metamodel.Metamodel;
 import javax.servlet.http.HttpServletRequest;
 
+import org.hibernate.metadata.ClassMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -74,8 +80,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     @Autowired
     private EntityLinks entityLinks;
-
-
 
 
 //    /**
@@ -418,8 +422,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                                        @RequestParam(value = "skip", defaultValue = "0") long skip,
                                        @RequestParam(value = "order", required = false) String order,
                                        @RequestParam Map<String, String> queryParameters){
-
-
+    	
         Page<T> page = getEntityService().page(new OffsetBasedPageRequest(skip, top,parseSortFromOrderParam(order)));
 
         String view=queryParameters.get("view");
@@ -430,10 +433,27 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
     }
 
-    private Sort parseSortFromOrderParam(String order){
-        //match Gsrs Play API
-        if(order ==null || order.trim().isEmpty()){
-            return Sort.sort(getEntityService().getEntityClass());
+    private Sort parseSortFromOrderParam(String order){        
+        if(order == null || order.trim().isEmpty()){        	
+        	Field[] fields = getEntityService().getEntityClass().getFields();	
+        	
+        	boolean found = false;
+        	String name = "";
+        	for(Field field: fields) {
+        		if(found)
+        			break;
+        		name = field.getName();
+        		Annotation[] annotations = field.getAnnotations();
+        		if(annotations.length > 0) {
+        			for(Annotation annotation : annotations) {
+        				if(annotation.annotationType().equals(Id.class)) {
+        					found = true;
+        					break;
+        				}
+        			}
+        		}
+        	}
+            return Sort.by(Sort.Direction.ASC, name);
         }
         char firstChar = order.charAt(0);
         if('$'==firstChar){
