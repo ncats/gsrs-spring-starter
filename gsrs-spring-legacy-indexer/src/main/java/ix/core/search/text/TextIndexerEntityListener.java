@@ -147,7 +147,7 @@ public class TextIndexerEntityListener {
             }
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
-            	log.warn("In update Entity IndexUpdateEntityEvent");
+//            	log.warn("In update Entity IndexUpdateEntityEvent");
                 try {
                     EntityUtils.EntityWrapper ew = event.getOptionalFetchedEntity().orElse(null);
                     indexer.update(ew, RestrictedType.EXCLUDE_EXTERNAL); // exclude external 
