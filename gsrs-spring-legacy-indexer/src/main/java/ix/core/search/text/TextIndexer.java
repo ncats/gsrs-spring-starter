@@ -2938,7 +2938,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	public void update(EntityWrapper ew) throws IOException{
-        log.error("starting in update, key: {}", ew.getKey());
+
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
@@ -2953,7 +2953,7 @@ public class TextIndexer implements Closeable, ProcessListener {
     }
 	
 	public void update(EntityWrapper ew, RestrictedType type) throws IOException{
-        log.error("starting in update with restricted IVMs, key: {}", ew.getKey());
+
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	    try {    
@@ -2969,7 +2969,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	
 	//This is currently only used for including specified IVMs
 	public void updateFields(EntityWrapper ew, RestrictedIVMSpecification ivmSpecs) throws IOException{
-        log.error("starting in updateFields, key: {}", ew.getKey());
+
 	    Lock l = stripedLock.get(ew.getKey());
 	    l.lock();
 	  	    
@@ -3016,7 +3016,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * 
 	 */
 	private void add(EntityWrapper ew, RestrictedIVMSpecification ivmSpecs, IndexRecord ix, boolean removeOld) throws IOException {
-		log.error("in add with Restricted IVMs, key: {}", ew.getKey());
+
 		ew.toInternalJson();
         Document doc = new Document();
         Document docExact = new Document();
@@ -3128,7 +3128,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * 
 	 */
 	private void add(EntityWrapper ew, boolean force, boolean removeFirst, RestrictedIVMSpecification ivmSpecs) throws IOException {
-		log.error("in add method, with general restricted IVMs key: {}", ew.getKey());
+
 		if(ivmSpecs.getTags().size()==0) {
 			add(ew, force, removeFirst);
 			return;
@@ -3675,7 +3675,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	 * recursively index any object annotated with Entity
 	 */
 	private void add(EntityWrapper ew, boolean force, boolean removeFirst) throws IOException {
-		log.error("in adding entity key: {}", ew.getKey());
+		
 		if(!textIndexerConfig.isEnabled()){
 		    return;
         }
