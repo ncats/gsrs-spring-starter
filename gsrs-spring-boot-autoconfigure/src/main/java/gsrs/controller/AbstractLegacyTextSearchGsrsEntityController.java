@@ -180,7 +180,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
-    @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
+    @GetGsrsRestApiMapping(value={"/@reindexBulk({id})","/@databaseIndexSync({id})"},apiVersions = 1)
     public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
     		HttpServletRequest request){
     	
@@ -558,18 +558,19 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	System.out.println("List keys from database");
     	keysInDatabase.forEach(System.out::println);
     	
-    	List<Key> keysInIndex = searchEntityInIndex();    	
-    	//Todo for Lihui:  Remove after testing
-    	keysInIndex.remove(0);    	
-    	//Todo for Lihui:  Remove after testing     	
-    	System.out.println("Lsit from index");
+    	List<Key> keysInIndex = searchEntityInIndex();    	 	
+    	System.out.println("List from index");
     	keysInIndex.forEach(System.out::println);   
-    	
-
-    		
-		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));			
-		List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());			
-		return new ResponseEntity<>(bulkReindexListOfIDs(list, true), HttpStatus.OK);	
+    	    		
+		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
+		if(extraInDatabase.isEmpty()) {
+			return new ResponseEntity<>("The entity index is in sync with the database. No reindexing needed.", HttpStatus.OK);
+		}else {
+			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
+			System.out.println("List different items:");
+			list.forEach(System.out::println);
+			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
+		}
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
