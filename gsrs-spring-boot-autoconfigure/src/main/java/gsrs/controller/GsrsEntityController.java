@@ -1,11 +1,12 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import gsrs.security.hasAdminRole;
 import ix.core.validator.ValidationResponse;
 import lombok.Data;
 import org.springframework.hateoas.Link;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,13 +49,16 @@ public interface GsrsEntityController<T, I> {
     @GetGsrsRestApiMapping(value = {"({id})", "/{id}"})
     ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
 
-    @PreAuthorize("isAuthenticated()")
+    @hasAdminRole
     @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup"})
     ResponseEntity<Object> rebackupEntity(@PathVariable String id, @RequestParam Map<String, String> queryParameters) throws Exception;
 
+    @hasAdminRole
+    @PutGsrsRestApiMapping("/@rebackup")
+    ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception;
+
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}" })
     ResponseEntity<Object> deleteById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
-
 
     @PostGsrsRestApiMapping("/@exists")
     ExistsCheckResult entitiesExists(@RequestBody List<String> idList, @RequestParam Map<String, String> queryParameters) throws Exception;
