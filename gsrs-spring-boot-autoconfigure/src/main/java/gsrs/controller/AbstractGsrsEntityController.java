@@ -506,10 +506,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return result;
     }
 
-    @Override
-    @hasAdminRole
-    @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
-    public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
+    protected Optional<T> rebackupEntity(String id) throws Exception{
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             BackupEntity be = new BackupEntity();
@@ -522,6 +519,16 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             }else{
                 backupRepository.saveAndFlush(be);
             }
+        }
+        return obj;
+    }
+
+    @Override
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
+    public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
+        Optional<T> obj = rebackupEntity(id);
+        if(obj.isPresent()){
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -533,19 +540,9 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
         List<String> processed = new ArrayList<>();
         for (JsonNode id : idList) {
-            Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id.asText());
+            Optional<T> obj = rebackupEntity(id.asText());
             if(obj.isPresent()){
-                BackupEntity be = new BackupEntity();
-                be.setInstantiated((FetchableEntity) obj.get());
-                Optional<BackupEntity> old = backupRepository.findByRefid(be.getRefid());
-                if(old.isPresent()){
-                    BackupEntity updated = old.get();
-                    updated.setFromOther(be);
-                    backupRepository.saveAndFlush(updated);
-                }else{
-                    backupRepository.saveAndFlush(be);
-                }
-                processed.add(be.getRefid());
+                processed.add(id.asText());
             }
         }
         return new ResponseEntity<>(processed.isEmpty() ? "[]" : "[\"" + String.join("\",\"", processed) + "\"]", HttpStatus.OK);

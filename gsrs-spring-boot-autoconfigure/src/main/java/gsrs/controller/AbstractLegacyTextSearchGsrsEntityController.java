@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -286,6 +287,31 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 		}
 		return gsrsControllerConfiguration.handleNotFound(queryParameters);
 	}
+
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"({id})/@rebackupAndReindex", "/{id}/@rebackupAndReindex" })
+    public ResponseEntity<Object> rebackupAndReindexEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
+        Optional<T> obj = rebackupEntity(id);
+        if(obj.isPresent()){
+            getlegacyGsrsSearchService().reindex(obj.get(), true);
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @hasAdminRole
+    @PutGsrsRestApiMapping("/@rebackupAndReindex")
+    public ResponseEntity<Object> rebackupAndReindexEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
+        List<String> processed = new ArrayList<>();
+        for (JsonNode id : idList) {
+            Optional<T> obj = rebackupEntity(id.asText());
+            if(obj.isPresent()){
+                getlegacyGsrsSearchService().reindex(obj.get(), true);
+                processed.add(id.asText());
+            }
+        }
+        return new ResponseEntity<>(processed.isEmpty() ? "[]" : "[\"" + String.join("\",\"", processed) + "\"]", HttpStatus.OK);
+    }
 
     @GetGsrsRestApiMapping(value = "/search/@facets", apiVersions = 1)
     public FacetMeta searchFacetFieldDrilldownV1(@RequestParam("q") Optional<String> query,
