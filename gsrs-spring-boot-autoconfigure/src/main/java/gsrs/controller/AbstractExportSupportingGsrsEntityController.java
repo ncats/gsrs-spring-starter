@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,6 +62,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     });
 
 
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
                                                           @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
@@ -94,6 +96,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         });
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/configs")
     public ResponseEntity<Object> handleExportConfigsFetch(
             @RequestParam Map<String, String> queryParameters) {
@@ -139,6 +142,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
 
      */
     //ExporterFactoryConfig
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping("/export/config")
     public ResponseEntity<Object> handleExportConfigSave(@RequestBody String exportConfigJson,
                                                          @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
@@ -176,6 +180,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigDelete(@PathVariable("id") Long id,
                                                            @RequestParam Map<String, String> queryParameters) {
@@ -201,6 +206,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), status);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigUpdate(@PathVariable("id") Long id,
                                                            @RequestBody String exportConfigJson,
@@ -254,6 +260,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), status);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/scrubber/@schema")
     public ResponseEntity<Object> handleExportScrubberSchema(
             @RequestParam Map<String, String> queryParameters) throws IOException {
@@ -264,6 +271,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
                 queryParameters), HttpStatus.OK);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping("/export/expander/@schema")
     public ResponseEntity<Object> handleExportExpanderSchema(
             @RequestParam Map<String, String> queryParameters) throws IOException {
