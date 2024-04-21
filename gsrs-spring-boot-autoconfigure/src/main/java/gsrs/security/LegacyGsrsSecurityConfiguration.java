@@ -80,8 +80,6 @@ public class LegacyGsrsSecurityConfiguration {
         if(authenticationConfiguration.isAllownonauthenticated()){
             List<RequestMatcher> secured = new ArrayList();
             secured.add(new AntPathRequestMatcher("/api/**", HttpMethod.DELETE.toString()));
-            secured.add(new AntPathRequestMatcher("/api/**", HttpMethod.PUT.toString()));
-            secured.add(new AntPathRequestMatcher("/api/**", HttpMethod.POST.toString()));
             secured.add(new AntPathRequestMatcher("/logout", HttpMethod.GET.toString()));
             this.permited = new NegatedRequestMatcher(new OrRequestMatcher(secured));
         }
