@@ -105,4 +105,9 @@ public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace,
     public Page page(Pageable pageable) {
         return namespaceRepository.findAll(pageable);
     }
+
+	@Override
+	public List<Long> getIDs() {
+		return namespaceRepository.getAllIDs();
+	}
 }
