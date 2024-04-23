@@ -540,9 +540,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
         List<String> processed = new ArrayList<>();
         for (JsonNode id : idList) {
-            Optional<T> obj = rebackupEntity(id.asText());
-            if(obj.isPresent()){
-                processed.add(id.asText());
+            try {
+                Optional<T> obj = rebackupEntity(id.asText());
+                if(obj.isPresent()){
+                    processed.add(id.asText());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return new ResponseEntity<>(processed.isEmpty() ? "[]" : "[\"" + String.join("\",\"", processed) + "\"]", HttpStatus.OK);
