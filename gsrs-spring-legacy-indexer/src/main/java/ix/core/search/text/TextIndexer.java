@@ -428,7 +428,8 @@ public class TextIndexer implements Closeable, ProcessListener {
             };
         }
 
-        public FacetMeta getFacet(int top, int skip, String filter, String uri, String userName, List<String> userLists) throws ParseException {
+        public FacetMeta getFacet(int top, int skip, String filter, String uri, String userName, List<String> userLists, 
+        		String sortBy, boolean desc) throws ParseException {
             FacetImpl fac = new FacetImpl(getField(), null);
             
             String field = getField(); //name
@@ -438,6 +439,24 @@ public class TextIndexer implements Closeable, ProcessListener {
             if(filter!=null && !filter.equals("")){
                 QueryParser parser = new IxQueryParser("label");
                 filt = getPredicate(parser.parse(filter));
+            }
+            
+            Comparator<FV> facetComparator = FacetImpl.Comparators.COUNT_SORTER_DESC;
+            if(sortBy!=null && !sortBy.equals("")) {
+            	if(sortBy.equalsIgnoreCase(FacetImpl.LABEL)) {
+            		if(desc) {
+            			facetComparator = FacetImpl.Comparators.LABEL_SORTER_DESC;
+            		}else {
+            			facetComparator = FacetImpl.Comparators.LABEL_SORTER_ASC;
+            		}
+            	}	
+            	else if(sortBy.equalsIgnoreCase(FacetImpl.COUNT)){
+            		if(desc) {
+            			facetComparator = FacetImpl.Comparators.COUNT_SORTER_DESC;
+            		}else {
+            			facetComparator = FacetImpl.Comparators.COUNT_SORTER_ASC;
+            		}
+            	}           
             }
             
             terms.entrySet()
@@ -463,7 +482,7 @@ public class TextIndexer implements Closeable, ProcessListener {
                 		return true;
                 	}                		
                 })
-                .collect(StreamUtil.maxElements(top+skip, FacetImpl.Comparators.COUNT_SORTER_DESC))
+                .collect(StreamUtil.maxElements(top+skip, facetComparator))
                 .skip(skip)
                 .limit(top)
                 .forEach(fv->{
@@ -683,6 +702,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		private SearchResult sr;
 
 		public boolean enhanced=true;
+		public static final String LABEL = "name";
+		public static final String COUNT = "count";
+		public static final Comparators DEFAULT_COMPARATOR = Comparators.COUNT_SORTER_DESC;
 
 		//TODO: This is a bad way to do this,
 		//need to fix

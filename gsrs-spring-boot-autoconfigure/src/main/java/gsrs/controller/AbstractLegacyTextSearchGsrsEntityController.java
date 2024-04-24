@@ -344,6 +344,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
+                                                 @RequestParam("sortBy") Optional<String> sortBy,
+                                                 @RequestParam("desc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
         SearchOptions so = new SearchOptions.Builder()
                 .kind(getEntityService().getEntityClass())
@@ -361,11 +363,12 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
-
+        String sortByProp = sortBy.isPresent()?sortBy.get():"count";
+        boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
         		StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-        		userName, userLists);
+        		userName, userLists, sortByProp, sortDesc);
 
 
         //indexer.extractFullFacetQuery(this.query, this.options, field);
@@ -374,6 +377,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     public FacetMeta searchFacetFieldV1(@RequestParam("field") Optional<String> field,
                                         @RequestParam("top") Optional<Integer> top,
                                         @RequestParam("skip") Optional<Integer> skip,
+                                        @RequestParam("sortBy") Optional<String> sortBy,
+                                        @RequestParam("desc") Optional<Boolean> sortOrder,
                                         HttpServletRequest request) throws ParseException, IOException {
 
         SearchOptions so = new SearchOptions.Builder()
@@ -394,10 +399,12 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
 
+        String sortByProp = sortBy.isPresent()?sortBy.get():"count";
+        boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
         TextIndexer.TermVectors tv = getlegacyGsrsSearchService().getTermVectors(field);
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(), 
         		StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-        		userName, userLists);
+        		userName, userLists, sortByProp, sortDesc);
 
     }
 
