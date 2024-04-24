@@ -1058,7 +1058,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  @RequestParam("sortBy") Optional<String> sortBy,
-                                                 @RequestParam("desc") Optional<Boolean> sortOrder,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
         log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()

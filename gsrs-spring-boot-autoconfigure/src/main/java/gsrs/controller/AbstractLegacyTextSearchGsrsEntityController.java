@@ -345,7 +345,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  @RequestParam("sortBy") Optional<String> sortBy,
-                                                 @RequestParam("desc") Optional<Boolean> sortOrder,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
         SearchOptions so = new SearchOptions.Builder()
                 .kind(getEntityService().getEntityClass())
@@ -378,7 +378,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                                         @RequestParam("top") Optional<Integer> top,
                                         @RequestParam("skip") Optional<Integer> skip,
                                         @RequestParam("sortBy") Optional<String> sortBy,
-                                        @RequestParam("desc") Optional<Boolean> sortOrder,
+                                        @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                         HttpServletRequest request) throws ParseException, IOException {
 
         SearchOptions so = new SearchOptions.Builder()
