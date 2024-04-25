@@ -18,14 +18,14 @@ public interface GsrsLegacySearchController {
                                           @RequestParam("top") Optional<Integer> top,
                                           @RequestParam("skip") Optional<Integer> skip,
                                           @RequestParam("sortBy") Optional<String> sortBy,
-                                          @RequestParam("desc") Optional<Boolean> sortOrder,
+                                          @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                           HttpServletRequest request) throws ParseException, IOException;
 
     FacetMeta searchFacetFieldV1(@RequestParam("field") Optional<String> field,
                                  @RequestParam("top") Optional<Integer> top,
                                  @RequestParam("skip") Optional<Integer> skip,
                                  @RequestParam("sortBy") Optional<String> sortBy,
-                                 @RequestParam("desc") Optional<Boolean> sortOrder,
+                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                  HttpServletRequest request) throws ParseException, IOException;
 
     ResponseEntity<Object> searchV1(@RequestParam("q") Optional<String> query,
