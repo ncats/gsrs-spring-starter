@@ -37,11 +37,15 @@ public class UserSavedListService {
 	    ADD,REMOVE 
 	}
 	
+	private final String anonymousUser="anonymousUser";
+	
 	//All the validation checking of parameters are done at the controller
 	public List<String> getUserSearchResultLists(String userName, String kind){
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return new ArrayList<String>();
 		}
 		return 	getUserSearchResultLists(user.id, kind);
@@ -69,7 +73,9 @@ public class UserSavedListService {
 	public List<String> getUserSavedBulkSearchResultListContent(String userName, String listName, int top, int skip, String kind){
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return new ArrayList<String>();
 		}
 		
@@ -100,7 +106,9 @@ public class UserSavedListService {
 		List<String> keyList = new ArrayList<String>();
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return keyList;
 		}
 		
@@ -121,7 +129,9 @@ public class UserSavedListService {
 	public boolean userListExists(String userName, String listName, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return false;
 		}		
 		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName, kind) > 0) {			
@@ -134,7 +144,9 @@ public class UserSavedListService {
 	public String validateUsernameAndListname(String userName, String listName, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return "Cannot find user " + userName;
 		}
 		
@@ -171,7 +183,9 @@ public class UserSavedListService {
 		
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return; 
 		}
 		userSavedListRepository.removeUserSearchResultList(user.id, listName, kind);
@@ -243,7 +257,9 @@ public class UserSavedListService {
 	public boolean updateBulkSearchResultList(String userName, String listName, List<String> keyList, Operation operation, String kind) {
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
 		if(user == null) {
-			log.info("User saved list service: cannot find user " + userName);
+			if(!userName.equalsIgnoreCase(anonymousUser)) {
+				log.info("User saved list service: cannot find user " + userName);
+			}
 			return false; 
 		}
 		List<String> changeSet = updateBulkSearchResultList(user.id, listName, keyList, operation, kind);	
