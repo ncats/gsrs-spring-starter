@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -532,12 +533,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
     	
     	List<Key> keysInDatabase = getKeys();
-    	System.out.println("List keys from database");
-    	keysInDatabase.forEach(System.out::println);
+//    	System.out.println("List keys from database");
+//    	keysInDatabase.forEach(System.out::println);
     	
     	List<Key> keysInIndex = searchEntityInIndex();
-    	System.out.println("List from index");
-    	keysInIndex.forEach(System.out::println);
+//    	System.out.println("List from index");
+//    	keysInIndex.forEach(System.out::println);
     	
     	
     	ObjectMapper mapper = new ObjectMapper();			
@@ -555,16 +556,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     public ResponseEntity<Object>  syncIndexesWithDatabase(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
     	
     	List<Key> keysInDatabase = getKeys();
-    	System.out.println("List keys from database");
-    	keysInDatabase.forEach(System.out::println);
+//    	System.out.println("List keys from database");
+//    	keysInDatabase.forEach(System.out::println);
     	
     	List<Key> keysInIndex = searchEntityInIndex();    	 	
-    	System.out.println("List from index");
-    	keysInIndex.forEach(System.out::println);   
+//    	System.out.println("List from index");
+//    	keysInIndex.forEach(System.out::println);   
     	    		
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
-			return new ResponseEntity<>("The entity index is in sync with the database. No reindexing needed.", HttpStatus.OK);
+			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
+			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
+			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
 			System.out.println("List different items:");

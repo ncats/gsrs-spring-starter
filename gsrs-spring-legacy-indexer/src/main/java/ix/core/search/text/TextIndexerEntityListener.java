@@ -92,10 +92,10 @@ public class TextIndexerEntityListener {
         	if(event.isRequiresDelete()) {
                 log.trace("updating");
                 if(event.isExcludeExternal()) {
-                	log.info("updating excluding external");
+                	log.trace("updating excluding external"); 
                 	textIndexerFactory.getDefaultInstance().update(opt.get(), RestrictedType.EXCLUDE_EXTERNAL);
                 }else {
-                	log.info("updating including external");
+                	log.trace("updating including external");
                 	textIndexerFactory.getDefaultInstance().update(opt.get());
                 }
         	}else {
