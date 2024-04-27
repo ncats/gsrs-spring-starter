@@ -515,6 +515,28 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		//This is inefficient, but forces confirmation that the object is fully realized
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
+                		added.stream()
+                		.filter(Objects::nonNull)
+                		.map(o -> EntityUtils.EntityWrapper.of(o))
+                		.forEach(ew -> {
+                			Object o = ew.getValue();
+                			log.warn("adding:" + o);
+                			entityManager.persist(o);
+                		});
+
+                		while (!changeStack.isEmpty()) {
+                			Object v = changeStack.pop();
+                			EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
+                			if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                				Object o =  ewchanged.getValue();
+                				if(o instanceof ForceUpdatableModel) {
+                					//Maybe don't do twice? IDK.
+                					((ForceUpdatableModel)o).forceUpdate();
+                				}
+                				entityManager.merge(o);
+                			}
+                		}
+
                 		//explicitly delete deleted things
                 		//This should ONLY delete objects which "belong"
                 		//to something. That is, have a @SingleParent annotation
@@ -534,14 +556,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                 		});
 
-                		added.stream()
-                		.filter(Objects::nonNull)
-                		.map(o -> EntityUtils.EntityWrapper.of(o))
-                		.forEach(ew -> {
-                			Object o = ew.getValue();
-                			log.warn("adding:" + o);
-                			entityManager.persist(o);
-                		});
 
                 		try {
                 			T saved = transactionalUpdate(oldEntity, oldJson);

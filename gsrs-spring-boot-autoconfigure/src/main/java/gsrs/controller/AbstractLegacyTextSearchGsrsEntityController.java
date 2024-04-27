@@ -28,6 +28,7 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -170,6 +171,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
     public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
     		HttpServletRequest request){
@@ -233,6 +235,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return new ResponseEntity<>(stat, HttpStatus.OK);
     }
     
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
     public ResponseEntity bulkReindex(@RequestParam Map<String, String> queryParameters){
     	ReindexStatusTasks tasks = new ReindexStatusTasks();
@@ -240,6 +243,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
     
+    @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value="/@reindexBulk/clear", apiVersions = 1)
     public ResponseEntity bulkReindexClear(@RequestParam Map<String, String> queryParameters){
     	reindexing.entrySet().stream()
@@ -256,6 +260,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     
 
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
     public ResponseEntity reindex(@PathVariable("id") String id,
     		    		  		  @RequestParam Map<String, String> queryParameters){
@@ -756,6 +761,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userLists/currentUser")
     public ResponseEntity<String> getCurrentUserSavedLists(
     										   @RequestParam("top") Optional<Integer> top,
@@ -856,6 +862,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return baseNode.toPrettyString();
     }
     
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/{list}")
     public ResponseEntity<String> getCurrentUserSavedListContent(@PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
@@ -903,6 +910,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     // if the user list exists, it will fail
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/keys")  
     public ResponseEntity<String> createUserSavedListWithKeys(  											
     										   @RequestParam String listName,
@@ -945,6 +953,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);	
     }
     //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
     public ResponseEntity<String> createUserSavedListWithEtag(  											
     										   @RequestParam(value="listName",required=true) String listName,
@@ -996,6 +1005,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         
     
     
+    @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value="/@userList/currentUser")
     public ResponseEntity<String> deleteCurrentUserSavedList(   											
     										   @RequestParam String listName,    										   
@@ -1041,6 +1051,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     
+    @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping(value="/@userList/currentUser/etag/{etagId}") 
     public ResponseEntity<Object> addToCurrentUserSavedListWithEtag( 
     		@RequestParam(value="listName",required=true) String listName,
@@ -1093,6 +1104,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }   			
     
     
+    @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping(value="/@userList/currentUser") 
     public ResponseEntity<String> updateCurrentUserSavedList(   											
     										   @RequestParam String listName,
@@ -1189,6 +1201,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	}    	
     }
     
+    @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
     public ResponseEntity<String> getUserSavedListStatus(@PathVariable("id") String id){
     	    	

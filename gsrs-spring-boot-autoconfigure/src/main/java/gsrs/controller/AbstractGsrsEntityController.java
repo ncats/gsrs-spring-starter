@@ -31,6 +31,7 @@ import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -139,20 +140,15 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
     @Override
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping()
     @Transactional
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
-//        System.out.println("injected Principal is " + principal);
-//
-        if(principal==null){
-            //not logged in!
-            return gsrsControllerConfiguration.unauthorized("no user logged in", queryParameters);
-        }
         GsrsEntityService<T, I> entityService = getEntityService();
         AbstractGsrsEntityService.CreationResult<T> result =null;
-        try {        
+        try {
             result = entityService.createEntity(newEntityJson);
 
             if(result.isCreated()){
@@ -176,6 +172,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
     @Override
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping("/@validate")
     @Transactional(readOnly = true)
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -191,15 +188,12 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     }
     @Override
+    @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping("")
     @Transactional
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
-        if(principal==null){
-            //not logged in!
-            return gsrsControllerConfiguration.unauthorized("no user logged in", queryParameters);
-        }
        AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -464,6 +458,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
     @Override
+    @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
     public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<I> idOptional = getEntityService().getEntityIdOnlyBySomeIdentifier(id);
