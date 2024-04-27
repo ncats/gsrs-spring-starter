@@ -1,6 +1,8 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import ix.core.util.EntityUtils.Key;
 import ix.core.validator.ValidationResponse;
 import lombok.Data;
 import org.springframework.hateoas.Link;
@@ -41,6 +43,9 @@ public interface GsrsEntityController<T, I> {
 
     @GetGsrsRestApiMapping("/@count")
     long getCount();
+    
+    @GetGsrsRestApiMapping("/@keys")
+    List<Key> getKeys();
 
     @GetGsrsRestApiMapping("")
     ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "16") long top,
@@ -71,4 +76,5 @@ public interface GsrsEntityController<T, I> {
         private String url;
 
     }
+	
 }

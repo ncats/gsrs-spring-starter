@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +35,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.DefaultDataSourceConfig;
@@ -67,6 +75,8 @@ import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.bulk.UserSavedListService.Operation;
 import ix.core.search.text.FacetMeta;
+import ix.core.search.text.RestrictedIVMSpecification;
+import ix.core.search.text.RestrictedIVMSpecification.RestrictedType;
 import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -96,7 +106,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     private EntityManager localEntityManager;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(4);    
-   
+    
+    
     @Data
     private class ReindexStatus{
     	private UUID statusID;
@@ -171,8 +182,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
+
     @PreAuthorize("isAuthenticated()")
-    @GetGsrsRestApiMapping(value="/@reindexBulk({id})", apiVersions = 1)
+    @GetGsrsRestApiMapping(value={"/@reindexBulk({id})","/@databaseIndexSync({id})"},apiVersions = 1)
     public ResponseEntity bulkReindexStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters,
     		HttpServletRequest request){
     	
@@ -185,11 +197,13 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	.orElseGet(()->{
     		return gsrsControllerConfiguration.handleNotFound(queryParameters);
     	});
-    }
+    }    
     
     @hasAdminRole
     @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
-    public ResponseEntity bulkReindex(@RequestBody String ids, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity bulkReindex(@RequestBody String ids, 
+    		@RequestParam(value= "excludeExternal", defaultValue = "false") boolean excludeExternal, 
+    		@RequestParam Map<String, String> queryParameters){
     	List<String> queries = Arrays.asList(ids.split("\n"));
     	  
     	List<String> list = queries.stream()    			
@@ -198,6 +212,45 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     			.filter(q->q.length()>0)
     			.distinct()
     			.collect(Collectors.toList());  
+//    	ReindexStatus stat = new ReindexStatus();
+//    	stat.statusID = UUID.randomUUID();
+//    	stat.done=false;
+//    	stat.status="initializing";
+//    	stat.ids=list;
+//    	stat.start = TimeUtil.getCurrentTimeMillis();
+//    	stat.total=list.size();
+//    	reindexing.put(stat.statusID.toString(), stat);
+//    	
+//    	executor.execute(()->{
+//    		int[] r = new int[] {0};
+//    		stat.ids.forEach(id->{
+//    			r[0]++;
+//    			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
+//    			//TODO: Should change how this works probably to not use REST endpoint
+//    			try {
+//    				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
+//    				Class eclass = getEntityService().getEntityClass();
+//    				Key k = Key.ofStringId(eclass, entityID.get());
+//    				Object o = EntityFetcher.of(k).call();
+//        			getlegacyGsrsSearchService().reindex(o, true);
+//        			stat.indexed++;  				
+//    				
+//    			}catch(Exception e) {
+//    				log.warn("trouble reindexing id: " + id, e);
+//    				stat.failed++;
+//    			}   
+//    			
+//    		});
+//    		stat.setStatus("finished");
+//    		stat.done=true;
+//    		stat.finshed = TimeUtil.getCurrentTimeMillis();
+//    	});    	
+    	
+        return new ResponseEntity<>(bulkReindexListOfIDs(list, excludeExternal), HttpStatus.OK);
+    }
+    
+    private ReindexStatus bulkReindexListOfIDs(List<String> list, boolean excludeExternal) {
+    	
     	ReindexStatus stat = new ReindexStatus();
     	stat.statusID = UUID.randomUUID();
     	stat.done=false;
@@ -218,7 +271,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
     				Object o = EntityFetcher.of(k).call();
-        			getlegacyGsrsSearchService().reindex(o, true);
+        			getlegacyGsrsSearchService().reindex(o, true, excludeExternal);
         			stat.indexed++;  				
     				
     			}catch(Exception e) {
@@ -232,7 +285,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     		stat.finshed = TimeUtil.getCurrentTimeMillis();
     	});    	
     	
-        return new ResponseEntity<>(stat, HttpStatus.OK);
+    	return stat;
     }
     
     @PreAuthorize("isAuthenticated()")
@@ -263,13 +316,14 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
     public ResponseEntity reindex(@PathVariable("id") String id,
+    							  @RequestParam(value= "excludeExternal", defaultValue = "false") boolean excludeExternal,	
     		    		  		  @RequestParam Map<String, String> queryParameters){
         //this needs to trigger a reindex
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
         if(obj.isPresent()){
             Key k = EntityWrapper.of(obj.get()).getKey();
             
-            getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/);
+            getlegacyGsrsSearchService().reindex(obj.get(), true /*delete first*/, excludeExternal);
             //TODO: invent a better response?           
             return getIndexData(k.getIdString(),queryParameters);
         }    	
@@ -394,10 +448,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         top.ifPresent( t-> builder.top(t));
         skip.ifPresent( t-> builder.skip(t));
         fdim.ifPresent( t-> builder.fdim(t));
-
+        
+        Map<String, String[]> parameterMap = request.getParameterMap();
         SearchRequest searchRequest = builder.withParameters(request.getParameterMap())
                 .build();
-
+        
         this.instrumentSearchRequest(searchRequest);
         
         SearchResult result = null;
@@ -441,10 +496,92 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         ResponseEntity<Object> ret= new ResponseEntity<>(createSearchResponse(results, result, request), HttpStatus.OK);
         return ret;
     }
-//
-//    protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
 
+     
+    public List<Key> searchEntityInIndex(){
+    	
+    	final int defaultTop = 999999;
+    	SearchRequest.Builder builder = new SearchRequest.Builder()
+                .query(null)
+                .kind(getEntityService().getEntityClass());
 
+        builder.top(defaultTop);
+                
+        Map<String, String[]> searchMap = new HashMap<>();
+        searchMap.put("simpleSearchOnly", new String[]{"true"});
+        searchMap.put("view",new String[]{"key"});
+                
+        SearchRequest searchRequest = builder.withParameters(searchMap).build();       
+        this.instrumentSearchRequest(searchRequest);        
+        SearchResult result = null;
+        
+        try {
+            result = getlegacyGsrsSearchService().search(searchRequest.getQuery(), searchRequest.getOptions() );
+        } catch (Exception e) {
+            return new ArrayList<Key>();
+        }
+        
+        SearchResult fresult=result;
+        
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(true);        
+        List<Key> results = (List<Key>) transactionTemplate.execute(stauts -> {            
+            List<Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+            fresult.copyKeysTo(klist, 0, defaultTop, true); 
+            return klist;
+            
+        });
+      return results;
+    }
+    
+
+    @GetGsrsRestApiMapping(value = "/@databaseIndexDiff", apiVersions = 1)
+    public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
+    	
+    	List<Key> keysInDatabase = getKeys();
+//    	System.out.println("List keys from database");
+//    	keysInDatabase.forEach(System.out::println);
+    	
+    	List<Key> keysInIndex = searchEntityInIndex();
+//    	System.out.println("List from index");
+//    	keysInIndex.forEach(System.out::println);
+    	
+    	
+    	ObjectMapper mapper = new ObjectMapper();			
+		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
+		Set<Key> extraInIndex = Sets.difference(new HashSet<Key>(keysInIndex), new HashSet<Key>(keysInDatabase));		
+		
+		ObjectNode baseNode = mapper.createObjectNode();    	
+    	baseNode.put("databaseOnly", mapper.writeValueAsString(extraInDatabase));
+    	baseNode.put("indexOnly", mapper.writeValueAsString(extraInIndex));	
+
+    	return  new ResponseEntity<>(baseNode, HttpStatus.OK); 	
+    }
+    
+    @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
+    public ResponseEntity<Object>  syncIndexesWithDatabase(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
+    	
+    	List<Key> keysInDatabase = getKeys();
+//    	System.out.println("List keys from database");
+//    	keysInDatabase.forEach(System.out::println);
+    	
+    	List<Key> keysInIndex = searchEntityInIndex();    	 	
+//    	System.out.println("List from index");
+//    	keysInIndex.forEach(System.out::println);   
+    	    		
+		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
+		if(extraInDatabase.isEmpty()) {
+			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
+			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
+			return new ResponseEntity<>(resultNode, HttpStatus.OK);
+		}else {
+			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
+			System.out.println("List different items:");
+			list.forEach(System.out::println);
+			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
+		}
+    }
+    
     @PostGsrsRestApiMapping(value="/@bulkQuery")
     public ResponseEntity<String> saveQueryList(@RequestBody String query,
     									@RequestParam("top") Optional<Integer> top,
@@ -1230,10 +1367,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	//TODO: should use indexing event instead
     	TextIndexerFactory tif = StaticContextAccessor.getBean(TextIndexerFactory.class);
-    	Set<String> userFieldSet = new HashSet<>();
-    	userFieldSet.add("User List");
-    	
-    	
+    	    	
     	keyIds.parallelStream().forEach(id->{
     		try {
 
@@ -1244,7 +1378,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                     Key k = Key.ofStringId(eclass, entityID.get());
                     Object o = EntityFetcher.of(k).call();      
                     
-                    tif.getDefaultInstance().updateFields(EntityWrapper.of(o), userFieldSet);
+                    tif.getDefaultInstance().updateFields(EntityWrapper.of(o), RestrictedIVMSpecification.getRestrictedIVMSpecs(RestrictedType.INCLUDE_USER_LIST));
     				//getlegacyGsrsSearchService().reindex(o, true);    				
     			
     			}else {
@@ -1275,5 +1409,5 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	return node.toPrettyString();    	
-    }    
+    }   
 }
