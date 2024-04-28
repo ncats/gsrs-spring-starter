@@ -182,7 +182,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                             UserProfile savedUp=transactionTemplate.execute(status -> {
                                 Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(finalUp.user.username));
                                 opt.get().setPassword(pass);
-                                saveUserProfile(opt.get());
+                                repository.saveAndFlush(opt.get());
                                 return opt.get();
                             });
                             auth = new UserProfilePasswordAuthentication(savedUp);
@@ -276,11 +276,5 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         //should cascade new Principal
         repository.saveAndFlush(up);
         return up;
-    }
-
-    @Transactional
-    private void saveUserProfile(UserProfile profile) {
-       log.trace("saving up within transaction");
-       repository.saveAndFlush(profile);
     }
 }
