@@ -521,7 +521,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		.forEach(ew -> {
                 			Object o = ew.getValue();
                 			log.warn("adding:" + o);
-                			entityManager.persist(o);
+                			if(o instanceof ForceUpdatableModel) {
+                				entityManager.persist(o);
+					}
                 		});
 
                 		while (!changeStack.isEmpty()) {
