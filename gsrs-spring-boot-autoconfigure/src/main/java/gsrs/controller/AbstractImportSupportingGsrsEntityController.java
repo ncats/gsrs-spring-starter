@@ -1057,6 +1057,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
+                                                 @RequestParam("sortBy") Optional<String> sortBy,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
         log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
@@ -1076,10 +1078,12 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
 
+        String sortByProp = sortBy.isPresent()?sortBy.get():"";
+        boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-                userName, userLists);
+                userName, userLists, sortByProp, sortDesc);
 
     }
 
