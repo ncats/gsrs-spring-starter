@@ -533,19 +533,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() throws JsonMappingException, JsonProcessingException{
     	
     	List<Key> keysInDatabase = getKeys();
-//    	System.out.println("List keys from database");
-//    	keysInDatabase.forEach(System.out::println);
-    	
     	List<Key> keysInIndex = searchEntityInIndex();
-//    	System.out.println("List from index");
-//    	keysInIndex.forEach(System.out::println);
     	
-    	
-    	ObjectMapper mapper = new ObjectMapper();			
-		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
-		Set<Key> extraInIndex = Sets.difference(new HashSet<Key>(keysInIndex), new HashSet<Key>(keysInDatabase));		
+    	Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
+    	Set<Key> extraInIndex = Sets.difference(new HashSet<Key>(keysInIndex), new HashSet<Key>(keysInDatabase));
 		
-		ObjectNode baseNode = mapper.createObjectNode();    	
+    	ObjectMapper mapper = new ObjectMapper();
+    	ObjectNode baseNode = mapper.createObjectNode();    	
     	baseNode.put("databaseOnly", mapper.writeValueAsString(extraInDatabase));
     	baseNode.put("indexOnly", mapper.writeValueAsString(extraInIndex));	
 
@@ -558,22 +552,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	log.info("in syncIndexesWithDatabase");
     	
     	List<Key> keysInDatabase = getKeys();
-//    	System.out.println("List keys from database");
-//    	keysInDatabase.forEach(System.out::println);
-    	
-    	List<Key> keysInIndex = searchEntityInIndex();    	 	
-//    	System.out.println("List from index");
-//    	keysInIndex.forEach(System.out::println);   
+    	List<Key> keysInIndex = searchEntityInIndex();
     	    		
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
-			log.info("No different items");
+			log.info("Database and index sync: No different items.");
 			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
 			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			log.info("List different items:");
+			log.info("Database and index sync: found different items.");
+//Todo for Lihui: remove this after testing.
 			list.forEach(System.out::println);
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
