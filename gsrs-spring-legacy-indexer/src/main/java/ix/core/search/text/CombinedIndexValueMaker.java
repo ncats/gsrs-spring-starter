@@ -42,25 +42,16 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     	List<IndexValueMaker<T>> filteredList;    	
     	
     	if(include) {
-    		System.out.println("in include combined");
     		filteredList=list.stream()
     			.filter(ivm->ivm.getTags().stream().anyMatch(tag->tags.contains(tag)))
     			.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
     		    	.collect(Collectors.toList());			
     	}else {
-    		System.out.println("in exclude combined");
     		filteredList=list.stream()
         		.filter(ivm->!ivm.getTags().stream().anyMatch(tn->tags.contains(tn)))
         		.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
         		    .collect(Collectors.toList());    		
     		
-    	}
-    	
-    	//Todo for Lihui:  Remove after testing
-    	Set<IndexValueMaker<T>> filteredOut = Sets.difference(new HashSet(list), new HashSet(filteredList)); 
-    	if(filteredOut.size()>0) {
-    		System.out.println("IVMs are filtered out in combined index value maker: ");    	
-    		filteredOut.forEach(ivm->System.out.println(ivm.getClass().getSimpleName()));
     	}
     	
     	return new CombinedIndexValueMaker(clazz,filteredList);
