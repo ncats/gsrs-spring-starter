@@ -530,7 +530,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
 
     @GetGsrsRestApiMapping(value = "/@databaseIndexDiff", apiVersions = 1)
-    public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
+    public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() throws JsonMappingException, JsonProcessingException{
     	
     	List<Key> keysInDatabase = getKeys();
 //    	System.out.println("List keys from database");
@@ -553,7 +553,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
-    public ResponseEntity<Object>  syncIndexesWithDatabase(HttpServletRequest request) throws JsonMappingException, JsonProcessingException{
+    public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
+    	
+    	log.info("in syncIndexesWithDatabase");
     	
     	List<Key> keysInDatabase = getKeys();
 //    	System.out.println("List keys from database");
@@ -565,12 +567,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	    		
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
+			log.info("No different items");
 			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
 			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			System.out.println("List different items:");
+			log.info("List different items:");
 			list.forEach(System.out::println);
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
