@@ -59,15 +59,12 @@ public interface IndexValueMaker<T> {
 		// include this ivm
 		if(include) {
 			if(tags.size()>0 && this.getTags().size()>0) {
-				System.out.println("in include");
 				// include tags match the current ivm tags
 				if(this.getTags().stream().anyMatch(tag->tags.contains(tag))) { 
 					return this;
 				}			
 			}			
 		}else{  // not exclude this ivm
-			
-			System.out.println("in exclude");
 			if(tags.size()==0 || this.getTags().size() ==0 || 
 					!this.getTags().stream().anyMatch(tag->tags.contains(tag))) {			
 				return this;
