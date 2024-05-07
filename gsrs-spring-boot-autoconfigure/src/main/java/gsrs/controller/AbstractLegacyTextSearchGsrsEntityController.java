@@ -208,7 +208,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	  
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
-    			.peek(s->System.out.println(s))
+//    			.peek(s->System.out.println(s))
     			.filter(q->q.length()>0)
     			.distinct()
     			.collect(Collectors.toList());  
@@ -575,9 +575,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			log.info("Database and index sync: found different items.");
-//Todo for Lihui: remove this after testing.
-			list.forEach(System.out::println);
+			log.info("Database and index sync: found " + list.size() + " different items.");
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
     }
