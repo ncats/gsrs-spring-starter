@@ -25,7 +25,7 @@ import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-
+import gsrs.config.ExampleEndpointController2;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +65,9 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(ReindexEventListener.class);
         componentsToInclude.add(BuildInfoController.class);
         componentsToInclude.add(ExtensionConfigurationController.class);
+        componentsToInclude.add(ExampleEndpointController2.class);
+
+
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
         componentsToInclude.add(RelativePathController.class);
