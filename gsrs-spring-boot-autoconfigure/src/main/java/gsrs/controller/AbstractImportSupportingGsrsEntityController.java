@@ -1077,10 +1077,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             userName = GsrsSecurityUtils.getCurrentUsername().get();
             userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
+                
+        String cacheID = getFacetCacheID("Staging", query.orElse(""), so, field.orElse(""));        
+        TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
+        if(tv == null) {
+            tv = getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
+        	gsrscache.setRaw(cacheID, tv);
+        	log.info("staging: getting facets from indexes");
+        }else {
+        	log.info("staging: getting facets from cache");
+        }
 
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
         boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
-        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
                 userName, userLists, sortByProp, sortDesc);
