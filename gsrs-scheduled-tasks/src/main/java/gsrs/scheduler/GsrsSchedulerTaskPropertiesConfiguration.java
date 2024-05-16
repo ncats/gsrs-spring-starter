@@ -73,9 +73,9 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
-        System.out.printf("%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
+        System.out.printf("%s|%s|%s|%s|%s\n", "reportTag", "class", "parentKey", "order", "isDisabled");
         for (ScheduledTaskConfig config : configs) {
-            System.out.printf("%s|%s|%s|%s\n", reportTag, config.getScheduledTaskClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
+            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getScheduledTaskClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
         }
 
         for(ScheduledTaskConfig config : configs){

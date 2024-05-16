@@ -91,11 +91,10 @@ ObjectMapper mapper = new ObjectMapper();
                 configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
                 System.out.println(reportTag + " for [" + context + "] found after filtering: " + configs.size());
                 exporterFactoriesMapList.put(context, configs);
-                System.out.printf("%s|%s|%s|%s\n", reportTag, "context", "class", "parentKey", "order", "isDisabled");
+                System.out.printf("%s|%s|%s|%s|%s|%s\n", reportTag, "context", "class", "parentKey", "order", "isDisabled");
                 for (ExporterFactoryConfig config : configs) {
-                    System.out.printf("%s|%s|%s|%s\n", "reportTag", context, config.getExporterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
+                    System.out.printf("%s|%s|%s|%s|%s|%s\n", reportTag, context, config.getExporterFactoryClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
                 }
-
             }
         }
         //normally, classes are autowired by the calling class but we think this was put here to work around an

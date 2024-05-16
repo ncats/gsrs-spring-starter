@@ -17,10 +17,14 @@ import gsrs.validator.ValidatorConfig;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.websocket.server.PathParam;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +42,11 @@ public class ExtensionConfigsInfoController {
 
     // Consider changing the endpoints to use service-info/api/v1/{service}/@xyzConfigs?entity=entity1
 
-        @Autowired
+
+    @Value("#{new Boolean('${gsrs.extensions.config.report.api.enabled:false}')}")
+    private boolean extensionsConfigReportApiEnabled;
+
+    @Autowired
     private TextIndexerFactory textIndexerFactory;
 
     @Autowired
@@ -51,81 +59,100 @@ public class ExtensionConfigsInfoController {
     private ConfigBasedIndexValueMakerFactory configBasedIndexValueMakerFactory;
 
     @Autowired
-    GsrsSchedulerTaskPropertiesConfiguration gsrsSchedulerTaskPropertiesConfiguration;
+    private GsrsSchedulerTaskPropertiesConfiguration gsrsSchedulerTaskPropertiesConfiguration;
 
     @Autowired
-    LambdaParseRegistry lambdaParseRegistry;
+    private LambdaParseRegistry lambdaParseRegistry;
 
     @Autowired
-    GsrsExportConfiguration gsrsExportConfiguration;
+    private GsrsExportConfiguration gsrsExportConfiguration;
+
+    private ObjectMapper mapper = new ObjectMapper();
+
+    private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
+    private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
+    private static final String registeredFunctionsNotYetPopulated = "{\"message\": \"Registered " +
+    "Functions may not yet be populated, try viewing a chemical substance details page in the UI \"}";
+    private static final String exportFactoriesFunctionsNotYetPopulated = "{\"message\": " +
+    "\"Exporters may not yet be populated for the context, try browsing the entity to cause the " +
+    "exporterFactories to be populated. If that does not work, see the doc: 'How Configuration Works' " +
+    "for a tip.\"}";
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@validatorConfigs")
-    public JsonNode getFinishedValidatorConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getValidatorConfigs(@PathVariable("context") String context) {
+        System.out.println("context: " + context);
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends ValidatorConfig> list = gsrsFactoryConfiguration.getValidatorConfigByContext(context);
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@entityProcessorConfigs")
-    public JsonNode getFinishedVEntityProcessorConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getFinishedVEntityProcessorConfigs(@PathVariable("context") String context) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends EntityProcessorConfig> list = gsrsFactoryConfiguration.getEntityProcessors();
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@importAdapterFactoryConfigs")
-    public JsonNode getImportAdapterFactoryConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getImportAdapterFactoryConfigs(@PathVariable("context") String context) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends ImportAdapterFactoryConfig> list = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@exporterFactoryConfigs")
-    public JsonNode getExporterFactoryConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, List<? extends ExporterFactoryConfig>> mapList = gsrsExportConfiguration.reportConfigs();
-        JsonNode node;
-        if (mapList == null || mapList.isEmpty()) {
-            node = mapper.createObjectNode();
-        } else {
-            node = mapper.valueToTree(mapList);
+    public ResponseEntity<?> getExporterFactoryConfigs(@PathVariable("context") String context) {
+       if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        return node;
+        Map<String, List<? extends ExporterFactoryConfig>> mapList = gsrsExportConfiguration.reportConfigs();
+        if (mapList==null || mapList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(exportFactoriesFunctionsNotYetPopulated);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(mapList);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@matchableCalculationConfigs")
-    public JsonNode getMatchableCalculationConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getMatchableCalculationConfigs(@PathVariable("context") String context) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends MatchableCalculationConfig> list = gsrsFactoryConfiguration.getMatchableCalculationConfig(context);
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@scheduledTaskConfigs")
-    public JsonNode getScheduledTaskConfigs(@PathParam("context") String context) {
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getScheduledTaskConfigs(@PathVariable("context") String context) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends GsrsSchedulerTaskPropertiesConfiguration.ScheduledTaskConfig> list = gsrsSchedulerTaskPropertiesConfiguration.getConfigs();
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
     @GetMapping("/api/v1/{context}/@registeredFunctionConfigs")
-    public JsonNode getRegisteredFunctionConfigs(@PathParam("context") String context) {
-        // If no response, try viewing a chemical substance detail display in the UI.
-        ObjectMapper mapper = new ObjectMapper();
+    public ResponseEntity<?> getRegisteredFunctionConfigs(@PathVariable("context") String context) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends RegisteredFunctionConfig> list = lambdaParseRegistry.reportConfigs();
-        JsonNode node = mapper.valueToTree(list);
-        return node;
+        if (list==null) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(registeredFunctionsNotYetPopulated);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
 //  Not sure how to do this

@@ -145,16 +145,15 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			System.out.println( reportTag + "found before filtering: " + configs.size());
 			configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
 			System.out.println(reportTag + " active after filtering: " + configs.size());
-			System.out.printf("%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
+			System.out.printf("%s|%s|%s|%s|%s\n", "reportTag", "class", "parentKey", "order", "isDisabled");
 			for (RegisteredFunctionConfig config : configs) {
-				System.out.printf("%s|%s|%s|%s\n", reportTag, config.getRegisteredFunctionClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
+				System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getRegisteredFunctionClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
 			}
 			return configs;
 		} catch (Throwable t) {
 			throw t;
 		}
 	}
-
 
 	public Optional<Function<String,? extends PojoPointer>> getPojoPointerParser(final String key) throws NoSuchElementException {
 		Function<String,? extends PojoPointer> parser= subURIparsers.get().get(key);
