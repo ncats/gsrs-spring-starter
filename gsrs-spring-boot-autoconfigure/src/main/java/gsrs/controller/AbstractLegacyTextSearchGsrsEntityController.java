@@ -610,6 +610,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return  new ResponseEntity<>(baseNode, HttpStatus.OK); 	
     }
     
+    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
     public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
     	
