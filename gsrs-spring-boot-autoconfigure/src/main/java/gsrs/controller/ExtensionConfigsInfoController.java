@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.autoconfigure.ExporterFactoryConfig;
@@ -38,9 +37,8 @@ public class ExtensionConfigsInfoController {
     // that only kicks in under certain circumstances.  Sometime this is on application start;
     // other times it is a specific action. Therefore, you may get a null value or a blank response.
 
-    // context (entity) is not always used but is needed for Gateway routing
-
-    // Consider changing the endpoints to use service-info/api/v1/{service}/@xyzConfigs?entity=entity1
+    // entityContext is not always, depending on whether the extension puts configs
+    // into buckets by entity.
 
 
     @Value("#{new Boolean('${gsrs.extensions.config.report.api.enabled:false}')}")
@@ -71,27 +69,37 @@ public class ExtensionConfigsInfoController {
 
     private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
     private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
-    private static final String registeredFunctionsNotYetPopulated = "{\"message\": \"Registered " +
-    "Functions may not yet be populated, try viewing a chemical substance details page in the UI \"}";
-    private static final String exportFactoriesFunctionsNotYetPopulated = "{\"message\": " +
-    "\"Exporters may not yet be populated for the context, try browsing the entity to cause the " +
-    "exporterFactories to be populated. If that does not work, see the doc: 'How Configuration Works' " +
-    "for a tip.\"}";
+    private static final String noDataMessage = "{\"message\": \"A null or empty value was returned, or " +
+    "an error occurred. This can happen if configs have not yet been populated or if there are no config " +
+    "objects corresponding to the serviceContext (and/or entityContext) provided. In some cases, API " +
+    "actions trigger the population of the data into cached suppliers or autowired values. These values " +
+    "are null or empty until populated. In other cases, data is populated when the service starts. See " +
+    "the doc: 'How Configuration Works' for some more detail.\"}";
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@validatorConfigs")
-    public ResponseEntity<?> getValidatorConfigs(@PathVariable("context") String context) {
-        System.out.println("context: " + context);
-        if (!extensionsConfigReportApiEnabled) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+    @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
+    public ResponseEntity<?> getValidatorConfigs(
+        @PathVariable("serviceContext") String serviceContext,
+        @PathVariable("entityContext") String entityContext
+    ) {
+        List<? extends ValidatorConfig> list = null;
+        boolean thrown = false;
+        try {
+            list = gsrsFactoryConfiguration.getValidatorConfigByContext(entityContext);
+        } catch (Throwable t) {
+            thrown = true;
         }
-        List<? extends ValidatorConfig> list = gsrsFactoryConfiguration.getValidatorConfigByContext(context);
+        if (thrown || list==null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@entityProcessorConfigs")
-    public ResponseEntity<?> getFinishedVEntityProcessorConfigs(@PathVariable("context") String context) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@entityProcessorConfigs")
+    public ResponseEntity<?> getFinishedVEntityProcessorConfigs(
+        @PathVariable("serviceContext") String serviceContext
+    ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
@@ -100,63 +108,114 @@ public class ExtensionConfigsInfoController {
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@importAdapterFactoryConfigs")
-    public ResponseEntity<?> getImportAdapterFactoryConfigs(@PathVariable("context") String context) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@importAdapterFactoryConfigs/{entityContext}")
+    public ResponseEntity<?> getImportAdapterFactoryConfigs(
+        @PathVariable("serviceContext") String serviceContext,
+        @PathVariable("entityContext") String entityContext
+    ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        List<? extends ImportAdapterFactoryConfig> list = gsrsFactoryConfiguration.getImportAdapterFactories(context);
+        List<? extends ImportAdapterFactoryConfig> list = null;
+        boolean thrown = false;
+        try {
+            list = gsrsFactoryConfiguration.getImportAdapterFactories(entityContext);
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list==null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@exporterFactoryConfigs")
-    public ResponseEntity<?> getExporterFactoryConfigs(@PathVariable("context") String context) {
-       if (!extensionsConfigReportApiEnabled) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@exporterFactoryConfigs")
+    public ResponseEntity<?> getExporterFactoryConfigs(
+        @PathVariable("serviceContext") String serviceContext
+    ) {
+        if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        Map<String, List<? extends ExporterFactoryConfig>> mapList = gsrsExportConfiguration.reportConfigs();
-        if (mapList==null || mapList.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(exportFactoriesFunctionsNotYetPopulated);
+        boolean thrown = false;
+        Map<String, List<? extends ExporterFactoryConfig>> mapList = null;
+        try {
+            mapList = gsrsExportConfiguration.reportConfigs();
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || mapList==null || mapList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@matchableCalculationConfigs")
-    public ResponseEntity<?> getMatchableCalculationConfigs(@PathVariable("context") String context) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@matchableCalculationConfigs/{entityContext}")
+    public ResponseEntity<?> getMatchableCalculationConfigs(
+        @PathVariable("serviceContext") String serviceContext,
+        @PathVariable("entityContext") String entityContext
+    ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        List<? extends MatchableCalculationConfig> list = gsrsFactoryConfiguration.getMatchableCalculationConfig(context);
+        List<? extends MatchableCalculationConfig> list = null;
+        boolean thrown = false;
+        try {
+            list = gsrsFactoryConfiguration.getMatchableCalculationConfig(entityContext);
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list==null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@scheduledTaskConfigs")
-    public ResponseEntity<?> getScheduledTaskConfigs(@PathVariable("context") String context) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@scheduledTaskConfigs")
+    public ResponseEntity<?> getScheduledTaskConfigs(
+        @PathVariable("serviceContext") String serviceContext
+    ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        List<? extends GsrsSchedulerTaskPropertiesConfiguration.ScheduledTaskConfig> list = gsrsSchedulerTaskPropertiesConfiguration.getConfigs();
+        List<? extends GsrsSchedulerTaskPropertiesConfiguration.ScheduledTaskConfig> list = null;
+        boolean thrown = false;
+        try {
+            list = gsrsSchedulerTaskPropertiesConfiguration.getConfigs();
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list==null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
     @hasAdminRole
-    @GetMapping("/api/v1/{context}/@registeredFunctionConfigs")
-    public ResponseEntity<?> getRegisteredFunctionConfigs(@PathVariable("context") String context) {
+    @GetMapping("/service-info/api/v1/{serviceContext}/@registeredFunctionConfigs")
+    public ResponseEntity<?> getRegisteredFunctionConfigs(
+        @PathVariable("serviceContext") String serviceContext
+    ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
         }
-        List<? extends RegisteredFunctionConfig> list = lambdaParseRegistry.reportConfigs();
-        if (list==null) {
-            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(registeredFunctionsNotYetPopulated);
+        List<? extends RegisteredFunctionConfig> list = null;
+        boolean thrown = false;
+        try {
+            list = lambdaParseRegistry.reportConfigs();
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list==null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
 //  Not sure how to do this
-//    @GetMapping("/api/v1/@indexValueMakerConfigs")
+//    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
 //    public String getIndexValueMakerConfigs() {
 //        ObjectMapper mapper = new ObjectMapper();
 //        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
