@@ -57,13 +57,17 @@ public class IndexerEntityListener {
     }
     
     public void reindexEntity(Object obj, boolean deleteFirst) {
+    	reindexEntity(obj, deleteFirst, false);
+    }
+    
+    public void reindexEntity(Object obj, boolean deleteFirst, boolean excludeExternal) {
         autowireIfNeeded();
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(obj);
         if(ew.shouldIndex()) {
             IndexerEventFactory indexerFactoryFor = indexerEventFactoryFactory.getIndexerFactoryFor(obj);
             if(indexerFactoryFor !=null) {
 //            	log.error("ew before publishing event :" + ew.toString());
-                applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst));
+                applicationEventPublisher.publishEvent(indexerFactoryFor.newReindexEventFor(ew,deleteFirst,excludeExternal));
                 
             }
         }

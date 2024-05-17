@@ -1,11 +1,15 @@
 package ix.core.search.text;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.SetUtils;
+
+import com.google.common.collect.Sets;
 
 public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     private final List<IndexValueMaker<? super T>> list;
@@ -27,11 +31,28 @@ public class CombinedIndexValueMaker<T> implements IndexValueMaker<T> {
     
     
     @Override
-    public IndexValueMaker<T> restrictedForm(Set<String> fields){
-    	List<IndexValueMaker<T>> filteredList=list.stream()
-    	.filter(ivm->ivm.getFieldNames().stream().anyMatch(fn->fields.contains(fn)))
-    	.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(fields))
-    	.collect(Collectors.toList());
+    public Set<String> getTags() {
+    	return list.stream().flatMap(ivm->ivm.getTags().stream()).collect(Collectors.toSet());
+    }
+    
+    @Override
+    public IndexValueMaker<T> restrictedForm(Set<String> tags, boolean include){
+    	
+    	if(tags.size() ==0) return this;    	
+    	List<IndexValueMaker<T>> filteredList;    	
+    	
+    	if(include) {
+    		filteredList=list.stream()
+    			.filter(ivm->ivm.getTags().stream().anyMatch(tag->tags.contains(tag)))
+    			.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
+    		    	.collect(Collectors.toList());			
+    	}else {
+    		filteredList=list.stream()
+        		.filter(ivm->!ivm.getTags().stream().anyMatch(tn->tags.contains(tn)))
+        		.map(ivm->(IndexValueMaker<T>)ivm.restrictedForm(tags,include))
+        		    .collect(Collectors.toList());    		
+    		
+    	}
     	
     	return new CombinedIndexValueMaker(clazz,filteredList);
     }
