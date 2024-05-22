@@ -624,20 +624,20 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
     public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
     	
-    	log.info("in syncIndexesWithDatabase");
+    	log.error("in syncIndexesWithDatabase");
     	
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
     	
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
-			log.info("Database and index sync: No different items.");
+			log.error("in syncIndexesWithDatabase: Database and index sync: No different items.");
 			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
 			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			log.info("Database and index sync: found " + list.size() + " different items.");
+			log.error("in syncIndexesWithDatabase: Database and index sync: found " + list.size() + " different items.");
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
     }
