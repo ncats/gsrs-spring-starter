@@ -84,7 +84,10 @@ import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil;
 import ix.utils.Util;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -595,19 +598,27 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
     @GetGsrsRestApiMapping(value = "/@databaseIndexDiff", apiVersions = 1)
     public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() throws JsonMappingException, JsonProcessingException{
-    	
+
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
     	
     	Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
     	Set<Key> extraInIndex = Sets.difference(new HashSet<Key>(keysInIndex), new HashSet<Key>(keysInDatabase));
-		
-    	ObjectMapper mapper = new ObjectMapper();
-    	ObjectNode baseNode = mapper.createObjectNode();    	
-    	baseNode.put("databaseOnly", mapper.writeValueAsString(extraInDatabase));
-    	baseNode.put("indexOnly", mapper.writeValueAsString(extraInIndex));	
-
-    	return  new ResponseEntity<>(baseNode, HttpStatus.OK); 	
+  	
+    	@Getter
+    	@Setter
+    	@AllArgsConstructor
+    	class DiffJsonOutput{
+    		int databaseOnlySize;
+    		Set<Key> databaseOnlyList;
+    		int indexOnlySize;
+    		Set<Key> indexOnlyList;    		
+    	}    	
+    	
+    	DiffJsonOutput output = new DiffJsonOutput(extraInDatabase.size(),extraInDatabase,
+    			extraInIndex.size(),extraInIndex);
+    	
+    	return  new ResponseEntity<>(output, HttpStatus.OK); 	
     }
     
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
