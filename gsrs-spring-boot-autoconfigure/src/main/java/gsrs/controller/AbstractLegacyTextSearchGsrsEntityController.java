@@ -84,7 +84,10 @@ import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.utils.CallableUtil;
 import ix.utils.Util;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -595,38 +598,46 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 
     @GetGsrsRestApiMapping(value = "/@databaseIndexDiff", apiVersions = 1)
     public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() throws JsonMappingException, JsonProcessingException{
-    	
+
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
     	
     	Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
     	Set<Key> extraInIndex = Sets.difference(new HashSet<Key>(keysInIndex), new HashSet<Key>(keysInDatabase));
-		
-    	ObjectMapper mapper = new ObjectMapper();
-    	ObjectNode baseNode = mapper.createObjectNode();    	
-    	baseNode.put("databaseOnly", mapper.writeValueAsString(extraInDatabase));
-    	baseNode.put("indexOnly", mapper.writeValueAsString(extraInIndex));	
-
-    	return  new ResponseEntity<>(baseNode, HttpStatus.OK); 	
+  	
+    	@Getter
+    	@Setter
+    	@AllArgsConstructor
+    	class DiffJsonOutput{
+    		int databaseOnlySize;
+    		Set<Key> databaseOnlyList;
+    		int indexOnlySize;
+    		Set<Key> indexOnlyList;    		
+    	}    	
+    	
+    	DiffJsonOutput output = new DiffJsonOutput(extraInDatabase.size(),extraInDatabase,
+    			extraInIndex.size(),extraInIndex);
+    	
+    	return  new ResponseEntity<>(output, HttpStatus.OK); 	
     }
     
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
     public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
     	
-    	log.info("in syncIndexesWithDatabase");
+    	log.error("in syncIndexesWithDatabase");
     	
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
     	
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
-			log.info("Database and index sync: No different items.");
+			log.error("in syncIndexesWithDatabase: Database and index sync: No different items.");
 			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
 			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			log.info("Database and index sync: found " + list.size() + " different items.");
+			log.error("in syncIndexesWithDatabase: Database and index sync: found " + list.size() + " different items.");
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
     }
