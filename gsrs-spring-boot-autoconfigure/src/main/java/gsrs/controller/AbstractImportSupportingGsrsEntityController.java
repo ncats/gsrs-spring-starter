@@ -723,6 +723,22 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
+    @hasAdminRole
+    @PutGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
+    public ResponseEntity<Object> executeValidatePut(@PathVariable("id") String id,
+                                                     @RequestBody JsonNode updateEntity,
+                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("executeValidatePut  id: " + id);
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportMetadata importObject = stagingAreaService.getImportMetaData(id, 0);
+        Object response = stagingAreaService.validateRecord(importObject.getEntityClassName(), updateEntity.toString());
+        if (response == null) {
+            ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
+            responseNode.put("message", "unable to process input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
+    }
 
     //search for records that have the same values for key fields
     @hasAdminRole
