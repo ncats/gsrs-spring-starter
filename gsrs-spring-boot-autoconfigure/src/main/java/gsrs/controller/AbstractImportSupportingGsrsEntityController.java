@@ -724,10 +724,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     @hasAdminRole
-    @PutGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
+    @PostGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
     public ResponseEntity<Object> executeValidatePut(@PathVariable("id") String id,
                                                      @RequestBody JsonNode updateEntity,
-                                                  @RequestParam Map<String, String> queryParameters) throws Exception {
+                                                     @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("executeValidatePut  id: " + id);
         StagingAreaService stagingAreaService = getDefaultStagingAreaService();
         ImportMetadata importObject = stagingAreaService.getImportMetaData(id, 0);
