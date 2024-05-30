@@ -561,7 +561,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
      
     public List<Key> searchEntityInIndex(){
     	
-    	final int defaultTop = 999999;
+    	final int defaultTop = 9999999;
     	SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(null)
                 .kind(getEntityService().getEntityClass());
@@ -609,14 +609,16 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	@Setter
     	@AllArgsConstructor
     	class DiffJsonOutput{
+    		int databaseKeyCount;
     		int databaseOnlySize;
     		Set<Key> databaseOnlyList;
+    		int indexDocCount;
     		int indexOnlySize;
     		Set<Key> indexOnlyList;    		
     	}    	
     	
-    	DiffJsonOutput output = new DiffJsonOutput(extraInDatabase.size(),extraInDatabase,
-    			extraInIndex.size(),extraInIndex);
+    	DiffJsonOutput output = new DiffJsonOutput(keysInDatabase.size(), extraInDatabase.size(), 
+    			extraInDatabase, keysInIndex.size(), extraInIndex.size(), extraInIndex);
     	
     	return  new ResponseEntity<>(output, HttpStatus.OK); 	
     }
