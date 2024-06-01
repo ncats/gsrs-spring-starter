@@ -25,7 +25,7 @@ public class MappingActionFactoryMetadata {
         returnMap.putAll(initialParams);
         for(MappingParameter param: parameterFields){
             if(returnMap.containsKey(param.getLookupKey())){
-                System.out.printf("replaced %s (value: %s) with %s%n", param.getLookupKey(),
+                System.out.printf("replaced %s (value: %s) with %s\n", param.getLookupKey(),
                         returnMap.get(param.getLookupKey()), param.getFieldName());
                 /*returnMap.put(param.getFieldName(), returnMap.get(param.getLookupKey()));
                 if?????????
