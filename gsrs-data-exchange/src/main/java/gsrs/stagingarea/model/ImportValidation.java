@@ -45,7 +45,7 @@ public class ImportValidation {
      */
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
+    @Column(length =40, updatable = true, unique = false, nullable = true)
     @Indexable
     private UUID instanceId;
 
