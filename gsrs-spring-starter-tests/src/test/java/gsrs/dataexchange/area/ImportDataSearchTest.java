@@ -122,7 +122,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         importMetadata.setSourceName("Funky File");
         importMetadata.setImportStatus(ImportMetadata.RecordImportStatus.accepted);
         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(importMetadata);
-        indexer.add(wrapper);
+        indexer.add(wrapper, true);
 
         ImportMetadata importMetadata2 = new ImportMetadata();
         UUID recordId = UUID.randomUUID();
@@ -133,7 +133,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         instanceId = UUID.randomUUID();
         importMetadata2.setInstanceId(instanceId);
         EntityUtils.EntityWrapper wrapper2 = EntityUtils.EntityWrapper.of(importMetadata2);
-        indexer.add(wrapper2);
+        indexer.add(wrapper2,true);
 
         ImportMetadata importMetadata3 = new ImportMetadata();
         UUID recordId3 = UUID.randomUUID();
@@ -145,7 +145,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         instanceId = UUID.randomUUID();
         importMetadata3.setInstanceId(instanceId);
         EntityUtils.EntityWrapper wrapper3 = EntityUtils.EntityWrapper.of(importMetadata3);
-        indexer.add(wrapper3);
+        indexer.add(wrapper3, true);
 
         ImportMetadata importMetadata4 = new ImportMetadata();
         UUID recordId4 = UUID.randomUUID();
@@ -159,6 +159,6 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
         instanceId = UUID.randomUUID();
         importMetadata4.setInstanceId(instanceId);
         EntityUtils.EntityWrapper wrapper4 = EntityUtils.EntityWrapper.of(importMetadata4);
-        indexer.add(wrapper4);
+        indexer.add(wrapper4, true);
     }
 }

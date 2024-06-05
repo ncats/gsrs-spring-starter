@@ -14,18 +14,23 @@ public class ReindexEntityEvent implements ReindexEvent {
 
 	private UUID reindexId;
 	private EntityUtils.Key entityKey;
-	private boolean requiresDelete=false;
+	private boolean requiresDelete = false;
+	private boolean excludeExternal = false;	
 	private Optional<EntityWrapper<?>> optionalEntityWrapper = Optional.empty();
 
-
-	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean b) {
+	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean requiresDelete, boolean excludeExternal) {
 		this.reindexId=reindexId;
 		this.entityKey=entityKey;
 		this.optionalEntityWrapper=of;
-		this.requiresDelete=b;
+		this.requiresDelete=requiresDelete;
+		this.excludeExternal=excludeExternal;
+	}
+
+	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of, boolean b) {
+		this(reindexId,entityKey,of,b,false);
 	}
 	public ReindexEntityEvent(UUID reindexId, EntityUtils.Key entityKey, Optional<EntityWrapper<?>> of) {
-		this(reindexId,entityKey,of,false);
+		this(reindexId,entityKey,of,false,false);
 	}
 
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 @Repository
 public interface ControlledVocabularyRepository extends GsrsVersionedRepository<ControlledVocabulary, Long> {
 
@@ -17,6 +18,9 @@ public interface ControlledVocabularyRepository extends GsrsVersionedRepository<
     List<ControlledVocabulary> findByDomain(String domain);
     @Query(value = "select * from ControlledVocabulary  where id=:id", nativeQuery = true)
     List<ControlledVocabulary> foo(String id);
+    
+    @Query("select cv.id from ControlledVocabulary cv")
+    List<Long> getAllIds();
 
     /**
      * Summary of a ControlledVocabulary with only a few fields.
@@ -26,4 +30,8 @@ public interface ControlledVocabularyRepository extends GsrsVersionedRepository<
 
         String getDomain();
     }
+    
+    @Query("select cv.id from ControlledVocabulary cv")
+    List<Long> getAllIDs();
+    
 }

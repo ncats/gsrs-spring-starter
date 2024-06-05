@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -118,4 +119,11 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     protected AbstractEntityCreatedEvent<MyEntity> newCreationEvent(MyEntity createdEntity) {
         return null;
     }
+
+
+	@Override
+	public List<UUID> getIDs() {
+		// TODO Auto-generated method stub
+		return new ArrayList<UUID>() ;
+	}
 }

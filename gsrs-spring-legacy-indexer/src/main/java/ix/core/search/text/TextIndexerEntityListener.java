@@ -20,6 +20,7 @@ import gsrs.indexer.IndexRemoveEntityEvent;
 import gsrs.indexer.IndexUpdateEntityEvent;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
+import ix.core.search.text.RestrictedIVMSpecification.RestrictedType;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
@@ -90,7 +91,13 @@ public class TextIndexerEntityListener {
         if(opt.isPresent()){
         	if(event.isRequiresDelete()) {
                 log.trace("updating");
-        		textIndexerFactory.getDefaultInstance().update(opt.get());
+                if(event.isExcludeExternal()) {
+                	log.trace("updating excluding external"); 
+                	textIndexerFactory.getDefaultInstance().update(opt.get(), RestrictedType.EXCLUDE_EXTERNAL);
+                }else {
+                	log.trace("updating including external");
+                	textIndexerFactory.getDefaultInstance().update(opt.get());
+                }
         	}else {
                 log.trace("adding");
         		textIndexerFactory.getDefaultInstance().add(opt.get());	
@@ -140,9 +147,10 @@ public class TextIndexerEntityListener {
             }
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
+//            	log.warn("In update Entity IndexUpdateEntityEvent");
                 try {
                     EntityUtils.EntityWrapper ew = event.getOptionalFetchedEntity().orElse(null);
-                    indexer.update(ew);
+                    indexer.update(ew, RestrictedType.EXCLUDE_EXTERNAL); // exclude external 
                 }catch(Throwable t){
                     log.warn("trouble updating index for:" + event.getSource().toString(), t);
                 }
