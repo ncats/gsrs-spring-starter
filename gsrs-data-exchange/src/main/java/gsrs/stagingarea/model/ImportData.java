@@ -53,7 +53,7 @@ public class ImportData {
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
+    @Column(length =40, updatable = false, unique = true, name = "instance_id")
     @Indexable(name="instanceId")
     private UUID instanceId;
 

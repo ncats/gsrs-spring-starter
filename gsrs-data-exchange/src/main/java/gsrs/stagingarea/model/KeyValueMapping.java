@@ -41,7 +41,7 @@ public class KeyValueMapping {
      * Foreign key to ImportData
      */
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
+    @Column(length =40, updatable = false, unique = false, name = "instance_id")
     private UUID instanceId;
 
     /**

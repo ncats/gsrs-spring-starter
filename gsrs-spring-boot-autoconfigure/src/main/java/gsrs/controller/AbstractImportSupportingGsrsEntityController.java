@@ -924,7 +924,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             }
             catch (Exception ignore){}
         }
-        log.trace("using processingJobId {}", processingJobId);
+        //log.trace("using processingJobId {}", processingJobId);
         if( processingJobId==null || processingJobId.length()==0){
             log.warn("no processingJobId supplied");
             ObjectNode messageNode = JsonNodeFactory.instance.objectNode();

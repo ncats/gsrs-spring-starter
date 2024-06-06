@@ -18,8 +18,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "ix_import_validation", indexes = {@Index(name="idx_ix_import_validation_entity_class_name", columnList = "entity_class_name"),
-        @Index(name="idx_ix_import_validation_version", columnList = "version"),
-        @Index(name="idx_ix_import_validation_instance_id", columnList = "instance_id")})
+        @Index(name="idx_ix_import_validation_version", columnList = "version")/*,
+        @Index(name="idx_ix_import_validation_instance_id", columnList = "instance_id")*/})
 /*,
         @Index(name="idx_ix_import_validation_type", columnList = "ValidationType")*/
 @Slf4j
@@ -45,7 +45,7 @@ public class ImportValidation {
      */
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = true, unique = false, nullable = true)
+    @Column(length =40, updatable = true, unique = false, nullable = true, name="instance_id")
     @Indexable
     private UUID instanceId;
 
@@ -63,7 +63,7 @@ public class ImportValidation {
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
+    @Column(length =40, updatable = false, unique = true, name="validation_id")
     @Indexable
     private UUID ValidationId;
 

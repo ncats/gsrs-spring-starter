@@ -119,7 +119,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
+    @Column(length =40, updatable = false, unique = true, name="instance_id")
     private UUID instanceId; //always unique!  changes when data change
 
     /**

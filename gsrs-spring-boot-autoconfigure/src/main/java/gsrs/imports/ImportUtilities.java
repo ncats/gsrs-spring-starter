@@ -323,7 +323,7 @@ public class ImportUtilities<T> {
     }
 
     public JsonNode getJobAsNode(String jobId, boolean includeJobData) {
-        log.trace("in getJobAsNode, jobId: {}", jobId);
+        //log.trace("in getJobAsNode, jobId: {}", jobId);
         Optional<ImportProcessingJob> job = jobRepository.findById(UUID.fromString(jobId));
         if( job.isPresent()){
             return job.get().toNode(includeJobData);
