@@ -18,8 +18,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "ix_import_validation", indexes = {@Index(name="idx_ix_import_validation_entity_class_name", columnList = "entity_class_name"),
-        @Index(name="idx_ix_import_validation_version", columnList = "version")/*,
-        @Index(name="idx_ix_import_validation_instance_id", columnList = "instance_id")*/})
+        @Index(name="idx_ix_import_validation_version", columnList = "version"),
+        @Index(name="idx_ix_import_validation_instance_id", columnList = "instance_id")})
 /*,
         @Index(name="idx_ix_import_validation_type", columnList = "ValidationType")*/
 @Slf4j
