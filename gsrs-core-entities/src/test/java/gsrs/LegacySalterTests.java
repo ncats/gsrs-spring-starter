@@ -16,20 +16,20 @@ public class LegacySalterTests {
     private final Salter salter = new LegacyTypeSalter(hasher, SALT_PREFIX);
 
     @Test
-    void testGenerateSalt() {
+    void testGenerateSalt() throws Exception{
         String salt1 = salter.generateSalt();
         Assertions.assertNotNull(salt1);
         System.out.printf("salt: %s\n", salt1);
     }
 
     @Test
-    void testGenerateOwnSalt() {
+    void testGenerateOwnSalt() throws Exception{
         String salt1 = salter.generateSalt();
         Assertions.assertTrue(salter.mayBeOneOfMine(salt1));
     }
 
     @Test
-    void testGenerateNotOwnSalt() {
+    void testGenerateNotOwnSalt() throws Exception {
         String salt1 = salter.generateSalt();
         String changedSalt = salt1.replace('G', 'N');
         Assertions.assertFalse(salter.mayBeOneOfMine(changedSalt));

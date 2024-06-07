@@ -2,10 +2,15 @@ package gsrs.util;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import static java.lang.String.valueOf;
 
 @Data
+@Slf4j
 public class LegacyTypeSalter implements Salter {
 
     Hasher hasher;
@@ -16,15 +21,25 @@ public class LegacyTypeSalter implements Salter {
         hasher = newHasher;
         prefix = newPrefix;
     }
+
+    private String algorithm = "NativePRNG";
+
     @Override
     public void setHasher(Hasher hasher) {
         this.hasher = hasher;
     }
 
     @Override
-    public String generateSalt() {
-        String text = "---" + TimeUtil.getCurrentDate().toString() + "---" + String.valueOf(Math.random()) + "---";
-        return prefix + hasher.hash(text);
+    public String generateSalt() throws Exception {
+        try {
+
+            String text = "---" + TimeUtil.getCurrentDate().toString() + "---"
+                    + String.valueOf(SecureRandom.getInstance(algorithm).nextDouble()) + "---";
+            return prefix + hasher.hash(text);
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Configured algorithm not available");
+            throw e;
+        }
     }
 
     @Override

@@ -214,14 +214,18 @@ public class UserProfile extends IxModel{
 		return result;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(String password)  {
 		if (password == null || password.length() <= 0) {
 			password = UUID.randomUUID().toString();
 		}
-		this.salt = salter.generateSalt();
-		this.hashp = hasher.hash(password, salt);  //Util.encrypt(password, this.salt);
-		setIsDirty("salt");
-		setIsDirty("hashp");
+		try {
+			this.salt = salter.generateSalt();
+			this.hashp = hasher.hash(password, salt);  //Util.encrypt(password, this.salt);
+			setIsDirty("salt");
+			setIsDirty("hashp");
+		} catch (Exception ex) {
+			log.error("Error occurred during password processing");
+		}
 	}
 
 	@Indexable(indexed = false)
