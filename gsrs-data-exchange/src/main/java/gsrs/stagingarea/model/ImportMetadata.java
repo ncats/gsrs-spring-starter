@@ -208,10 +208,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
      * List of factors that suggest that this entity is similar to other entities in the main database or staging area
      */
     @JSONEntity(title = "KeyValueMappings")
-    @OneToMany()
-    @CollectionTable(name="ix_import_mapping",
-        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    )
+    @OneToMany(mappedBy="instanceId")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @ToString.Exclude
@@ -223,12 +220,9 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
      * Link to the results of validation (applying business rules to this object)
      */
     @JSONEntity(title = "ImportValidations")
+    @OneToMany(mappedBy="instanceId")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    @OneToMany
-    @CollectionTable(name="ix_import_validation",
-        joinColumns = @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    )
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
     @Builder.Default
