@@ -14,30 +14,30 @@ import java.util.UUID;
 @Transactional
 public interface ImportDataRepository extends GsrsVersionedRepository<ImportData, UUID> {
 
-    @Query("select d.data from ImportData d where d.recordId = ?1 and d.version = ?2")
+    @Query("select d.data from ImportData d where d.owner = ?1 and d.version = ?2")
     public String retrieveByIDAndVersion(UUID id, int version);
 
     @Query("select d.data from ImportData d where d.instanceId = ?1")
     public String retrieveByInstanceID(UUID id);
 
-    @Query("select d.instanceId from ImportData d where d.recordId = ?1")
+    @Query("select d.instanceId from ImportData d where d.owner = ?1")
     public List<UUID> findInstancesForRecord(UUID id);
 
-    @Query("select d from ImportData d where d.recordId = ?1")
+    @Query("select d from ImportData d where d.owner = ?1")
     public List<ImportData> retrieveDataForRecord(UUID id);
 
     @Modifying
     @Transactional
-    @Query("delete from ImportData i where i.recordId = ?1")
+    @Query("delete from ImportData i where i.owner = ?1")
     void deleteByRecordId(UUID recordId);
 
     @Modifying
     @Transactional
-    @Query("delete from ImportData i where i.recordId = ?1 and i.version = ?2")
+    @Query("delete from ImportData i where i.owner = ?1 and i.version = ?2")
     void deleteByRecordIdAndVersion(UUID recordId, int version);
 
     @Modifying
     @Transactional
-    @Query("update ImportData i set data= ?3 where i.recordId = ?1 and i.version = ?2")
+    @Query("update ImportData i set data= ?3 where i.owner = ?1 and i.version = ?2")
     void updateDataByRecordIdAndVersion(UUID recordId, int version, String data);
 }

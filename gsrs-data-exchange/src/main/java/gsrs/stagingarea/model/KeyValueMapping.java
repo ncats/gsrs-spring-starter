@@ -1,10 +1,8 @@
 package gsrs.stagingarea.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
-import ix.core.models.ParentReference;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
@@ -49,13 +47,9 @@ public class KeyValueMapping {
     /**
      * Foreign key to ImportMetadata
      */
-    //@Type(type = "uuid-char" )
-    //@Column(length =40, updatable = false, unique = false)
-    //private UUID recordId;
-    @ManyToOne(cascade = CascadeType.PERSIST)
-    @JsonIgnore
-    @ParentReference
-    private ImportMetadata owner;
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = false)
+    private UUID recordId;
 
     /**
      * Key - some factor that differentiates domain entities.

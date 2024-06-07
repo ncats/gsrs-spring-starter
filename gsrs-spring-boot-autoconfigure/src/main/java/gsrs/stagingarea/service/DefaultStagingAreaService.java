@@ -495,14 +495,14 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             if (m.getValue() != null && m.getValue().length() > 0) {
                 log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
                 List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
-                        .filter(ma->startingRecordId==null || !ma.getOwner().getRecordId().toString().equals(startingRecordId))
+                        .filter(ma->startingRecordId==null || !ma.getRecordId().toString().equals(startingRecordId))
                         .map(ma -> {
                             MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
                             builder
                                     .sourceName(ma.getDataLocation())
                                     .matchedKey(m.getKey());
-                            if (ma.getOwner().getRecordId() != null) {
-                                builder.recordId(EntityUtils.Key.of(objectClass, ma.getOwner().getRecordId()));
+                            if (ma.getRecordId().toString() != null) {
+                                builder.recordId(EntityUtils.Key.of(objectClass, ma.getRecordId()));
                             } else {
                                 log.trace("skipping item without an recordID");
                             }
@@ -641,7 +641,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
             mapping.setValue(valueToStore);
             mapping.setInstanceId(instanceId);
-            mapping.setOwner(importMetadata);
+            mapping.setRecordId(importMetadata.getRecordId());
             mapping.setEntityClass(matchedEntityClass);
             mapping.setDataLocation(STAGING_AREA_LOCATION);
             keyValueMappingRepository.saveAndFlush(mapping);

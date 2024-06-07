@@ -123,7 +123,7 @@ public class ImportUtilities<T> {
                 metadataAsString = mapper.writeValueAsString(metadata);
                 ImportMetadata copy = eics.fromJson(metadataAsString);
                 log.trace("starting filtering lambda. copy has {} kvms", copy.getKeyValueMappings().size());
-                copy.setKeyValueMappings(metadata.getKeyValueMappings().stream().filter(kv->!kv.getOwner().getRecordId().equals(metadata.getRecordId())).collect(Collectors.toList()));
+                copy.setKeyValueMappings(metadata.getKeyValueMappings().stream().filter(kv->!kv.getRecordId().equals(metadata.getRecordId())).collect(Collectors.toList()));
                 log.trace("completed filtering lambda. copy has {} kvms", copy.getKeyValueMappings().size());
                 JsonNode metadataAsNode = mapper.readTree(mapper.writeValueAsString(copy));
                 dataNode.set("_metadata", metadataAsNode);

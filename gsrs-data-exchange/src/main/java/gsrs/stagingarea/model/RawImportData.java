@@ -16,15 +16,15 @@ import java.util.UUID;
 @Data
 public class RawImportData {
 
-//    @Id
-//    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
-//    @GeneratedValue(generator = "NullUUIDGenerator")
+    @Id
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-//    @Type(type = "uuid-char" )
-//    @Column(length =40, updatable = false, unique = true)
-//    private UUID recordId;
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true)
+    private UUID id;
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
     @ParentReference
     private ImportMetadata owner;
