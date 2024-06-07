@@ -123,7 +123,7 @@ public class ImportUtilities<T> {
                 metadataAsString = mapper.writeValueAsString(metadata);
                 ImportMetadata copy = eics.fromJson(metadataAsString);
                 log.trace("starting filtering lambda. copy has {} kvms", copy.getKeyValueMappings().size());
-                copy.setKeyValueMappings(metadata.getKeyValueMappings().stream().filter(kv->!kv.getRecordId().equals(metadata.getRecordId())).collect(Collectors.toList()));
+                copy.setKeyValueMappings(metadata.getKeyValueMappings().stream().filter(kv->!kv.getOwner().getRecordId().equals(metadata.getRecordId())).collect(Collectors.toList()));
                 log.trace("completed filtering lambda. copy has {} kvms", copy.getKeyValueMappings().size());
                 JsonNode metadataAsNode = mapper.readTree(mapper.writeValueAsString(copy));
                 dataNode.set("_metadata", metadataAsNode);
@@ -367,8 +367,8 @@ public class ImportUtilities<T> {
             log.trace("Data for id {} retrieved", stagingRecordId);
             objectJson = importData.getData();
             objectClass = importData.getEntityClassName();
-            recordId = importData.getRecordId();
-            log.trace("looking for data for record id {} - instance id {}", importData.getRecordId(),
+            recordId = importData.getOwner().getRecordId();
+            log.trace("looking for data for record id {} - instance id {}", importData.getOwner().getRecordId(),
                     importData.getInstanceId());
             ImportMetadata metadata = stagingAreaService.getImportMetaData(recordId.toString(), 0);
             //todo: figure out whether to do the same for records marked 'merged'

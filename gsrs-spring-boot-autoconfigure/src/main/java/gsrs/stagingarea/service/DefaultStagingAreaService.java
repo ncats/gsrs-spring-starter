@@ -125,15 +125,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         data.setData(parameters.getJsonData());
         UUID recordId = UUID.randomUUID();
         UUID instanceId = UUID.randomUUID();
-        data.setRecordId(recordId);
-        data.setVersion(1);
-        data.setInstanceId(instanceId);
-        data.setSaveDate(TimeUtil.getCurrentDate());
-        data.setEntityClassName(parameters.getEntityClassName());
-        Objects.requireNonNull(importDataRepository, "importDataRepository is required");
-        ImportData saved = importDataRepository.saveAndFlush(data);
-
-        //step 2 - save metadata
         ImportMetadata metadata = new ImportMetadata();
         metadata.setRecordId(recordId);
         metadata.setInstanceId(instanceId);
@@ -156,10 +147,20 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
         metadataRepository.saveAndFlush(metadata);
 
+        data.setOwner(metadata);
+        data.setVersion(1);
+        data.setInstanceId(instanceId);
+        data.setSaveDate(TimeUtil.getCurrentDate());
+        data.setEntityClassName(parameters.getEntityClassName());
+        Objects.requireNonNull(importDataRepository, "importDataRepository is required");
+        ImportData saved = importDataRepository.saveAndFlush(data);
+
+        //step 2 - save metadata
+
         //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
             try {
-                saveRawData(parameters.getRawDataSource(), recordId);
+                saveRawData(parameters.getRawDataSource(), metadata);
             } catch (IOException exception) {
                 log.error("Error processing raw data", exception);
             }
@@ -206,7 +207,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
             if (response != null) {
                 domainObject = response.getNewObject();
-                persistValidationInfo(response, 1, instanceId);
+                persistValidationInfo(response, 1, data);
                 overallStatus = getOverallValidationStatus(response);
                 try {
                     importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
@@ -227,7 +228,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.trace("going to match");
             List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
             definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-            persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
+            persistDefinitionalValues(definitionalValueTuples, instanceId, metadata, parameters.getEntityClassName());
 
             //event driven: each step in process sends an event (pub/sub) look in ... indexing
             //  validation, when done would trigger the next event via
@@ -250,7 +251,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             handleIndexing(metadata);
         }
 
-        return saved.getRecordId().toString();
+        return saved.getOwner().getRecordId().toString();
     }
 
     private void handleIndexing(ImportMetadata importMetadata){
@@ -298,7 +299,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         transactionDelete.executeWithoutResult(r -> {
             importDataRepository.save(newVersion);
             try {
-                propagateUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
+                propagateUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestExisting);
                 //retrieve importMetadata again because it has changed
                 ImportMetadata updatedImportMetadata= metadataRepository.retrieveByRecordID(UUID.fromString(recordId));
                 //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
@@ -494,14 +495,14 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             if (m.getValue() != null && m.getValue().length() > 0) {
                 log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
                 List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
-                        .filter(ma->startingRecordId==null || !ma.getRecordId().toString().equals(startingRecordId))
+                        .filter(ma->startingRecordId==null || !ma.getOwner().getRecordId().toString().equals(startingRecordId))
                         .map(ma -> {
                             MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
                             builder
                                     .sourceName(ma.getDataLocation())
                                     .matchedKey(m.getKey());
-                            if (ma.getRecordId() != null) {
-                                builder.recordId(EntityUtils.Key.of(objectClass, ma.getRecordId()));
+                            if (ma.getOwner().getRecordId() != null) {
+                                builder.recordId(EntityUtils.Key.of(objectClass, ma.getOwner().getRecordId()));
                             } else {
                                 log.trace("skipping item without an recordID");
                             }
@@ -615,20 +616,20 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
 
-    private String saveRawData(InputStream rawData, UUID id) throws IOException {
+    private String saveRawData(InputStream rawData, ImportMetadata importMetadata) throws IOException {
         RawImportData rawImportData = new RawImportData();
 
         rawImportData.setRawData(IOUtils.toByteArray(rawData));
-        rawImportData.setRecordId(id);
+        rawImportData.setOwner(importMetadata);
         RawImportData savedRawImportData = rawImportDataRepository.saveAndFlush(rawImportData);
-        return savedRawImportData.getRecordId().toString();
+        return savedRawImportData.getOwner().getRecordId().toString();
     }
 
     /*
     question: does this method need to return something?
      */
-    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId,
-                                           String matchedEntityClass) {
+    private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId,
+                                           ImportMetadata importMetadata, String matchedEntityClass) {
 
         definitionalValues.forEach(kv -> {
 
@@ -640,7 +641,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
             mapping.setValue(valueToStore);
             mapping.setInstanceId(instanceId);
-            mapping.setRecordId(recordId);
+            mapping.setOwner(importMetadata);
             mapping.setEntityClass(matchedEntityClass);
             mapping.setDataLocation(STAGING_AREA_LOCATION);
             keyValueMappingRepository.saveAndFlush(mapping);
@@ -655,7 +656,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
 
-    private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
+    private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, ImportData owner) {
         List<UUID> validationIds = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
             ImportValidation.ImportValidationType type = ImportValidation.ImportValidationType.info;
@@ -672,7 +673,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                     .ValidationJson(validationResponse.toString())
                     .ValidationMessage(m.getMessage())
                     .version(version)
-                    .instanceId(instanceId)
+                    .owner(owner)
                     .build();
 
             importValidationRepository.saveAndFlush(validation);
@@ -769,7 +770,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     After a domain entity within the staging area is updated, we rerun validation and matching and store the results
     call this method inside a transaction
      */
-    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
+    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, ImportData importData) throws JsonProcessingException {
         log.trace("starting in propagateUpdate");
         //step 1: deserialize domain object
         Object domainObject = deserializeObject(entityType, entityJson);
@@ -781,7 +782,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         importValidationRepository.deleteByInstanceId(importMetadata.getInstanceId());
         log.trace("cleared out previous validations");
         //step 3b: persist new validations
-        persistValidationInfo(response, importMetadata.getVersion(), newInstanceId);
+        persistValidationInfo(response, importMetadata.getVersion(), importData);
         log.trace("persisted new validations");
         //step 4: calculate matchables
         List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
@@ -791,7 +792,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         keyValueMappingRepository.deleteByRecordId(importMetadata.getRecordId());
         log.trace("deleted previous matchables");
         //step 5b: persist new matchables
-        persistDefinitionalValues(definitionalValueTuples, newInstanceId, importMetadata.getRecordId(), importMetadata.getEntityClassName());
+        persistDefinitionalValues(definitionalValueTuples, importData.getInstanceId(), importMetadata,
+                importMetadata.getEntityClassName());
         log.trace("persisted new matchables");
         //step 6: increment version
         metadataRepository.incrementVersion(importMetadata.getRecordId());

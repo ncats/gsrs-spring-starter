@@ -1,6 +1,8 @@
 package gsrs.stagingarea.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.models.Indexable;
+import ix.core.models.ParentReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,10 +46,15 @@ public class ImportValidation {
      * foreign key to ImportData object
      */
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = true, unique = false, nullable = true, name="instance_id")
-    @Indexable
-    private UUID instanceId;
+    //@Type(type = "uuid-char" )
+    //@Column(length =40, updatable = true, unique = false, nullable = true, name="instance_id")
+    //@Indexable
+    //private UUID instanceId;
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JsonIgnore
+    @ParentReference
+    private ImportData owner;
+
 
     /**
      * Set to 1 in all cases.  Use the version value in ImportData (via instanceId) for latest values of version

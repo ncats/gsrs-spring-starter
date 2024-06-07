@@ -1,8 +1,10 @@
 package gsrs.stagingarea.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.models.Backup;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
+import ix.core.models.ParentReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,13 +39,17 @@ public class ImportData {
     /**
      * Foreign key, referencing ImportMetadata
      */
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
-    @GeneratedValue(generator = "NullUUIDGenerator")
+    //@GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    //@GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
-    @Indexable(name="RecordId")
-    private UUID recordId;
+    //@Type(type = "uuid-char" )
+    //@Column(length =40, updatable = false, unique = false)
+    //@Indexable(name="RecordId")
+    //private UUID recordId;
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JsonIgnore
+    @ParentReference
+    private ImportMetadata owner;
 
     /**
      * Primary key

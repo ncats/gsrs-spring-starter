@@ -605,7 +605,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         if (requestedDataItem != null) {
             log.trace(" found data ");
             //log.trace(requestedDataItem.getData());
-            matchingMetadata = service.getImportMetaData(requestedDataItem.getRecordId().toString(), 0);
+            matchingMetadata = service.getImportMetaData(requestedDataItem.getOwner().getRecordId().toString(), 0);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode realData = mapper.readTree(requestedDataItem.getData());
             log.trace("converted to JsonNode");

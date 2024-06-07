@@ -1,6 +1,7 @@
 package gsrs.dataexchange.repository;
 
 import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.KeyValueMapping;
 import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
@@ -45,9 +46,9 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
     public void testDeleteByRecordId() {
         createSomeRecords();
         log.trace("in testDeleteByRecordId");
-        boolean before =keyValueMappingRepository.findAll().stream().anyMatch(m->m.getRecordId().equals(id1));
+        boolean before =keyValueMappingRepository.findAll().stream().anyMatch(m->m.getOwner().getRecordId().equals(id1));
         keyValueMappingRepository.deleteByRecordId(id1);
-        boolean after =keyValueMappingRepository.findAll().stream().anyMatch(m->m.getRecordId().equals(id1));
+        boolean after =keyValueMappingRepository.findAll().stream().anyMatch(m->m.getOwner().getRecordId().equals(id1));
         Assertions.assertNotEquals(before, after);
     }
 
@@ -62,10 +63,12 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
     }
 
     private void createSomeRecords() {
+        ImportMetadata ownerObject = new ImportMetadata();
+        ownerObject.setRecordId(id1);
         KeyValueMapping mapping1 = new KeyValueMapping();
         mapping1.setDataLocation(LOCATION_ONE);
         mapping1.setMappingId(UUID.randomUUID());
-        mapping1.setRecordId(id1);
+        mapping1.setOwner(ownerObject);
         mapping1.setKey("key 1");
         mapping1.setValue("value 1");
         keyValueMappingRepository.saveAndFlush(mapping1);
@@ -73,7 +76,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
         KeyValueMapping mapping2 = new KeyValueMapping();
         mapping2.setDataLocation(LOCATION_ONE);
         mapping2.setMappingId(UUID.randomUUID());
-        mapping2.setRecordId(id1);
+        mapping2.setOwner(ownerObject);
         mapping2.setKey("key 2");
         mapping2.setValue("value 2");
         keyValueMappingRepository.saveAndFlush(mapping2);
@@ -81,7 +84,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
         KeyValueMapping mapping3 = new KeyValueMapping();
         mapping3.setDataLocation(LOCATION_TWO);
         mapping3.setMappingId(UUID.randomUUID());
-        mapping3.setRecordId(id1);
+        mapping3.setOwner(ownerObject);
         mapping3.setKey("key 1");
         mapping3.setValue("value 1");
         keyValueMappingRepository.saveAndFlush(mapping3);
@@ -89,7 +92,7 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
         KeyValueMapping mapping4 = new KeyValueMapping();
         mapping4.setDataLocation(LOCATION_TWO);
         mapping4.setMappingId(UUID.randomUUID());
-        mapping4.setRecordId(id1);
+        mapping4.setOwner(ownerObject);
         mapping4.setKey("key 2");
         mapping4.setValue("value 2");
         keyValueMappingRepository.saveAndFlush(mapping4);

@@ -114,7 +114,7 @@ public class CalculateStagingAreaMatchablesScheduledTask extends ScheduledTaskIn
                                         mapping.setKey(kv.getKey());
                                         mapping.setValue(kv.getValue());
                                         mapping.setQualifier(kv.getQualifier());
-                                        mapping.setRecordId(importMetadata.getRecordId());
+                                        mapping.setOwner(importMetadata);
                                         mapping.setEntityClass(importMetadata.getEntityClassName());
                                         mapping.setInstanceId(relatedData.getInstanceId());
                                         mapping.setDataLocation(STAGING_AREA_LOCATION);
