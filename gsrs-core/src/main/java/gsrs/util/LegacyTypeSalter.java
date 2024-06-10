@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-import static java.lang.String.valueOf;
-
 @Data
 @Slf4j
 public class LegacyTypeSalter implements Salter {
@@ -22,7 +20,7 @@ public class LegacyTypeSalter implements Salter {
         prefix = newPrefix;
     }
 
-    private String algorithm = "NativePRNG";
+    private String algorithm = "DRBG";
 
     @Override
     public void setHasher(Hasher hasher) {
