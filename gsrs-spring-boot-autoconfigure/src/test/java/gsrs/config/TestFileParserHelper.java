@@ -1,13 +1,16 @@
 package gsrs.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 
 import gsrs.config.FilePathParserUtils.FileParser;
+
+import javax.swing.plaf.synth.SynthTextAreaUI;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestFileParserHelper {
@@ -99,8 +102,6 @@ public class TestFileParserHelper {
         
         assertEquals(new File("test").toPath().normalize(), f.toPath().normalize());
     }
-    
-
 
     @Test
     public void nullSuppliedGivenDefaultRelativeWithSetRootShouldBeAbsolute() throws IOException {
@@ -112,6 +113,70 @@ public class TestFileParserHelper {
 
         assertEquals(new File("/tmp/test"), f);
     }
-    
-    
+
+    @Test
+    public void testFailOnBadPathResolutionNormal() throws IOException {
+        boolean hasException = false;
+        try {
+            // Should succeed since normalized path ok
+            FilePathParserUtils.failOnBadPathResolution("/tmp", "my-file.txt");
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            hasException = true;
+        }
+        assertFalse(hasException);
+    }
+
+    @Test
+    public void testFailOnBadPathResolutionSingleDot1() throws IOException {
+        boolean hasException = false;
+        try {
+            // Should succeed since path resolves to /tmp/my-file.txt
+            FilePathParserUtils.failOnBadPathResolution("/tmp", "./my-file.txt");
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            hasException = true;
+        }
+        assertFalse(hasException);
+    }
+
+    @Test
+    public void testFailOnBadPathResolutionDotDot1() throws IOException {
+        boolean hasException = false;
+        try {
+            // Should succeed since path resolves to /tmp/my-file.txt
+            FilePathParserUtils.failOnBadPathResolution("/tmp", "../tmp/my-file.txt");
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            hasException = true;
+        }
+        assertFalse(hasException);
+    }
+
+    @Test
+    public void testFailOnBadPathResolutionDotDot2() throws IOException {
+        boolean hasException = false;
+        try {
+            // Should fail since path resolves to /etc/my-file.txt
+            FilePathParserUtils.failOnBadPathResolution("/tmp", "../etc/my-file.txt");
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            hasException = true;
+        }
+        assertTrue(hasException);
+    }
+
+    @Test
+    public void testFailOnBadPathResolutionAbsolutePathException() throws IOException {
+        boolean hasException = false;
+        try {
+            // Should fail due to absolute path
+            FilePathParserUtils.failOnBadPathResolution("/tmp", "/my/abs/path");
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            hasException = true;
+        }
+        assertTrue(hasException);
+    }
+
 }
