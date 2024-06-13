@@ -4,6 +4,7 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.UserProfileAuthenticationResult;
@@ -225,6 +226,7 @@ public class UserProfile extends IxModel{
 			setIsDirty("hashp");
 		} catch (Exception ex) {
 			log.error("Error occurred during password processing");
+			Sneak.sneakyThrow(new RuntimeException("An error occurred processing this user account"));
 		}
 	}
 

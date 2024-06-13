@@ -20,6 +20,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,6 +50,8 @@ public class Util {
 //    		ConfigHelper.supplierOf("ix.tokenexpiretime",(long)(3600*1000*24));
 
     private static int BUFFER_SIZE = 8192; //8K
+
+    private static String randomizationAlgorithm = "DRBG blah";
 
     static Random rand = new Random ();
     public static String randomUserAgent () {
@@ -401,10 +404,6 @@ public class Util {
             is2 = getUncompressedInputStream(is2, test);
         }
         return is2;
-    }
-
-    public static String generateSalt() {
-        return Util.encrypt(TimeUtil.getCurrentDate().toString(), String.valueOf(Math.random()));
     }
 
     public static byte[] serialize (Object obj) throws IOException {

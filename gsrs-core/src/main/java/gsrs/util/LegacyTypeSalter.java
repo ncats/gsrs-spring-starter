@@ -20,7 +20,7 @@ public class LegacyTypeSalter implements Salter {
         prefix = newPrefix;
     }
 
-    private String algorithm = "DRBG";
+    private String randomizationAlgorithm = "DRBG blah";
 
     @Override
     public void setHasher(Hasher hasher) {
@@ -29,13 +29,13 @@ public class LegacyTypeSalter implements Salter {
 
     @Override
     public String generateSalt() throws Exception {
+        log.trace("starting in generateSalt()");
         try {
-
             String text = "---" + TimeUtil.getCurrentDate().toString() + "---"
-                    + String.valueOf(SecureRandom.getInstance(algorithm).nextDouble()) + "---";
+                    + String.valueOf(SecureRandom.getInstance(randomizationAlgorithm).nextDouble()) + "---";
             return prefix + hasher.hash(text);
         } catch (NoSuchAlgorithmException e) {
-            log.error("Configured algorithm not available");
+            log.error("Configured randomization algorithm not available");
             throw e;
         }
     }
