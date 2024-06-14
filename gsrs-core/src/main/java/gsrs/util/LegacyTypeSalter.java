@@ -20,7 +20,7 @@ public class LegacyTypeSalter implements Salter {
         prefix = newPrefix;
     }
 
-    private String randomizationAlgorithm = "DRBG blah";
+    private String randomizationAlgorithm = "DRBG";
 
     @Override
     public void setHasher(Hasher hasher) {
