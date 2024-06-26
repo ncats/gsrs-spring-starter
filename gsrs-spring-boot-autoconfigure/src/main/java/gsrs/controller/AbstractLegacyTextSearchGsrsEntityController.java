@@ -387,6 +387,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                                                  @RequestParam("sortBy") Optional<String> sortBy,
                                                  @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
+    	
+    	    	
         SearchOptions so = new SearchOptions.Builder()
                 .kind(getEntityService().getEntityClass())
                 .top(Integer.MAX_VALUE) // match Play GSRS
@@ -399,20 +401,17 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
-                
+                               
         String cacheID = getFacetCacheID("", query.orElse(""), so, field.orElse(""));
         log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
-        if(tv == null) {
-        	tv = getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));                
-        	gsrscache.setRaw(cacheID, tv);
-        	log.info("/search/@facet: getting facets from indexes");
-        }else {
-        	log.info("/search/@facet: getting facets from cache");
+        if(tv == null) {        	
+        	tv = getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));           	
+        	gsrscache.setRaw(cacheID, tv);        	
         }
         
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
@@ -445,20 +444,17 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
         
         String cacheID = getFacetCacheID("", "", so, field.orElse(""));
-        log.info("cache ID: " + cacheID);
+//        log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
         if(tv == null) {
         	tv = getlegacyGsrsSearchService().getTermVectors(field);                
-        	gsrscache.setRaw(cacheID, tv);
-        	log.info("/@facet: getting facets from indexes");
-        }else {
-        	log.info("/@facet: getting facets from cache");
+        	gsrscache.setRaw(cacheID, tv);        	
         }
         
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
@@ -1470,7 +1466,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     protected String getFacetCacheID(String namespace, String query, SearchOptions so, String field) {
-    	return namespace + "FacetSearch/" + query + field + ",ffilter=" + so.getFfilter()
-    		+",fskip=" + so.getFskip() + "," + so.toString();
+    	SearchRequest.Builder builder = new SearchRequest.Builder();
+    	String SRHash = builder.options(so).query(query).build().getDefiningSetSha1();
+    	return namespace + "FacetSearch/" + field + SRHash;
     }
 }
