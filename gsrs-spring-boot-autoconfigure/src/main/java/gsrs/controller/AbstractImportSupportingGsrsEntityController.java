@@ -1089,7 +1089,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
             userName = GsrsSecurityUtils.getCurrentUsername().get();
             userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
@@ -1098,10 +1098,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
         if(tv == null) {
             tv = getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
-        	gsrscache.setRaw(cacheID, tv);
-        	log.info("staging: getting facets from indexes");
-        }else {
-        	log.info("staging: getting facets from cache");
+        	gsrscache.setRaw(cacheID, tv);        	
         }
 
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
