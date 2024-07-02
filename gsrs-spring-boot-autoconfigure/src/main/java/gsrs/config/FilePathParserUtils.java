@@ -103,34 +103,4 @@ public class FilePathParserUtils {
         }
     }
 
-// Probably delete this
-//    public static void failIfDirectoryTraversal(String baseDirectoryPath , String relativePath)
-//    {
-//        File relativePathFile = Paths.get(relativePath).toFile();
-//        if (relativePathFile.isAbsolute()) {
-//            throw new RuntimeException("Directory traversal attempt - absolute path not allowed");
-//        }
-//        String combinedPathUsingCanonical;
-//        String combinedPathUsingAbsolute;
-//
-//        try
-//        {
-//            combinedPathUsingCanonical =Paths.get(baseDirectoryPath, relativePath).toFile().getCanonicalPath();
-//            combinedPathUsingAbsolute = Paths.get(baseDirectoryPath, relativePath).toFile().getAbsolutePath();
-//        }
-//        catch (IOException e)
-//        {
-//            throw new RuntimeException("Directory traversal attempt?", e);
-//        }
-//        // Require the absolute path and canonicalized path match.
-//        // This is done to avoid directory traversal
-//        // attacks, e.g. "1/../2/"
-//        if (! combinedPathUsingCanonical.equals(combinedPathUsingAbsolute))
-//        {
-//            throw new RuntimeException("Directory traversal attempt?");
-//        }
-//    }
-
-
-
 }
