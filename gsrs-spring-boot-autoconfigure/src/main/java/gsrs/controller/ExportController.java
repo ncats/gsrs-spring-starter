@@ -185,10 +185,6 @@ public class ExportController {
 
         File f = exportFile.get().getFile();
 
-        // __aw__ come back
-        // FilePathParserUtils.failIfDirectoryTraversal(f.getPath());
-
-
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
