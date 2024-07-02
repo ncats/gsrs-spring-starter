@@ -127,6 +127,13 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     }
     
     @Data
+	public static class ReindexJobStatus{
+    	private UUID statusID;
+    	private String status;    	
+    	private boolean done;    	 	
+    }
+    
+    @Data
     private class UserListStatus{
     	private UUID statusID;
     	private String status;
@@ -276,8 +283,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				Key k = Key.ofStringId(eclass, entityID.get());
     				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true, excludeExternal);
-        			stat.indexed++;  				
-    				
+        			stat.indexed++;
     			}catch(Exception e) {
     				log.warn("trouble reindexing id: " + id, e);
     				stat.failed++;
@@ -634,6 +640,43 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
+    }
+    
+    
+    public ReindexJobStatus syncIndexesWithDatabaseWithStatus() {
+
+    	List<Key> keysInDatabase = getKeys();
+    	List<Key> keysInIndex = searchEntityInIndex();    	
+    	
+    	ReindexJobStatus jobStat = new ReindexJobStatus();
+		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));		
+		if(extraInDatabase.isEmpty()) {
+			jobStat.setStatusID(UUID.randomUUID());
+			jobStat.setDone(true);			
+			jobStat.setStatus("Done, database and index are in sync");			
+		}else {
+			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
+			ReindexStatus stat = bulkReindexListOfIDs(list, false);
+			jobStat.setStatusID(stat.getStatusID());
+			jobStat.setDone(stat.isDone());
+			jobStat.setStatus(stat.getStatus());			
+		}
+		return jobStat;
+    }
+    
+    public ReindexJobStatus getJobStatus(UUID id) {
+    	
+    	ReindexJobStatus jobStat = new ReindexJobStatus();
+    	jobStat.setStatusID(id);
+    	ReindexStatus stat = reindexing.get(id.toString());
+    	if(stat == null) {
+    		jobStat.setDone(true);
+    		jobStat.setStatus("No job exists with this ID.");
+    	}else {
+    		jobStat.setDone(stat.isDone());
+    		jobStat.setStatus(stat.getStatus());
+    	}
+    	return jobStat;
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
