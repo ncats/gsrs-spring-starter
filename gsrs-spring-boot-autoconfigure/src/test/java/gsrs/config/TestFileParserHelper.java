@@ -2,14 +2,8 @@ package gsrs.config;
 
 import java.io.File;
 import java.io.IOException;
-
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
-
 import gsrs.config.FilePathParserUtils.FileParser;
-
-import javax.swing.plaf.synth.SynthTextAreaUI;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 
