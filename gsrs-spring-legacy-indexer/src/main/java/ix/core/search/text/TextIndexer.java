@@ -458,37 +458,53 @@ public class TextIndexer implements Closeable, ProcessListener {
             		}
             	}           
             }
+                  
+            if(userName.isEmpty() || userLists.size() == 0) {
             
-            terms.entrySet()
-                .stream()
-                .parallel()
-                .map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
-                .filter(filt)
-                .map(t->new FV(fac,t.k(),t.v()))
-                .filter(fv->{
-                	if(field.equalsIgnoreCase("User List")) {
-                		// check the current user, filter facet by user name
-                		UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
-                		String nameInLabel = dataItem.getUserName();
-                		String listName = dataItem.getListName();                		
-                		if(userName.isEmpty() || userLists.size() == 0) {
-                			return false;                		
-                		}else if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
-                			return true;
-                		}else {
-                			return false;
-                		}
-                	}else {
-                		return true;
-                	}                		
-                })
-                .collect(StreamUtil.maxElements(top+skip, facetComparator))
-                .skip(skip)
-                .limit(top)
-                .forEach(fv->{
-                    fac.add(fv);
-                });
-          
+            	terms.entrySet()
+            		.stream()
+            		.parallel()
+            		.map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
+            		.filter(filt)
+            		.map(t->new FV(fac,t.k(),t.v()))                
+            		.collect(StreamUtil.maxElements(top+skip, facetComparator))
+            		.skip(skip)
+            		.limit(top)
+            		.forEach(fv->{
+            			fac.add(fv);
+            		});
+            }else {
+            
+            	terms.entrySet()
+            	.stream()
+            	.parallel()
+            	.map(es->Tuple.of(es.getKey(), es.getValue().getNDocs()))
+            	.filter(filt)
+            	.map(t->new FV(fac,t.k(),t.v()))
+            	.filter(fv->{
+            		if(field.equalsIgnoreCase("User List")) {
+            			// check the current user, filter facet by user name
+            			UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(fv.getLabel());
+            			String nameInLabel = dataItem.getUserName();
+            			String listName = dataItem.getListName();                		
+            			if(userName.equalsIgnoreCase(nameInLabel) && userLists.contains(listName)) {
+            				return true;
+            			}else {
+            				return false;
+            			}
+            		}else {
+            			return true;
+            		}                		
+            	})
+            	.collect(StreamUtil.maxElements(top+skip, facetComparator))
+            	.skip(skip)
+            	.limit(top)
+            	.forEach(fv->{
+            		fac.add(fv);
+            	});
+            
+            }          
+            
             return new FacetMeta.Builder()
 					            .facets(fac)
 					            .ffilter(filter)
@@ -558,6 +574,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
         private TermVectorsCollector (Class<T> kind, String originalField, IndexSearcher searcher, Query extrafilter, Query q)
             throws IOException {
+      	
             String adaptedField = TERM_VEC_PREFIX + originalField;
 
             tvec = new TermVectors (kind, adaptedField);
@@ -571,11 +588,10 @@ public class TextIndexer implements Closeable, ProcessListener {
                       .collect(Collectors.toSet());
             fieldSet.add(FIELD_KIND);
 
-
             this.reader = searcher.getIndexReader();
 
             Query filter = filterForKinds(kind);
-
+            
             if(q==null){
                 q = new MatchAllDocsQuery();
             }
@@ -592,18 +608,19 @@ public class TextIndexer implements Closeable, ProcessListener {
                         .add(filter, BooleanClause.Occur.FILTER)
                         .build();
             }
-
+            
             searcher.search(q, this);
-
+            
             Collections.sort(tvec.docs);
-
+            
             tvec.terms= counts.entrySet()
                     .stream()
                     .map(Tuple::of)
                     .map(Tuple.vmap(DocumentSet::of))
                     .collect(Tuple.toMap());
             counts = null;
-
+           
+            
         }
 
 //
