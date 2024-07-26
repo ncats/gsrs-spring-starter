@@ -7,18 +7,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Stack;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceContext;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
  * @param <I> the type for the entity's ID.
  */
 @Slf4j
-public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityService<T, I> {
+public abstract class AbstractGsrsEntityService<T,I> extends  AbstractGsrsRetrievalEntityService<T, I> implements GsrsEntityService<T, I> {
 
     
     @Autowired
@@ -81,9 +77,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     private String substanceCreatedKey, substanceUpdatedKey, substanceFailedKey;
 
-    private final String context;
-    private final Pattern idPattern;
-
     private CachedSupplier<ValidatorFactory> validatorFactory;
     /**
      * Create a new GSRS Entity Service with the given context.
@@ -100,19 +93,9 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     public AbstractGsrsEntityService(String context, Pattern idPattern,
                                      String exchangeName,
-                                     String entityCreateKey, 
+                                     String entityCreateKey,
                                      String entityUpdateKey) {
-        this.context = Objects.requireNonNull(context, "context can not be null");
-        this.idPattern = Objects.requireNonNull(idPattern, "ID pattern can not be null");
-        this.exchangeName = exchangeName;
-        if(exchangeName !=null) {
-            this.substanceCreatedKey = Objects.requireNonNull(entityCreateKey);
-            this.substanceUpdatedKey = Objects.requireNonNull(entityUpdateKey);
-        }else{
-            //ignore fields
-            this.substanceCreatedKey = entityCreateKey;
-            this.substanceUpdatedKey = entityUpdateKey;
-        }
+        super(context, idPattern, exchangeName, entityCreateKey, entityUpdateKey);
     }
     /**
      * Create a new GSRS Entity Service with the given context.
@@ -128,21 +111,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     public AbstractGsrsEntityService(String context, IdHelper idHelper, String exchangeName,
                                      String entityCreateKey, String entityUpdateKey) {
         this(context, Pattern.compile("^"+idHelper.getRegexAsString() +"$"), exchangeName, entityCreateKey, entityUpdateKey);
-    }
-
-    @Override
-    public String getContext() {
-        return context;
-    }
-
-    @PostConstruct
-    private void initValidator(){
-        //need this in a post construct so the validator factory service is injected
-        //This is added to the initization Group so that we can reset this in tests
-
-        //This cache might be unncessary as of now the call to newFactory isn't cached
-        //by tests where the return value could change over time?  but keep it here anyway for now...
-        validatorFactory = ENTITY_SERVICE_INTIALIZATION_GROUP.add(()->validatorFactoryService.newFactory(context));
     }
 
     /**
@@ -286,6 +254,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      * The returned object may have different fields set like  audit information etc.
      */
     protected abstract T update(T t);
+
 
 
     @Override
@@ -718,69 +687,4 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     }
 
-    private boolean isId(String s){
-        Matcher idMatch = idPattern.matcher(s);
-        return idMatch.matches();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<T> getEntityBySomeIdentifier(String id) {
-        Optional<T> opt;
-        if(isId(id)) {
-            opt = get(parseIdFromString(id));
-        }else {
-            opt = flexLookup(id);
-        }
-        return opt;
-    }
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<I> getEntityIdOnlyBySomeIdentifier(String id) {
-        Optional<I> opt;
-        if(isId(id)) {
-            opt = Optional.ofNullable(parseIdFromString(id));
-        }else {
-            opt = flexLookupIdOnly(id);
-        }
-        return opt;
-    }
-
-    /**
-     * Fetch an entity's real ID from the data repository using a unique
-     * identifier that isn't the entity's ID.  Override this method
-     * if a more efficient query can be made rather than fetching the whole record.
-     *
-     * @implSpec the default implementation of this method is:
-     * <pre>
-     * {@code
-     *  Optional<T> opt = flexLookup(someKindOfId);
-     *  if(!opt.isPresent()){
-     *     return Optional.empty();
-     *  }
-     *  return Optional.of(getIdFrom(opt.get()));
-     * }
-     * </pre>
-     * @param someKindOfId a String that isn't the ID of the entity.
-     * @return an Optional that is empty if there is no entity with the given id;
-     *  or an Optional that has the found entity's ID.
-     */
-    protected Optional<I> flexLookupIdOnly(String someKindOfId){
-        Optional<T> opt = flexLookup(someKindOfId);
-        if(!opt.isPresent()){
-            return Optional.empty();
-        }
-        return Optional.of(getIdFrom(opt.get()));
-    }
-
-    /**
-     * Fetch an entity from the data repository using a unique
-     * identifier that isn't the entity's ID.
-     *
-     * @param someKindOfId a String that isn't the ID of the entity.
-     * @return an Optional that is empty if there is no entity with the given id;
-     *  or an Optional that has the found entity.
-     */
-    @Transactional
-    public abstract Optional<T> flexLookup(String someKindOfId);
 }

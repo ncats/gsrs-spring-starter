@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
@@ -23,7 +22,6 @@ import javax.persistence.Id;
 import javax.persistence.metamodel.Metamodel;
 import javax.servlet.http.HttpServletRequest;
 
-import org.hibernate.metadata.ClassMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -58,9 +56,6 @@ import ix.core.util.EntityUtils.Key;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
-//import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
-//import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
-//import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -77,17 +72,15 @@ import lombok.extern.slf4j.Slf4j;
  * @see GsrsRestApiController
  */
 @Slf4j
-public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityController, T, I> implements GsrsEntityController<T, I> {
+public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityController, T, I>
+        extends AbstractGsrsRetrievalEntityController<AbstractGsrsEntityController, T, I>
+        implements GsrsEntityController<T, I>
+{
 
-    private static Pattern VERSIONED_ROUTE = Pattern.compile("^v/(\\d+)$");
-    @Autowired
-    protected GsrsControllerConfiguration gsrsControllerConfiguration;
 
     @Autowired
     private BackupRepository backupRepository;
 
-    @Autowired
-    private EntityLinks entityLinks;
 
 
 //    /**
@@ -122,13 +115,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return gsrsControllerConfiguration;
     }
 
-    protected EntityLinks getEntityLinks(){
-        return entityLinks;
-    }
-
-    protected Optional<LinkBuilder> getLinkBuilderForEntity(Class entity){
-        return GsrsLinkUtil.getEntityLinkForClassOrParentClass(entity, entityLinks);
-    }
     protected abstract GsrsEntityService<T, I> getEntityService();
 
     //    @GetGsrsRestApiMapping("/{id:$ID}/index")
@@ -154,7 +140,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> createEntity(@RequestBody JsonNode newEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
-        GsrsEntityService<T, I> entityService = getEntityService();
+        GsrsEntityService<T, I> entityService = (GsrsEntityService<T, I>) getEntityService();
         AbstractGsrsEntityService.CreationResult<T> result =null;
         try {
             result = entityService.createEntity(newEntityJson);
@@ -168,14 +154,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
 
         return new ResponseEntity<>(result.getValidationResponse(),gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
-
-
-    }
-
-
-
-    protected void addAdditionalLinks(GsrsUnwrappedEntityModel model){
-
     }
 
 
@@ -214,35 +192,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         //match 200 status of old GSRS
         return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
     }
-    @Transactional(readOnly = true)
-    @Override
-    @GetGsrsRestApiMapping(value={"({id})/**", "/{id}/**" })
-    public ResponseEntity<Object> getFieldById(@PathVariable("id") String id,
-                                               @RequestParam(value="urldecode", required = false) Boolean urlDecode,
-                                               @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
-        
-    	//This uses an entity fetcher instead of the existing lookup services
-    	//since entity fetchers tend to be faster
-    	Optional<T> ent = getEntityService()
-			    			.getEntityIdOnlyBySomeIdentifier(id)
-			    			.map(ii->(I)ii)
-			    			.map(ii->{
-			    				Key k=Key.of(getEntityService().getEntityClass(), (Object)ii);
-			    				return k;
-			    			})
-			    			.map(k->EntityFetcher.of(k).getIfPossible())
-			    			.filter(ff->ff.isPresent())
-			    			.map(f->(T)f.get());
-//    	Old way
-//    	Optional<T> ent = getEntityService().getEntityBySomeIdentifier(id);
-    	
-        return returnOnySpecifiedFieldPartFor(ent, urlDecode, queryParameters, request);
-    }
-
-
-    protected Optional<EditRepository> editRepository(){
-        return Optional.empty();
-    }
 
     /**
      * Handle special field mappings, this is where any special custom API fields (Like "@hierarchy for Substances)
@@ -257,7 +206,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return null;
     }
 
-    private Optional<Object> handleFields(EntityUtils.EntityWrapper<T> entity, String field){
+    @Override
+    public Optional<Object> handleFields(EntityUtils.EntityWrapper<T> entity, String field){
         List<BiFunction<EntityUtils.EntityWrapper<T>, String, Optional<Object>>> functions = Arrays.asList(
                 this::handleEdit,
                 this::handleVersion
@@ -273,27 +223,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return handleSpecialFields(entity, field);
     }
 
-    private Optional<Object> handleVersion(EntityUtils.EntityWrapper<T> ew, String field){
-        Matcher m = VERSIONED_ROUTE.matcher(field);
-        if(m.find()){
-            Optional<EditRepository> editRepository = editRepository();
-            if(editRepository.isPresent()){
-                Optional<Object> nativeIdFor = ew.getEntityInfo().getNativeIdFor(ew.getValue());
-                if(nativeIdFor.isPresent()) {
-                    List<Edit> editList = editRepository.get().findByRefidAndVersion(nativeIdFor.get().toString(), m.group(1));
-                    if(editList!=null && !editList.isEmpty()){
-                        try {
-                            return Optional.of(ew.getEntityInfo().fromJson(editList.get(0).newValue));
-                        } catch (IOException e) {
-                            log.error("error fetching edit from json", e);
-                        }
-                    }
-                }
-            }
-            return Optional.empty();
-        }
-        return null;
-    }
     private Optional<Object> handleEdit(EntityUtils.EntityWrapper<T> ew, String field){
         if(field.startsWith("@edits")){
             Optional<EditRepository> editRepository = editRepository();
@@ -324,80 +253,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         return null;
     }
-    private ResponseEntity<Object> returnOnySpecifiedFieldPartFor(Optional<T> opt,
-                                                                  @RequestParam("urldecode") Boolean urlDecode,
-                                                                  @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws UnsupportedEncodingException {
-        if(!opt.isPresent()){
-            return gsrsControllerConfiguration.handleNotFound(queryParameters);
-        }
-        String field = GsrsControllerUtil.getEndWildCardMatchingPartOfUrl(request);
-        //handle urldecode
-        if(Boolean.TRUE.equals(urlDecode)){
-            field =URLDecoder.decode(field, "UTF-8");
-        }
-        EntityUtils.EntityWrapper<T> ew = EntityUtils.EntityWrapper.of(opt.get());
-   
-        if(field !=null){
-            Optional<Object> fieldOpt =  handleFields(ew,field);
-            if(fieldOpt !=null){
-                if(fieldOpt.isPresent()){
-                    Object o = fieldOpt.get();
-                    if(o instanceof List){
-                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView((List) o, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
-
-                    }else {
-                        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(o, queryParameters, this::addAdditionalLinks), HttpStatus.OK);
-                    }
-                }else{
-                    return gsrsControllerConfiguration.handleNotFound(queryParameters);
-                }
-            }
-        }
-        PojoPointer pojoPointer = PojoPointer.fromURIPath(field);
-
-        Optional<EntityUtils.EntityWrapper<?>> at = ew.at(pojoPointer);
-        if(!at.isPresent()){
-            return gsrsControllerConfiguration.handleNotFound(queryParameters);
-        }
-        //match old Play version of GSRS which either return JSON for an object or raw string?
-
-        if(pojoPointer.isLeafRaw() /*|| at.get().getRawValue() instanceof String */){
-            Object rawValue = at.get().getRawValue();
-            //force raw value to be String
-            if(rawValue !=null && !(rawValue instanceof String)){
-                rawValue = rawValue.toString();
-            }
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_PLAIN)
-                        .body(rawValue);
-
-        }else{
-            EntityWrapper ewv = at.get();
-            
-            if(!ewv.isEntity()) {
-                JsonNode jsn=ewv.toFullJsonNode();
-                if(jsn.isValueNode()) {
-                    return new ResponseEntity<>(jsn, HttpStatus.OK);
-                }
-            }
-//            boolean isPrimitiveOrWrapped = (value!=null)?
-//                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
-//            
-//            if(isPrimitiveOrWrapped){
-//                //just a plain String - no links?
-//                //if we pass it to the enhance view below it will error out
-//                Map<String,Object> wrapMap = new HashMap<>();
-//                wrapMap.put("value",value);
-//                JsonNode json;
-//                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
-//                json = jsonwrap.get("value");
-//                return new ResponseEntity<>(json, HttpStatus.OK);
-//                //return new ResponseEntity<>(value, HttpStatus.OK);
-//            }
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ewv.getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
-        }
-    }
-
 
 
     @Override
@@ -416,25 +271,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return keys;
     }
     
-    @Override
-    @GetGsrsRestApiMapping("")
-    @Transactional(readOnly = true)
-    public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "10") long top,
-                                       @RequestParam(value = "skip", defaultValue = "0") long skip,
-                                       @RequestParam(value = "order", required = false) String order,
-                                       @RequestParam Map<String, String> queryParameters){
-    	
-        Page<T> page = getEntityService().page(new OffsetBasedPageRequest(skip, top,parseSortFromOrderParam(order)));
-
-        String view=queryParameters.get("view");
-        if("key".equals(view)){
-            return new ResponseEntity<>( PagedResult.ofKeys(page), HttpStatus.OK);
-
-        }
-        return new ResponseEntity<>(new PagedResult(page, queryParameters), HttpStatus.OK);
-    }
-
-    private Sort parseSortFromOrderParam(String order){        
+    private Sort parseSortFromOrderParam(String order){
         if(order == null || order.trim().isEmpty()){        	
         	Field[] fields = getEntityService().getEntityClass().getFields();	
         	
@@ -467,15 +304,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @GetGsrsRestApiMapping(value = {"({id})", "/{id}" })
-    public ResponseEntity<Object> getById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
-        Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
-        if(obj.isPresent()){
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
-        }
-        return gsrsControllerConfiguration.handleNotFound(queryParameters);
-    }
-    @Override
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
     public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
@@ -487,30 +315,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    @Override
-    @PostGsrsRestApiMapping("/@exists")
-    public ExistsCheckResult entitiesExists(@RequestBody List<String> idList, @RequestParam Map<String, String> queryParameters) throws Exception{
-       Map<String, EntityExists> foundMap = new LinkedHashMap<>();
-       List<String> notFound = new ArrayList<>();
-        for(String id : idList){
-            Optional<I> idOptional = getEntityService().getEntityIdOnlyBySomeIdentifier(id);
-            if(idOptional.isPresent()){
-                EntityExists exists = new EntityExists();
-                exists.setId(idOptional.get().toString());
-                exists.setQuery(id);
-                exists.setUrl(GsrsLinkUtil.computeSelfLinkFor(entityLinks, getEntityService().getEntityClass(),  idOptional.get().toString()).getHref());
-                foundMap.put(id, exists);
-            }else{
-                notFound.add(id);
-            }
-
-        }
-        ExistsCheckResult result = new ExistsCheckResult();
-        result.setFound(foundMap);
-        result.setNotFound(notFound);
-
-        return result;
-    }
 
     protected Optional<T> rebackupEntity(String id) throws Exception{
         Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);

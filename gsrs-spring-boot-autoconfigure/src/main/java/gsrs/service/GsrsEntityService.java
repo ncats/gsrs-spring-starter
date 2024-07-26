@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.EntityPersistAdapter;
+import gsrs.controller.DeleteGsrsRestApiMapping;
 import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.security.*;
 import ix.core.util.EntityUtils.Key;
@@ -14,12 +15,12 @@ import lombok.Data;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Contains all the business logic for converting JSON into an Entity, reading and writing
@@ -33,27 +34,7 @@ import java.util.UUID;
  * @param <T>
  * @param <I>
  */
-public interface GsrsEntityService<T, I> {
-    /**
-     * A {@link CachedSupplierGroup} for all CachedSuppliers used by EntityServices
-     * that should be reset all together at particular times (for example at the before a
-     * tests).
-     */
-    CachedSupplierGroup ENTITY_SERVICE_INTIALIZATION_GROUP = new CachedSupplierGroup();
-    /**
-     * Get the API Context for this Entity Service.
-     * @return the Context; should never be null or empty;
-     */
-    String getContext();
-    /**
-     * Get the number of entities in your data repository.
-     * @return a number &ge;0.
-     */
-    long count();
-    
-    default List<Key> getKeys(){
-    	return new ArrayList<Key>();
-    }
+public interface GsrsEntityService<T, I> extends  GsrsRetrievalEntityService<T, I> {
 
     default List<I> getIDs(){
     	return new ArrayList<I>();
@@ -66,21 +47,6 @@ public interface GsrsEntityService<T, I> {
     @hasUpdateRole
     void delete(I id);
 
-    /**
-     * Get the Class of the Entity.
-     * @return a Class; will never be {@code null}.
-     */
-    Class<T> getEntityClass();
-
-    /**
-     * Return a {@link Page} of entities from the repository using the
-     * given {@link Pageable} which often contains subset limitations as such as: offset, num records and sort order.
-     * @param pageable the {@link Pageable to fetch from the repository.}
-     * @return the Page from the repository.
-     *
-     * @see OffsetBasedPageRequest
-     */
-    Page page(Pageable pageable);
     @hasDataEntryRole
     CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) throws IOException;
 
@@ -100,10 +66,6 @@ public interface GsrsEntityService<T, I> {
     }
     
     ValidationResponse<T> validateEntity(JsonNode updatedEntityJson, ValidatorCategory cat) throws Exception;
-
-    Optional<T> getEntityBySomeIdentifier(String id);
-
-    Optional<I> getEntityIdOnlyBySomeIdentifier(String id);
 
     @Data
     @Builder
