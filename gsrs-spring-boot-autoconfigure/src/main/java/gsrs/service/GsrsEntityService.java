@@ -12,14 +12,12 @@ import ix.core.validator.ValidatorCategory;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Contains all the business logic for converting JSON into an Entity, reading and writing
@@ -157,4 +155,6 @@ public interface GsrsEntityService<T, I> {
             return builder.build();
         }
     }
+
+    boolean isReadOnly();
 }

@@ -84,6 +84,8 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     private final String context;
     private final Pattern idPattern;
 
+    private boolean readOnly = false;
+
     private CachedSupplier<ValidatorFactory> validatorFactory;
     /**
      * Create a new GSRS Entity Service with the given context.
@@ -290,7 +292,10 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
     @Override
     public  CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad){
-        
+        if( isReadOnly()){
+            log.error("Trying to create a {} when service is read-only", getFriendlyName());
+            throw new RuntimeException("Please use the parent object to create a " + getFriendlyName());
+        }
         TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
         
         ValidatorConfig.METHOD_TYPE methodType = partOfBatchLoad? ValidatorConfig.METHOD_TYPE.BATCH : ValidatorConfig.METHOD_TYPE.CREATE;
@@ -783,4 +788,22 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
      */
     @Transactional
     public abstract Optional<T> flexLookup(String someKindOfId);
+
+    @Override
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    private String getFriendlyName() {
+        if( getEntityClass() != null ){
+            String fullClassName = getEntityClass().getName();
+            if( fullClassName.contains(".")) {
+                return fullClassName.substring(fullClassName.lastIndexOf(".")+1);
+            }
+            return fullClassName;
+        }
+        String name = getContext();
+        if( name.endsWith("s")) return name.substring(0, name.length()-1);
+        return name;
+    }
 }
