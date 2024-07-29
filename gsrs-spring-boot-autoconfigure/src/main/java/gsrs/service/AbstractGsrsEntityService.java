@@ -421,6 +421,11 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     
     @Override
     public UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception {
+        log.trace("updateEntity 2 parms");
+        if( isReadOnly()){
+            log.error("Trying to update a {} when service is read-only", getFriendlyName());
+            throw new RuntimeException("Please use the parent object to update a " + getFriendlyName());
+        }
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(getTransactionManager());
         
@@ -453,6 +458,11 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     
     @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
+        log.trace("updateEntity 1 parm");
+        if( isReadOnly()){
+            log.error("Trying to update a {} when service is read-only", getFriendlyName());
+            throw new RuntimeException("Please use the parent object to update a " + getFriendlyName());
+        }
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
         
