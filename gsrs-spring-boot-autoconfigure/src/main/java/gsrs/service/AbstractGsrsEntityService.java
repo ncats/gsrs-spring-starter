@@ -816,13 +816,4 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
         if( name.endsWith("s")) return name.substring(0, name.length()-1);
         return name;
     }
-
-    @Override
-    public void delete(I Id)  {
-        log.trace("delete");
-        if( isReadOnly()) {
-            log.error("Trying to delete a {} when service is read-only", getFriendlyName());
-            throw new RuntimeException("Please use the parent object to delete a " + getFriendlyName());
-        }
-    }
 }
