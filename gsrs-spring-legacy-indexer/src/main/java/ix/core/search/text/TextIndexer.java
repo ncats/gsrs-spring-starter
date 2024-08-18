@@ -2484,11 +2484,11 @@ public class TextIndexer implements Closeable, ProcessListener {
             }
 
             // For Product Module
-            if ("gov.hhs.gsrs.products.productall.models.ProductMainAll".equals(entityMeta.getName())) {
+            if ("gov.hhs.gsrs.products.product.models.Product".equals(entityMeta.getName())) {
                 try {
                     fndt = (FieldNameDecorator) EntityUtils
                             .getEntityInfoFor(
-                                    "gov.hhs.gsrs.products.productall.ProductFieldNameDecorator")
+                                    "gov.hhs.gsrs.products.product.ProductFieldNameDecorator")
                             .getInstance();
                 }catch(Exception e) {
                     //swallow
