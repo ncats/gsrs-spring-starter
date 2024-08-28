@@ -127,6 +127,13 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     }
     
     @Data
+	public static class ReindexJobStatus{
+    	private UUID statusID;
+    	private String status;    	
+    	private boolean done;    	 	
+    }
+    
+    @Data
     private class UserListStatus{
     	private UUID statusID;
     	private String status;
@@ -276,8 +283,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     				Key k = Key.ofStringId(eclass, entityID.get());
     				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true, excludeExternal);
-        			stat.indexed++;  				
-    				
+        			stat.indexed++;
     			}catch(Exception e) {
     				log.warn("trouble reindexing id: " + id, e);
     				stat.failed++;
@@ -387,6 +393,8 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
                                                  @RequestParam("sortBy") Optional<String> sortBy,
                                                  @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
+    	
+    	    	
         SearchOptions so = new SearchOptions.Builder()
                 .kind(getEntityService().getEntityClass())
                 .top(Integer.MAX_VALUE) // match Play GSRS
@@ -399,20 +407,17 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
-                
+                               
         String cacheID = getFacetCacheID("", query.orElse(""), so, field.orElse(""));
         log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
-        if(tv == null) {
-        	tv = getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));                
-        	gsrscache.setRaw(cacheID, tv);
-        	log.info("/search/@facet: getting facets from indexes");
-        }else {
-        	log.info("/search/@facet: getting facets from cache");
+        if(tv == null) {        	
+        	tv = getlegacyGsrsSearchService().getTermVectorsFromQuery(query.orElse(null), so, field.orElse(null));           	
+        	gsrscache.setRaw(cacheID, tv);        	
         }
         
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
@@ -445,20 +450,17 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
         	userName = GsrsSecurityUtils.getCurrentUsername().get();
         	userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
         
         String cacheID = getFacetCacheID("", "", so, field.orElse(""));
-        log.info("cache ID: " + cacheID);
+//        log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
         if(tv == null) {
         	tv = getlegacyGsrsSearchService().getTermVectors(field);                
-        	gsrscache.setRaw(cacheID, tv);
-        	log.info("/@facet: getting facets from indexes");
-        }else {
-        	log.info("/@facet: getting facets from cache");
+        	gsrscache.setRaw(cacheID, tv);        	
         }
         
         String sortByProp = sortBy.isPresent()?sortBy.get():"";
@@ -625,23 +627,56 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
     public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
-    	
-    	log.error("in syncIndexesWithDatabase");
-    	
+
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
     	
 		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));
 		if(extraInDatabase.isEmpty()) {
-			log.error("in syncIndexesWithDatabase: Database and index sync: No different items.");
 			ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
 			resultNode.put("message", "The entity index is in sync with the database. No reindexing needed.");
 			return new ResponseEntity<>(resultNode, HttpStatus.OK);
 		}else {
 			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
-			log.error("in syncIndexesWithDatabase: Database and index sync: found " + list.size() + " different items.");
 			return new ResponseEntity<>(bulkReindexListOfIDs(list, false), HttpStatus.OK);
 		}
+    }
+    
+    
+    public ReindexJobStatus syncIndexesWithDatabaseWithStatus() {
+
+    	List<Key> keysInDatabase = getKeys();
+    	List<Key> keysInIndex = searchEntityInIndex();    	
+    	
+    	ReindexJobStatus jobStat = new ReindexJobStatus();
+		Set<Key> extraInDatabase = Sets.difference(new HashSet<Key>(keysInDatabase), new HashSet<Key>(keysInIndex));		
+		if(extraInDatabase.isEmpty()) {
+			jobStat.setStatusID(UUID.randomUUID());
+			jobStat.setDone(true);			
+			jobStat.setStatus("Done, database and index are in sync");			
+		}else {
+			List<String> list = extraInDatabase.stream().map(format->format.getIdString()).collect(Collectors.toList());
+			ReindexStatus stat = bulkReindexListOfIDs(list, false);
+			jobStat.setStatusID(stat.getStatusID());
+			jobStat.setDone(stat.isDone());
+			jobStat.setStatus(stat.getStatus());			
+		}
+		return jobStat;
+    }
+    
+    public ReindexJobStatus getJobStatus(UUID id) {
+    	
+    	ReindexJobStatus jobStat = new ReindexJobStatus();
+    	jobStat.setStatusID(id);
+    	ReindexStatus stat = reindexing.get(id.toString());
+    	if(stat == null) {
+    		jobStat.setDone(true);
+    		jobStat.setStatus("No job exists with this ID.");
+    	}else {
+    		jobStat.setDone(stat.isDone());
+    		jobStat.setStatus(stat.getStatus());
+    	}
+    	return jobStat;
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
@@ -1474,7 +1509,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     protected String getFacetCacheID(String namespace, String query, SearchOptions so, String field) {
-    	return namespace + "FacetSearch/" + query + field + ",ffilter=" + so.getFfilter()
-    		+",fskip=" + so.getFskip() + "," + so.toString();
+    	SearchRequest.Builder builder = new SearchRequest.Builder();
+    	String SRHash = builder.options(so).query(query).build().getDefiningSetSha1();
+    	return namespace + "FacetSearch/" + field + SRHash;
     }
 }
