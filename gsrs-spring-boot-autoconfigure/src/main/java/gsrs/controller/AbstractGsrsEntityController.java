@@ -155,6 +155,11 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
         GsrsEntityService<T, I> entityService = getEntityService();
+        if( entityService.isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
         AbstractGsrsEntityService.CreationResult<T> result =null;
         try {
             result = entityService.createEntity(newEntityJson);
@@ -202,7 +207,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
-       AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+
+        AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
@@ -479,7 +490,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
     public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
         Optional<I> idOptional = getEntityService().getEntityIdOnlyBySomeIdentifier(id);
+
         if(idOptional.isPresent()){
             getEntityService().delete(idOptional.get());
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
