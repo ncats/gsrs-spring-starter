@@ -58,7 +58,7 @@
             <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.18.0.0</version>
+                <version>1.18.20.0</version>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
                     <outputDirectory>${project.build.directory}/delombok</outputDirectory>
@@ -81,6 +81,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>

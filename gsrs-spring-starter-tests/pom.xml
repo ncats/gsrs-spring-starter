@@ -41,6 +41,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>

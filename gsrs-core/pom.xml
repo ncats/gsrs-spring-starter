@@ -94,7 +94,7 @@
             <version>32.0.1-jre</version>
         </dependency>
     </dependencies>
-    <!-- Uncomment this for maven public release deployment
+    <!-- Uncomment this for maven public release deployment 
     <build>
         <plugins>
             <plugin>
@@ -117,6 +117,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
