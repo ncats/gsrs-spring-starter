@@ -42,6 +42,10 @@
 
     </dependencies>
     <!-- Uncomment this for maven public release deployment 
+    There is an issue with lombok @SuperBuilder to create javadoc.
+    https://github.com/projectlombok/lombok/issues/3004
+    So the javadoc for gsrs-controlled-vocabulary-api is empty.
+    
     <build>
         <plugins>
             <plugin>
@@ -67,6 +71,7 @@
                     <doclint>all,-missing</doclint>
                     <nohelp>true</nohelp>                   
                     <quiet>true</quiet>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
