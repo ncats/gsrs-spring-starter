@@ -37,6 +37,11 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     private Map<String, Object> unknownParameters = new ConcurrentHashMap<>();
 
     private Class newObjClass;
+    private String parentKey;
+    private Double order;
+    private boolean disabled = false;
+
+
 
     private METHOD_TYPE methodType;
 
@@ -91,4 +96,5 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     protected <T> boolean meetsFilterCriteria(T obj){
         return true;
     }
+
 }

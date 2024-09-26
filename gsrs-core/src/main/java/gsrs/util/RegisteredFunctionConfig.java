@@ -1,13 +1,12 @@
-package gsrs.autoconfigure;
+package gsrs.util;
 
-import gsrs.util.ExtensionConfig;
 import lombok.Data;
 
 import java.util.Map;
 
 @Data
-public class ExporterFactoryConfig implements ExtensionConfig {
-    private Class exporterFactoryClass;
+public class RegisteredFunctionConfig implements ExtensionConfig {
+    private Class registeredFunctionClass;
     private String parentKey;
     private Double order;
     private boolean disabled = false;
