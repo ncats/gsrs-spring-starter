@@ -10,7 +10,7 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on:
-      group: ncats-awsci-runners
+      group: ncats-awsci-runners-test
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       # required for all workflows
