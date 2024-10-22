@@ -44,7 +44,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
+            <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
 
