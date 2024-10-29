@@ -407,19 +407,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-/*
-        if(_stagingAreaService == null) {
-            lock.lock();
-            try {
-                if(_stagingAreaService==null) {
-                    _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-                }
-            }finally {
-                lock.unlock();
-            }
-        }
-        return _stagingAreaService;
-*/
     }
 
     //STEP 0: list adapter classes
@@ -723,145 +710,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
-    @GetGsrsRestApiMapping({"/import/conf({id})", "/import/conf/{id}"})
-    public ResponseEntity<Object> handleImportConfigFetch(@PathVariable("id") Long id,
-                                                          @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
-        log.trace("starting in handleImportConfigFetch");
-        Objects.requireNonNull(id, "Must supply the ID of an existing import configuration");
-        Optional<Text> configurationHolder = textRepository.findById(id);
-        Object returnObject;
-        HttpStatus status;
-        if (configurationHolder.isPresent()) {
-            ImportTaskMetaData config = ImportTaskMetaData.fromText(configurationHolder.get());
-            returnObject=config;
-            status = HttpStatus.OK;
-        } else {
-            ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-            resultNode.put("Error", String.format("No configuration found with id %d", id));
-            returnObject= resultNode;
-            status=HttpStatus.BAD_REQUEST;
-        }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returnObject, queryParameters), status);
-    }
-
-    @GetGsrsRestApiMapping("/import/confs")
-    public ResponseEntity<Object> handleImportConfigsFetch(
-            @RequestParam Map<String, String> queryParameters) {
-        log.trace("starting in handleImportConfigsFetch");
-        try {
-            String label = ImportTaskMetaData.getEntityKeyFromClass(getEntityService().getEntityClass().getName());
-            log.trace("label: {}", label);
-            List<Text> configs = textRepository.findByLabel(label);
-            log.trace("found {} configs", configs.size());
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t -> {
-                        try {
-                            return ImportTaskMetaData.fromText(t);
-                        } catch (JsonProcessingException e) {
-                            log.error("Error converting configuration value", e);
-                        }
-                        return null;
-                    }).collect(Collectors.toList()),
-                    queryParameters), HttpStatus.OK);
-        }  catch (Exception ex) {
-            log.error("Error in handleImportConfigsFetch", ex);
-            return new ResponseEntity<>("error: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-
-    @hasAdminRole
-    @PostGsrsRestApiMapping(value = {"/import/conf"})
-    public ResponseEntity<Object> saveImportConfig(@RequestBody JsonNode configJson,
-                                               @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("in saveImportConfig");
-
-        ObjectMapper om = new ObjectMapper();
-        ImportTaskMetaData itmd = om.treeToValue(configJson, ImportTaskMetaData.class);
-        String currentUser = GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown";
-        itmd.setOwner(currentUser);
-
-        ObjectMapper mapper = new ObjectMapper();
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        Text textObject=itmd.asText();
-        Text savedText = transactionTemplate.execute(t -> textRepository.saveAndFlush(textObject));
-        log.trace("completed save of Text with ID {}", savedText.id);
-        itmd.setTextId(savedText.id);
-        savedText.setText(mapper.writeValueAsString(itmd));
-        savedText.setIsDirty("id");
-        log.trace("called savedText.setIsDirty(");
-        TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
-        transactionTemplate2.executeWithoutResult(t -> textRepository.saveAndFlush(savedText));
-        log.trace("completed 2nd save of Text");
-
-        ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-        resultNode.put("Newly created import configuration", savedText.id);
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
-    }
-
-    @PutGsrsRestApiMapping({"/import/conf({id})", "/import/conf/{id}"})
-    public ResponseEntity<Object> handleImportConfigUpdate(@PathVariable("id") Long id,
-                                                           @RequestBody String importConfigJson,
-                                                           @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
-        log.trace("starting in handleImportConfigUpdate");
-        Objects.requireNonNull(id, "Must supply the ID of an existing import configuration");
-
-        String currentUser = GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown";
-
-        Optional<Text> configurationHolder = textRepository.findById(id);
-        ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-        HttpStatus status;
-        if (configurationHolder.isPresent()) {
-            Text retrievedText= configurationHolder.get();
-            ImportTaskMetaData retrievedSettings = ImportTaskMetaData.fromText(retrievedText);
-            if( retrievedSettings.getOwner() != null && retrievedSettings.getOwner().length()>0 && !retrievedSettings.getOwner().equals(currentUser)
-                    && !GsrsSecurityUtils.isAdmin()){
-                resultNode.put("Error!", String.format("Attempt to update configuration created by %s", retrievedSettings.getOwner()));
-                status=HttpStatus.UNAUTHORIZED;
-            } else {
-                retrievedText.setValue(importConfigJson);
-                log.trace("made call to setValue");
-                TransactionTemplate transactionTemplateUpdate = new TransactionTemplate(transactionManager);
-                String valueToSave =importConfigJson;
-                transactionTemplateUpdate.executeWithoutResult(t -> {
-                    retrievedText.setIsAllDirty();
-                    Text updated = textRepository.saveAndFlush(retrievedText);
-                    if (!Objects.equals(valueToSave, updated.getValue())) {
-                        log.error("saved value is not what was supplied!");
-                    }
-                });
-                resultNode.put("Result", String.format("Updated import configuration with ID %d", id));
-                status = HttpStatus.OK;
-            }
-        } else {
-            resultNode.put("Error!", String.format("No configuration found with id %d", id));
-            status=HttpStatus.BAD_REQUEST;
-        }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), status);
-    }
-
-    @DeleteGsrsRestApiMapping({"/import/conf({id})", "/import/conf/{id}"})
-    public ResponseEntity<Object> handleImportConfigDelete(@PathVariable("id") Long id,
-                                                           @RequestParam Map<String, String> queryParameters) {
-        log.trace("starting in handleImportConfigDelete");
-        Objects.requireNonNull(id, "Must supply the ID of an existing import configuration");
-
-        Optional<Text> configurationHolder = textRepository.findById(id);
-        ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
-        HttpStatus status;
-        if( !GsrsSecurityUtils.isAdmin()){
-            resultNode.put("Error!", "Only admin users can delete an import configuration");
-            status=HttpStatus.UNAUTHORIZED;
-        } else if (configurationHolder.isPresent()) {
-            TransactionTemplate transactionTemplateDelete = new TransactionTemplate(transactionManager);
-            transactionTemplateDelete.executeWithoutResult(t -> textRepository.deleteByRecordId(id));
-            resultNode.put("Result", String.format("Deleted import configuration with ID %d", id));
-            status=HttpStatus.OK;
-        } else {
-            resultNode.put("Error!", String.format("No configuration found with id %d", id));
-            status=HttpStatus.BAD_REQUEST;
-        }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), status);
-    }
 
     //search for records that have the same values for key fields
     @hasAdminRole
@@ -1196,6 +1044,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
+                                                 @RequestParam("sortBy") Optional<String> sortBy,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortDesc,
                                                  HttpServletRequest request) throws ParseException, IOException {
         log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
@@ -1218,7 +1068,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-                userName, userLists);
+                userName, userLists, sortBy.isPresent()  ? sortBy.get() : null, sortDesc.isPresent() ? sortDesc.get() : false);
 
     }
 
@@ -1241,6 +1091,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         itmd.setOwner(GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown");
 
         Text textObject = itmd.asText();
+        //deserialize importConfigJson to DefaultExporterFactoryConfig
+        //generate keys rather take user input
+        // keys must be systematic
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         Text savedText = transactionTemplate.execute(t -> textRepository.saveAndFlush(textObject));

@@ -1,7 +1,10 @@
 package gsrs.config;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -76,6 +79,28 @@ public class FilePathParserUtils {
             return f.toPath().normalize().toFile();
         }
         return null;
+    }
+
+    public static void failOnBadPathResolution(String basePath, String passedPath)
+    throws InvalidPathException, IOException {
+        Path basePathObj;
+        Path resolvedPathObj;
+        try {
+            basePathObj = Paths.get(basePath);
+            resolvedPathObj = basePathObj.resolve(passedPath);
+//            System.out.println("getPath       : " + resolvedPathObj.toFile().getPath());
+//            System.out.println("getAbsPath    : " + resolvedPathObj.toFile().getAbsolutePath());
+//            System.out.println("getNormAbsPath: " + resolvedPathObj.normalize().toAbsolutePath());
+        } catch (InvalidPathException ipe) {
+            // Don't want to provide input path as it might get flagged.
+            throw new InvalidPathException("Relating to passedPath", "Exception while resolving path");
+        }
+        if (Paths.get(passedPath).isAbsolute()) {
+            throw new IOException("Absolute path not allowed.");
+        }
+        if (!resolvedPathObj.normalize().startsWith(basePathObj)) {
+            throw new IOException("Unexpected start of path.");
+        }
     }
 
 }
