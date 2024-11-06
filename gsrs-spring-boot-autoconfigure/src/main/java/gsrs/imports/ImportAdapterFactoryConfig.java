@@ -4,6 +4,7 @@ package gsrs.imports;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import gsrs.util.ExtensionConfig;
 import ix.core.util.InheritanceTypeIdResolver;
 
 import java.util.List;
@@ -14,7 +15,7 @@ Information necessary to create an ImportAdapterFactory
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "configClass", defaultImpl = DefaultImportAdapterFactoryConfig.class)
 @JsonTypeIdResolver(InheritanceTypeIdResolver.class)
-public interface ImportAdapterFactoryConfig {
+public interface ImportAdapterFactoryConfig extends ExtensionConfig {
 
     Class getImportAdapterFactoryClass();
 

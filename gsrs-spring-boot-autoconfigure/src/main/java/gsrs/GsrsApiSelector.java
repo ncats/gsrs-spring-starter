@@ -1,5 +1,6 @@
 package gsrs;
 
+import gsrs.config.ServiceInfoController;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.HttpLoopBackConfig;
 import gsrs.controller.hateoas.LoopbackWebRequestHelper;
@@ -25,7 +26,6 @@ import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +64,10 @@ public class GsrsApiSelector implements ImportSelector {
         componentsToInclude.add(StaticContextAccessor.class);
         componentsToInclude.add(ReindexEventListener.class);
         componentsToInclude.add(BuildInfoController.class);
+        componentsToInclude.add(ExtensionConfigsInfoController.class);
+        componentsToInclude.add(ServiceInfoController.class);
+
+
         componentsToInclude.add(UserController.class);
         componentsToInclude.add(HealthController.class);
         componentsToInclude.add(RelativePathController.class);
