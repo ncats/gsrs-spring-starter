@@ -18,6 +18,7 @@
         <module>gsrs-spring-akka</module>
         <module>gsrs-scheduled-tasks</module>
         <module>gsrs-rest-api</module>
+        <module>gsrs-service-utilities</module>
         <module>gsrs-controlled-vocabulary-api</module>
         <module>gsrs-controlled-vocabulary</module>
         <module>gsrs-data-exchange</module>
@@ -43,13 +44,17 @@
     <scm>
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
-    
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 		</dependency>
-	</dependencies>	
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
 
     <licenses>
         <license>
