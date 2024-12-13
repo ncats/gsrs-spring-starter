@@ -21,7 +21,7 @@
     <dependency>
         <groupId>org.jcvi.jillion</groupId>
         <artifactId>jillion</artifactId>
-        <version>5.3.3</version>
+        <version>6.0.2</version>
     </dependency>
     <dependency>
         <groupId>org.projectlombok</groupId>
