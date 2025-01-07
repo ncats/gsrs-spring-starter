@@ -230,6 +230,12 @@
             <version>${gsrs.version}</version>
             <!--scope>compile</scope-->
         </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-service-utilities</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>
