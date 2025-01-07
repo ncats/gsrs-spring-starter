@@ -109,7 +109,6 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
     });
 
-    // __aw__ come back to this, good idea, rename?
     public List<ScheduledTaskConfig> getConfigs()  {
         return this.configs;
     }

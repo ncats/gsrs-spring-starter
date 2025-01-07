@@ -57,12 +57,8 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		// __aw__ remove
-		System.out.println("Event fired ... ");
 
 		subURIparsers = CachedSupplier.of(() -> {
-			// __aw__ remove
-			System.out.println("Cached supplier executing ... ");
 
 			final Map<String, Function<String, ? extends PojoPointer>> map = new HashMap<>();
 
