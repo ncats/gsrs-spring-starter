@@ -1,20 +1,20 @@
 package gsrs.entityProcessor;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.util.ExtensionConfig;
 import ix.core.EntityProcessor;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
 @Data
-public class EntityProcessorConfig {
-
+public class EntityProcessorConfig implements ExtensionConfig {
     private Class entityClassName;
-
     private Class processor;
+    private String parentKey;
+    private Double order;
+    private boolean disabled = false;
+
     /**
      * Legacy method of passing parameters to a constructor with a Map parameter
      */
@@ -36,4 +36,7 @@ public class EntityProcessorConfig {
         }
 
     }
+
+
+
 }

@@ -151,7 +151,7 @@ public class UserSavedListService {
 		}
 		
 		if(userSavedListRepository.userSavedBulkSearchResultExists(user.id, listName, kind) > 0) {			
-			return "User list with name as " + userName + " already exists.";
+			return "User list with name as " + listName + " already exists.";
 		}
 		else 
 			return "";		
