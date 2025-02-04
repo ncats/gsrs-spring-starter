@@ -7,7 +7,6 @@ import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.imports.MatchableCalculationConfig;
-import gsrs.indexer.ConfigBasedIndexValueMakerFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.security.hasAdminRole;
@@ -52,9 +51,6 @@ public class ExtensionConfigsInfoController {
 
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
-
-    @Autowired
-    private ConfigBasedIndexValueMakerFactory configBasedIndexValueMakerFactory;
 
     @Autowired
     private GsrsSchedulerTaskPropertiesConfiguration gsrsSchedulerTaskPropertiesConfiguration;

@@ -5,8 +5,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
-import gsrs.validator.ValidatorConfig;
 import lombok.AccessLevel;
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
