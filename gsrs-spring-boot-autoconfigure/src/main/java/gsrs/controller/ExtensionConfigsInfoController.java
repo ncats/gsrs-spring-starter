@@ -13,10 +13,12 @@ import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.security.hasAdminRole;
 import gsrs.util.RegisteredFunctionConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@Profile("!test")
 public class ExtensionConfigsInfoController {
 
     // These endpoints provide config objects that have been transformed from mapped
@@ -214,16 +217,16 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-//  Not sure how to do this
-//    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
-//    public String getIndexValueMakerConfigs() {
-//        ObjectMapper mapper = new ObjectMapper();
-//        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
-//
-//        String c = defaultInstance.toString();
-//        if(textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
-//            defaultInstance.indexValueMakerFactory.
-//        }
-//        return c;
-//    }
+    // Not sure how to do this
+    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
+    public String getIndexValueMakerConfigs() {
+        ObjectMapper mapper = new ObjectMapper();
+        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
+        String c = defaultInstance.toString();
+        if(textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
+           // defaultInstance.indexValueMakerFactory
+            System.out.println("hello");
+        }
+        return c;
+    }
 }
