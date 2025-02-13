@@ -543,10 +543,18 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
             //triggered fetching after this.
 
             String viewType=queryParameters.get("view");
+            String viewField=queryParameters.get("viewfield");
             if("key".equals(viewType)){
-                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
-                fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
-                return klist;
+            	if(viewField!=null && "id".equals(viewField)) {
+            		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+            		fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
+            		return klist.stream().map(item->item.getIdString()).collect(Collectors.toList()); 
+            	}
+            	else{
+            		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+            		fresult.copyKeysTo(klist, 0, top.orElse(10), true); 
+            		return klist;
+            	}
             }else{
                 List tlist = new ArrayList<>(top.orElse(10));
                 fresult.copyTo(tlist, 0, top.orElse(10), true);
