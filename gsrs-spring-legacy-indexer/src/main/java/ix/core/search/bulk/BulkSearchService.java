@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -61,7 +62,7 @@ public class BulkSearchService {
 	public SearchResultContext search(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
 			SearchOptions options, TextIndexer textIndexer, MatchViewGenerator generator) throws IOException {
 		
-		String hashKey = request.computeKey(options.getBulkSearchOnIdentifiers());		
+		String hashKey = request.computeKey(options.getBulkSearchOnIdentifiers(), options.getFacets());
 		
 		
         try {
@@ -74,6 +75,7 @@ public class BulkSearchService {
         		optionsCopy.setTop(MAX_BULK_SUB_QUERY_COUNT);		
         		optionsCopy.setSkip(0);        	
         		optionsCopy.setBulkSearchOnIdentifiers(options.getBulkSearchOnIdentifiers());
+        		options.getFacets().forEach(facet->optionsCopy.addFacet(facet));
         		optionsCopy.setFetchAll();       		
         		       		
         		BulkSearchResultProcessor processor = new BulkSearchResultProcessor(ixCache);              
@@ -99,6 +101,7 @@ public class BulkSearchService {
 		BulkQuerySummary querySummary = new BulkQuerySummary.BulkQuerySummaryBuilder()
 				.qUnMatchTotal(0)
 				.searchOnIdentifiers(optionsCopy.getBulkSearchOnIdentifiers())
+				.facets(optionsCopy.getFacets())
 				.build();
 				
 		boolean searchOnIdentifiers = optionsCopy.getBulkSearchOnIdentifiers();
@@ -154,7 +157,7 @@ public class BulkSearchService {
 		querySummary.setQTotal(total);		
 		querySummary.setQueries(summaryList);				
 		
-		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getBulkSearchOnIdentifiers()), querySummary);		
+		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getBulkSearchOnIdentifiers(), optionsCopy.getFacets()), querySummary);
 		
 		return new ResultEnumeration(bq);
 
@@ -199,24 +202,25 @@ public class BulkSearchService {
 		private String hash; 
 		private List<String> queries;
 		
-		private String computeHash(boolean identifers) {
+		private String computeHash(boolean identifers, List<String> facets) {
 			if(hash != null) {
 				return hash;
 			}else {
 				// maybe come back later	
-				String flag = (identifers==true?"1":"0");
-				hash = queries.stream().sorted()
-						.map(q->q.hashCode())
-						.reduce((a,b)->a^b)
-						.map(r->r+flag)
-						.orElse("Empty");	
-			
-				return hash;				
+				// String flag = (identifers==true?"1":"0");
+				int hashInt = Objects.hash(queries, facets, identifers);
+//				hash = queries.stream().sorted()
+//						.map(q->q.hashCode())
+//						.reduce((a,b)->a^b)
+//						.map(r->r+flag)
+//						.orElse("Empty");	
+				hash = Integer.toHexString(hashInt);
+				return hash;			
 			}
 		}
 		
-		public String computeKey(boolean identifers){
-	            return Util.sha1("bulk/" + computeHash(identifers));
+		public String computeKey(boolean identifers, List<String> facets){
+	            return Util.sha1("bulk/" + computeHash(identifers, facets));
 	        }
 	}
 	
@@ -274,6 +278,7 @@ public class BulkSearchService {
 		String qFilter;
 		String qSort;
 		boolean searchOnIdentifiers;
+		List<String> facets;
 		List<SearchResultSummaryRecord> queries;
 		
 		public static BulkQuerySummaryBuilder builder() {return new BulkQuerySummaryBuilder();}

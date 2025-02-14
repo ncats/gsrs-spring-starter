@@ -42,6 +42,7 @@ import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import ix.core.models.Facet; 
 
 @ExposesResourceFor(SearchResultContext.class)
 @Slf4j
@@ -55,6 +56,7 @@ public class SearchResultController {
 
     @Autowired
     private ETagRepository eTagRepository;
+    
 
     @GetGsrsRestApiMapping(value = {"({key})","/{key}"})
     public ResponseEntity<Object> getSearchResultStatus(@PathVariable("key") String key,
@@ -104,6 +106,9 @@ public class SearchResultController {
             headers.add("Location", possibleContext.getSerialized().generatingPath);
             return new ResponseEntity<>(headers,HttpStatus.FOUND);
         }
+        
+          
+        
         SearchResultContext ctx=possibleContext.getContext();
 
         
@@ -139,12 +144,22 @@ public class SearchResultController {
         SearchOptions so = searchRequest.getOptions();
 
         String viewType=queryParameters.getFirst("view");
-
-        if("key".equals(viewType)){
-            List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
-            results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
-            resultSet=klist;
-        }else{
+        String viewField=queryParameters.getFirst("viewfield");
+        final String FIELD_ID = "id";
+        final String FIELD_FACET = "facet";
+        boolean keyView = "key".equals(viewType)? true:false;
+        if(keyView){
+        	if(viewField==null) {
+        		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
+        		results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
+        		resultSet=klist;
+        	}else if(FIELD_ID.equals(viewField)){
+        		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
+        		results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
+        		resultSet = klist.stream().map(item->item.getIdString()).collect(Collectors.toList());
+        	}
+        }
+        else{
             results.copyTo(resultSet, so.getSkip(), so.getTop(), true);
             for (Object s : resultSet) { 
             	if(s instanceof BaseModel) {
@@ -169,7 +184,26 @@ public class SearchResultController {
                 .build();
 
         eTagRepository.saveAndFlush(etag); //Always save?
-
+        
+        if(keyView && FIELD_ID.equals(viewField)) {
+        	etag.setContent(resultSet);
+        	return new ResponseEntity<>(etag, HttpStatus.OK);
+        	
+        }else if(keyView && FIELD_FACET.equals(viewField)) {
+        	List<Facet> facetList = results.getFacets();
+        	String facetLabel = queryParameters.getFirst("facetlabel");
+        	if(facetLabel!=null) {
+        		List<Facet> filteredList = facetList.stream()
+        				.filter(f->f.getName().equalsIgnoreCase(facetLabel))
+        				.collect(Collectors.toList());
+        		etag.setFacets(filteredList);
+        				
+        	}else {
+        		etag.setFacets(facetList);
+        	}
+        	return new ResponseEntity<>(etag, HttpStatus.OK);
+        }
+                
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
         etag.setFieldFacets(results.getFieldFacets()); 

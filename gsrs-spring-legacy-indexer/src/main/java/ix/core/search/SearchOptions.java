@@ -150,6 +150,11 @@ public class SearchOptions implements RequestOptions {
 		queryParams.resetCache();
 	}
 
+	public void addFacet(String facetString) {
+		facets.add(facetString);
+		queryParams.resetCache();
+	}
+
 	public int max() {
 		return skip + getTop();
 	}
