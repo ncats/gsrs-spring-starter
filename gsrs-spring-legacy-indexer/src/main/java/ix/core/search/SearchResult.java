@@ -561,6 +561,7 @@ public class SearchResult {
 	 * @deprecated
 	 * @param obj
 	 */
+	@Deprecated
 	protected void add(Object obj) {
 		matches.add(obj);
 		processAddition(() -> obj);

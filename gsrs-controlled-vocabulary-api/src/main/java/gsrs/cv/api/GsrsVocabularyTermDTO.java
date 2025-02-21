@@ -18,6 +18,7 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GsrsVocabularyTermDTO {
     private Long id;
+    @Builder.Default
     private long version =1;
     private Date created;
     private Date modified;

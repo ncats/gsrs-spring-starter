@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * A link that we have to modify ourselves
@@ -26,6 +27,7 @@ import lombok.Data;
  * to get the rest but not our custom Mappers.
  */
 @Data
+@EqualsAndHashCode(callSuper=false)
 class FieldLink extends Link implements GsrsCustomLink{
     @JsonIgnore
     //this is jsonIgnore because we delegate the getters with the same json annotations so ignoring means we don't list everything twice
@@ -33,7 +35,6 @@ class FieldLink extends Link implements GsrsCustomLink{
 
 
     FieldLink(String field, Link link, String id){
-
         URI uri = link.toUri();
 //        System.out.println("orl url =" + uri);
         //TODO add support for beyond v1.  maybe add version to the GsrsUnwrappedEntityModel ?

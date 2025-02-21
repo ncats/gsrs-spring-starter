@@ -62,7 +62,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         if(response.getStatusCode().is2xxSuccessful()) {
             return Long.parseLong(response.getBody());
         }
-        throw new IOException("error getting count: " + response.getStatusCode().getReasonPhrase());
+        throw new IOException("error getting count: " + ((HttpStatus) response.getStatusCode()).getReasonPhrase());
     }
 
     public <S extends T> Optional<S> findByResolvedId(String anyKindOfId) throws IOException{
@@ -117,7 +117,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                 }
                 return Optional.of(result.toPagedResult(Collections.emptyList()));
             }catch(Throwable t) {
-                throw new IOException("Error parsing response: " + response.getStatusCode().getReasonPhrase());
+                throw new IOException("Error parsing response: " + ((HttpStatus) response.getStatusCode()).getReasonPhrase());
             }
         } else {
             throw new IOException("Unexpected server response:" + response.getStatusCode());
@@ -127,7 +127,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
      public <S extends T> S create(S dto) throws IOException {
          ResponseEntity<String> response =  restTemplate.postForEntity(prefix,dto,String.class);
          if(!response.getStatusCode().is2xxSuccessful()) {
-             throw new IOException("error creating new entity: " + response.getStatusCode().getReasonPhrase());
+             throw new IOException("error creating new entity: " + ((HttpStatus) response.getStatusCode()).getReasonPhrase());
          }
          JsonNode node = mapper.readTree(response.getBody());
          return parseFromJson(node);
@@ -180,7 +180,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
 
         ResponseEntity<String> response =  restTemplate.exchange(prefix+"("+id+")", HttpMethod.PUT, entity,String.class);
         if(!response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("error creating new entity: " + response.getStatusCode().getReasonPhrase());
+            throw new IOException("error creating new entity: " + ((HttpStatus) response.getStatusCode()).getReasonPhrase());
         }
         JsonNode node = mapper.readTree(response.getBody());
         return parseFromJson(node);
@@ -231,9 +231,8 @@ public abstract class GsrsEntityRestTemplate<T, I> {
         public boolean hasError(ClientHttpResponse httpResponse)
                 throws IOException {
 
-            return (
-                    httpResponse.getStatusCode().series() == HttpStatus.Series.CLIENT_ERROR
-                            || httpResponse.getStatusCode().series() == HttpStatus.Series.SERVER_ERROR);
+            HttpStatus.Series s = ((HttpStatus) httpResponse.getStatusCode()).series();
+            return (s == HttpStatus.Series.CLIENT_ERROR || s == HttpStatus.Series.SERVER_ERROR);
         }
 
         @Override

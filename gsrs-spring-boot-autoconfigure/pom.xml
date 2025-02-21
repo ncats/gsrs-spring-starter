@@ -218,12 +218,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
-    	<dependency>
-	        <groupId>org.apache.tika</groupId>
-    	    <artifactId>tika-core</artifactId>
-    	    <version>1.22</version>
-    	</dependency>
-
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>1.22</version>
+        </dependency>
         <dependency>
            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-data-exchange</artifactId>

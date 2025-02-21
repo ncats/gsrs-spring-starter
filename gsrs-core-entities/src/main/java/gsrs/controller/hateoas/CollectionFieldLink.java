@@ -3,6 +3,7 @@ package gsrs.controller.hateoas;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.hateoas.*;
 
 import java.net.URI;
@@ -19,6 +20,7 @@ import java.util.Map;
  * to get the rest but not our custom Mappers.
  */
 @Data
+@EqualsAndHashCode(callSuper=false)
 class CollectionFieldLink extends Link implements GsrsCustomLink{
 
     private int count;

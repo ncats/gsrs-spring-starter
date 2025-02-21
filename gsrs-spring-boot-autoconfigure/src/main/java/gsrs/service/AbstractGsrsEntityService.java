@@ -506,11 +506,15 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		PojoPatch<T> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                         LogUtil.debug(() -> "changes = " + patch.getChanges());
                 		final List<Object> removed = new ArrayList<Object>();
+                		final List<Object> added = new ArrayList<Object>();
 
                 		//Apply the changes, grabbing every change along the way
                 		Stack changeStack = patch.apply(oldEntity, c -> {
                 			if ("remove".equals(c.getOp())) {
                 				removed.add(c.getOldValue());
+                			}
+                			if ("add".equals(c.getOp())) {
+                				added.add(c.getNewValue());
                 			}
                 			LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
                 		});
@@ -519,26 +523,36 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		} else {
                 			LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                 		}
+
                 		oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
                 		//This is the last line of defense for making sure that the patch worked
                 		//Should throw an exception here if there's a major problem
                 		//This is inefficient, but forces confirmation that the object is fully realized
                 		String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
+                		added.stream()
+                		.filter(Objects::nonNull)
+                		.map(o -> EntityUtils.EntityWrapper.of(o))
+                		.forEach(ew -> {
+                			Object o = ew.getValue();
+                			log.warn("adding:" + o);
+                			if(o instanceof ForceUpdatableModel) {
+                				entityManager.persist(o);
+					}
+                		});
 
                 		while (!changeStack.isEmpty()) {
-                            Object v = changeStack.pop();
-                            EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
-                            if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
-                                Object o =  ewchanged.getValue();
-                                if(o instanceof ForceUpdatableModel) {    
-                                    //Maybe don't do twice? IDK.
-                                    ((ForceUpdatableModel)o).forceUpdate();
-                                }
-
-                                entityManager.merge(o);
-                            }
-                        }
+                			Object v = changeStack.pop();
+                			EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
+                			if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                				Object o =  ewchanged.getValue();
+                				if(o instanceof ForceUpdatableModel) {
+                					//Maybe don't do twice? IDK.
+                					((ForceUpdatableModel)o).forceUpdate();
+                				}
+                				entityManager.merge(o);
+                			}
+                		}
 
                 		//explicitly delete deleted things
                 		//This should ONLY delete objects which "belong"
@@ -547,7 +561,6 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
 
                 		removed.stream()
                 		.filter(Objects::nonNull)
-
                 		.map(o -> EntityUtils.EntityWrapper.of(o))
                 		.filter(ew -> ew.isExplicitDeletable())
                 		.forEach(ew -> {
@@ -559,6 +572,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 			entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
 
                 		});
+
 
                 		try {
                 			T saved = transactionalUpdate(oldEntity, oldJson);

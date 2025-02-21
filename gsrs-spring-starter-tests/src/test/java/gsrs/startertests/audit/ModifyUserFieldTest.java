@@ -13,6 +13,7 @@ import gsrs.startertests.jupiter.ResetAllEntityProcessorBeforeEachExtension;
 import ix.core.EntityProcessor;
 import ix.core.models.Principal;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -163,6 +164,7 @@ public class ModifyUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @Entity
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class MyEntity extends AbstractGsrsEntity {
         @Id
         @GeneratedValue

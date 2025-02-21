@@ -2,6 +2,7 @@ package gsrs.cv.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @Data
 @SuperBuilder
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 public class GsrsFragmentControlledVocabularyDTO extends AbstractGsrsControlledVocabularyDTO{
     /**
      * Vocabulary Term Type for this DTO subclass.

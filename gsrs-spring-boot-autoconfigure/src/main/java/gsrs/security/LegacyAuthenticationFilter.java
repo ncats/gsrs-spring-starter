@@ -153,7 +153,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
                 if(up !=null && up.active){
                     auth = new UserProfilePasswordAuthentication(up);
-
                 }
             }
         }
@@ -190,7 +189,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         } else {
                             auth = new UserProfilePasswordAuthentication(up);
                         }
-
                     }else{
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
@@ -223,7 +221,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                     if (up.acceptKey(key)) {
                         //valid key!
                         auth = new LegacyUserKeyAuthentication(up, key);
-
                     } else {
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
@@ -253,7 +250,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         if(auth !=null) {
             //add a new Session each time !?
-
+            if (auth instanceof GsrsUserProfileDetails) {
+                userTokenCache.updateUserCache(((GsrsUserProfileDetails)auth).getPrincipal());
+            }
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
             SecurityContextHolder.getContext().setAuthentication(auth);
