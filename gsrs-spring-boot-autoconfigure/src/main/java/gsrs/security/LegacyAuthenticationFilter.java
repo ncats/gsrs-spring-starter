@@ -255,6 +255,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             }
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
+            // Check value to avoid error on UI login
+            if(!auth.isAuthenticated()) {
+                auth.setAuthenticated(true);
+            }
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
         filterChain.doFilter(request, response);

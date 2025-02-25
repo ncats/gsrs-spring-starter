@@ -17,6 +17,7 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@Profile("!test")
 public class ExtensionConfigsInfoController {
 
     // These endpoints provide config objects that have been transformed from mapped
