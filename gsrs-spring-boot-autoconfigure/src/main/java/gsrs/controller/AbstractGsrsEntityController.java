@@ -185,7 +185,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping("/@validate")
     @Transactional(readOnly = true)
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
