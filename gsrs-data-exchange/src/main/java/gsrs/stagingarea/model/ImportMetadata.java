@@ -154,6 +154,7 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
     @Indexable(facet=true, sortable = true, name = "Load Date")
     @JsonSerialize(using = GsrsDateSerializer.class)
     @JsonDeserialize(using = GsrsDateDeserializer.class)
+    @Builder.Default
     private Date versionCreationDate =null;
 
     /**
@@ -207,28 +208,24 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
      * List of factors that suggest that this entity is similar to other entities in the main database or staging area
      */
     @JSONEntity(title = "KeyValueMappings")
-    @OneToMany()
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
+    @OneToMany(mappedBy="instanceId")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER) //testing out eager fetch 05 May 2023
+    @Builder.Default
     public List<KeyValueMapping> keyValueMappings = new ArrayList<>();
 
     /**
      * Link to the results of validation (applying business rules to this object)
      */
     @JSONEntity(title = "ImportValidations")
+    @OneToMany(mappedBy="instanceId")
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    @OneToMany
-    @JoinColumns({
-            @JoinColumn(name="instanceId", referencedColumnName = "instance_id")
-    })
     @ToString.Exclude
     @ElementCollection(fetch = FetchType.EAGER)
+    @Builder.Default
     public List<ImportValidation> validations = new ArrayList<>();
 
     /**

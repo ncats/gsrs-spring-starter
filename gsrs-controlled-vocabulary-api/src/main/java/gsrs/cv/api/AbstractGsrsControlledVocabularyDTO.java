@@ -23,6 +23,7 @@ import java.util.List;
 public class AbstractGsrsControlledVocabularyDTO {
 
     private long id;
+    @Builder.Default
     private long version =1;
     private Date created;
     private Date modified;

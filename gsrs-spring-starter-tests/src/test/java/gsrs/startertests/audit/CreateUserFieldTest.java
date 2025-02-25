@@ -9,6 +9,7 @@ import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Principal;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,6 +95,7 @@ public class CreateUserFieldTest  extends AbstractGsrsJpaEntityJunit5Test {
 
     @Entity
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class MyEntity extends AbstractGsrsEntity {
         @Id
         @GeneratedValue

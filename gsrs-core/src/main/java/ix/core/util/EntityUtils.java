@@ -31,7 +31,6 @@ import ix.utils.LinkedReferenceSet;
 import lombok.extern.slf4j.Slf4j;
 //import org.apache.lucene.document.Document;
 
-import org.jboss.jandex.Index;
 import org.reflections.Reflections;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;

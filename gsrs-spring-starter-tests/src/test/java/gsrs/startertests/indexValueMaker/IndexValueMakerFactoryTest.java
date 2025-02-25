@@ -6,6 +6,7 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +89,7 @@ public class IndexValueMakerFactoryTest extends AbstractGsrsJpaEntityJunit5Test 
         private String bar;
     }
     @Data
+    @EqualsAndHashCode(callSuper=false)
     public static class SubFoo extends Foo{
         private String anotherField;
     }
