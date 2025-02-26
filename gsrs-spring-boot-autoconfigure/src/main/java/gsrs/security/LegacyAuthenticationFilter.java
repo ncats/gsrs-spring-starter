@@ -255,7 +255,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             }
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
-            // Check value to avoid error on UI login
+            // Check value to avoid error on UI login I think related to token
+            // The error is "Cannot set this token to trusted - use constructor which takes a GrantedAuthority list instead"           
             if(!auth.isAuthenticated()) {
                 auth.setAuthenticated(true);
             }
