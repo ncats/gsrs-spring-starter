@@ -87,7 +87,7 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 			map.put("limit", LongBasedLambdaArgumentParser.of("limit", (p) -> new LimitPath(p)));
 			map.put("skip", LongBasedLambdaArgumentParser.of("skip", (p) -> new SkipPath(p)));
 
-			if(registeredFunctionProperties.getRegisteredFunctions().getList() != null) {
+			if(registeredFunctionProperties != null && registeredFunctionProperties.getRegisteredFunctions().getList() != null) {
 
 				List<? extends RegisteredFunctionConfig> configs = loadRegisteredFunctionsFromConfiguration();
 				// Point to new value of configs for reporting
