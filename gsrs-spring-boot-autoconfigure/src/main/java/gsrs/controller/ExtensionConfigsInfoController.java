@@ -1,23 +1,27 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.autoconfigure.ExporterFactoryConfig;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.imports.MatchableCalculationConfig;
+import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.security.hasAdminRole;
+import gsrs.config.GsrsServiceInfoEndpointPathConfiguration;
 import gsrs.util.RegisteredFunctionConfig;
+import gsrs.config.ServiceInfoEndpointPathConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +29,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @Profile("!test")
+
 public class ExtensionConfigsInfoController {
 
     // These endpoints provide config objects that have been transformed from mapped
@@ -53,7 +57,13 @@ public class ExtensionConfigsInfoController {
     private IndexValueMakerFactory indexValueMakerFactory;
 
     @Autowired
+    private TextIndexerConfig textIndexerConfig;
+
+    @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
+    @Autowired
+    GsrsServiceInfoEndpointPathConfiguration gsrsServiceInfoEndpointPathConfiguration;
 
     @Autowired
     private ConfigBasedIndexValueMakerFactory configBasedIndexValueMakerFactory;
@@ -67,7 +77,8 @@ public class ExtensionConfigsInfoController {
     @Autowired
     private GsrsExportConfiguration gsrsExportConfiguration;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    @Autowired
+    private Environment environment;
 
     private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
     private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
@@ -77,6 +88,91 @@ public class ExtensionConfigsInfoController {
     "actions trigger the population of the data into cached suppliers or autowired values. These values " +
     "are null or empty until populated. In other cases, data is populated when the service starts. See " +
     "the doc: 'How Configuration Works' for some more detail.\"}";
+
+    private static final String entityEndPointTemplate = "/service-info/api/v1/%s/%s/%s";
+    private static final String basicEndPointTemplate = "/service-info/api/v1/%s/%s";
+
+
+
+    class Endpoint {
+        public String name;
+        public String path;
+
+        Endpoint() { }
+
+        Endpoint(String name, String path) {
+            this.name=name;
+            this.path=path;
+        }
+    }
+
+    class Service  {
+        Service() { }
+        Service(String name, boolean active, List<String> entities, List<Endpoint> endpoints) {
+            this.name=name;
+            this.active=active;
+            this.entities=entities;
+            this.endpoints=endpoints;
+        }
+        public String name;
+        public boolean active = true;
+        public List<String> entities = new ArrayList<>();
+        public List<Endpoint> endpoints = new ArrayList<>();
+
+
+        public List<Endpoint> getEndpoints() {
+            return this.endpoints;
+        }
+
+        public void addServiceInfoEndpointPaths(String serviceContext,  String endpointName, List<String> entityContexts, String template) {
+            if(entityContexts != null && !entityContexts.isEmpty()) {
+                entityContexts.forEach(e-> this.endpoints.add(new Endpoint(endpointName, String.format(template, serviceContext, endpointName, e))));
+            } else  {
+                this.endpoints.add(new Endpoint(endpointName, String.format(template, serviceContext, endpointName)));
+            }
+        }
+
+
+    }
+
+    ExtensionConfigsInfoController() {
+
+        Service service = new Service();
+        // service.name = environment.getProperty("application.name");
+        service.name = "substances";
+
+
+        service.active = true;
+
+        service.entities = new ArrayList<>(Arrays.asList("substances", "vocabularies"));
+
+        service.addServiceInfoEndpointPaths("substances", "@importAdapterFactoryConfigs", service.entities, entityEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@matchableCalculationConfigs", service.entities, entityEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@validatorConfigs", service.entities, entityEndPointTemplate);
+
+        service.addServiceInfoEndpointPaths("substances", "@entityProcessorConfigs", null, basicEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@exporterFactoryConfigs", null, basicEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@scheduledTaskConfigs", null, basicEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@registeredFunctionConfigs", null, basicEndPointTemplate);
+        service.addServiceInfoEndpointPaths("substances", "@indexValueMakerConfigs", null, basicEndPointTemplate);
+    }
+
+    @GetMapping("/service-info/api/v1/{serviceContext}/@extensionConfigsInfoPaths")
+    public ResponseEntity<?> getPaths()  {
+        List<? extends ServiceInfoEndpointPathConfig> list = null;
+        Map<String, List<? extends ServiceInfoEndpointPathConfig>> endpoints = new HashMap<>();
+        boolean thrown = false;
+        try {
+            list = gsrsServiceInfoEndpointPathConfiguration.getEndpointsList();
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list == null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
+        endpoints.put("endpoints", list);
+        return ResponseEntity.status(HttpStatus.OK).body(endpoints);
+    }
 
     @hasAdminRole
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
@@ -91,7 +187,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -125,7 +221,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -146,7 +242,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || mapList==null || mapList.isEmpty()) {
+        if (thrown || mapList == null || mapList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
@@ -168,7 +264,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -189,7 +285,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -210,22 +306,33 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-//  Not sure how to do this
-//    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
-//    public String getIndexValueMakerConfigs() {
-//        ObjectMapper mapper = new ObjectMapper();
-//        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
-//
-//        String c = defaultInstance.toString();
-//        if(textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
-//            defaultInstance.indexValueMakerFactory.
-//        }
-//        return c;
-//    }
+    @hasAdminRole
+    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
+    public ResponseEntity<?> getIndexValueMakerConfigs() {
+        List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> list = null;
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
+        if (textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
+            boolean thrown = false;
+            try {
+                list = configBasedIndexValueMakerFactory.getConfList();
+            } catch (Throwable t) {
+                thrown = true;
+            }
+            if (thrown || list == null || list.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(list);
+        } else {
+            String unexpectedClassMessage = "{ \"message\" : \"Expected IndexValueMakerFactory class to be: "+ ConfigBasedIndexValueMakerFactory.class + ". But, this was not the case.\"}";
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(unexpectedClassMessage);
+        }
+    }
 }
