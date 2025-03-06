@@ -1774,12 +1774,33 @@ public class TextIndexer implements Closeable, ProcessListener {
 		return new TermsQuery(terms);
 	}
 	
+	public static String replaceForwardSlashInExactSearch(String query) {
+			
+		Pattern forwardSlashPattern = Pattern.compile("\\s*(\\\\/)\\s*");
+		Matcher matcher = forwardSlashPattern.matcher(query);
+		if(!matcher.find()) {
+			return query;
+		}
+		
+		//replace \/ to whitespace
+		String updatedQuery = matcher.replaceAll(" ");
+		return updatedQuery;
+		
+	}
+	
+	
   private static final String QUOTE_TMP_REPLACE = "xXxXxQUOTE_REPLACExXxXx";
 	private static Pattern phraseQueryWithFieldNamePattern = Pattern.compile("(([^\"]*)(\"[^\"]*\"))");
 	
 	//replace special characters ComplexPhraseQueryParser does not like with space
 	public static String preProcessQueryText(String qtext) {
 	    String processedQtext = qtext.trim();
+	    
+	    Pattern exactSearchQueryPattern = Pattern.compile("^.+_.+:");		
+		boolean found = exactSearchQueryPattern.matcher(processedQtext).find();
+		if(found) {			
+			processedQtext = replaceForwardSlashInExactSearch(processedQtext);
+		}
 
 	    //This extra processing is only required if there's at least a * AND a quote,
 	    //otherwise it won't do anything

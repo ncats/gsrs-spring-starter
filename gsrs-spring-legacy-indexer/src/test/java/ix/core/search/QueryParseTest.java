@@ -191,6 +191,11 @@ public class QueryParseTest {
     	
     	
     	    	    	
-    }   
+    }
     
+    @Test
+    public void replaceForwardSlashWithWhitespsceInExactSearchQuery() {
+    	assertEquals("root_root_names:\"california 7 2009\" AND root_codes_comments:\"hello code comments\"",
+                TextIndexer.preProcessQueryText("root_root_names:\"california\\/7\\/2009\" AND root_codes_comments:\"hello\\/code\\/comments\""));
+    }
 }
