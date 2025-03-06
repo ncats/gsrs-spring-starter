@@ -1796,11 +1796,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static String preProcessQueryText(String qtext) {
 	    String processedQtext = qtext.trim();
 	    
-	    Pattern exactSearchQueryPattern = Pattern.compile("^.+_.+:");		
-		boolean found = exactSearchQueryPattern.matcher(processedQtext).find();
-		if(found) {			
-			processedQtext = replaceForwardSlashInExactSearch(processedQtext);
-		}
+	    Pattern exactSearchQueryPattern = Pattern.compile("^.+_.+:");
+	    boolean found = exactSearchQueryPattern.matcher(processedQtext).find();
+	    if(found) {
+	    	processedQtext = replaceForwardSlashInExactSearch(processedQtext);
+	    }
 
 	    //This extra processing is only required if there's at least a * AND a quote,
 	    //otherwise it won't do anything
