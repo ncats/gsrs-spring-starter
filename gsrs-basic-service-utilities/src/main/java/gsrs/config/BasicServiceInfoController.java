@@ -3,7 +3,6 @@ package gsrs.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,16 +16,13 @@ import java.util.*;
 
 public class BasicServiceInfoController {
 
-    // This controller is meant to provde endpoints to services that don't have to import the gsrs-spring-starter, e.g. discovery, gateway, frontend. 
+    // This controller is meant to provide endpoints to services that don't have to import the gsrs-spring-starter, e.g. discovery, gateway, frontend.
 
     @Value("#{new Boolean('${gsrs.extensions.config.report.api.enabled:false}')}")
     private boolean extensionsConfigReportApiEnabled;
 
     @Autowired
     GsrsServiceInfoEndpointPathConfiguration gsrsServiceInfoEndpointPathConfiguration;
-
-    @Autowired
-    private Environment environment;
 
     private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
     private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
@@ -53,7 +49,4 @@ public class BasicServiceInfoController {
         endpoints.put("endpoints", list);
         return ResponseEntity.status(HttpStatus.OK).body(endpoints);
     }
-
-
-
 }
