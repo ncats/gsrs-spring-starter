@@ -271,21 +271,23 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	stat.total=list.size();
     	reindexing.put(stat.statusID.toString(), stat);
     	
+    	Class eclass = getEntityService().getEntityClass();
+    	
     	executor.execute(()->{
     		int[] r = new int[] {0};
     		stat.ids.forEach(id->{
     			r[0]++;
     			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
     			//TODO: Should change how this works probably to not use REST endpoint
+    			
     			try {
     				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
-    				Class eclass = getEntityService().getEntityClass();
     				Key k = Key.ofStringId(eclass, entityID.get());
     				Object o = EntityFetcher.of(k).call();
         			getlegacyGsrsSearchService().reindex(o, true, excludeExternal);
         			stat.indexed++;
     			}catch(Exception e) {
-    				log.warn("trouble reindexing id: " + id, e);
+    				log.warn("trouble reindexing id: " + id + " in entity class: " + eclass.getSimpleName(), e);
     				stat.failed++;
     			}   
     			
