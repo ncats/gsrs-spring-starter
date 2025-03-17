@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -108,9 +109,11 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager localEntityManager;
+    
+    @Autowired
+    private BulkSearchService bulkSearchService;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(4);    
-    
     
     @Data
     private class ReindexStatus{
@@ -797,6 +800,23 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
         return new ResponseEntity<>(HttpStatus.OK);
     }
     
+    @DeleteGsrsRestApiMapping(value="/bulkSearchTask/cancel")
+    public ResponseEntity<String> cancelBulkSearch(@RequestParam String key){
+    	
+    	Future<?> future = bulkSearchService.getFuture(key);
+    	if(future == null) {
+    		log.warn("Did not find the bulk search job: " + key);
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
+    	boolean success = future.cancel(true);
+    	if(success) {
+    		return new ResponseEntity<>(HttpStatus.OK);
+    	}
+    	else {
+    		return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
+    	}
+    }
+    
 	@GetGsrsRestApiMapping(value = "/bulkSearch", apiVersions = 1)
 	public ResponseEntity<Object> bulkSearch(@RequestParam("bulkQID") String queryListID,
 			@RequestParam("q") Optional<String> query, @RequestParam("top") Optional<Integer> top,
@@ -859,6 +879,17 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		}
 	}
     
+	
+	@GetGsrsRestApiMapping(value = "/bulkSearch/tasks", apiVersions = 1)
+	public ResponseEntity<Map<String, String>> getBulkSearchTasksMap(){
+			try {
+	           Map<String, String> taskMap = bulkSearchService.getBulkSearchTaskMap();
+	           return new ResponseEntity<>(taskMap, HttpStatus.OK);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return new ResponseEntity<>(new HashMap<String, String>(),HttpStatus.OK);
+	        }		
+	}
     
     private String createJson(Long id, int top, int skip, List<String> queries, String uri){
     	
