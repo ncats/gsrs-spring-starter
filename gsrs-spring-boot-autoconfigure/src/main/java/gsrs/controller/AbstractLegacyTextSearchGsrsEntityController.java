@@ -882,7 +882,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 	
 	@GetGsrsRestApiMapping(value = "/bulkSearch/tasks", apiVersions = 1)
 	public ResponseEntity<Map<String, String>> getBulkSearchTasksMap(){
-			try {
+		try {
 	           Map<String, String> taskMap = bulkSearchService.getBulkSearchTaskMap();
 	           return new ResponseEntity<>(taskMap, HttpStatus.OK);
 	        } catch (Exception e) {

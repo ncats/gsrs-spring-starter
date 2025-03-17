@@ -56,7 +56,7 @@ public class BulkSearchService {
 	private ExecutorService threadPool;
 	private static Logger log = LoggerFactory.getLogger(BulkSearchService.class);
     
-    private final ConcurrentMap<String, Future<?>> bulkSearchTaskMap = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, Future<?>> bulkSearchTaskMap = new ConcurrentHashMap<>();
 
 	public BulkSearchService() {		
 		this(ForkJoinPool.commonPool());		
@@ -302,9 +302,9 @@ public class BulkSearchService {
 	
 //	@Scheduled(fixedRateString = "${scheduler.bulkSearch.fixedRate}")
 	@Scheduled(fixedRate = 3600000)  
-    public void cleanUpCompletedTasks() {
+	public void cleanUpCompletedTasks() {
 		
-		log.warn("CleanUp completed Bulk Search Tasks");
+	log.warn("CleanUp completed Bulk Search Tasks");
         Iterator<String> iterator = bulkSearchTaskMap.keySet().iterator();
         
         while (iterator.hasNext()) {
