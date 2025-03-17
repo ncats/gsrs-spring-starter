@@ -303,23 +303,23 @@ public class BulkSearchService {
 //	@Scheduled(fixedRateString = "${scheduler.bulkSearch.fixedRate}")
 	@Scheduled(fixedRate = 3600000)  
 	public void cleanUpCompletedTasks() {
-		
-	log.warn("CleanUp completed Bulk Search Tasks");
-        Iterator<String> iterator = bulkSearchTaskMap.keySet().iterator();
-        
-        while (iterator.hasNext()) {
-            String taskId = iterator.next();
-            Future<?> future = bulkSearchTaskMap.get(taskId);
-            
-            log.warn("Found bulk search task with ID " + taskId);
-            
-            // If the task is done (completed or cancelled), remove it from the map
-            if (future.isDone() || future.isCancelled()) {
-                iterator.remove();
-                log.warn("Bulk search task with ID " + taskId + " has been removed from map.");
-            }
-        }
-    }
+
+		log.warn("CleanUp completed Bulk Search Tasks");
+		Iterator<String> iterator = bulkSearchTaskMap.keySet().iterator();
+
+		while (iterator.hasNext()) {
+			String taskId = iterator.next();
+			Future<?> future = bulkSearchTaskMap.get(taskId);
+
+			log.warn("Found bulk search task with ID " + taskId);
+
+			// If the task is done (completed or cancelled), remove it from the map
+			if (future.isDone() || future.isCancelled()) {
+				iterator.remove();
+				log.warn("Bulk search task with ID " + taskId + " has been removed from map.");
+			}
+		}
+	}
 	
 
 	public Map<String, String> getBulkSearchTaskMap(){
