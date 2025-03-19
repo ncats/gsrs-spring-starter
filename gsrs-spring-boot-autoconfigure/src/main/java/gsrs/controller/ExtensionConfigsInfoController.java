@@ -115,6 +115,9 @@ public class ExtensionConfigsInfoController {
         @PathVariable("serviceContext") String serviceContext,
         @PathVariable("entityContext") String entityContext
     ) {
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
         List<? extends ValidatorConfig> list = null;
         boolean thrown = false;
         try {
