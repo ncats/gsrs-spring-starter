@@ -803,22 +803,25 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @DeleteGsrsRestApiMapping(value="/bulkSearchTask/cancel")
-    public ResponseEntity<String> cancelBulkSearch(@RequestParam String key){
-    	
+    public ResponseEntity<Object> cancelBulkSearch(@RequestParam String key){
+
     	Future<?> future = bulkSearchService.getFuture(key);
     	if(future == null) {
-    		log.warn("Did not find the bulk search job: " + key);
-    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    		log.warn("Did not find the bulk search task: " + key);
+    		return GsrsControllerConfiguration.createResponseEntity("Could not find the bulk search task: "+ key, 
+    				HttpStatus.NOT_FOUND.value());    				
     	}
     	boolean success = future.cancel(true);
     	if(success) {
-    		return new ResponseEntity<>(HttpStatus.OK);
+    		return GsrsControllerConfiguration.createResponseEntity("The task was successfully cancelled.", 
+    				HttpStatus.OK.value());
     	}
     	else {
-    		return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
+    		return GsrsControllerConfiguration.createResponseEntity("The task could not be cancelled: " + key, 
+    				HttpStatus.ACCEPTED.value());
     	}
     }
-    
+
 	@GetGsrsRestApiMapping(value = "/bulkSearch", apiVersions = 1)
 	public ResponseEntity<Object> bulkSearch(@RequestParam("bulkQID") String queryListID,
 			@RequestParam("q") Optional<String> query, @RequestParam("top") Optional<Integer> top,
