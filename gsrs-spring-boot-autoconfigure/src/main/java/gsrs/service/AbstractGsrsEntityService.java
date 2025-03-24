@@ -458,7 +458,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
     }
     @Override
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
-        log.trace("updateEntity 2 parms");
+        log.trace("updateEntity with ignoreValidation: {}", ignoreValidation);
         if( isReadOnly()){
             log.error("Trying to update a {} when service is read-only", getFriendlyName());
             throw new RuntimeException("Please use the parent object to update a " + getFriendlyName());
