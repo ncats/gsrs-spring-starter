@@ -93,6 +93,8 @@ public interface GsrsEntityService<T, I> {
     @hasUpdateRole
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
+    UpdateResult<T> updateEntityIgnoreValidation(JsonNode updatedEntityJson) throws Exception;
+
     default ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception{
         return this.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());        
     }
