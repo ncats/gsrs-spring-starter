@@ -10,12 +10,13 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Payload;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import static org.junit.jupiter.api.Assertions.*;
-
+@ActiveProfiles("test")
 @GsrsJpaTest(classes = GsrsSpringApplication.class)
 public class LegacyPayloadEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
