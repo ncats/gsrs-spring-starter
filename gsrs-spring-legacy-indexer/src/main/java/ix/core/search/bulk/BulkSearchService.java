@@ -300,10 +300,10 @@ public class BulkSearchService {
 		
 	}
 	
-	@Scheduled(fixedRateString = "${scheduler.bulkSearch.fixedRate:10800000}") 
+	@Scheduled(fixedRateString = "${scheduler.bulkSearch.fixedRate:600000}") 
 	public void cleanUpCompletedTasks() {
 
-		log.info("Remove completed Bulk Search Tasks in taskmap");
+		log.warn("Remove completed Bulk Search Tasks in taskmap");
 		Iterator<String> iterator = bulkSearchTaskMap.keySet().iterator();
 
 		while (iterator.hasNext()) {

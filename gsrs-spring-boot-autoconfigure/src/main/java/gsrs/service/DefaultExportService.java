@@ -35,7 +35,7 @@ public class DefaultExportService implements ExportService{
     //in GSRS 2.x we never cleared our inProgress map !!
     //maybe use spring schedule
 //    @Scheduled(fixedDelay = 1000* 60 * 60 ) // every hour?
-    @Scheduled(fixedDelayString = "${scheduler.export.fixedDelay:10800000}")
+    @Scheduled(fixedDelayString = "${scheduler.export.fixedDelay:600000}")
     public void clearProgressCache(){
         //assuming the processor runs and updates the meta data,
         //remove anything that is done as it should be in the .metadata file and we can
