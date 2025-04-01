@@ -3,9 +3,13 @@ package gsrs.service;
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import ix.core.controllers.EntityFactory;
+import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -25,14 +29,18 @@ public class DefaultExportService implements ExportService{
     private File rootDir;
 
     private ConcurrentHashMap<String,ExportMetaData> inProgress = new ConcurrentHashMap<>();
+    
+    private static Logger log = LoggerFactory.getLogger(DefaultExportService.class);
 
     //in GSRS 2.x we never cleared our inProgress map !!
     //maybe use spring schedule
-    @Scheduled(fixedDelay = 1000* 60 * 60 ) // every hour?
+//    @Scheduled(fixedDelay = 1000* 60 * 60 ) // every hour?
+    @Scheduled(fixedDelayString = "${scheduler.export.fixedDelay:10800000}")
     public void clearProgressCache(){
         //assuming the processor runs and updates the meta data,
         //remove anything that is done as it should be in the .metadata file and we can
         //re-read it in a stale state later
+    	log.info("Remove completed Export tasks from taskmap");
         Iterator<Map.Entry<String, ExportMetaData>> iter = inProgress.entrySet().iterator();
         while(iter.hasNext()){
             Map.Entry<String, ExportMetaData> entry = iter.next();
