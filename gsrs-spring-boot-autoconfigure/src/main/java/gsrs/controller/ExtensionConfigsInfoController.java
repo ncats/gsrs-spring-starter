@@ -7,12 +7,14 @@ import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.imports.MatchableCalculationConfig;
+import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.security.hasAdminRole;
 import gsrs.util.RegisteredFunctionConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.search.text.TextIndexerConfig;
 import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +54,9 @@ public class ExtensionConfigsInfoController {
     private IndexValueMakerFactory indexValueMakerFactory;
 
     @Autowired
+    private TextIndexerConfig textIndexerConfig;
+
+    @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Autowired
@@ -78,6 +82,7 @@ public class ExtensionConfigsInfoController {
     "are null or empty until populated. In other cases, data is populated when the service starts. See " +
     "the doc: 'How Configuration Works' for some more detail.\"}";
 
+
     @hasAdminRole
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
     public ResponseEntity<?> getValidatorConfigs(
@@ -91,7 +96,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -125,7 +130,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -146,7 +151,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || mapList==null || mapList.isEmpty()) {
+        if (thrown || mapList == null || mapList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
@@ -168,7 +173,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -189,7 +194,7 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
@@ -210,22 +215,33 @@ public class ExtensionConfigsInfoController {
         } catch (Throwable t) {
             thrown = true;
         }
-        if (thrown || list==null || list.isEmpty()) {
+        if (thrown || list == null || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-//  Not sure how to do this
-//    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
-//    public String getIndexValueMakerConfigs() {
-//        ObjectMapper mapper = new ObjectMapper();
-//        TextIndexer defaultInstance = textIndexerFactory.getDefaultInstance();
-//
-//        String c = defaultInstance.toString();
-//        if(textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
-//            defaultInstance.indexValueMakerFactory.
-//        }
-//        return c;
-//    }
+    @hasAdminRole
+    @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
+    public ResponseEntity<?> getIndexValueMakerConfigs() {
+        List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> list = null;
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
+        if (textIndexerFactory.indexValueMakerFactory.getClass() == ConfigBasedIndexValueMakerFactory.class) {
+            boolean thrown = false;
+            try {
+                list = configBasedIndexValueMakerFactory.getConfList();
+            } catch (Throwable t) {
+                thrown = true;
+            }
+            if (thrown || list == null || list.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(list);
+        } else {
+            String unexpectedClassMessage = "{ \"message\" : \"Expected IndexValueMakerFactory class to be: "+ ConfigBasedIndexValueMakerFactory.class + ". But, this was not the case.\"}";
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(unexpectedClassMessage);
+        }
+    }
 }
