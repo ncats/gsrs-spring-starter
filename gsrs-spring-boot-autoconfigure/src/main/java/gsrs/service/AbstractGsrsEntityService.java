@@ -13,12 +13,10 @@ import java.util.regex.Pattern;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceContext;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -454,11 +452,13 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
             return builder.build();
         });
     }
-    
-    
-    @Override
+
     public UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception {
-        log.trace("updateEntity 1 parm");
+        return updateEntity(updatedEntityJson, false);
+    }
+    @Override
+    public UpdateResult<T> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        log.trace("updateEntity with ignoreValidation: {}", ignoreValidation);
         if( isReadOnly()){
             log.error("Trying to update a {} when service is read-only", getFriendlyName());
             throw new RuntimeException("Please use the parent object to update a " + getFriendlyName());
@@ -489,7 +489,7 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 	builder.validationResponse(response)
                            .oldJson(oldJson);
 
-                	if (response != null && !response.isValid()) {
+                	if (!ignoreValidation && response != null && !response.isValid()) {
                 		builder.status(UpdateResult.STATUS.ERROR);
                 		return Optional.empty();
                 	}

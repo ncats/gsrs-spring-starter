@@ -3,14 +3,24 @@ package ix.core.search.bulk;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -44,7 +54,9 @@ public class BulkSearchService {
 		
 	private final int MAX_BULK_SUB_QUERY_COUNT = 10000;
 	private ExecutorService threadPool;
+	private static Logger log = LoggerFactory.getLogger(BulkSearchService.class);
     
+	private final ConcurrentMap<String, Future<?>> bulkSearchTaskMap = new ConcurrentHashMap<>();
 
 	public BulkSearchService() {		
 		this(ForkJoinPool.commonPool());		
@@ -61,7 +73,7 @@ public class BulkSearchService {
 	public SearchResultContext search(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
 			SearchOptions options, TextIndexer textIndexer, MatchViewGenerator generator) throws IOException {
 		
-		String hashKey = request.computeKey(options.getBulkSearchOnIdentifiers());		
+		String hashKey = request.computeKey(options.getBulkSearchOnIdentifiers(), options.getFacets());
 		
 		
         try {
@@ -74,15 +86,15 @@ public class BulkSearchService {
         		optionsCopy.setTop(MAX_BULK_SUB_QUERY_COUNT);		
         		optionsCopy.setSkip(0);        	
         		optionsCopy.setBulkSearchOnIdentifiers(options.getBulkSearchOnIdentifiers());
+        		options.getFacets().forEach(facet->optionsCopy.addFacet(facet));
         		optionsCopy.setFetchAll();       		
         		       		
         		BulkSearchResultProcessor processor = new BulkSearchResultProcessor(ixCache);              
         		processor = AutowireHelper.getInstance().autowireAndProxy(processor);
             	
-        		processor.setResults(1, rawSearch(gsrsRepository, request, optionsCopy, textIndexer, generator));        			
+        		processor.setResults(1, rawSearch(gsrsRepository, request, optionsCopy, textIndexer, generator, hashKey));        			
         		SearchResultContext ctx = processor.getContext();
-                ctx.setKey(hashKey);
-
+                ctx.setKey(hashKey);                
                 return ctx;  
             });             
                 
@@ -92,17 +104,18 @@ public class BulkSearchService {
 	}	
 	
 	private ResultEnumeration rawSearch(GsrsRepository gsrsRepository, SanitizedBulkSearchRequest request, 
-			SearchOptions optionsCopy, TextIndexer textIndexer, MatchViewGenerator generator) {
+			SearchOptions optionsCopy, TextIndexer textIndexer, MatchViewGenerator generator, String hashKey) {
 		BlockingQueue<BulkSearchResult> bq = new LinkedBlockingQueue<BulkSearchResult>();		
 		List<SearchResultSummaryRecord> summaryList = new ArrayList<>();
 				
 		BulkQuerySummary querySummary = new BulkQuerySummary.BulkQuerySummaryBuilder()
 				.qUnMatchTotal(0)
 				.searchOnIdentifiers(optionsCopy.getBulkSearchOnIdentifiers())
+				.facets(optionsCopy.getFacets())
 				.build();
 				
 		boolean searchOnIdentifiers = optionsCopy.getBulkSearchOnIdentifiers();
-		threadPool.submit(() -> {
+		Future<?> future = threadPool.submit(() -> {
 
 			try {
 				request.getQueries().forEach(q -> {
@@ -149,17 +162,22 @@ public class BulkSearchService {
 			}			
 
 		});
+
+		bulkSearchTaskMap.put(hashKey, future);
 		
 		int total = request.getQueries().size();		
 		querySummary.setQTotal(total);		
 		querySummary.setQueries(summaryList);				
 		
-		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getBulkSearchOnIdentifiers()), querySummary);		
+		ixCache.setRaw("BulkSearchSummary/"+request.computeKey(optionsCopy.getBulkSearchOnIdentifiers(), optionsCopy.getFacets()), querySummary);
 		
 		return new ResultEnumeration(bq);
 
 	}
 	
+	public Future<?> getFuture(String key) {
+		return bulkSearchTaskMap.get(key);		
+	}
 	
 	private String preProcessQuery(String query, boolean identifiers) {
 
@@ -199,24 +217,25 @@ public class BulkSearchService {
 		private String hash; 
 		private List<String> queries;
 		
-		private String computeHash(boolean identifers) {
+		private String computeHash(boolean identifers, List<String> facets) {
 			if(hash != null) {
 				return hash;
 			}else {
 				// maybe come back later	
-				String flag = (identifers==true?"1":"0");
-				hash = queries.stream().sorted()
-						.map(q->q.hashCode())
-						.reduce((a,b)->a^b)
-						.map(r->r+flag)
-						.orElse("Empty");	
-			
-				return hash;				
+				// String flag = (identifers==true?"1":"0");
+				int hashInt = Objects.hash(queries, facets, identifers);
+//				hash = queries.stream().sorted()
+//						.map(q->q.hashCode())
+//						.reduce((a,b)->a^b)
+//						.map(r->r+flag)
+//						.orElse("Empty");	
+				hash = Integer.toHexString(hashInt);
+				return hash;			
 			}
 		}
 		
-		public String computeKey(boolean identifers){
-	            return Util.sha1("bulk/" + computeHash(identifers));
+		public String computeKey(boolean identifers, List<String> facets){
+	            return Util.sha1("bulk/" + computeHash(identifers, facets));
 	        }
 	}
 	
@@ -274,9 +293,44 @@ public class BulkSearchService {
 		String qFilter;
 		String qSort;
 		boolean searchOnIdentifiers;
+		List<String> facets;
 		List<SearchResultSummaryRecord> queries;
 		
 		public static BulkQuerySummaryBuilder builder() {return new BulkQuerySummaryBuilder();}
 		
 	}
+	
+	@Scheduled(fixedRateString = "${scheduler.bulkSearch.fixedRate:10800000}") 
+	public void cleanUpCompletedTasks() {
+
+		log.info("Remove completed Bulk Search tasks in taskmap");
+		Iterator<String> iterator = bulkSearchTaskMap.keySet().iterator();
+
+		while (iterator.hasNext()) {
+			String taskId = iterator.next();
+			Future<?> future = bulkSearchTaskMap.get(taskId);			
+
+			// If the task is done (completed or cancelled), remove it from the map
+			if (future.isDone() || future.isCancelled()) {
+				iterator.remove();				
+			}
+		}
+	}
+	
+
+	public Map<String, String> getBulkSearchTaskMap(){
+		Map<String, String> taskMap = new HashMap<String,String>();
+		bulkSearchTaskMap.forEach((key,future)->{
+			String status;
+			if(future.isCancelled()) {
+				status = "cancelled";
+			}else if(future.isDone()) {
+				status = "completed";
+			}else {
+				status = "running";
+			}					
+			taskMap.put(key, status);});
+		return taskMap;
+	}
+
 }

@@ -13,6 +13,7 @@ import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.search.SearchResultController;
 import gsrs.springUtils.StartupInitializer;
 import gsrs.springUtils.StaticContextAccessor;
+import gsrs.config.GsrsServiceInfoEndpointPathConfiguration;
 import gsrs.validator.ConfigBasedValidatorFactoryConfiguration;
 import gsrs.validator.ValidatorConfigConverter;
 import ix.core.initializers.GsrsInitializerPropertiesConfiguration;
@@ -124,7 +125,9 @@ public class GsrsApiSelector implements ImportSelector {
         
         componentsToInclude.add(GsrsInitializerPropertiesConfiguration.class);
         componentsToInclude.add(StartupInitializer.class);
-        
+        componentsToInclude.add(GsrsServiceInfoEndpointPathConfiguration.class);
+
+
         return componentsToInclude.stream().map(Class::getName)
                 .peek(c-> log.debug("including:" + c))
                 .toArray(i-> new String[i]);

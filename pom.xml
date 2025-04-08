@@ -18,7 +18,6 @@
         <module>gsrs-spring-akka</module>
         <module>gsrs-scheduled-tasks</module>
         <module>gsrs-service-utilities</module>
-        <module>gsrs-basic-service-utilities</module>
         <module>gsrs-rest-api</module>
         <module>gsrs-controlled-vocabulary-api</module>
         <module>gsrs-controlled-vocabulary</module>
