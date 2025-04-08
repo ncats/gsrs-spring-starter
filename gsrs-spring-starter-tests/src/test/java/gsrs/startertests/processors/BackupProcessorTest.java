@@ -24,7 +24,9 @@ import javax.persistence.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved
-@SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class})
+@SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class},
+properties = {"spring.application.name=starter"}
+)
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
