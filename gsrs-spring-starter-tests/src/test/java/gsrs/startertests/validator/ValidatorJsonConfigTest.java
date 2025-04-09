@@ -8,6 +8,7 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.validator.ValidatorConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * will use HOCON for their confs so they could have `=` instead of `:` for their
  * key value pair separators.
  */
+@ActiveProfiles("test")
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
