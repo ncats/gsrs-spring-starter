@@ -14,6 +14,7 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
+import ix.core.IgnoredModel;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -536,9 +537,11 @@ public abstract class AbstractGsrsEntityService<T,I> implements GsrsEntityServic
                 		.forEach(ew -> {
                 			Object o = ew.getValue();
                 			log.warn("adding:" + o);
-                			if(o instanceof ForceUpdatableModel) {
+                			if(o instanceof ForceUpdatableModel && !o.getClass().isAnnotationPresent(IgnoredModel.class)) {
                 				entityManager.persist(o);
-					}
+                            } else {
+                                log.warn(" ignored!");
+                            }
                 		});
 
                 		while (!changeStack.isEmpty()) {
