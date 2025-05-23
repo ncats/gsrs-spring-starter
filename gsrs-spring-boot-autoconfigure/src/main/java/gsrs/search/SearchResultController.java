@@ -93,6 +93,7 @@ public class SearchResultController {
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
                                                         @RequestParam(required = false) String query,
+                                                        @RequestParam(required = false, defaultValue = "true") boolean includeSummary,
                                                         @RequestParam MultiValueMap<String, String> queryParameters,
                                                                HttpServletRequest request) throws URISyntaxException {
     	
@@ -102,6 +103,7 @@ public class SearchResultController {
     	int qSkip = Integer.parseInt(queryParameters.getOrDefault("qSkip", Arrays.asList("0")).get(0));
     	String qSort = queryParameters.getFirst("qSort");
     	String qFilter = queryParameters.getFirst("qFilter");
+
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
@@ -213,7 +215,7 @@ public class SearchResultController {
         etag.setContent(ret);
         etag.setFieldFacets(results.getFieldFacets()); 
   
-        if(results.getSummary()!= null)
+        if(includeSummary && results.getSummary()!= null)
         	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip, qFilter, qSort));
         
         //TODO Filters and things
