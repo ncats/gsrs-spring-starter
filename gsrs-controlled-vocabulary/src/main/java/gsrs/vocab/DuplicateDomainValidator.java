@@ -13,6 +13,8 @@ import java.util.List;
 public class DuplicateDomainValidator implements ValidatorPlugin<ControlledVocabulary> {
     @Autowired
     private ControlledVocabularyRepository repository;
+    
+    private final String DuplicateDomainValidatorError = "DuplicateDomainValidatorError";
 
     @Override
     public void validate(ControlledVocabulary objnew, ControlledVocabulary objold, ValidatorCallback callback) {
@@ -29,7 +31,8 @@ public class DuplicateDomainValidator implements ValidatorPlugin<ControlledVocab
         Long duplicateId = list.get(0).getId();
         if(!duplicateId.equals(objnew.getId())){
             //id doesn't match so it's either a new record or a different record
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Duplicate Domain '"+domain + "' in vocabulary id = "+ duplicateId ));
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(DuplicateDomainValidatorError, 
+            		"Duplicate Domain '"+domain + "' in vocabulary id = "+ duplicateId ));
             //TODO add link to the other record ?
         }
     }
