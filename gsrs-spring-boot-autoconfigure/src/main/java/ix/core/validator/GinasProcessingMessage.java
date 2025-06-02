@@ -62,51 +62,26 @@ public class GinasProcessingMessage implements ValidationMessage {
 		return Objects.hash(messageType, message);
 	}
 
-//	public static GinasProcessingMessage ERROR_MESSAGE(String msg){
-//		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
-//	}
-//	public static GinasProcessingMessage WARNING_MESSAGE(String msg){
-//		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
-//	}
-//	public static GinasProcessingMessage NOTICE_MESSAGE(String msg){
-//		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
-//	}
-//	public static GinasProcessingMessage INFO_MESSAGE(String msg){
-//		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
-//	}
-//	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg){
-//		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
-//	}
-//	public static GinasProcessingMessage ERROR_MESSAGE_WITH_ARGS(String msg, Object... args){
-//		String msgId = makeMessageId(MESSAGE_TYPE.ERROR,msg);
-//		msg = String.format(msg, args);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
-//	}
-//	public static GinasProcessingMessage WARNING_MESSAGE_WITH_ARGS(String msg, Object... args){
-//		String msgId = makeMessageId(MESSAGE_TYPE.WARNING,msg);
-//		msg = String.format(msg, args);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
-//	}
-//	public static GinasProcessingMessage NOTICE_MESSAGE_WITH_ARGS(String msg, Object... args){
-//		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE,msg);
-//		msg = String.format(msg, args);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
-//	}
-//	public static GinasProcessingMessage INFO_MESSAGE_WITH_ARGS(String msg, Object... args){
-//		String msgId = makeMessageId(MESSAGE_TYPE.INFO,msg);
-//		msg = String.format(msg, args);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
-//	}
-//	public static GinasProcessingMessage SUCCESS_MESSAGE_WITH_ARGS(String msg, Object... args){
-//		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS,msg);
-//		msg = String.format(msg, args);
-//		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
-//	}
+	public static GinasProcessingMessage ERROR_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.ERROR);
+		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
+	}
+	public static GinasProcessingMessage WARNING_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.WARNING);
+		return new GinasProcessingMessage(MESSAGE_TYPE.WARNING,msg,msgId);
+	}
+	public static GinasProcessingMessage NOTICE_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.NOTICE);
+		return new GinasProcessingMessage(MESSAGE_TYPE.NOTICE,msg,msgId);
+	}
+	public static GinasProcessingMessage INFO_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.INFO);
+		return new GinasProcessingMessage(MESSAGE_TYPE.INFO,msg,msgId);
+	}
+	public static GinasProcessingMessage SUCCESS_MESSAGE(String msg){
+		String msgId = makeMessageId(MESSAGE_TYPE.SUCCESS);
+		return new GinasProcessingMessage(MESSAGE_TYPE.SUCCESS,msg,msgId);
+	}
 	
 	public static GinasProcessingMessage ERROR_MESSAGE(String msgId, String msg){
 		return new GinasProcessingMessage(MESSAGE_TYPE.ERROR,msg,msgId);
@@ -196,6 +171,13 @@ public class GinasProcessingMessage implements ValidationMessage {
 //		callerClassName = callerClassName.substring(callerClassName.lastIndexOf('.') + 1);
 //		return mtype.toString().substring(0,1) + String.valueOf(callerClassName.hashCode()).substring(2,5) + String.valueOf(msg.hashCode()).substring(1,5);
 //	}
+	
+	public static String makeMessageId(MESSAGE_TYPE mtype) {
+		String callerClassName = new Throwable().getStackTrace()[2].getClassName();
+		callerClassName = callerClassName.substring(callerClassName.lastIndexOf('.') + 1);
+		return callerClassName + mtype.name();
+	}
+	
 
 	public boolean hasLinks() {
 		return !this.links.isEmpty();
