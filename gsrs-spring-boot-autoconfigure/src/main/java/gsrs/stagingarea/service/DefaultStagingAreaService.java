@@ -494,7 +494,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             if (m.getValue() != null && m.getValue().length() > 0) {
                 log.trace("matches for {}={}[layer: {}] (total: {}):", m.getKey(), m.getValue(), m.getLayer(), mappings.size());
                 List<MatchedKeyValue.MatchingRecordReference> matches = mappings.stream()
-                        .filter(ma->startingRecordId==null || !ma.getRecordId().toString().equals(startingRecordId))
+                        .filter(ma->startingRecordId==null || (ma.getRecordId() != null && !ma.getRecordId().toString().equals(startingRecordId)))
                         .map(ma -> {
                             MatchedKeyValue.MatchingRecordReference.MatchingRecordReferenceBuilder builder = MatchedKeyValue.MatchingRecordReference.builder();
                             builder
