@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -186,11 +187,57 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     	
     }
     
+	private String removeFirstTopOrSkip(String uri) {
+
+		Pattern pattern = Pattern.compile("\\?(top|skip)=\\d+(&*)");
+		Matcher matcher = pattern.matcher(uri);
+
+		if (matcher.find()) {
+			String toRemove = matcher.group(0); // full matched string
+			String ampersands = matcher.group(2); // trailing '&' characters
+
+			if (ampersands.length() >= 1) {
+				return uri.replaceFirst(Pattern.quote(toRemove), "?");
+			} else {
+				return uri.replaceFirst(Pattern.quote(toRemove), "");
+			}
+		} else {
+			return uri;
+		}
+	}
+
+	private String removeFirstView(String uri) {
+
+		Pattern pattern = Pattern.compile("\\?view=\\s+(&*)");
+		Matcher matcher = pattern.matcher(uri);
+
+		if (matcher.find()) {
+			String toRemove = matcher.group(0); // full matched string
+			String ampersands = matcher.group(2); // trailing '&' characters
+
+			if (ampersands.length() >= 1) {
+				return uri.replaceFirst(Pattern.quote(toRemove), "?");
+			} else {
+				return uri.replaceFirst(Pattern.quote(toRemove), "");
+			}
+		} else {
+			return uri;
+		}
+	}
+
+	private String cleanUpUri(String uri) {
+		String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
+		cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
+		cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
+
+		cleanedUri = removeFirstTopOrSkip(cleanedUri);
+		cleanedUri = removeFirstView(cleanedUri);
+		return cleanedUri;
+	}
 
     private JsonNode makePagedEntityRequest(String uri, int skip, int top, String context) {
-        String cleanedUri = removeTopPattern.matcher(uri).replaceAll("");
-        cleanedUri = removeSkipPattern.matcher(cleanedUri).replaceAll("");
-        cleanedUri = removeViewPattern.matcher(cleanedUri).replaceAll("");
+
+		String cleanedUri = cleanUpUri(uri);
         //GSRS-1760 use Key view for fast fetching to avoid paging and record edits dropping out of paged results
         if (cleanedUri.indexOf('?') > 0) {
             //has parameters so append
