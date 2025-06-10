@@ -30,12 +30,6 @@ public class SpELValidator<T> extends AbstractValidatorPlugin<T> {
     private Expression callbackExpression;
 
     private ValidationMessage.MESSAGE_TYPE messageType = ValidationMessage.MESSAGE_TYPE.WARNING;
-    
-    private final String SpELValidatorError = "SpELValidatorError";
-    private final String SpELValidatorWarning = "SpELValidatorWarning";
-    private final String SpELValidatorNotice = "SpELValidatorNotice";
-    private final String SpELValidatorInfo = "SpELValidatorInfo";
-    private final String SpELValidatorSuccess = "SpELValidatorSuccess";
 
     @Override
     public void initialize() throws IllegalStateException {
@@ -89,13 +83,13 @@ public class SpELValidator<T> extends AbstractValidatorPlugin<T> {
     }
     private ValidationMessage createMessage(String message){
         switch(messageType){
-            case WARNING: return GinasProcessingMessage.WARNING_MESSAGE(SpELValidatorWarning, message);
-            case ERROR: return GinasProcessingMessage.ERROR_MESSAGE(SpELValidatorError, message);
-            case NOTICE: return GinasProcessingMessage.NOTICE_MESSAGE(SpELValidatorNotice, message);
-            case INFO: return GinasProcessingMessage.INFO_MESSAGE(SpELValidatorInfo, message);
-            case SUCCESS: return GinasProcessingMessage.SUCCESS_MESSAGE(SpELValidatorSuccess, message);
+            case WARNING: return GinasProcessingMessage.WARNING_MESSAGE(message);
+            case ERROR: return GinasProcessingMessage.ERROR_MESSAGE(message);
+            case NOTICE: return GinasProcessingMessage.NOTICE_MESSAGE(message);
+            case INFO: return GinasProcessingMessage.INFO_MESSAGE(message);
+            case SUCCESS: return GinasProcessingMessage.SUCCESS_MESSAGE(message);
 
-            default: return GinasProcessingMessage.WARNING_MESSAGE(SpELValidatorWarning, message);
+            default: return GinasProcessingMessage.WARNING_MESSAGE(message);
         }
     }
     @Data
