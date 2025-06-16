@@ -124,7 +124,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	private int failed;
     	private boolean done;
     	private long start;
-    	private long finshed;
+    	private long finished;
     	private List<String> ids;
     	private String _self;
     }
@@ -257,7 +257,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 //    		});
 //    		stat.setStatus("finished");
 //    		stat.done=true;
-//    		stat.finshed = TimeUtil.getCurrentTimeMillis();
+//    		stat.finished = TimeUtil.getCurrentTimeMillis();
 //    	});    	
     	
         return new ResponseEntity<>(bulkReindexListOfIDs(list, excludeExternal), HttpStatus.OK);
@@ -297,7 +297,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     		});
     		stat.setStatus("finished");
     		stat.done=true;
-    		stat.finshed = TimeUtil.getCurrentTimeMillis();
+    		stat.finished = TimeUtil.getCurrentTimeMillis();
     	});    	
     	
     	return stat;
