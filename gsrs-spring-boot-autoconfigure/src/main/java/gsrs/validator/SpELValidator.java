@@ -83,13 +83,13 @@ public class SpELValidator<T> extends AbstractValidatorPlugin<T> {
     }
     private ValidationMessage createMessage(String message){
         switch(messageType){
-            case WARNING: return GinasProcessingMessage.WARNING_MESSAGE(message);
-            case ERROR: return GinasProcessingMessage.ERROR_MESSAGE(message);
-            case NOTICE: return GinasProcessingMessage.NOTICE_MESSAGE(message);
-            case INFO: return GinasProcessingMessage.INFO_MESSAGE(message);
-            case SUCCESS: return GinasProcessingMessage.SUCCESS_MESSAGE(message);
+            case WARNING: return GinasProcessingMessage.WARNING_MESSAGE("W8960000", message);
+            case ERROR: return GinasProcessingMessage.ERROR_MESSAGE("E8960000", message);
+            case NOTICE: return GinasProcessingMessage.NOTICE_MESSAGE("N8960000", message);
+            case INFO: return GinasProcessingMessage.INFO_MESSAGE("I8960000", message);
+            case SUCCESS: return GinasProcessingMessage.SUCCESS_MESSAGE("S8960000", message);
 
-            default: return GinasProcessingMessage.WARNING_MESSAGE(message);
+            default: return GinasProcessingMessage.WARNING_MESSAGE("W8960000", message);
         }
     }
     @Data

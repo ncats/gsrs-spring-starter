@@ -29,7 +29,7 @@ public class DuplicateDomainValidator implements ValidatorPlugin<ControlledVocab
         Long duplicateId = list.get(0).getId();
         if(!duplicateId.equals(objnew.getId())){
             //id doesn't match so it's either a new record or a different record
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Duplicate Domain '"+domain + "' in vocabulary id = "+ duplicateId ));
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Duplicate Domain '%s' in vocabulary id = %s", domain, duplicateId));
             //TODO add link to the other record ?
         }
     }
