@@ -12,7 +12,36 @@
     <artifactId>gsrs-discovery</artifactId>
     <version>3.1.2</version>
     <name>gsrs-discovery</name>
-    <description>Demo project for Spring Boot</description>
+    <description>gsrs-discovery</description>
+    
+    <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-starter.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-starter.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+    </scm>
 
     <properties>
         <java.version>1.8</java.version>
@@ -23,6 +52,7 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+            <version>3.1.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -47,6 +77,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>2.7.18</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -120,14 +151,15 @@
                     </execution>
                 </executions>
             </plugin> -->
+        <!-- Uncomment this for maven public release deployment end -->    
         </plugins>
     </build>
 
 
     <repositories>
         <repository>
-            <id>oss.sonatype.org-snapshot</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>central</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -144,12 +176,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>central</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 

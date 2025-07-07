@@ -10,21 +10,54 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-spring-akka</artifactId>
+    <name>gsrs-spring-akka</name>
+    <description>gsrs-spring-akka</description>
+    <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-starter.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-starter.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+    </scm>
 
 <dependencies>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
+        <version>${spring-boot.version}</version>
         <scope>compile</scope>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-data-jpa</artifactId>
+        <version>${spring-boot.version}</version>
         <scope>compile</scope>
     </dependency>
     <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
+        <version>1.18.30</version>
         <optional>true</optional>
     </dependency>
     <dependency>
