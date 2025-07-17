@@ -75,7 +75,9 @@ public class TextFileReader {
             reader.nextLine();
         }
         for(int lineToRead=0; (lineToRead<maxRecords && reader.hasNext()); lineToRead++) {
-            List<String> values = Arrays.stream(reader.nextLine().split(delim)).collect(Collectors.toList());
+            String currentLine =reader.nextLine();
+            if( currentLine == null || currentLine.length()==0) continue;
+            List<String> values = Arrays.stream(currentLine.split(delim)).collect(Collectors.toList());
             for(int f=0; f< fields.size(); f++) {
                 String fieldName = fields.get(f);
                 String value = values.get(f);
