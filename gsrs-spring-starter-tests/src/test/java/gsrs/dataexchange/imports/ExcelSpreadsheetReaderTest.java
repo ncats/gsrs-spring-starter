@@ -181,6 +181,36 @@ public class ExcelSpreadsheetReaderTest {
     }
 
     @Test
+    public void readFileTest2NoSheetname() throws IOException {
+        String filePathName = "excel/export-03-01-2023_9-29-45.xlsx";
+        File inputFile= (new ClassPathResource(filePathName)).getFile();
+        FileInputStream fis = new FileInputStream(inputFile);
+        ExcelSpreadsheetReader reader= new ExcelSpreadsheetReader(fis);
+        List<String> fields = Arrays.asList("UUID", "APPROVAL_ID", "DISPLAY_NAME", "RN", "EC", "NCIT", "RXCUI", "PUBCHEM",
+                "ITIS", "NCBI", "PLANTS", "GRIN", "MPNS", "INN_ID", "USAN_ID", "MF", "INCHIKEY", "SMILES", "INGREDIENT_TYPE",
+                "UTF8_DISPLAY_NAME", "SUBSTANCE_TYPE", "PROTEIN_SEQUENCE", "NUCLEIC_ACID_SEQUENCE", "RECORD_ACCESS_GROUPS");
+
+        List<DefaultPropertyBasedRecordContext> records= reader.readSheet(null, fields, -1).collect(Collectors.toList());
+        fis.close();
+        System.out.println("data:");
+
+        List<String> actualFields= records.stream().map(DefaultPropertyBasedRecordContext::getProperties).flatMap(List::stream).distinct().collect(Collectors.toList());
+
+        //check a couple of fields on one row
+        DefaultPropertyBasedRecordContext recordData= records.get(54);
+        String values= "294de533-af70-45cc-af7a-f307c37cf00e\t3W58ITX06Q\tVINYLBITAL\t2430-49-1\t219-395-8\tC74377\t19928\t72135\t\t\t\t\t\t1153\t\tC11H16N2O3\tKGKJZEKQJQQOTD-UHFFFAOYSA-N\tCCCC(C)C1(C=C)C(=O)NC(=O)NC1=O\tINGREDIENT SUBSTANCE\tVINYLBITAL\tchemical\t\t";
+        List<String> testValues=Arrays.asList(values.split("\t"));
+        Assertions.assertTrue(recordData.getProperties().stream().allMatch(r->{
+            if((recordData.getProperty(r).isPresent() && recordData.getProperty(r).get().length()>0)) {
+                int index = fields.indexOf(r);
+                System.out.printf("field %d %s = %s\n", index, r, recordData.getProperty(r).get());
+                return testValues.get(index).equals(recordData.getProperty(r).get());
+            }
+            return true;
+        }));
+    }
+
+    @Test
     public void getFileStatisticsTest() throws IOException {
         String filePathName = "excel/export-29-12-2022_17-40-13.xlsx";
         File inputFile= (new ClassPathResource(filePathName)).getFile();
@@ -197,6 +227,25 @@ public class ExcelSpreadsheetReaderTest {
             log.trace("field: {} - examples: {}",k, String.join("|", statistics.getExamples()));
         });
     }
+
+    @Test
+    public void getFileStatisticsTestNoSheetName() throws IOException {
+        String filePathName = "excel/export-29-12-2022_17-40-13.xlsx";
+        File inputFile= (new ClassPathResource(filePathName)).getFile();
+        FileInputStream fis = new FileInputStream(inputFile);
+        ExcelSpreadsheetReader reader= new ExcelSpreadsheetReader(fis);
+        Map<String, InputFieldStatistics>statisticsMap= reader.getFileStatistics(null, null, 4, 0);
+        List<String> expectedFields = Arrays.asList("UUID", "APPROVAL_ID", "DISPLAY_NAME", "RN", "EC", "NCIT", "RXCUI", "PUBCHEM",
+                "ITIS", "NCBI", "PLANTS", "GRIN", "MPNS", "INN_ID", "USAN_ID", "MF", "INCHIKEY", "SMILES", "INGREDIENT_TYPE",
+                "UTF8_DISPLAY_NAME", "SUBSTANCE_TYPE", "PROTEIN_SEQUENCE", "NUCLEIC_ACID_SEQUENCE", "RECORD_ACCESS_GROUPS");
+        List<String> actualFields= statisticsMap.keySet().stream().collect(Collectors.toList());
+        Assertions.assertTrue(expectedFields.containsAll(actualFields));
+        statisticsMap.keySet().forEach(k->{
+            InputFieldStatistics statistics= statisticsMap.get(k);
+            log.trace("field: {} - examples: {}",k, String.join("|", statistics.getExamples()));
+        });
+    }
+
     /*@Test
     public void listPoi() {
         ClassLoader classloader =

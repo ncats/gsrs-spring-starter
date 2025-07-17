@@ -99,7 +99,9 @@ public class ExcelSpreadsheetReader {
     }
 
     public List<String> getFileFields(String sheetName, int row) {
-        Sheet fieldNameSheet = workbook.getSheet(sheetName);
+        Sheet fieldNameSheet = sheetName!= null && sheetName.length() > 0
+                ? workbook.getSheet(sheetName)
+                : workbook.getSheetAt(0);
         return getFileFields(fieldNameSheet, row);
     }
 
@@ -115,7 +117,9 @@ public class ExcelSpreadsheetReader {
 
     public Stream<DefaultPropertyBasedRecordContext> readSheet(String sheetName, List<String> inputFields, int rowWithFields) {
 
-        Sheet dataSheet = workbook.getSheet(sheetName);
+        Sheet dataSheet = sheetName!= null && sheetName.length() > 0
+                ? workbook.getSheet(sheetName)
+                : workbook.getSheetAt(0);
         List<String> fields;
         if (inputFields != null && inputFields.size() > 0) {
             fields = new ArrayList<>(inputFields);
@@ -178,7 +182,9 @@ public class ExcelSpreadsheetReader {
         log.trace("In getFileStatistics, sheetName: {}; fieldRow: {}", sheetName, fieldRow);
         Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
 
-        Sheet dataSheet = workbook.getSheet(sheetName);
+        Sheet dataSheet = sheetName!= null && sheetName.length() > 0
+                ? workbook.getSheet(sheetName)
+                : workbook.getSheetAt(0);
         List<String> fields = new ArrayList<>();
         if (fieldNames != null && fieldNames.size() > 0) {
             log.trace("getFileStatistics received input fieldNames");
