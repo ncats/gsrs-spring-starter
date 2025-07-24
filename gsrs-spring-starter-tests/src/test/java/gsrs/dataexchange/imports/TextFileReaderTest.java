@@ -92,7 +92,87 @@ public class TextFileReaderTest {
         List<DefaultPropertyBasedRecordContext> data = dataRecordContextStream.collect(Collectors.toList());
         long actual = data.size();
         Assertions.assertEquals(expectedRecordCount, actual);
-
-
     }
+
+    @Test
+    public void testGetFieldsHandlingQuotes() throws IOException {
+        String fileName = "text/TextFileWithSomeQuotes.txt";
+        List<String> expectedFields = Arrays.asList("UUID","APPROVAL_ID","DISPLAY_NAME","RN","EC","NCIT","RXCUI","PUBCHEM","ITIS","NCBI","PLANTS","GRIN","MPNS","INN_ID","USAN_ID","MF","INCHIKEY","SMILES","INGREDIENT_TYPE","UTF8_DISPLAY_NAME","SUBSTANCE_TYPE","PROTEIN_SEQUENCE","NUCLEIC_ACID_SEQUENCE","RECORD_ACCESS_GROUPS");
+        File textFile = (new ClassPathResource(fileName)).getFile();
+        Assertions.assertTrue(textFile.exists());
+        FileInputStream fileInputStream = new FileInputStream(textFile);
+        TextFileReader reader = new TextFileReader();
+        List<String> actualFields =reader.getFileFields(fileInputStream, ",", true);
+        fileInputStream.close();
+
+        Assertions.assertEquals(expectedFields, actualFields);
+    }
+
+    @Test
+    public void testRemoveQuotesFromStringWithBeforeAndAfter() {
+        String input1 = "\"chemical name\"";
+        String expected = "chemical name";
+        String actual =TextFileReader.removeQuotes(input1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveQuotesFromStringWithJustBefore() {
+        String input1 = "\"chemical name";
+        String expected = "chemical name";
+        String actual =TextFileReader.removeQuotes(input1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveQuotesFromStringWithJustAfter() {
+        String input1 = "chemical name\"";
+        String expected = "chemical name";
+        String actual =TextFileReader.removeQuotes(input1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveQuotesFromStringNeither() {
+        String input1 = "chemical name";
+        String expected = "chemical name";
+        String actual =TextFileReader.removeQuotes(input1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void isCharDoubleQuote(){
+        char input1 = '"';
+        boolean actual = TextFileReader.isQuote(input1);
+        Assertions.assertTrue(actual);
+    }
+
+    @Test
+    public void isCharSingleQuote(){
+        char input1 = '\'';
+        boolean actual = TextFileReader.isQuote(input1);
+        Assertions.assertTrue(actual);
+    }
+
+    @Test
+    public void isCharLetter(){
+        char input1 = 'a';
+        boolean actual = TextFileReader.isQuote(input1);
+        Assertions.assertFalse(actual);
+    }
+
+    @Test
+    public void isCharNumberer(){
+        char input1 = '9';
+        boolean actual = TextFileReader.isQuote(input1);
+        Assertions.assertFalse(actual);
+    }
+
+    @Test
+    public void isCharBackTick(){
+        char input1 = '`';
+        boolean actual = TextFileReader.isQuote(input1);
+        Assertions.assertFalse(actual);
+    }
+
 }

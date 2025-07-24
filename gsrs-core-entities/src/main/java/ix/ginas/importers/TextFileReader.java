@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,7 +21,7 @@ public class TextFileReader {
         if(inputFields !=null && inputFields.size() >0){
             fields = new ArrayList<>(inputFields);
         }else {
-            fields=Arrays.stream(br.readLine().split(delim)).map(s -> trimQuotes ? s.substring(1, s.length() - 1) : s).collect(Collectors.toList());
+            fields=Arrays.stream(br.readLine().split(delim)).map(s -> trimQuotes ? removeQuotes(s) : s).collect(Collectors.toList());
         }
         String line;
         Stream.Builder<DefaultPropertyBasedRecordContext> builder=Stream.builder();
@@ -31,11 +32,11 @@ public class TextFileReader {
             for(int i =0; i< fields.size(); i++) {
                 try {
                     String currentValue=values.get(i);
-                    if( currentValue !=null && trimQuotes&& currentValue.length()==2){
+                    if( currentValue !=null && trimQuotes && currentValue.length()==2){
                         currentValue=null;
                     }
                     if( currentValue!=null && trimQuotes && currentValue.length()>2) {
-                        currentValue = currentValue.substring(1, currentValue.length()-1);
+                        currentValue = removeQuotes(currentValue);
                     }
                     lineValues.put(fields.get(i), currentValue);
                 }
@@ -52,7 +53,7 @@ public class TextFileReader {
 
     public List<String> getFileFields(InputStream inputStream, String delim, boolean trimQuotes) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-        return Arrays.stream(br.readLine().split(delim)).map(s->trimQuotes ? s.substring(1, s.length()-1): s).collect(Collectors.toList());
+        return Arrays.stream(br.readLine().split(delim)).map(s->trimQuotes ? removeQuotes(s): s).collect(Collectors.toList());
     }
 
     public Map<String, InputFieldStatistics> getFileStatistics(InputStream inputStream, String delim, boolean trimQuotes, List<String> fieldNames,
@@ -67,7 +68,8 @@ public class TextFileReader {
             fields.addAll(fieldNames);
         } else {
             log.trace("getFileStatistics reading fields from file");
-            fields = Arrays.stream(reader.nextLine().split(delim)).map(s->trimQuotes ? s.substring(1, s.length()-1): s).collect(Collectors.toList());
+            fields = Arrays.stream(reader.nextLine().split(delim)).map(s->trimQuotes ? removeQuotes(s)
+                    : s).collect(Collectors.toList());
             log.trace(" got {}", fields.size());
         }
 
@@ -97,7 +99,7 @@ public class TextFileReader {
         if(inputFields !=null && inputFields.size() >0){
             fields = new ArrayList<>(inputFields);
         }else {
-            fields=Arrays.stream(reader.nextLine().split(delim)).map(s -> trimQuotes ? s.substring(1, s.length() - 1) : s).collect(Collectors.toList());
+            fields=Arrays.stream(reader.nextLine().split(delim)).map(s -> trimQuotes ?  removeQuotes(s) : s).collect(Collectors.toList());
         }
         for( int i =0; i<linesToSkip; i++) reader.nextLine();
 
@@ -112,7 +114,7 @@ public class TextFileReader {
                 try {
                     String currentValue=values.get(i);
                     if( currentValue!=null && trimQuotes && currentValue.length()>2) {
-                        currentValue = currentValue.substring(1, currentValue.length()-1);
+                        currentValue = removeQuotes(currentValue);
                     }
                     lineValues.put(fields.get(i), currentValue);
                 }
@@ -125,4 +127,21 @@ public class TextFileReader {
         }
         return builder.build();
     }
+
+    public static String removeQuotes(String input) {
+        String output = input;
+        if(isQuote(output.charAt(0)) ) {
+            output = output.substring(1);
+        }
+        if(isQuote(output.charAt(output.length()-1))) {
+            output = output.substring(0, output.length()-1);
+        }
+        return output;
+    }
+
+    public static boolean isQuote(char testChar) {
+        List<Character> quoteChars = Arrays.asList('"', '\'');
+        return quoteChars.contains(testChar);
+    }
+
 }
