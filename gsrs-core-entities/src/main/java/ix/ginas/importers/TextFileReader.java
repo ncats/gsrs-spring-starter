@@ -32,11 +32,8 @@ public class TextFileReader {
             for(int i =0; i< fields.size(); i++) {
                 try {
                     String currentValue=values.get(i);
-                    if( currentValue !=null && trimQuotes && currentValue.length()==2){
-                        currentValue=null;
-                    }
-                    if( currentValue!=null && trimQuotes && currentValue.length()>2) {
-                        currentValue = removeQuotes(currentValue);
+                    if( currentValue !=null && trimQuotes ){
+                        currentValue=removeQuotes(currentValue);
                     }
                     lineValues.put(fields.get(i), currentValue);
                 }
