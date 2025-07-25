@@ -3,6 +3,7 @@ package gsrs.dataexchange.imports;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
 import ix.ginas.importers.TextFileReader;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -55,6 +56,30 @@ public class TextFileReaderTest {
         String expectedRn="1186098-83-8";
         DefaultPropertyBasedRecordContext selectedDataItem = data.stream().filter(d->d.getProperty("UUID").get().equals(uuid)).findFirst().get();
         Assertions.assertEquals(expectedRn, selectedDataItem.getProperty("RN").get());
+    }
+
+    @Test
+    public void testReadPubChemData1() throws IOException {
+        String fileName = "text/pubchem_data_through_data_warrior.txt";
+        String structureNumberProperty = "Structure No";
+        File textFile = (new ClassPathResource(fileName)).getFile();
+        Assertions.assertTrue(textFile.exists());
+        FileInputStream fileInputStream = new FileInputStream(textFile);
+        TextFileReader reader = new TextFileReader();
+        Stream<DefaultPropertyBasedRecordContext> dataRecordContextStream =reader.readFile(fileInputStream, "\t",true, null);
+        fileInputStream.close();
+        long expectedRecordCount =50;
+        List<DefaultPropertyBasedRecordContext> data = dataRecordContextStream.collect(Collectors.toList());
+        long actual = data.size();
+        Assertions.assertEquals(expectedRecordCount, actual);
+        data.forEach( d->{
+            if( !d.getProperty(structureNumberProperty).isPresent() || d.getProperty(structureNumberProperty).get().length() <= 0) {
+                log.error("Error!  expected property not found for record {}", d.getProperty("PUBCHEM_COMPOUND_CID").get());
+            }
+        });
+        Assertions.assertTrue(data.stream().allMatch(
+                r->r.getProperty(structureNumberProperty).isPresent() && r.getProperty(structureNumberProperty).get().length()>0
+                        && r.getProperty("PUBCHEM_COMPOUND_CID").get().length()>0));
     }
 
     @Test
