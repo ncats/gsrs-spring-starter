@@ -82,18 +82,31 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
     private HttpRequestHolder adapt(HttpRequestHolder holdersrc, HttpRequestHolder currentRequest, RequestAdapter adapter) {
         String transformedURL;
         try {
-            URI urlObj = new URL(holdersrc.getUrl()).toURI();
 
+	    URI urlObj = new URL(holdersrc.getUrl()).toURI();
+	
+            System.out.println("Loopback hostname:" + httpLoopBackConfig.getHostname());
+            System.out.println("Loopback port:" + httpLoopBackConfig.getPort());
+            System.out.println("Path before clean:" +  urlObj.getPath());
+
+            String path = urlObj.getPath();
+            String toStrip = httpLoopBackConfig.getStripPrefixFromPath();
+            if (toStrip != null &&  !toStrip.trim().isEmpty()) {
+                path = path.replace(toStrip.trim(), "");
+            }
+            System.out.println("Path after clean:" +  urlObj.getPath());
 
             transformedURL = new URI(httpLoopBackConfig.getProtocol(), 
                                      httpLoopBackConfig.getHostname() +":"+ 
                                      httpLoopBackConfig.getPort(),
-                                                urlObj.getPath(),     //TODO: TP 08-15-2021 I'm not so sure about this ... the local loopback could
+                                                path,     //TODO: TP 08-15-2021 I'm not so sure about this ... the local loopback could
                                                                       //be different than the path of the built query. Care needs
                                                                       //to be taken here
                                                 urlObj.getQuery(), 
                                                 urlObj.getFragment())
                     .toString();
+
+            System.out.println("Loopback transformedURL:" +  transformedURL);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
