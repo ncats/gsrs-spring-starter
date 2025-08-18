@@ -59,11 +59,6 @@
             <version>${spring-boot.version}</version>
         </dependency>
         <dependency>
-            <groupId>jakarta.persistence</groupId>
-            <artifactId>jakarta.persistence-api</artifactId>
-            <version>2.2.3</version>
-        </dependency>
-        <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core</artifactId>
             <version>${gsrs.version}</version>

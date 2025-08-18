@@ -7,9 +7,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
-
-import jakarta.persistence.*;
 import java.util.UUID;
+import jakarta.persistence.*;
 
 /**
  * Tracks the Key/Value/Qualifier triplets computed for all records in the staging area and in the main database

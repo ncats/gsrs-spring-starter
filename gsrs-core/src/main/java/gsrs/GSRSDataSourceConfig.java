@@ -65,9 +65,9 @@ public abstract class GSRSDataSourceConfig {
         Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
 
         // Allows schema generation for both default and non-default datasources; perviously worked only for default
-        Optional<String> schemaGenerationCreateSource = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.create-source", "spring.jpa.properties.javax.persistence.schema-generation.create-source");
-        Optional<String> schemaGenerationScriptsAction = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.scripts.action", "spring.jpa.properties.javax.persistence.schema-generation.scripts.action");
-        Optional<String> schemaGenerationScriptsCreateTarget = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.scripts.create-target", "spring.jpa.properties.javax.persistence.schema-generation.scripts.create-target");
+        Optional<String> schemaGenerationCreateSource = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.create-source", "spring.jpa.properties.jakarta.persistence.schema-generation.create-source");
+        Optional<String> schemaGenerationScriptsAction = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.scripts.action", "spring.jpa.properties.jakarta.persistence.schema-generation.scripts.action");
+        Optional<String> schemaGenerationScriptsCreateTarget = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.scripts.create-target", "spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target");
 
         log.debug("dialect:" + dialect.orElse(null));
         log.debug("Show SQL:" + showSQL.orElse(null));
@@ -86,9 +86,9 @@ public abstract class GSRSDataSourceConfig {
 
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
-        schemaGenerationCreateSource.ifPresent(d->map.put("javax.persistence.schema-generation.create-source", d));
-        schemaGenerationScriptsAction.ifPresent(d->map.put("javax.persistence.schema-generation.scripts.action", d));
-        schemaGenerationScriptsCreateTarget.ifPresent(d->map.put("javax.persistence.schema-generation.scripts.create-target", d));
+        schemaGenerationCreateSource.ifPresent(d->map.put("jakarta.persistence.schema-generation.create-source", d));
+        schemaGenerationScriptsAction.ifPresent(d->map.put("jakarta.persistence.schema-generation.scripts.action", d));
+        schemaGenerationScriptsCreateTarget.ifPresent(d->map.put("jakarta.persistence.schema-generation.scripts.create-target", d));
 
         //This doesn't seem ideal ... but it may be the only way
         map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());
