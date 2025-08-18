@@ -5,11 +5,42 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-data-exchange</artifactId>
+
+    <name>gsrs-data-exchange</name>
+    <description>gsrs-data-exchange</description>
+    <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-starter.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-starter.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+    </scm>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -20,14 +51,17 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>${spring-boot.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
+            <version>2.2.3</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -44,6 +78,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -54,6 +89,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
+            <version>5.3.31</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -86,6 +122,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>

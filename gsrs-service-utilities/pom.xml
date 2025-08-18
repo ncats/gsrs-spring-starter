@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>gsrs-spring-boot</artifactId>
+        <groupId>gov.nih.ncats</groupId>
+        <version>3.1.2</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>gsrs-service-utilities</artifactId>
+
+    <name>gsrs-service-utilities</name>
+    <description>gsrs-service-utilities</description>
+    <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-starter.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-starter.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
+    </scm>
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <gsrs-services-common.version>1.0-SNAPSHOT</gsrs-services-common.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>pl.jalokim.propertiestojson</groupId>
+            <artifactId>java-properties-to-json</artifactId>
+            <version>5.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-basic-service-utilities</artifactId>
+            <version>${gsrs-services-common.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core-entities</artifactId>
+            <version>${gsrs.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+    </dependencies>
+
+
+    <!-- Uncomment this for maven public release deployment
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <additionalOptions>-Xdoclint:none</additionalOptions>
+                    <additionalJOption>-Xdoclint:none</additionalJOption>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build> -->
+</project>

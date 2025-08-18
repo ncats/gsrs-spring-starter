@@ -48,6 +48,8 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
     public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers ) {
         this(indexers, null);
     }
+    public List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> getConfList() { return this.confList;}
+
     public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry){
         this.confList = new ArrayList<>(confs);
         map = CachedSupplier.of( ()->{

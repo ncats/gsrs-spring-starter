@@ -13,11 +13,11 @@ import ix.core.util.pojopointer.PojoPointer;
 
 import ix.core.util.pojopointer.URIPojoPointerParser;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 
 
 @RunWith(Parameterized.class)
+@ActiveProfiles("test")
 public class FunctionalPointerTest{
 
 	private static URIPojoPointerParser oldInstance;

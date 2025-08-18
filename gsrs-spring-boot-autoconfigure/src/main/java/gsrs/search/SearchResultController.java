@@ -1,5 +1,6 @@
 package gsrs.search;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,11 +19,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
@@ -42,6 +47,7 @@ import ix.core.util.EntityUtils;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import ix.core.models.Facet; 
 
 @ExposesResourceFor(SearchResultContext.class)
 @Slf4j
@@ -55,6 +61,7 @@ public class SearchResultController {
 
     @Autowired
     private ETagRepository eTagRepository;
+    
 
     @GetGsrsRestApiMapping(value = {"({key})","/{key}"})
     public ResponseEntity<Object> getSearchResultStatus(@PathVariable("key") String key,
@@ -86,6 +93,7 @@ public class SearchResultController {
                                                         @RequestParam(required = false, defaultValue = "10") int fdim,
                                                         @RequestParam(required = false, defaultValue = "") String field,
                                                         @RequestParam(required = false) String query,
+                                                        @RequestParam(required = false, defaultValue = "true") boolean includeSummary,
                                                         @RequestParam MultiValueMap<String, String> queryParameters,
                                                                HttpServletRequest request) throws URISyntaxException {
     	
@@ -95,6 +103,7 @@ public class SearchResultController {
     	int qSkip = Integer.parseInt(queryParameters.getOrDefault("qSkip", Arrays.asList("0")).get(0));
     	String qSort = queryParameters.getFirst("qSort");
     	String qFilter = queryParameters.getFirst("qFilter");
+
         SearchResultContext.SearchResultContextOrSerialized possibleContext = getContextForKey(key);
         if(possibleContext ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters.toSingleValueMap());
@@ -104,6 +113,9 @@ public class SearchResultController {
             headers.add("Location", possibleContext.getSerialized().generatingPath);
             return new ResponseEntity<>(headers,HttpStatus.FOUND);
         }
+        
+          
+        
         SearchResultContext ctx=possibleContext.getContext();
 
         
@@ -139,12 +151,22 @@ public class SearchResultController {
         SearchOptions so = searchRequest.getOptions();
 
         String viewType=queryParameters.getFirst("view");
-
-        if("key".equals(viewType)){
-            List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
-            results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
-            resultSet=klist;
-        }else{
+        String viewField=queryParameters.getFirst("viewfield");
+        final String FIELD_ID = "id";
+        final String FIELD_FACET = "facet";
+        boolean keyView = "key".equals(viewType)? true:false;
+        if(keyView){
+        	if(viewField==null) {
+        		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
+        		results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
+        		resultSet=klist;
+        	}else if(FIELD_ID.equals(viewField)){
+        		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
+        		results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
+        		resultSet = klist.stream().map(item->item.getIdString()).collect(Collectors.toList());
+        	}
+        }
+        else{
             results.copyTo(resultSet, so.getSkip(), so.getTop(), true);
             for (Object s : resultSet) { 
             	if(s instanceof BaseModel) {
@@ -169,12 +191,31 @@ public class SearchResultController {
                 .build();
 
         eTagRepository.saveAndFlush(etag); //Always save?
-
+        
+        if(keyView && FIELD_ID.equals(viewField)) {
+        	etag.setContent(resultSet);
+        	return new ResponseEntity<>(etag, HttpStatus.OK);
+        	
+        }else if(keyView && FIELD_FACET.equals(viewField)) {
+        	List<Facet> facetList = results.getFacets();
+        	String facetLabel = queryParameters.getFirst("facetlabel");
+        	if(facetLabel!=null) {
+        		List<Facet> filteredList = facetList.stream()
+        				.filter(f->f.getName().equalsIgnoreCase(facetLabel))
+        				.collect(Collectors.toList());
+        		etag.setFacets(filteredList);
+        				
+        	}else {
+        		etag.setFacets(facetList);
+        	}
+        	return new ResponseEntity<>(etag, HttpStatus.OK);
+        }
+                
         etag.setFacets(results.getFacets());
         etag.setContent(ret);
         etag.setFieldFacets(results.getFieldFacets()); 
   
-        if(results.getSummary()!= null)
+        if(includeSummary && results.getSummary()!= null)
         	etag.setSummary(getPagedSummary(results.getSummary(), qTop, qSkip, qFilter, qSort));
         
         //TODO Filters and things
@@ -322,4 +363,5 @@ public class SearchResultController {
 	    }
 	    return null;
     }
+    
 }

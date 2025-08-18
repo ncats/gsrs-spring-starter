@@ -24,13 +24,16 @@ import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Payload;
 import ix.core.models.Text;
 import ix.core.search.SearchResult;
+import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -46,10 +49,10 @@ import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Stream;
-
 @Slf4j
 @ActiveProfiles("test")
-@GsrsJpaTest(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
+@GsrsJpaTest(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class,
+GsrsEntityTestConfiguration.class, BulkSearchService.class})
 class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
     private final UUID uuid = UUID.randomUUID();

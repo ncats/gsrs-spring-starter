@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import gsrs.config.FilePathParserUtils;
 import gsrs.service.ExportService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
@@ -183,8 +184,6 @@ public class ExportController {
         String filename = parameters.getOrDefault("filename", opt.get().getDisplayFilename());
 
         File f = exportFile.get().getFile();
-
-
 
         Path path = Paths.get(f.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));

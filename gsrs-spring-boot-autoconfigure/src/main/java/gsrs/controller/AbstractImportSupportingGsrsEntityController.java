@@ -723,6 +723,22 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
+    @hasAdminRole
+    @PostGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
+    public ResponseEntity<Object> executeValidatePut(@PathVariable("id") String id,
+                                                     @RequestBody JsonNode updateEntity,
+                                                     @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("executeValidatePut  id: " + id);
+        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
+        ImportMetadata importObject = stagingAreaService.getImportMetaData(id, 0);
+        Object response = stagingAreaService.validateRecord(importObject.getEntityClassName(), updateEntity.toString());
+        if (response == null) {
+            ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
+            responseNode.put("message", "unable to process input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
+    }
 
     //search for records that have the same values for key fields
     @hasAdminRole
@@ -1057,6 +1073,8 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("field") Optional<String> field,
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
+                                                 @RequestParam("sortBy") Optional<String> sortBy,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
                                                  HttpServletRequest request) throws ParseException, IOException {
         log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
@@ -1071,15 +1089,23 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
             userName = GsrsSecurityUtils.getCurrentUsername().get();
             userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
+                
+        String cacheID = getFacetCacheID("Staging", query.orElse(""), so, field.orElse(""));        
+        TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
+        if(tv == null) {
+            tv = getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
+        	gsrscache.setRaw(cacheID, tv);        	
+        }
 
-        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
+        String sortByProp = sortBy.isPresent()?sortBy.get():"";
+        boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-                userName, userLists);
+                userName, userLists, sortByProp, sortDesc);
 
     }
 

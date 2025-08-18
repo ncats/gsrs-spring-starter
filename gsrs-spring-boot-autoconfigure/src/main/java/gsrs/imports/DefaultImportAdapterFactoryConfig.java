@@ -26,6 +26,11 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     //private List<ActionConfig> actions;
     private List<String> extensions;
     private String adapterName;
+
+    private String parentKey;
+    private Double order;
+    private boolean disabled = false;
+
     private Map<String, Object> parameters;
     private String stagingAreaServiceClass;
     private List<Class> entityServices;
@@ -77,6 +82,37 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     public void setImportAdapterFactoryClass(Class importAdapterFactoryClass) {
         this.importAdapterFactoryClass = importAdapterFactoryClass;
     }
+
+    @Override
+    public String getParentKey() {
+        return this.parentKey;
+    }
+
+    @Override
+    public void setParentKey(String key) {
+        this.parentKey = parentKey;
+    }
+
+    @Override
+    public Double getOrder() {
+        return this.order;
+    }
+
+    @Override
+    public void setOrder(Double order) {
+        this.order = order;
+    }
+
+    @Override
+    public boolean isDisabled() {
+        return this.disabled;
+    }
+
+    @Override
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
+
 
     @Override
     public Map<String, Object> getParameters() {

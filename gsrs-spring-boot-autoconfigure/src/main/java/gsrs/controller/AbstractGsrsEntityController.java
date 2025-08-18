@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
@@ -38,14 +39,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
+import gsrs.repository.BackupRepository;
 import gsrs.repository.EditRepository;
+import gsrs.security.hasAdminRole;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
 import ix.core.EntityFetcher;
+import ix.core.models.BackupEntity;
 import ix.core.models.Edit;
+import ix.core.models.FetchableEntity;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
@@ -75,8 +81,10 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
     private static Pattern VERSIONED_ROUTE = Pattern.compile("^v/(\\d+)$");
     @Autowired
-	protected GsrsControllerConfiguration gsrsControllerConfiguration;
+    protected GsrsControllerConfiguration gsrsControllerConfiguration;
 
+    @Autowired
+    private BackupRepository backupRepository;
 
     @Autowired
     private EntityLinks entityLinks;
@@ -147,6 +155,11 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws IOException {
         GsrsEntityService<T, I> entityService = getEntityService();
+        if( entityService.isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
         AbstractGsrsEntityService.CreationResult<T> result =null;
         try {
             result = entityService.createEntity(newEntityJson);
@@ -172,7 +185,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
 
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping("/@validate")
     @Transactional(readOnly = true)
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
@@ -194,7 +206,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
-       AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+
+        AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
@@ -399,6 +417,16 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
+    @GetGsrsRestApiMapping("/@keys")
+    public List<Key> getKeys(){    	
+    	List<I> IDs = getEntityService().getIDs();
+//    	System.out.println("GET IDS!");
+//    	IDs.forEach(id -> System.out.println("ID " + id.toString()));
+    	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
+        return keys;
+    }
+    
+    @Override
     @GetGsrsRestApiMapping("")
     @Transactional(readOnly = true)
     public ResponseEntity<Object> page(@RequestParam(value = "top", defaultValue = "10") long top,
@@ -461,7 +489,13 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
     public ResponseEntity<Object> deleteById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in createEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
         Optional<I> idOptional = getEntityService().getEntityIdOnlyBySomeIdentifier(id);
+
         if(idOptional.isPresent()){
             getEntityService().delete(idOptional.get());
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -494,6 +528,51 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         return result;
     }
 
+    protected Optional<T> rebackupEntity(String id) throws Exception{
+        Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
+        if(obj.isPresent()){
+            BackupEntity be = new BackupEntity();
+            be.setInstantiated((FetchableEntity) obj.get());
+            Optional<BackupEntity> old = backupRepository.findByRefid(id);
+            if(old.isPresent()){
+                BackupEntity updated = old.get();
+                updated.setFromOther(be);
+                backupRepository.saveAndFlush(updated);
+            }else{
+                backupRepository.saveAndFlush(be);
+            }
+        }
+        return obj;
+    }
+
+    @Override
+    @hasAdminRole
+    @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
+    public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
+        Optional<T> obj = rebackupEntity(id);
+        if(obj.isPresent()){
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @Override
+    @hasAdminRole
+    @PutGsrsRestApiMapping("/@rebackup")
+    public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
+        List<String> processed = new ArrayList<>();
+        for (JsonNode id : idList) {
+            try {
+                Optional<T> obj = rebackupEntity(id.asText());
+                if(obj.isPresent()){
+                    processed.add(id.asText());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return new ResponseEntity<>(processed.isEmpty() ? "[]" : "[\"" + String.join("\",\"", processed) + "\"]", HttpStatus.OK);
+    }
 
 //TODO katzelda October 2020 : for now delay work on modern hibernate search use legacy lucene
 
