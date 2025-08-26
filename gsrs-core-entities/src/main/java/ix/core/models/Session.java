@@ -5,7 +5,7 @@ import ix.core.History;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
@@ -14,23 +14,11 @@ import java.util.UUID;
 @History(store=false)
 public class Session extends BaseModel {
     @Id
-    @GenericGenerator(
-            name = "NullUUIDGenerator",
-            strategy = "ix.ginas.models.generators.NullUUIDGenerator"
-    )
-    @GeneratedValue(
-            generator = "NullUUIDGenerator"
-    )
-    @Type(
-            type = "uuid-char"
-    )
-    @Column(
-            length = 40,
-            updatable = false
-    )
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
+    @GeneratedValue(generator = "NullUUIDGenerator")
     public UUID id;
 
-    @OneToOne(cascade=CascadeType.ALL)
+    @ManyToOne(cascade=CascadeType.ALL)
     public UserProfile profile;
     
     public final long created = TimeUtil.getCurrentTimeMillis();

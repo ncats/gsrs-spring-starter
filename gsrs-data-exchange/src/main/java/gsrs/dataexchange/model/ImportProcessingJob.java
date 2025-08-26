@@ -12,7 +12,7 @@ import ix.core.models.Indexable;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
@@ -23,10 +23,8 @@ import java.util.UUID;
 public class ImportProcessingJob implements GeneralPurposeJob {
 
     @Id
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     private UUID id;
-    
+
     @Lob
     private String data;
 
