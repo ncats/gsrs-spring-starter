@@ -37,10 +37,10 @@ public class ImportData {
     /**
      * Foreign key, referencing ImportMetadata
      */
-    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
-    @GeneratedValue(generator = "NullUUIDGenerator")
+    //@GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
+    //@GeneratedValue(generator = "NullUUIDGenerator")
     @Indexable(name="RecordId")
-    private UUID recordId;
+    private UUID recordId = UUID.randomUUID();
 
     /**
      * Primary key
