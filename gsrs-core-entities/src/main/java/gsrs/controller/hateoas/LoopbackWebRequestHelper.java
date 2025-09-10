@@ -84,7 +84,7 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
         String transformedURL;
         try {
 
-	    URI urlObj = new URL(holdersrc.getUrl()).toURI();
+	        URI urlObj = new URL(holdersrc.getUrl()).toURI();
 	
             String path = urlObj.getPath();
             String toStrip = httpLoopBackConfig.getStripPrefixFromPath();
