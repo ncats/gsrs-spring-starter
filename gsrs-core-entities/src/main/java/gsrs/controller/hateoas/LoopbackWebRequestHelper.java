@@ -88,12 +88,13 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
 	
             String path = urlObj.getPath();
             String toStrip = httpLoopBackConfig.getStripPrefixFromPath();
+
             if (toStrip != null &&  !toStrip.trim().isEmpty()) {
                 path = path.replace(toStrip.trim(), "");
+                log.trace("Path after strip:{}", path);
             }
-            log.trace("Path after clean:" +  urlObj.getPath());
 
-            transformedURL = new URI(httpLoopBackConfig.getProtocol(), 
+            transformedURL = new URI(httpLoopBackConfig.getProtocol(),
                                      httpLoopBackConfig.getHostname() +":"+ 
                                      httpLoopBackConfig.getPort(),
                                                 path,     //TODO: TP 08-15-2021 I'm not so sure about this ... the local loopback could
@@ -102,7 +103,7 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
                                                 urlObj.getQuery(), 
                                                 urlObj.getFragment())
                     .toString();
-            log.trace("Loopback transformedURL:" +  transformedURL);
+            log.trace("Loopback transformedURL value: {}", transformedURL);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
