@@ -25,7 +25,7 @@ public class HttpLoopBackConfig {
     private String protocol;
     private String hostname;
     private int port;
-    // Use in a pinch, this is kind of ugly.
+    // Use in a pinch, if server configuration points to an endpoint with the prefix included in the URL that causes the API call not to work. 
     private String stripPrefixFromPath;
 
     private List<Map<String, Object>> requests = new ArrayList<>();

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -25,7 +26,7 @@ import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.Holder;
 
 
-
+@Slf4j
 @Component
 public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefreshedEvent>{
 
@@ -85,16 +86,12 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
 
 	    URI urlObj = new URL(holdersrc.getUrl()).toURI();
 	
-            System.out.println("Loopback hostname:" + httpLoopBackConfig.getHostname());
-            System.out.println("Loopback port:" + httpLoopBackConfig.getPort());
-            System.out.println("Path before clean:" +  urlObj.getPath());
-
             String path = urlObj.getPath();
             String toStrip = httpLoopBackConfig.getStripPrefixFromPath();
             if (toStrip != null &&  !toStrip.trim().isEmpty()) {
                 path = path.replace(toStrip.trim(), "");
             }
-            System.out.println("Path after clean:" +  urlObj.getPath());
+            log.trace("Path after clean:" +  urlObj.getPath());
 
             transformedURL = new URI(httpLoopBackConfig.getProtocol(), 
                                      httpLoopBackConfig.getHostname() +":"+ 
@@ -105,8 +102,7 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
                                                 urlObj.getQuery(), 
                                                 urlObj.getFragment())
                     .toString();
-
-            System.out.println("Loopback transformedURL:" +  transformedURL);
+            log.trace("Loopback transformedURL:" +  transformedURL);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
