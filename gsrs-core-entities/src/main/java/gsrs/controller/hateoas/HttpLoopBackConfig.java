@@ -21,11 +21,13 @@ public class HttpLoopBackConfig {
     // especially likely when using a microservice
     // architecture, so some simple "useSelf"
     // loopback adapter would be useful
+
     private String protocol;
     private String hostname;
     private int port;
-    
-    
+    // Use in a pinch, if server configuration points to an endpoint with the prefix included in the URL that causes the API call not to work. 
+    private String stripPrefixFromPath;
+
     private List<Map<String, Object>> requests = new ArrayList<>();
 
     public String getProtocol() {
@@ -46,12 +48,19 @@ public class HttpLoopBackConfig {
     public void setPort(int port) {
         this.port = port;
     }
+
+    public String getStripPrefixFromPath() {
+        return stripPrefixFromPath;
+    }
+    public void setStripPrefixFromPath(String stripPrefixFromPath) {
+        this.stripPrefixFromPath = stripPrefixFromPath;
+    }
+
     public List<Map<String, Object>> getRequests() {
         return requests;
     }
     public void setRequests(List<Map<String, Object>> requests) {
         this.requests = requests;
     }
-    
-    
 }
+

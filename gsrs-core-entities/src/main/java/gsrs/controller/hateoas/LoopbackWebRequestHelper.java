@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -25,7 +26,7 @@ import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.Holder;
 
 
-
+@Slf4j
 @Component
 public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefreshedEvent>{
 
@@ -82,18 +83,27 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
     private HttpRequestHolder adapt(HttpRequestHolder holdersrc, HttpRequestHolder currentRequest, RequestAdapter adapter) {
         String transformedURL;
         try {
-            URI urlObj = new URL(holdersrc.getUrl()).toURI();
 
+	        URI urlObj = new URL(holdersrc.getUrl()).toURI();
+	
+            String path = urlObj.getPath();
+            String toStrip = httpLoopBackConfig.getStripPrefixFromPath();
 
-            transformedURL = new URI(httpLoopBackConfig.getProtocol(), 
+            if (toStrip != null &&  !toStrip.trim().isEmpty()) {
+                path = path.replace(toStrip.trim(), "");
+                log.trace("Path after strip:{}", path);
+            }
+
+            transformedURL = new URI(httpLoopBackConfig.getProtocol(),
                                      httpLoopBackConfig.getHostname() +":"+ 
                                      httpLoopBackConfig.getPort(),
-                                                urlObj.getPath(),     //TODO: TP 08-15-2021 I'm not so sure about this ... the local loopback could
+                                                path,     //TODO: TP 08-15-2021 I'm not so sure about this ... the local loopback could
                                                                       //be different than the path of the built query. Care needs
                                                                       //to be taken here
                                                 urlObj.getQuery(), 
                                                 urlObj.getFragment())
                     .toString();
+            log.trace("Loopback transformedURL value: {}", transformedURL);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
