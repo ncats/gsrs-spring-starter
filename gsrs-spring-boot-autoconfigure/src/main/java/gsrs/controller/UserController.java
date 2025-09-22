@@ -1,31 +1,30 @@
 package gsrs.controller;
 
+import gsrs.autoconfigure.UserRoleConfiguration;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
+import gsrs.service.PrivilegeService;
 import gsrs.services.GroupService;
 import gsrs.services.UserProfileService;
 import ix.core.models.Group;
-import ix.core.models.Principal;
-import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.Option;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @hasAdminRole
 @RestController
+@Slf4j
 public class UserController {
 
     @Autowired
@@ -169,6 +168,23 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
         }
         return new ResponseEntity<>(enhanceUserProfile(
                 userProfileService.updateUserProfile(validatedNewUserRequest), queryParameters), HttpStatus.OK);
+    }
+
+    @GetMapping({"api/v1/users/haspriv"})
+    public ResponseEntity<Object> userHasPrivilege(
+            @RequestParam Map<String, String> queryParameters) {
+        String privilegeName = queryParameters.get("privName");
+        log.trace("in userHasPrivilege, privilegeName: {}", privilegeName);
+        PrivilegeService service = new PrivilegeService();
+        if(GsrsSecurityUtils.getCurrentUser() == null){
+            return gsrsControllerConfiguration.handleBadRequest(400, "must log in", queryParameters);
+        }
+        UserRoleConfiguration.PermissionResult result = service.canUserPerform(privilegeName);
+        if(result.equals(UserRoleConfiguration.PermissionResult.MayPerform)
+                || result.equals(UserRoleConfiguration.PermissionResult.MayNotPerform))  {
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Requested privilege not found", HttpStatus.BAD_REQUEST);
     }
 
     private GsrsUnwrappedEntityModel enhanceUserProfile(UserProfile up, Map<String, String> queryParameters){
