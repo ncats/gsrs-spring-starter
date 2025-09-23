@@ -8,6 +8,8 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.security.TokenConfiguration;
+import gsrs.security.UserRoleConfiguration;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.StaticContextAccessor;
 import gsrs.util.GsrsPasswordHasher;
 import gsrs.util.Hasher;
@@ -146,6 +148,12 @@ public class UserProfile extends IxModel{
 	public boolean hasRole(Role role) {
 		return this.getRoles().contains(role);
 	}
+
+	public boolean canDo(String thingToDo) {
+		PrivilegeService service = new PrivilegeService();
+		return service.canUserPerform(thingToDo) == UserRoleConfiguration.PermissionResult.MayPerform;
+	}
+
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){

@@ -1,4 +1,4 @@
-package gsrs.autoconfigure;
+package gsrs.security;
 
 import lombok.Data;
 

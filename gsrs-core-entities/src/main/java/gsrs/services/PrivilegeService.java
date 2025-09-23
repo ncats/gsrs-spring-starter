@@ -1,12 +1,13 @@
-package gsrs.service;
+package gsrs.services;
 
-import gsrs.autoconfigure.RoleConfiguration;
-import gsrs.autoconfigure.UserRoleConfiguration;
+import gsrs.security.RoleConfiguration;
+import gsrs.security.UserRoleConfiguration;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.List;
 
 @Data
 @Slf4j
+@Component("permission")
 public class PrivilegeService {
     private UserRoleConfiguration configuration;
 
@@ -47,12 +49,17 @@ public class PrivilegeService {
 
         RoleConfiguration adminRole = new RoleConfiguration();
         adminRole.setName("Admin");
-        String[] adminPrivileges = {"Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs"};
+        String[] adminPrivileges = {"Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data"};
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);
 
         configuration.setRoles(roles);
+    }
+
+    public boolean canDo(String thingToDo) {
+        log.trace("in canDo function checking{}", thingToDo);
+        return canUserPerform(thingToDo).equals(UserRoleConfiguration.PermissionResult.MayPerform);
     }
 
     public UserRoleConfiguration.PermissionResult canUserPerform(String task) {
