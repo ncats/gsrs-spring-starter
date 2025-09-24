@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import gsrs.security.canConfigureSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.jdbc.metadata.HikariDataSourcePoolMetadata;
@@ -77,7 +78,8 @@ public class HealthController {
     }
 
     @GetMapping("api/v1/health/info")
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     public HealthController.Application info() throws Exception{
         int[] uptime = uptime(startTime);
         return Application.createFromCurrentRuntime(uptime, startTime, gsrsCache, dataSourcesRaw);

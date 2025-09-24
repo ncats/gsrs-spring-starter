@@ -1,6 +1,7 @@
 package gsrs.cv;
 
 import gsrs.repository.ControlledVocabularyRepository;
+import gsrs.security.canManageCVs;
 import gsrs.security.hasAdminRole;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.VocabularyTerm;
@@ -11,7 +12,8 @@ public class ControlledVocabularyService {
     @Autowired
     private ControlledVocabularyRepository repository;
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canManageCVs
     public void addTerm(ControlledVocabulary cv, VocabularyTerm term){
         cv.addTerms(term);
         //business here

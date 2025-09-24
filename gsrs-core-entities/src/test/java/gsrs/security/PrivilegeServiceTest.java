@@ -1,15 +1,24 @@
 package gsrs.security;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.services.PrivilegeService;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -59,7 +68,31 @@ public class PrivilegeServiceTest {
                 Arguments.of("Manage Users", Role.Query, UserRoleConfiguration.PermissionResult.MayNotPerform),
                 Arguments.of("Manage Users", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayNotPerform),
                 Arguments.of("Manage Users", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform)
-
         );
+    }
+
+    @Test
+    void getPrivilegesForConfiguredRoleTest() {
+        String startingRole = "DataEntry";
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export" };
+        PrivilegeService service = new PrivilegeService();
+        List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
+        String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
+        Arrays.sort(expectedPrivileges);
+        Arrays.sort(actualPrivileges);
+        Assert.assertArrayEquals(expectedPrivileges, actualPrivileges);
+    }
+
+    @Test
+    void getPrivilegesForConfiguredRoleTest2() {
+        String startingRole = "Admin";
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export", "Approve Records", "Edit Public Data",
+                "Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data" };
+        PrivilegeService service = new PrivilegeService();
+        List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
+        String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
+        Arrays.sort(expectedPrivileges);
+        Arrays.sort(actualPrivileges);
+        Assert.assertArrayEquals(expectedPrivileges, actualPrivileges);
     }
 }

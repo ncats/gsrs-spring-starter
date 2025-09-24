@@ -84,6 +84,7 @@ public class UserController {
      */
     @Transactional
     @DeleteMapping({"api/v1/users({ID})", "api/v1/users/{ID}"})
+    @canManageUsers
     public ResponseEntity<Object> deactivateUser(@PathVariable("ID") String idOrName, @RequestParam Map<String, String> queryParameters) {
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (opt.isPresent()) {
@@ -113,6 +114,7 @@ public class UserController {
 
     @Transactional
     @PostMapping({"api/v1/users({ID})/password", "api/v1/users/{ID}/password"})
+    @canManageUsers
     public ResponseEntity<Object> changePassword(@PathVariable("ID") String idOrName,
                                                  @RequestBody PasswordChangeRequest passwordChangeRequest,
                                                  @RequestParam Map<String, String> queryParameters) {
@@ -143,6 +145,7 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
 
     @Transactional
     @PostMapping({"api/v1/users"})
+    @canManageUsers
     public ResponseEntity<Object> createNewUserProfile(
             @RequestBody UserProfileService.NewUserRequest newUserRequest,
             @RequestParam Map<String, String> queryParameters) {
@@ -153,15 +156,18 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
     }
     @Transactional
     @PutMapping({"api/v1/users({ID})", "api/v1/users/{ID}"})
+    @canManageUsers
     public ResponseEntity<Object> updateUserProfile(
             @PathVariable("ID") String idOrName,
             @RequestBody UserProfileService.NewUserRequest newUserRequest,
             @RequestParam Map<String, String> queryParameters) {
 
+        log.trace("starting updateUserProfile");
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (!opt.isPresent()) {
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
+        log.trace("updateUserProfile retrieved UP");
         UserProfileService.ValidatedNewUserRequest validatedNewUserRequest = newUserRequest.createValidatedNewUserRequest();
         String requestedUsername = validatedNewUserRequest.getUsername();
         //make sure it matches

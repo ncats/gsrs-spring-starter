@@ -4,6 +4,7 @@ import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
+import gsrs.security.canRunTasks;
 import gsrs.security.hasAdminRole;
 import ix.core.ResourceMethodReference;
 import ix.core.util.EntityUtils;
@@ -22,7 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@hasAdminRole
+//@hasAdminRole
+@canRunTasks
 @ExposesResourceFor(SchedulerPlugin.ScheduledTask.class)
 @GsrsRestApiController(context = "scheduledjobs", description = "Resource for scheduled tasks")
 public class ScheduledTaskController {

@@ -29,7 +29,8 @@ public class AdminService {
      * IS an admin defined by @hasAdminRole
      * @return an Authentication; should never be null.
      */
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     public Authentication getCurrentAdminAuth(){
         return SecurityContextHolder.getContext().getAuthentication();
     }

@@ -1,5 +1,6 @@
 package gsrs.config;
 
+import gsrs.security.canConfigureSystem;
 import gsrs.security.hasAdminRole;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,8 @@ public class ServiceInfoController {
     private ConfigurableEnvironment configurableEnvironment;
 
     // properties api
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping(value="/service-info/api/v1/{context}/@configurationProperties",
     produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE })
     public ResponseEntity<?> configurationProperties(
@@ -70,7 +72,8 @@ public class ServiceInfoController {
     }
 
     // properties log
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping(value="/service-info/api/v1/{context}/@logConfigurationProperties", // fmt=text|json
     produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE })
     public ResponseEntity<?> logConfigurationProperties(

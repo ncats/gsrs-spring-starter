@@ -10,7 +10,7 @@ import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
-import gsrs.security.hasAdminRole;
+import gsrs.security.canConfigureSystem;
 import gsrs.config.GsrsServiceInfoEndpointPathConfiguration;
 import gsrs.util.RegisteredFunctionConfig;
 import gsrs.config.ServiceInfoEndpointPathConfig;
@@ -109,7 +109,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(endpoints);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
     public ResponseEntity<?> getValidatorConfigs(
         @PathVariable("serviceContext") String serviceContext,
@@ -131,7 +132,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@entityProcessorConfigs")
     public ResponseEntity<?> getFinishedVEntityProcessorConfigs(
         @PathVariable("serviceContext") String serviceContext
@@ -143,7 +145,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@importAdapterFactoryConfigs/{entityContext}")
     public ResponseEntity<?> getImportAdapterFactoryConfigs(
         @PathVariable("serviceContext") String serviceContext,
@@ -165,7 +168,7 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@exporterFactoryConfigs")
     public ResponseEntity<?> getExporterFactoryConfigs(
         @PathVariable("serviceContext") String serviceContext
@@ -186,7 +189,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@matchableCalculationConfigs/{entityContext}")
     public ResponseEntity<?> getMatchableCalculationConfigs(
         @PathVariable("serviceContext") String serviceContext,
@@ -208,7 +212,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@scheduledTaskConfigs")
     public ResponseEntity<?> getScheduledTaskConfigs(
         @PathVariable("serviceContext") String serviceContext
@@ -229,7 +234,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@registeredFunctionConfigs")
     public ResponseEntity<?> getRegisteredFunctionConfigs(
         @PathVariable("serviceContext") String serviceContext
@@ -250,7 +256,8 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
     public ResponseEntity<?> getIndexValueMakerConfigs() {
         List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> list = null;

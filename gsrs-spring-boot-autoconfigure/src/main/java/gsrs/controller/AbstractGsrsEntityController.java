@@ -23,6 +23,7 @@ import javax.persistence.Id;
 import javax.persistence.metamodel.Metamodel;
 import javax.servlet.http.HttpServletRequest;
 
+import gsrs.security.canRunBackup;
 import org.hibernate.metadata.ClassMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -546,7 +547,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @hasAdminRole
+    //@hasAdminRole
+    @canRunBackup
     @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
     public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
         Optional<T> obj = rebackupEntity(id);
@@ -557,7 +559,8 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @hasAdminRole
+    //@hasAdminRole
+    @canRunBackup
     @PutGsrsRestApiMapping("/@rebackup")
     public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
         List<String> processed = new ArrayList<>();

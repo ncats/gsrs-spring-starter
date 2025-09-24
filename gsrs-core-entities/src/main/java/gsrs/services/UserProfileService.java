@@ -3,6 +3,7 @@ package gsrs.services;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.security.canManageUsers;
 import gsrs.security.hasAdminRole;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.models.Group;
@@ -149,7 +150,8 @@ public class UserProfileService {
 
     }
     @Transactional
-    @hasAdminRole
+    //@hasAdminRole
+    @canManageUsers
     public UserProfile updateUserProfile(ValidatedNewUserRequest newUserRequest) {
 
         synchronized (this) {
@@ -191,7 +193,8 @@ public class UserProfileService {
             return oldUser;
         }
     }
-    @hasAdminRole
+    //@hasAdminRole
+    @canManageUsers
     @Transactional
     public UserProfile createNewUserProfile(ValidatedNewUserRequest newUserRequest){
         Principal principal = new Principal();

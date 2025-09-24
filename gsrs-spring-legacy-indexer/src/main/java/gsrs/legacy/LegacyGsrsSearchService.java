@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import gsrs.security.canIndexData;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
@@ -147,7 +148,8 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canIndexData
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){
         //only run if we are not reindexing

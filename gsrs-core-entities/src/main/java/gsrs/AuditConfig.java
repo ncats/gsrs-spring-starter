@@ -6,6 +6,7 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsUserProfileDetails;
+import gsrs.security.canConfigureSystem;
 import gsrs.security.hasAdminRole;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +73,8 @@ public class AuditConfig {
      * @param <E> the Throwable or Exception that the ThrowingRunnable can throw.
      * @throws E the Throwable thrown by the ThrowingRunnable.
      */
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     public <E extends Throwable> void disableAuditingForThrowable(Unchecked.ThrowingRunnable<E> throwingRunnable) throws E{
         Objects.requireNonNull(throwingRunnable);
         turnOffAuditing.set(Boolean.TRUE);
@@ -98,7 +100,8 @@ public class AuditConfig {
      * won't be called until AFTER auditing is turned back on.
      * @param runnable the Runnable to run without Auditing.
      */
-    @hasAdminRole
+    //@hasAdminRole
+    @canConfigureSystem
     public void disableAuditingFor(Runnable runnable) {
         Objects.requireNonNull(runnable);
         turnOffAuditing.set(Boolean.TRUE);
