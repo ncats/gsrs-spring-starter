@@ -1,7 +1,5 @@
 package gsrs.security;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.services.PrivilegeService;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
@@ -14,10 +12,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +68,7 @@ public class PrivilegeServiceTest {
     @Test
     void getPrivilegesForConfiguredRoleTest() {
         String startingRole = "DataEntry";
-        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export" };
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data" };
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
@@ -86,8 +80,10 @@ public class PrivilegeServiceTest {
     @Test
     void getPrivilegesForConfiguredRoleTest2() {
         String startingRole = "Admin";
-        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export", "Approve Records", "Edit Public Data",
-                "Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data" };
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data", "Approve Records", "Edit Public Data",
+                "Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data", "Index Data", "Run Backup",
+                "Run Tasks", "Override Duplicate Checks", "Merge Subconcepts","Modify Relationships", "Make Records Public",
+                "Edit Approved Records", "Edit Approval IDs"};
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);

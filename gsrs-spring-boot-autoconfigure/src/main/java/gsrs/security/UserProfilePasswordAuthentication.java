@@ -17,8 +17,8 @@ class UserProfilePasswordAuthentication implements GsrsUserProfileDetails {
     private final UserProfile up;
     private boolean authenticated =false;
     private Collection<? extends GrantedAuthority> authorities;
-    @Autowired
-    PrivilegeService privilegeService;
+
+    private PrivilegeService privilegeService = new PrivilegeService();
 
     public UserProfilePasswordAuthentication(UserProfile up) {
         List<String> privileges = privilegeService.getPrivilegesForRoles(up.getRoles());

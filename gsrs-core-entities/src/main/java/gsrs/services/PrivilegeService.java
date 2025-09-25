@@ -42,13 +42,12 @@ public class PrivilegeService {
         RoleConfiguration queryRole = new RoleConfiguration();
         queryRole.setName("Query");
         //search and Query are synonymous
-        String[] queryPrivileges ={"Login", "Search", "Browse", "Export" };
+        String[] queryPrivileges ={"Login", "Search", "Browse", "Export Data" };
         queryRole.setPrivileges(Arrays.asList(queryPrivileges));
         roles.add(queryRole);
 
         RoleConfiguration editorRole = new RoleConfiguration();
         editorRole.setName("DataEntry");
-        //Edit and Change are synonymous
         String[] editorPrivileges ={"Create", "Edit"};
         editorRole.setPrivileges(Arrays.asList(editorPrivileges));
         editorRole.setInclude(Collections.singletonList("Query"));
@@ -56,14 +55,16 @@ public class PrivilegeService {
 
         RoleConfiguration approverRole = new RoleConfiguration();
         approverRole.setName("Approver");
-        String[] approverPrivileges = {"Approve Records", "Edit Public Data"};
+        String[] approverPrivileges = {"Approve Records", "Edit Public Data", "Modify Relationships", "Make Records Public",
+                "Edit Approved Records"};
         approverRole.setPrivileges(Arrays.asList(approverPrivileges));
         approverRole.setInclude(Collections.singletonList("DataEntry"));
         roles.add(approverRole);
 
         RoleConfiguration adminRole = new RoleConfiguration();
         adminRole.setName("Admin");
-        String[] adminPrivileges = {"Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data"};
+        String[] adminPrivileges = {"Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data",
+                "Merge Subconcepts", "Modify Relationships", "Edit Approval IDs"};
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);
