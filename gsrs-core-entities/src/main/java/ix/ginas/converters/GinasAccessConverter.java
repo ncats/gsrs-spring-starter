@@ -8,8 +8,8 @@ import ix.ginas.models.GinasAccessContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 import java.util.BitSet;
 import java.util.Optional;
 import java.util.Set;

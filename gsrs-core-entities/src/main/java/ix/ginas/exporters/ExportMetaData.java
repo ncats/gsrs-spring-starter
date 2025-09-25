@@ -11,7 +11,7 @@ import ix.core.models.Principal;
 import ix.ginas.models.utils.JSONEntity;
 
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.util.UUID;
 import java.util.function.Consumer;
 

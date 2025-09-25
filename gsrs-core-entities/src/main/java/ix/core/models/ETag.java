@@ -12,8 +12,8 @@ import ix.core.History;
 import ix.core.controllers.RequestOptions;
 import ix.utils.Util;
 
-import javax.persistence.*;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.*;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
 import java.util.*;
 

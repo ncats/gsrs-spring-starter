@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 import gsrs.junit.TimeTraveller;
 import gsrs.junit.vintage.TimeTravellerRule;
