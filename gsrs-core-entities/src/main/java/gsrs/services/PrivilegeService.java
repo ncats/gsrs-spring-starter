@@ -12,14 +12,18 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Data
 @Slf4j
 @Component("permission")
 public class PrivilegeService {
 
+    private static PrivilegeService instance = new PrivilegeService();
     private UserRoleConfiguration configuration;
+
+    public static  PrivilegeService instance() {
+        return instance;
+    }
 
     public PrivilegeService(){
         try {
@@ -27,8 +31,7 @@ public class PrivilegeService {
             this.configuration = loader.getConfiguration();
             log.trace("loaded configuration from file");
         } catch (IOException e) {
-            log.error("Error loading configuration from file {}", e.getMessage());
-            e.printStackTrace();
+            log.error("Error loading configuration from file {}", e);
             log.warn("Will use default configuration");
             setDefaultConfig();
         }
@@ -76,11 +79,7 @@ public class PrivilegeService {
     }
 
     public boolean canDo(String thingToDo) {
-        log.trace("in canDo function checking{}", thingToDo);
-        /*if( GsrsSecurityUtils.getCurrentUser() instanceof UserProfile) {
-            UserProfile currentUserProfile = (UserProfile) GsrsSecurityUtils.getCurrentUser();
-            currentUserProfile.properties.forEach(p->p.id);
-        }*/
+        log.trace("in canDo function checking {}", thingToDo);
         boolean canDoResult =canUserPerform(thingToDo).equals(UserRoleConfiguration.PermissionResult.MayPerform);
         log.trace("canDo will return {}", canDoResult);
         return canDoResult;
@@ -98,7 +97,7 @@ public class PrivilegeService {
                 }
             }
             if(configuration.getRoles().stream()
-                    .map(r->r.getName())
+                    .map(RoleConfiguration::getName)
                     .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.name().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
             }
@@ -109,7 +108,6 @@ public class PrivilegeService {
     private boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
         for(RoleConfiguration configuredRole : this.configuration.getRoles()) {
-            //log.trace("comparing configured role {} to user role {}", configuredRole.getName(), role);
             if( configuredRole.getName().equalsIgnoreCase(role)){
                 log.trace("roles match; now look through it privs {}", configuredRole.getPrivileges());
                 if( configuredRole.getPrivileges().stream().anyMatch( p-> p.equalsIgnoreCase(task))) {
@@ -139,14 +137,14 @@ public class PrivilegeService {
                 basePrivileges.addAll(getPrivilegesForConfiguredRole(includedRole));
             }
         }
-        return basePrivileges.stream().collect(Collectors.toList());
+        return new ArrayList<>(basePrivileges);
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
         Set<String> privileges = new HashSet<>();
         roles.stream()
-                .map(r->r.name())
+                .map(Enum::name)
                 .forEach(rn-> privileges.addAll(getPrivilegesForConfiguredRole(rn)));
-        return privileges.stream().collect(Collectors.toList());
+        return new ArrayList<>(privileges);
     }
 }
