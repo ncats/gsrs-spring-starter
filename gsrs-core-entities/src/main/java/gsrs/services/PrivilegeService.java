@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @Slf4j
@@ -140,11 +141,23 @@ public class PrivilegeService {
         return new ArrayList<>(basePrivileges);
     }
 
+    public List<String> getAllRoleNames() {
+        return configuration.getRoles().stream().map(r->r.getName()).collect(Collectors.toList());
+    }
+
     public List<String> getPrivilegesForRoles(List<Role> roles) {
         Set<String> privileges = new HashSet<>();
         roles.stream()
                 .map(Enum::name)
                 .forEach(rn-> privileges.addAll(getPrivilegesForConfiguredRole(rn)));
         return new ArrayList<>(privileges);
+    }
+
+    public List<String> getAllUserPrivileges() {
+        if( GsrsSecurityUtils.getCurrentUser() instanceof UserProfile) {
+            UserProfile userProfile = (UserProfile) GsrsSecurityUtils.getCurrentUser();
+            return getPrivilegesForRoles(userProfile.getRoles());
+        }
+        return Collections.emptyList();
     }
 }

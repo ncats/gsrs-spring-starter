@@ -46,7 +46,6 @@ public class UserController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
-
     @GetMapping("api/v1/admin/groups/@names")
     @Transactional(readOnly = true)
     public List<String> getGroupNames(){
@@ -176,23 +175,6 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
         }
         return new ResponseEntity<>(enhanceUserProfile(
                 userProfileService.updateUserProfile(validatedNewUserRequest), queryParameters), HttpStatus.OK);
-    }
-
-    @GetMapping({"api/v1/users/haspriv"})
-    public ResponseEntity<Object> userHasPrivilege(
-            @RequestParam Map<String, String> queryParameters) {
-        String privilegeName = queryParameters.get("privName");
-        log.trace("in userHasPrivilege, privilegeName: {}", privilegeName);
-        PrivilegeService service = new PrivilegeService();
-        if(GsrsSecurityUtils.getCurrentUser() == null){
-            return gsrsControllerConfiguration.handleBadRequest(400, "must log in", queryParameters);
-        }
-        UserRoleConfiguration.PermissionResult result = service.canUserPerform(privilegeName);
-        if(result.equals(UserRoleConfiguration.PermissionResult.MayPerform)
-                || result.equals(UserRoleConfiguration.PermissionResult.MayNotPerform))  {
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        }
-        return new ResponseEntity<>("Requested privilege not found", HttpStatus.BAD_REQUEST);
     }
 
     private GsrsUnwrappedEntityModel enhanceUserProfile(UserProfile up, Map<String, String> queryParameters){

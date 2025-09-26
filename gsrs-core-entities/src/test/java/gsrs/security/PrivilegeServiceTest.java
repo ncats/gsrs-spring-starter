@@ -91,4 +91,15 @@ public class PrivilegeServiceTest {
         Arrays.sort(actualPrivileges);
         Assert.assertArrayEquals(expectedPrivileges, actualPrivileges);
     }
+
+    @Test
+    void getAllRoles(){
+        PrivilegeService service = new PrivilegeService();
+        List<String> roles = service.getAllRoleNames();
+        String[] expectedRoles = {"Query", "DataEntry", "Approver", "Admin"};
+        String[] actualRoles = roles.toArray(new String[roles.size()]);
+        Arrays.sort(expectedRoles);
+        Arrays.sort(actualRoles);
+        Assert.assertArrayEquals(expectedRoles, actualRoles);
+    }
 }
