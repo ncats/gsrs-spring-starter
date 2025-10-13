@@ -1,11 +1,8 @@
 package gsrs.services;
 
 import gsrs.repository.GroupRepository;
-import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.security.canManageUsers;
-import gsrs.security.hasAdminRole;
-import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -15,12 +12,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -96,7 +91,7 @@ public class UserProfileService {
                 return null;
             }
             return input.stream().map(s-> s ==null?null: s.trim()).filter(Objects::nonNull)
-                    .map(Role::valueOf).collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
+                    .map(rname -> new Role(rname)).collect(Collectors.toCollection(() -> Collections.emptySet()));
         }
     }
 

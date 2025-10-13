@@ -1,24 +1,39 @@
 package ix.core.models;
 
+import gsrs.services.PrivilegeService;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public enum Role {
-        Query,
-        DataEntry,
-        SuperDataEntry,
-        Updater,
-        SuperUpdate,
-        Approver,
-        Admin;
-        //Guest, Owner, Admin, User; //authenticated user
+public class Role {
 
+    public Role() {}
+
+    public static Role of(String roleName){
+        return new Role(roleName);
+    }
+
+    public Role(String roleValue) {
+        this.role = roleValue;
+    }
+
+    private String role;
+
+    public String getRole() {
+        return this.role;
+    }
+
+    public void setRole(String roleValue) {
+        this.role = roleValue;
+    }
+
+    private PrivilegeService privilegeService = PrivilegeService.instance();
 
         public static List<Role> options(){
             List<Role> vals = new ArrayList<Role>();
-            for (Role role: Role.values()) {
-                vals.add(role);
-            }
+            PrivilegeService.instance().getAllRoleNames().forEach(r->{
+                vals.add(new Role(r));
+            });
             return vals;
         }
         
@@ -29,8 +44,5 @@ public enum Role {
         	}
         	return rolelist;
         }
-        
-        
 
 }
-

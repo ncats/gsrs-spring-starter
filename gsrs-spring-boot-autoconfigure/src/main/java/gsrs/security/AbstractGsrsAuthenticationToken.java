@@ -22,7 +22,7 @@ public abstract class AbstractGsrsAuthenticationToken extends UsernamePasswordAu
                 .getRoles()
                 .stream()
 
-                .map(r->new SimpleGrantedAuthority("ROLE_"+ r.name()))
+                .map(r->new SimpleGrantedAuthority("ROLE_"+ r.getRole()))
                 .collect(Collectors.toList())
                 
                 );

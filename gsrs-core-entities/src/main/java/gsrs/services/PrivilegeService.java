@@ -91,22 +91,22 @@ public class PrivilegeService {
         if( GsrsSecurityUtils.getCurrentUser() instanceof UserProfile) {
             UserProfile currentUserProfile = (UserProfile)GsrsSecurityUtils.getCurrentUser();
             for(Role role: currentUserProfile.getRoles() ){
-                log.trace(" canUserPerform looking at role {}", role.name());
-                if( canRolePerform(role.name(), task) ){
+                log.trace(" canUserPerform looking at role {}", role.getRole());
+                if( canRolePerform(role.getRole(), task) ){
                     log.trace("canUserPerform will return MayPerform");
                     return UserRoleConfiguration.PermissionResult.MayPerform;
                 }
             }
             if(configuration.getRoles().stream()
                     .map(RoleConfiguration::getName)
-                    .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.name().equalsIgnoreCase(rn)))){
+                    .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.getRole().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
             }
         }
         return  UserRoleConfiguration.PermissionResult.RoleNotFound;
     }
 
-    private boolean canRolePerform(String role, String task) {
+    public boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
         for(RoleConfiguration configuredRole : this.configuration.getRoles()) {
             if( configuredRole.getName().equalsIgnoreCase(role)){
@@ -142,13 +142,13 @@ public class PrivilegeService {
     }
 
     public List<String> getAllRoleNames() {
-        return configuration.getRoles().stream().map(r->r.getName()).collect(Collectors.toList());
+        return configuration.getRoles().stream().map(RoleConfiguration::getName).collect(Collectors.toList());
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
         Set<String> privileges = new HashSet<>();
         roles.stream()
-                .map(Enum::name)
+                .map(Role::getRole)
                 .forEach(rn-> privileges.addAll(getPrivilegesForConfiguredRole(rn)));
         return new ArrayList<>(privileges);
     }

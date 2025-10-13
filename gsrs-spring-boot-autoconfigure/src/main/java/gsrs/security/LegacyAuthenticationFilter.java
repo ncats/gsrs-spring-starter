@@ -134,8 +134,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
                     .map(e->request.getHeader(e))
                     .map(v->Arrays.stream(v.split(";"))
-                            .filter(r->Arrays.stream(Role.values()).map(Role::name).anyMatch(r.trim()::equals))
-                            .map(r->Role.valueOf(r.trim()))
+                            .filter(r->Arrays.stream(PrivilegeService.instance().getAllRoleNames().toArray(new String[0])).anyMatch(r.trim()::equals))
+                            .map(r->Role.of(r.trim()))
                             .distinct()
                             .collect(Collectors.toList())
                     )
@@ -260,7 +260,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private UserProfile autoregisterNewUser(String username ) {
-        List<Role> defaultRoles = Collections.singletonList(Role.Query);
+        List<Role> defaultRoles = Collections.singletonList(Role.of("Query"));
         return autoregisterNewUser(username, null, defaultRoles);
     }
     private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {

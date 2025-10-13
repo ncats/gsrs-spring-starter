@@ -38,37 +38,37 @@ public class PrivilegeServiceTest {
 
     private static Stream<Arguments> inputData() {
         return Stream.of(
-                Arguments.of("Login", Role.Query, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Login", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Login", Role.Approver, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Login", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Approve Records", Role.Query, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Approve Records", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Approve Records", Role.Approver, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Approve Records", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Edit", Role.Query, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Edit", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("edit", Role.Approver, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Edit", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Search", Role.Query, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Search", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Search", Role.Approver, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Search", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Manage Vocabularies", Role.Approver, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Vocabularies", Role.Query, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Vocabularies", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Vocabularies", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform),
-                Arguments.of("Manage Users", Role.Approver, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Users", Role.Query, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Users", Role.DataEntry, UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("Manage Users", Role.Admin, UserRoleConfiguration.PermissionResult.MayPerform)
+                Arguments.of("Login", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Login", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Login", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Login", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Approve Records", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Approve Records", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Approve Records", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Approve Records", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Edit", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Edit", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("edit", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Edit", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Search", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Search", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Search", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Search", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Manage Vocabularies", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Vocabularies", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Vocabularies", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Vocabularies", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Manage Users", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Users", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Users", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Manage Users", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform)
         );
     }
 
     @Test
     void getPrivilegesForConfiguredRoleTest() {
         String startingRole = "DataEntry";
-        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data" };
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data","Export Relationships", "Save Record JSON" };
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
@@ -81,9 +81,10 @@ public class PrivilegeServiceTest {
     void getPrivilegesForConfiguredRoleTest2() {
         String startingRole = "Admin";
         String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data", "Approve Records", "Edit Public Data",
+                "Delete Lower Level Items", "Export Relationships", "Restore Previous Versions", "Save Record JSON",
                 "Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data", "Index Data", "Run Backup",
                 "Run Tasks", "Override Duplicate Checks", "Merge Subconcepts","Modify Relationships", "Make Records Public",
-                "Edit Approved Records", "Edit Approval IDs"};
+                "Edit Approved Records", "Edit Approval IDs", "Manage Others Lists"};
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
