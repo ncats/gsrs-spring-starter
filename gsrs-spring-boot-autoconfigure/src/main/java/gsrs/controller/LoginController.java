@@ -120,8 +120,8 @@ public class LoginController {
         return new ResponseEntity<>("User privileges not found", HttpStatus.BAD_REQUEST);
     }
 
-    @GetMapping({"api/v1/allavailableroles"})
     @canManageUsers
+    @GetMapping({"api/v1/allavailableroles"})
     public ResponseEntity<Object> listAllRoles(
             @RequestParam Map<String, String> queryParameters) {
         log.trace("in listAllRoles");
@@ -129,9 +129,7 @@ public class LoginController {
         if(allRoles != null) {
             ArrayNode roleArray = JsonNodeFactory.instance.arrayNode();
             allRoles.forEach(roleArray::add);
-            ObjectNode topLevel = JsonNodeFactory.instance.objectNode();
-            topLevel.set("roles", roleArray);
-            return new ResponseEntity<>(topLevel, HttpStatus.OK);
+            return new ResponseEntity<>(roleArray, HttpStatus.OK);
         }
         return new ResponseEntity<>("Roles not found", HttpStatus.INTERNAL_SERVER_ERROR);
     }
