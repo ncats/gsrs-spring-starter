@@ -90,8 +90,9 @@ public class UserProfileService {
             if(input==null){
                 return null;
             }
-            return input.stream().map(s-> s ==null?null: s.trim()).filter(Objects::nonNull)
-                    .map(rname -> new Role(rname)).collect(Collectors.toCollection(() -> Collections.emptySet()));
+            Set<Role> roles= input.stream().map(s-> s ==null?null: s.trim()).filter(Objects::nonNull)
+                    .map(rname -> new Role(rname)).collect(Collectors.toCollection(() -> new HashSet<>()));
+            return roles;
         }
     }
 

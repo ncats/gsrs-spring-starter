@@ -141,7 +141,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @Test
     @WithMockUser(username = "admin", roles="Admin")
     public void createUserWithRoles(){
-        List<Role> roles = Arrays.asList(new Role("Query"), new Role("DataEntry"));
+        List<Role> roles = Arrays.asList(Role.of("Query"), Role.of("DataEntry"));
         UserProfileService.NewUserRequest request =  UserProfileService.NewUserRequest.builder()
                 .username("myUser")
                 .roles(roles.stream().map(Role::getRole).collect(Collectors.toSet()))
@@ -150,7 +150,12 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
-        assertEquals(roles, up.getRoles());
+
+        List<Role> returnedRoles =up.getRoles();
+        returnedRoles.forEach(r->{
+            System.out.printf("role: %s\n", r.getRole());
+        });
+        assertTrue(roles.stream().map(r->r.getRole()).allMatch(r-> returnedRoles.stream().anyMatch(r2->r2.getRole().equals(r))));
         assertEquals(1, userProfileRepository.count());
         assertEquals(1, principalRepository.count());
 

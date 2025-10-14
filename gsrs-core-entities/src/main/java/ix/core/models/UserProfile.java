@@ -120,7 +120,11 @@ public class UserProfile extends IxModel{
 				if(l !=null) {
 					for (Object o : l) {
 						try {
-							rolekinds.add(new Role(o.toString()));
+							String roleRaw =o.toString();
+							if( o instanceof Map) {
+								roleRaw = (String) ((Map)o).get("role");
+							}
+							rolekinds.add(new Role(roleRaw));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
