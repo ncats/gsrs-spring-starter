@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @GsrsJpaTest
 @ActiveProfiles("test")
+
 public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
@@ -82,6 +83,7 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
 
             assertThat(p1.id).isNotEqualTo(p2.id);
             Principal p3 = principalService.registerIfAbsent("name1");
+            System.out.println("HELLO P");
             assertThat(p1.id).isEqualTo(p3.id);
             assertThat(p1.username).isEqualTo(p3.username);
         });

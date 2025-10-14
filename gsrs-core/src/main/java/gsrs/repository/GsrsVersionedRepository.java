@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @NoRepositoryBean
+@SuppressWarnings("NullableProblems")
 public interface GsrsVersionedRepository<T, ID> extends GsrsRepository<T, ID> {
 
     default Optional<T> findByKey(EntityUtils.Key key){
