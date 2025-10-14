@@ -8,6 +8,7 @@ import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -102,6 +103,15 @@ public class PrivilegeService {
                     .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.getRole().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
             }
+        } else if( GsrsSecurityUtils.getCurrentUser() instanceof User) {
+            //expect this route on unit tests
+            User currentUser = (User) GsrsSecurityUtils.getCurrentUser();
+            return currentUser.getAuthorities().stream()
+                    .filter(ga-> ga.getAuthority().startsWith("ROLE_"))
+                    .map(ga->ga.getAuthority().substring(5))
+                    .anyMatch(r-> canRolePerform(r, task))
+                    ? UserRoleConfiguration.PermissionResult.MayPerform
+                    : UserRoleConfiguration.PermissionResult.MayNotPerform;
         }
         return  UserRoleConfiguration.PermissionResult.RoleNotFound;
     }

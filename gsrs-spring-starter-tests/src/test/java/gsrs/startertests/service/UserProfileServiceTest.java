@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GsrsJpaTest
+@GsrsJpaTest()
 @ActiveProfiles("test")
 public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
@@ -141,7 +141,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @Test
     @WithMockUser(username = "admin", roles="Admin")
     public void createUserWithRoles(){
-        List<Role> roles = Arrays.asList(new Role("Query"), new Role("Updater"));
+        List<Role> roles = Arrays.asList(new Role("Query"), new Role("DataEntry"));
         UserProfileService.NewUserRequest request =  UserProfileService.NewUserRequest.builder()
                 .username("myUser")
                 .roles(roles.stream().map(Role::getRole).collect(Collectors.toSet()))
