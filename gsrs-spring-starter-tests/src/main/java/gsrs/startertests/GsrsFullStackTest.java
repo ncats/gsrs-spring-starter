@@ -3,6 +3,7 @@ package gsrs.startertests;
 import gsrs.AuditConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.jupiter.ClearAuditorBeforeEachExtension;
 import gsrs.startertests.jupiter.ClearDeserializerCachesBeforeEachExtension;
@@ -43,7 +44,8 @@ import java.lang.annotation.*;
         Principal.class,
         Lucene4IndexServiceFactory.class,
         GsrsEntityTestConfiguration.class,
-        EntityPersistAdapter.class})
+        EntityPersistAdapter.class,
+        PrivilegeService.class})
 public @interface GsrsFullStackTest {
     /**
      * The dirties context tells the test

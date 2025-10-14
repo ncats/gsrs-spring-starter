@@ -8,6 +8,7 @@ import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class PrivilegeService {
     private static PrivilegeService instance = new PrivilegeService();
     private UserRoleConfiguration configuration;
 
-    public static  PrivilegeService instance() {
+    public static PrivilegeService instance() {
         return instance;
     }
 
@@ -32,7 +33,7 @@ public class PrivilegeService {
             this.configuration = loader.getConfiguration();
             log.trace("loaded configuration from file");
         } catch (IOException e) {
-            log.error("Error loading configuration from file {}", e);
+            log.error("Error loading configuration from file {}", e.getMessage(), e);
             log.warn("Will use default configuration");
             setDefaultConfig();
         }
@@ -91,22 +92,31 @@ public class PrivilegeService {
         if( GsrsSecurityUtils.getCurrentUser() instanceof UserProfile) {
             UserProfile currentUserProfile = (UserProfile)GsrsSecurityUtils.getCurrentUser();
             for(Role role: currentUserProfile.getRoles() ){
-                log.trace(" canUserPerform looking at role {}", role.name());
-                if( canRolePerform(role.name(), task) ){
+                log.trace(" canUserPerform looking at role {}", role.getRole());
+                if( canRolePerform(role.getRole(), task) ){
                     log.trace("canUserPerform will return MayPerform");
                     return UserRoleConfiguration.PermissionResult.MayPerform;
                 }
             }
             if(configuration.getRoles().stream()
                     .map(RoleConfiguration::getName)
-                    .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.name().equalsIgnoreCase(rn)))){
+                    .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.getRole().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
             }
+        } else if( GsrsSecurityUtils.getCurrentUser() instanceof User) {
+            //expect this route on unit tests
+            User currentUser = (User) GsrsSecurityUtils.getCurrentUser();
+            return currentUser.getAuthorities().stream()
+                    .filter(ga-> ga.getAuthority().startsWith("ROLE_"))
+                    .map(ga->ga.getAuthority().substring(5))
+                    .anyMatch(r-> canRolePerform(r, task))
+                    ? UserRoleConfiguration.PermissionResult.MayPerform
+                    : UserRoleConfiguration.PermissionResult.MayNotPerform;
         }
         return  UserRoleConfiguration.PermissionResult.RoleNotFound;
     }
 
-    private boolean canRolePerform(String role, String task) {
+    public boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
         for(RoleConfiguration configuredRole : this.configuration.getRoles()) {
             if( configuredRole.getName().equalsIgnoreCase(role)){
@@ -142,13 +152,13 @@ public class PrivilegeService {
     }
 
     public List<String> getAllRoleNames() {
-        return configuration.getRoles().stream().map(r->r.getName()).collect(Collectors.toList());
+        return configuration.getRoles().stream().map(RoleConfiguration::getName).collect(Collectors.toList());
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
         Set<String> privileges = new HashSet<>();
         roles.stream()
-                .map(Enum::name)
+                .map(Role::getRole)
                 .forEach(rn-> privileges.addAll(getPrivilegesForConfiguredRole(rn)));
         return new ArrayList<>(privileges);
     }

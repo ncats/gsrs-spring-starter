@@ -38,7 +38,7 @@ public class UserProfile extends IxModel{
 
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
-        up.addRole(Role.Query);
+        up.addRole(new Role("Query"));
 
         return up;
     });
@@ -120,7 +120,11 @@ public class UserProfile extends IxModel{
 				if(l !=null) {
 					for (Object o : l) {
 						try {
-							rolekinds.add(Role.valueOf(o.toString()));
+							String roleRaw =o.toString();
+							if( o instanceof Map) {
+								roleRaw = (String) ((Map)o).get("role");
+							}
+							rolekinds.add(new Role(roleRaw));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -245,7 +249,7 @@ public class UserProfile extends IxModel{
 
 	public boolean isRoleQueryOnly(){
 
-		if(this.hasRole(Role.Query) && this.getRoles().size()==1){
+		if(this.hasRole(new Role("Query")) && this.getRoles().size()==1){
 			return true;
 
 		}

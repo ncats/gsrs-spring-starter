@@ -1,5 +1,6 @@
 package gsrs.repository;
 
+import gsrs.services.PrivilegeService;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
      */
     @Query("select up from UserProfile up where up.rolesJSON like '%Admin%'")
     List<UserProfile> _findAllCandidateAdmins();
+    String adminTask = "Configure System";
     /**
      * Get an admin name this will only return at most 1 admin username
      * and is not guaranteed to always return the same one.
@@ -45,11 +47,12 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
                             if(up.user ==null || up.user.username ==null){
                                 return false;
                             }
+
                             List<Role> roles = up.getRoles();
                             if(roles ==null){
                                 return false;
                             }
-                            return roles.contains(Role.Admin);
+                            return roles.stream().anyMatch(r-> PrivilegeService.instance().canRolePerform(r.getRole(), adminTask));
                         })
                 .map(up-> up.user.username)
                 .findAny();
