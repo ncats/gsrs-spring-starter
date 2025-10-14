@@ -22,7 +22,7 @@ public class PrivilegeService {
     private static PrivilegeService instance = new PrivilegeService();
     private UserRoleConfiguration configuration;
 
-    public static  PrivilegeService instance() {
+    public static PrivilegeService instance() {
         return instance;
     }
 
@@ -32,7 +32,7 @@ public class PrivilegeService {
             this.configuration = loader.getConfiguration();
             log.trace("loaded configuration from file");
         } catch (IOException e) {
-            log.error("Error loading configuration from file {}", e);
+            log.error("Error loading configuration from file {}", e.getMessage(), e);
             log.warn("Will use default configuration");
             setDefaultConfig();
         }
