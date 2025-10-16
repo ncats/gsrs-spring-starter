@@ -46,7 +46,6 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.BackupRepository;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasAdminRole;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
 import ix.core.EntityFetcher;
@@ -547,7 +546,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    //@hasAdminRole
     @canRunBackup
     @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
     public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
@@ -559,7 +557,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    //@hasAdminRole
     @canRunBackup
     @PutGsrsRestApiMapping("/@rebackup")
     public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{

@@ -109,7 +109,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(endpoints);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
     public ResponseEntity<?> getValidatorConfigs(
@@ -132,7 +131,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@entityProcessorConfigs")
     public ResponseEntity<?> getFinishedVEntityProcessorConfigs(
@@ -145,7 +143,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@importAdapterFactoryConfigs/{entityContext}")
     public ResponseEntity<?> getImportAdapterFactoryConfigs(
@@ -189,7 +186,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@matchableCalculationConfigs/{entityContext}")
     public ResponseEntity<?> getMatchableCalculationConfigs(
@@ -212,7 +208,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@scheduledTaskConfigs")
     public ResponseEntity<?> getScheduledTaskConfigs(
@@ -234,7 +229,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@registeredFunctionConfigs")
     public ResponseEntity<?> getRegisteredFunctionConfigs(
@@ -256,7 +250,6 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    //@hasAdminRole
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
     public ResponseEntity<?> getIndexValueMakerConfigs() {

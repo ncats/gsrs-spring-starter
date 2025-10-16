@@ -27,10 +27,9 @@ public class AdminService {
      * Get the {@code Authentication} object for the
      * current logged in Admin.
      * @apiNote This method will only work if the caller
-     * IS an admin defined by @hasAdminRole
+     * has the 'Configure System' priv
      * @return an Authentication; should never be null.
      */
-    //@hasAdminRole
     @canConfigureSystem
     public Authentication getCurrentAdminAuth(){
         return SecurityContextHolder.getContext().getAuthentication();

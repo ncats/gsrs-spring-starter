@@ -146,7 +146,6 @@ public class UserProfileService {
 
     }
     @Transactional
-    //@hasAdminRole
     @canManageUsers
     public UserProfile updateUserProfile(ValidatedNewUserRequest newUserRequest) {
 
@@ -189,7 +188,6 @@ public class UserProfileService {
             return oldUser;
         }
     }
-    //@hasAdminRole
     @canManageUsers
     @Transactional
     public UserProfile createNewUserProfile(ValidatedNewUserRequest newUserRequest){

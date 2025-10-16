@@ -14,7 +14,6 @@ import gsrs.imports.*;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.springUtils.StaticContextAccessor;
@@ -424,7 +423,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 0: list adapter classes
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/import/adapters"}, produces = {"application/json"})
     public ResponseEntity<Object> getImportAdapters(@RequestParam Map<String, String> queryParameters) {
@@ -432,7 +430,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(getConfiguredImportAdapters(), queryParameters), HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/import/adapters/{adapterkey}/@schema"})
     public ResponseEntity<Object> getSpecificImportAdapter(@PathVariable("adapterkey") String adapterKey, @RequestParam Map<String, String> queryParameters) {
@@ -451,7 +448,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 1: UPLOAD
-    //@hasAdminRole
     @canImportData
     @PostGsrsRestApiMapping("/import")
     public ResponseEntity<Object> handleImport(@RequestParam("file") MultipartFile file,
@@ -524,7 +520,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 2: Retrieve
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/import({id})", "/import/{id}"})
     public ResponseEntity<Object> getImport(@PathVariable("id") String id,
@@ -537,7 +532,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/stagingArea/metadata({id})", "/stagingArea/metadata/{id}"})
     public ResponseEntity<Object> getImportMetadata(@PathVariable("id") String id,
@@ -554,7 +548,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/stagingArea({id})/{segment}", "/stagingArea/{id}/{segment}"})
     public ResponseEntity<Object> getImportDataFull(@PathVariable("id") String id,
@@ -645,7 +638,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 2.5: Retrieve & predict if needed
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/import({id})/@predict", "/import/{id}/@predict"})
     public ResponseEntity<Object> getImportPredict(@PathVariable("id") String id,
@@ -664,7 +656,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //STEP 3: Configure / Update the parsing data (ImportTaskMetaData)
-    //@hasAdminRole
     @canImportData
     @PutGsrsRestApiMapping(value = {"/import"})
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
@@ -690,7 +681,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     //STEP 3.5: Preview import
     //May required additional work
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreviewGet(@PathVariable("id") String id,
@@ -703,7 +693,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(previewResult, HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @PutGsrsRestApiMapping(value = {"/import({id})/@preview", "/import/{id}/@preview"})
     public ResponseEntity<Object> executePreviewPut(@PathVariable("id") String id,
@@ -718,7 +707,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //May required additional work
-    //@hasAdminRole
     @canImportData
     @GetGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
     public ResponseEntity<Object> executeValidate(@PathVariable("id") String id,
@@ -735,7 +723,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @PostGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
     public ResponseEntity<Object> executeValidatePut(@PathVariable("id") String id,
@@ -754,7 +741,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     //search for records that have the same values for key fields
-    //@hasAdminRole
     @canImportData
     @PostGsrsRestApiMapping(value = {"/stagingArea/matches"})
     public ResponseEntity<Object> findMatches(@RequestBody JsonNode entityJson,
@@ -776,7 +762,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returned, queryParameters), HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @DeleteGsrsRestApiMapping(value = {"/stagingArea({id})/@delete", "/stagingArea/{id}/@delete"})
     public ResponseEntity<Object> deleteRecord(@PathVariable("id") String id,
@@ -801,7 +786,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    //@hasAdminRole
     @canImportData
     @DeleteGsrsRestApiMapping(value = {"/stagingArea/@deletebulk", "/stagingArea/@bulkDelete"})
     public ResponseEntity<Object> deleteRecords(@RequestBody String idSet,
@@ -823,7 +807,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(returnNode, queryParameters), HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @PutGsrsRestApiMapping(value = {"/stagingArea/{id}/@update", "/stagingArea({id})@update"})
     public ResponseEntity<Object> updateImportData(@PathVariable("id") String recordId,
@@ -841,7 +824,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), HttpStatus.OK);
     }
 
-    //@hasAdminRole
     @canImportData
     @PostGsrsRestApiMapping(value = {"/import({id})/@executeasync", "/import/{id}/@executeasync", "/import({id})/@execute",
             "/import/{id}/@execute"})
@@ -872,7 +854,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    //@hasAdminRole
     @canImportData
     @PutGsrsRestApiMapping(value = {"/import({id})/{version}/@act", "/import/{id}/{version}/@act"})
     public ResponseEntity<Object> executeAct(@PathVariable("id") String stagingRecordId,
@@ -901,7 +882,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         }
     }
 
-    //@hasAdminRole
     @canImportData
     @PutGsrsRestApiMapping(value = { "/stagingArea({id})/@act", "/stagingArea/{id}/@act"})
     public ResponseEntity<Object> executeAct2(@PathVariable("id") String stagingRecordId,

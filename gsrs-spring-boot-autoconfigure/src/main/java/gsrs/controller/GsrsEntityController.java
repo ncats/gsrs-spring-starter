@@ -3,8 +3,6 @@ package gsrs.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import gsrs.security.canRunBackup;
-import gsrs.security.hasAdminRole;
-
 import ix.core.util.EntityUtils.Key;
 
 import ix.core.validator.ValidationResponse;
@@ -61,12 +59,10 @@ public interface GsrsEntityController<T, I> {
     ResponseEntity<Object> getById(@PathVariable String id, @RequestParam Map<String, String> queryParameters);
 
 
-    //@hasAdminRole
     @canRunBackup
     @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup"})
     ResponseEntity<Object> rebackupEntity(@PathVariable String id, @RequestParam Map<String, String> queryParameters) throws Exception;
 
-    //@hasAdminRole
     @canRunBackup
     @PutGsrsRestApiMapping("/@rebackup")
     ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception;

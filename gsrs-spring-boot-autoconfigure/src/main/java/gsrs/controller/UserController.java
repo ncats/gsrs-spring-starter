@@ -1,14 +1,10 @@
 package gsrs.controller;
 
-import gsrs.security.UserRoleConfiguration;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.canManageUsers;
-import gsrs.security.hasAdminRole;
-import gsrs.services.PrivilegeService;
 import gsrs.services.GroupService;
 import gsrs.services.UserProfileService;
 import ix.core.models.Group;
@@ -23,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-//@hasAdminRole
 @canManageUsers
 @RestController
 @Slf4j

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
-import gsrs.security.hasAdminRole;
 import ix.core.EntityFetcher;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
@@ -148,7 +147,6 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
 
-    //@hasAdminRole
     @canIndexData
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){

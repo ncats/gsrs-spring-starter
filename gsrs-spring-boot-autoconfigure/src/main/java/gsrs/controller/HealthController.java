@@ -28,7 +28,6 @@ import gsrs.cache.GsrsCache;
 import gsrs.cache.GsrsCache.CacheStatistics;
 import gsrs.controller.hateoas.GsrsControllerInfo;
 import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
-import gsrs.security.hasAdminRole;
 import lombok.Builder;
 import lombok.Data;
 
@@ -78,7 +77,6 @@ public class HealthController {
     }
 
     @GetMapping("api/v1/health/info")
-    //@hasAdminRole
     @canConfigureSystem
     public HealthController.Application info() throws Exception{
         int[] uptime = uptime(startTime);
