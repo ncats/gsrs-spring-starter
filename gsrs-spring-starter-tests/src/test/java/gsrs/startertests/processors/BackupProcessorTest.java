@@ -12,8 +12,10 @@ import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 // import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.springframework.test.annotation.DirtiesContext;
@@ -34,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
         classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class},
         properties = {"spring.application.name=starter"}
 )
+// @ContextConfiguration(classes = {BackupRepository.class})
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
@@ -88,7 +91,8 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         }
     }
 
-    @Autowired
+//    @Autowired
+    @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
@@ -149,22 +153,14 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
 
         transactionTemplate.executeWithoutResult(status-> {
                     entityManager.persist(sut);
-//                    entityManager.flush();
+                    entityManager.flush();
                 }
         );
-
-        transactionTemplate.executeWithoutResult(status-> {
-                    List<MyBackedUpEntity> list = entityManager.createQuery("SELECT e FROM MyBackedUpEntity e", MyBackedUpEntity.class)
-                            .getResultList();
-                    System.out.println("Hello Size " + list.size());
-        }
-        );
-
-
         assertNotNull(sut.id);
         assertNotNull(entityManager.find(MyBackedUpEntity.class, sut.id));
-        assertEquals(1, backupRepository.count());
+        List<BackupEntity> list = backupRepository.findAll();
 
+        assertEquals(1L, backupRepository.count() );
         BackupEntity be = backupRepository.findByRefid(sut.fetchGlobalId()).get();
 
         MyBackedUpEntity fromJson = (MyBackedUpEntity) be.getInstantiated();
