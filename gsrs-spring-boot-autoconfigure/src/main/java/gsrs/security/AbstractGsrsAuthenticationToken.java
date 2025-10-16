@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class AbstractGsrsAuthenticationToken extends UsernamePasswordAuthenticationToken {
-    PrivilegeService privilegeService = new PrivilegeService();
+    PrivilegeService privilegeService = PrivilegeService.instance();
 
     public AbstractGsrsAuthenticationToken(UserProfile principal, Object credentials) {
 

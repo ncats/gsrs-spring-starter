@@ -154,8 +154,7 @@ public class UserProfile extends IxModel{
 	}
 
 	public boolean canDo(String thingToDo) {
-		PrivilegeService service = new PrivilegeService();
-		return service.canUserPerform(thingToDo) == UserRoleConfiguration.PermissionResult.MayPerform;
+		return PrivilegeService.instance().canUserPerform(thingToDo) == UserRoleConfiguration.PermissionResult.MayPerform;
 	}
 
 	@JsonIgnore
