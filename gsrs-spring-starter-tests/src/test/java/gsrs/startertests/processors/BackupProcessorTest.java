@@ -20,7 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved

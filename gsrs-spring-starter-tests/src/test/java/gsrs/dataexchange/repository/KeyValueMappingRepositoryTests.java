@@ -31,18 +31,6 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
     private static boolean setupDone =false;
 
-/*
-    @BeforeEach
-    public void setup() {
-        System.out.println("starting in setup");
-        //AutowireHelper.getInstance().autowireAndProxy( keyValueMappingRepository);
-        if(!setupDone) {
-            //createSomeRecords();
-            setupDone=true;
-        }
-    }
-*/
-
     @Test
     public void testDeleteByRecordId() {
         createSomeRecords();
@@ -66,7 +54,6 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
     private void createSomeRecords() {
         KeyValueMapping mapping1 = new KeyValueMapping();
         mapping1.setDataLocation(LOCATION_ONE);
-        mapping1.setMappingId(UUID.randomUUID());
         mapping1.setRecordId(id1);
         mapping1.setKey("key 1");
         mapping1.setValue("value 1");
@@ -74,7 +61,6 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
         KeyValueMapping mapping2 = new KeyValueMapping();
         mapping2.setDataLocation(LOCATION_ONE);
-        mapping2.setMappingId(UUID.randomUUID());
         mapping2.setRecordId(id1);
         mapping2.setKey("key 2");
         mapping2.setValue("value 2");
@@ -82,7 +68,6 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
         KeyValueMapping mapping3 = new KeyValueMapping();
         mapping3.setDataLocation(LOCATION_TWO);
-        mapping3.setMappingId(UUID.randomUUID());
         mapping3.setRecordId(id1);
         mapping3.setKey("key 1");
         mapping3.setValue("value 1");
@@ -90,7 +75,6 @@ public class KeyValueMappingRepositoryTests extends AbstractGsrsJpaEntityJunit5T
 
         KeyValueMapping mapping4 = new KeyValueMapping();
         mapping4.setDataLocation(LOCATION_TWO);
-        mapping4.setMappingId(UUID.randomUUID());
         mapping4.setRecordId(id1);
         mapping4.setKey("key 2");
         mapping4.setValue("value 2");
