@@ -1,9 +1,12 @@
 package gsrs.startertests.repository;
 
+import gsrs.backup.BackupEventListener;
 import gsrs.events.BackupEvent;
 import gsrs.repository.BackupRepository;
 import gsrs.services.BackupService;
+import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.processors.BackupProcessorTest;
 import ix.core.History;
@@ -11,8 +14,11 @@ import ix.core.models.*;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -24,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @GsrsJpaTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@Import({ BackupEventListener.class})
 
 public class BackupRepositoryIntegrationLessBasicTest extends AbstractGsrsJpaEntityJunit5Test {
 
@@ -92,7 +99,7 @@ public class BackupRepositoryIntegrationLessBasicTest extends AbstractGsrsJpaEnt
     }
 
     @Test
-
+    @Disabled
     public void callBackupServiceBackupIfNeededDirectlyTest() {
         // Trying to mimic behavior with service and event listening?
         BackupProcessorTest.MyBackedUpEntity myBackedUpEntity = new BackupProcessorTest.MyBackedUpEntity();

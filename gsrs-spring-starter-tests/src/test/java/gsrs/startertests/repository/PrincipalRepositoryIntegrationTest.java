@@ -1,30 +1,22 @@
 package gsrs.startertests.repository;
 
-
-
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Principal;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @GsrsJpaTest
 @ActiveProfiles("test")
-
 public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
@@ -83,7 +75,6 @@ public class PrincipalRepositoryIntegrationTest extends AbstractGsrsJpaEntityJun
 
             assertThat(p1.id).isNotEqualTo(p2.id);
             Principal p3 = principalService.registerIfAbsent("name1");
-            System.out.println("HELLO P");
             assertThat(p1.id).isEqualTo(p3.id);
             assertThat(p1.username).isEqualTo(p3.username);
         });
