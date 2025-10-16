@@ -1,42 +1,33 @@
 package gsrs.startertests.processors;
 
+import gsrs.backup.BackupEventListener;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.repository.BackupRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.History;
 import ix.core.models.*;
-import ix.core.util.EntityUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-// import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
-
 import jakarta.persistence.*;
 
-import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved
 @SpringBootTest(
-        classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class},
+        classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class, BackupEventListener.class},
         properties = {"spring.application.name=starter"}
 )
-// @ContextConfiguration(classes = {BackupRepository.class})
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
@@ -91,7 +82,6 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         }
     }
 
-//    @Autowired
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -102,7 +92,6 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     PlatformTransactionManager platformTransactionManager;
 
     @MockitoBean
-    // @MockBean
     WebMvcRegistrations webMvcRegistrations;
 
     TransactionTemplate transactionTemplate;
@@ -158,9 +147,8 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         );
         assertNotNull(sut.id);
         assertNotNull(entityManager.find(MyBackedUpEntity.class, sut.id));
-        List<BackupEntity> list = backupRepository.findAll();
+        assertEquals(1, backupRepository.count());
 
-        assertEquals(1L, backupRepository.count() );
         BackupEntity be = backupRepository.findByRefid(sut.fetchGlobalId()).get();
 
         MyBackedUpEntity fromJson = (MyBackedUpEntity) be.getInstantiated();
@@ -230,8 +218,6 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         sut.setFoo("bar");
 
         MyBackedUpEntity sut2 = new MyBackedUpEntity();
-        sut2.setId(null);
-
         sut2.setFoo("foobar");
         transactionTemplate.executeWithoutResult(status-> {
                     entityManager.persist(sut);
@@ -243,23 +229,10 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
                 }
         );
         assertNotNull(sut.id);
-        System.out.println("HELLO A");
-        MyBackedUpEntity find1 = entityManager.find(MyBackedUpEntity.class, sut.id);
-        Long id2 = sut2.getId();
-        MyBackedUpEntity find2 = entityManager.find(MyBackedUpEntity.class, id2);
-        System.out.println("HELLO B id2: " + id2 );
-//        Optional<MyBackedUpEntity> entity1 =  backupRepository.findByKey(new EntityUtils.Key(new EntityUtils.EntityInfo<>(Integer.class,))));
-//        System.out.println("HELLO B1 id` is`: " + entity1.getId() );
+        assertNotNull(entityManager.find(MyBackedUpEntity.class, sut.id));
+        assertEquals(2, backupRepository.count());
 
-        assertNotNull(find1);
-        assertEquals("bar", find1.getFoo());
-        assertEquals("foobar", find2.getFoo());
-        System.out.println("HELLO C: " + backupRepository.count());
-        System.out.println(backupRepository.findAll().toString());
-
-        // assertEquals(2, backupRepository.count());
-        String sutGlobalId  = sut.fetchGlobalId();
-        BackupEntity be = backupRepository.findByRefid(sutGlobalId).get();
+        BackupEntity be = backupRepository.findByRefid(sut.fetchGlobalId()).get();
 
         MyBackedUpEntity fromJson = (MyBackedUpEntity) be.getInstantiated();
         assertEquals(sut, fromJson);
@@ -269,4 +242,5 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals(sut2, fromJson2);
         assertNotEquals(sut, sut2);
     }
+
 }
