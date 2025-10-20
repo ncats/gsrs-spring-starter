@@ -33,7 +33,7 @@ public class GsrsSecurityUtils {
 
     @Deprecated
     public static boolean isAdmin(){
-        return hasAnyRoles(new Role("Admin"));
+        return hasAnyRoles(Role.of("Admin"));
     }
 
     @Deprecated

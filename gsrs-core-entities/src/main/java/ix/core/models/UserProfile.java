@@ -38,7 +38,7 @@ public class UserProfile extends IxModel{
 
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
-        up.addRole(new Role("Query"));
+        up.addRole(Role.of("Query"));
 
         return up;
     });
