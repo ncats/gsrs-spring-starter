@@ -6,7 +6,6 @@ import ix.core.models.IndexableRoot;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 import java.util.UUID;
 import jakarta.persistence.*;
 

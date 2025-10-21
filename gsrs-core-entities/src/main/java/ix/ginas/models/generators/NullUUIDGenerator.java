@@ -4,12 +4,15 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 public class NullUUIDGenerator implements IdentifierGenerator {
 
-    public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
+    //sources suggested that returing a Serializable would be more compatible with Hibernate >= 6.6
+    //TODO: reevaluate
+    public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         Object id = session.getEntityPersister(null, object).getIdentifier(object, session);
-        return id != null ? id : UUID.randomUUID();
+        return id != null ? (Serializable) id : UUID.randomUUID();
     }
 }

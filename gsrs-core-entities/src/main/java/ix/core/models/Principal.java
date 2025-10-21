@@ -10,6 +10,7 @@ import ix.ginas.models.serialization.GsrsDateSerializer;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+
 import java.util.Date;
 
 @Entity

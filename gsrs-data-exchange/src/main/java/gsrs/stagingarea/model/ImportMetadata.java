@@ -19,7 +19,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 
@@ -47,6 +46,7 @@ import java.util.*;
 //@NoArgsConstructor    commented out because of "constructor ImportMetadata() is already defined"
 public class ImportMetadata implements Serializable, GinasAccessControlled {
 
+    //OLD WAY
     //OLD WAY
     @JsonIgnore
     @Basic(fetch = FetchType.LAZY)
@@ -116,8 +116,6 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
         indexed
     }
 
-    //@GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
-    //@GeneratedValue(generator = "NullUUIDGenerator")
     private UUID instanceId = UUID.randomUUID(); //always unique!  changes when data change
 
     /**

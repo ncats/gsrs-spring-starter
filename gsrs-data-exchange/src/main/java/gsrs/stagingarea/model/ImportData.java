@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
 
@@ -37,8 +36,6 @@ public class ImportData {
     /**
      * Foreign key, referencing ImportMetadata
      */
-    //@GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
-    //@GeneratedValue(generator = "NullUUIDGenerator")
     @Indexable(name="RecordId")
     private UUID recordId = UUID.randomUUID();
 

@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import ix.core.models.*;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
-
 import jakarta.persistence.*;
 import java.util.*;
 
@@ -18,8 +15,11 @@ import java.util.*;
 public class GinasCommonData extends NoIdGinasCommonData{
 
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
-    @GeneratedValue(generator = "NullUUIDGenerator")
+    //commented these 2 annotations out to get Substance tests to pass. 20 October 2025
+    // this necessitates manually setting a value for UUID for all objects created.
+    //TODO: reevaluate this strategy!
+    //@GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
+    //@GeneratedValue(generator = "NullUUIDGenerator")
     public UUID uuid;
     @Indexable()
     public UUID getUuid() {
