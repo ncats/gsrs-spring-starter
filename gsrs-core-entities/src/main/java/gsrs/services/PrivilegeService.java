@@ -47,29 +47,29 @@ public class PrivilegeService {
         RoleConfiguration queryRole = new RoleConfiguration();
         queryRole.setName("Query");
         //search and Query are synonymous
-        String[] queryPrivileges ={"Login", "Search", "Browse", "Export Data" };
+        String[] queryPrivileges ={"Login", CommonPrivileges.SEARCH, CommonPrivileges.BROWSE, CommonPrivileges.EXPORT_DATA };
         queryRole.setPrivileges(Arrays.asList(queryPrivileges));
         roles.add(queryRole);
 
         RoleConfiguration editorRole = new RoleConfiguration();
         editorRole.setName("DataEntry");
-        String[] editorPrivileges ={"Create", "Edit"};
+        String[] editorPrivileges ={CommonPrivileges.CREATE, CommonPrivileges.EDIT};
         editorRole.setPrivileges(Arrays.asList(editorPrivileges));
         editorRole.setInclude(Collections.singletonList("Query"));
         roles.add(editorRole);
 
         RoleConfiguration approverRole = new RoleConfiguration();
         approverRole.setName("Approver");
-        String[] approverPrivileges = {"Approve Records", "Edit Public Data", "Modify Relationships", "Make Records Public",
-                "Edit Approved Records"};
+        String[] approverPrivileges = { CommonPrivileges.APPROVE_RECORDS, CommonPrivileges.EDIT_PUBLIC_DATA,
+                CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.MAKE_RECORDS_PUBLIC, CommonPrivileges.EDIT_APPROVED_RECORDS };
         approverRole.setPrivileges(Arrays.asList(approverPrivileges));
         approverRole.setInclude(Collections.singletonList("DataEntry"));
         roles.add(approverRole);
 
         RoleConfiguration adminRole = new RoleConfiguration();
         adminRole.setName("Admin");
-        String[] adminPrivileges = {"Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data",
-                "Merge Subconcepts", "Modify Relationships", "Edit Approval IDs"};
+        String[] adminPrivileges = {CommonPrivileges.MANAGE_USERS, CommonPrivileges.CONFIGURE_SYSTEM, CommonPrivileges.MANAGE_VOCABULARIES, CommonPrivileges.IMPORT_DATA,
+                CommonPrivileges.MERGE_SUBCONCEPTS, CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.EDIT_APPROVAL_IDS};
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);

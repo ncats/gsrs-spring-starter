@@ -102,7 +102,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());
                             List<String> privileges = privilegeService.getPrivilegesForRoles(session.profile.getRoles());
-                            log.trace("in authentication, privileges: {}", privileges);
                             return new SessionIdAuthentication(session.profile, id, privileges);
                         }
                         return null;
