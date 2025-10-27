@@ -20,5 +20,5 @@ public class CommonPrivileges {
     public static final String EDIT_PUBLIC_DATA = "Edit Public Data";
     public static final String MAKE_RECORDS_PUBLIC = "Make Records Public";
     public static final String EDIT_APPROVED_RECORDS = "Edit Approved Records";
-
+    public static final String VIEW_SERVER_FILES = "View Files";
 }

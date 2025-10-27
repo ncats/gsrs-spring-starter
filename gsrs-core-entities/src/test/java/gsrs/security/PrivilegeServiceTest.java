@@ -84,7 +84,7 @@ public class PrivilegeServiceTest {
                 "Delete Lower Level Items", "Export Relationships", "Restore Previous Versions", "Save Record JSON",
                 "Manage Users", "Manage Vocabularies", "Configure System", "Manage CVs", "Import Data", "Index Data", "Run Backup",
                 "Run Tasks", "Override Duplicate Checks", "Merge Subconcepts","Modify Relationships", "Make Records Public",
-                "Edit Approved Records", "Edit Approval IDs", "Manage Others Lists"};
+                "Edit Approved Records", "Edit Approval IDs", "Manage Others Lists", "View Files"};
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
