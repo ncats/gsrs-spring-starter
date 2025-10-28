@@ -3,7 +3,6 @@
 		{
 			"name": "Query",
 			"privileges": [
-				"Login",
 				"Search",
 				"Browse",
 				"Export Data"
@@ -40,7 +39,6 @@
 			"name": "Admin",
 			"privileges": [
 				"Manage Users",
-				"Manage Vocabularies",
 				"Configure System",
 				"Manage CVs",
 				"Import Data",
@@ -52,7 +50,8 @@
 				"Merge Subconcepts",
 				"Edit Approval IDs",
 				"Manage Others Lists",
-				"View Files"
+				"View Files",
+				"View Service Info"
 			],
 			"include": [
 				"Approver"

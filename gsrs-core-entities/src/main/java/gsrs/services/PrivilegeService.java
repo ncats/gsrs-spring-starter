@@ -69,7 +69,8 @@ public class PrivilegeService {
         RoleConfiguration adminRole = new RoleConfiguration();
         adminRole.setName("Admin");
         String[] adminPrivileges = {CommonPrivileges.MANAGE_USERS, CommonPrivileges.CONFIGURE_SYSTEM, CommonPrivileges.MANAGE_VOCABULARIES, CommonPrivileges.IMPORT_DATA,
-                CommonPrivileges.MERGE_SUBCONCEPTS, CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.EDIT_APPROVAL_IDS, CommonPrivileges.VIEW_SERVER_FILES};
+                CommonPrivileges.MERGE_SUBCONCEPTS, CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.EDIT_APPROVAL_IDS, CommonPrivileges.VIEW_SERVER_FILES,
+                CommonPrivileges.VIEW_SERVICE_INFO};
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);

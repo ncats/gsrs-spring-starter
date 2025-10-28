@@ -40,7 +40,6 @@
 			"name": "Admin",
 			"privileges": [
 				"Manage Users",
-				"Manage Vocabularies",
 				"Configure System",
 				"Manage CVs",
 				"Import Data",
@@ -51,7 +50,9 @@
 				"Modify Relationships",
 				"Merge Subconcepts",
 				"Edit Approval IDs",
-				"Manage Others Lists"
+				"Manage Others Lists",
+				"View Files",
+				"View Service Info"
 			],
 			"include": [
 				"Approver"
