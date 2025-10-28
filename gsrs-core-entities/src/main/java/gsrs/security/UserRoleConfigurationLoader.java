@@ -1,5 +1,6 @@
 package gsrs.security;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
@@ -12,6 +13,7 @@ public class UserRoleConfigurationLoader {
 
     public UserRoleConfigurationLoader() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.configuration = mapper.readValue(new File(CONFIG_FILE_NAME), UserRoleConfiguration.class);
     }
 
