@@ -56,8 +56,7 @@ public class GsrsApiAutoConfiguration {
     @EventListener(ApplicationReadyEvent.class)
     @Order(Integer.MAX_VALUE)
     @Transactional
-    public void initializeEntityProcessors(ApplicationReadyEvent event){
+    public void initializeEntityProcessors(ApplicationReadyEvent event) {
         adminService.runAsAdmin(entityProcessorFactory::initialize);
-
- git   }
+    }
 }
