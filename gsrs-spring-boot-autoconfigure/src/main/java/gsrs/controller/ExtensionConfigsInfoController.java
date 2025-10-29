@@ -20,6 +20,7 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -28,12 +29,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.*;
 
 @RestController
 @Profile("!test")
-
 public class ExtensionConfigsInfoController {
 
     // These endpoints provide config objects that have been transformed from mapped
@@ -46,6 +45,8 @@ public class ExtensionConfigsInfoController {
     // entityContext is not always, depending on whether the extension puts configs
     // into buckets by entity.
 
+    @Autowired
+    private ConfigurableApplicationContext configurableApplicationContext;
 
     @Value("#{new Boolean('${gsrs.extensions.config.report.api.enabled:false}')}")
     private boolean extensionsConfigReportApiEnabled;
@@ -245,6 +246,26 @@ public class ExtensionConfigsInfoController {
             thrown = true;
         }
         if (thrown || list == null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(list);
+    }
+
+    @hasAdminRole
+    @GetMapping("/service-info/api/v1/{serviceContext}/@appContextBeans")
+    public ResponseEntity<?> getAppContextBeans() {
+        StringBuilder sb = new StringBuilder();
+        if (!extensionsConfigReportApiEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
+        }
+        boolean thrown = false;
+        List<String>  list = null;
+        try {
+            list= Arrays.asList(configurableApplicationContext.getBeanDefinitionNames());
+        } catch (Throwable t) {
+            thrown = true;
+        }
+        if (thrown || list.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
         }
         return ResponseEntity.status(HttpStatus.OK).body(list);

@@ -4,15 +4,10 @@ import gsrs.EntityProcessorFactory;
 import gsrs.indexer.DefaultIndexerEventFactory;
 import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.security.AdminService;
-import gsrs.security.SessionConfiguration;
-import gsrs.security.TokenConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.RegisteredFunctionProperties;
@@ -30,7 +25,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
 
-@Configuration
+@AutoConfiguration
 //can't do component scan in autoconfiguration so manually import our components
 @Import(value = {AutowireHelper.class, 
         GsrsControllerConfiguration.class,
@@ -64,6 +59,5 @@ public class GsrsApiAutoConfiguration {
     public void initializeEntityProcessors(ApplicationReadyEvent event){
         adminService.runAsAdmin(entityProcessorFactory::initialize);
 
-    }
-
+ git   }
 }
