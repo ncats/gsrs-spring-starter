@@ -8,10 +8,11 @@ import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.internal.util.stereotypes.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,7 +22,12 @@ import java.util.stream.Collectors;
 public class PrivilegeService {
 
     private static PrivilegeService instance = new PrivilegeService();
+
+    @Autowired
+    @Lazy
     private UserRoleConfiguration configuration;
+
+    private List<RoleConfiguration> _roles;
 
     public static PrivilegeService instance() {
         return instance;
@@ -30,9 +36,19 @@ public class PrivilegeService {
     public PrivilegeService(){
         try {
             UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            this.configuration = loader.getConfiguration();
-            log.trace("loaded configuration from file");
-        } catch (IOException e) {
+            //_roles= loader.getConfiguration().getRoleConfigurations();
+            log.trace("configuration: {}", configuration);
+            if( configuration!= null) {
+                _roles= configuration.getRoles();
+                log.trace("total roles: {} from config", _roles.size());
+            }
+                    //UserRoleConfiguration.getInstance().getRoleConfigurations().stream()
+                    //.collect(Collectors.toList());
+            //UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
+            //this.configuration = loader.getConfiguration();
+            //assert this.configuration != null && !this.configuration.getRoleConfigurations().isEmpty();
+            log.trace("loaded configuration from file. total: {}", _roles.size());
+        } catch (Exception e) {
             log.error("Error loading configuration from file {}", e.getMessage(), e);
             log.warn("Will use default configuration");
             setDefaultConfig();
@@ -74,7 +90,7 @@ public class PrivilegeService {
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);
-        configuration.setRoles(roles);
+        _roles = roles;
     }
 
     public UserRoleConfiguration getConfiguration() {
@@ -99,7 +115,7 @@ public class PrivilegeService {
                     return UserRoleConfiguration.PermissionResult.MayPerform;
                 }
             }
-            if(configuration.getRoles().stream()
+            if(_roles.stream()
                     .map(RoleConfiguration::getName)
                     .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.getRole().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
@@ -119,7 +135,7 @@ public class PrivilegeService {
 
     public boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
-        for(RoleConfiguration configuredRole : this.configuration.getRoles()) {
+        for(RoleConfiguration configuredRole : _roles) {
             if( configuredRole.getName().equalsIgnoreCase(role)){
                 log.trace("roles match; now look through it privs {}", configuredRole.getPrivileges());
                 if( configuredRole.getPrivileges().stream().anyMatch( p-> p.equalsIgnoreCase(task))) {
@@ -139,7 +155,7 @@ public class PrivilegeService {
 
     public List<String> getPrivilegesForConfiguredRole(String configuredRole) {
         Set<String> basePrivileges = new HashSet<>();
-        RoleConfiguration matchingRole = configuration.getRoles().stream()
+        RoleConfiguration matchingRole = _roles.stream()
                 .filter(r->r.getName().equalsIgnoreCase(configuredRole))
                 .findFirst()
                 .orElse(null);
@@ -153,7 +169,7 @@ public class PrivilegeService {
     }
 
     public List<String> getAllRoleNames() {
-        return configuration.getRoles().stream().map(RoleConfiguration::getName).collect(Collectors.toList());
+        return _roles.stream().map(RoleConfiguration::getName).collect(Collectors.toList());
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
