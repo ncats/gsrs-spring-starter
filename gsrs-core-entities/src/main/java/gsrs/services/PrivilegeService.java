@@ -8,6 +8,7 @@ import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.cfg.Environment;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
@@ -35,18 +36,15 @@ public class PrivilegeService {
 
     public PrivilegeService(){
         try {
+            String filePath = Environment.getProperties().getProperty("gsrs.security.info.filepath");
+            log.trace("filePath: {}", filePath);
             UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            //_roles= loader.getConfiguration().getRoleConfigurations();
-            log.trace("configuration: {}", configuration);
-            if( configuration!= null) {
-                _roles= configuration.getRoles();
-                log.trace("total roles: {} from config", _roles.size());
+            if( filePath != null && filePath.length() >0) {
+                log.info("loading configuration from configured file path {}", filePath);
+                loader.loadConfigFromFile(filePath);
             }
-                    //UserRoleConfiguration.getInstance().getRoleConfigurations().stream()
-                    //.collect(Collectors.toList());
-            //UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            //this.configuration = loader.getConfiguration();
-            //assert this.configuration != null && !this.configuration.getRoleConfigurations().isEmpty();
+            configuration = loader.getConfiguration();
+            _roles = configuration.getRoles();
             log.trace("loaded configuration from file. total: {}", _roles.size());
         } catch (Exception e) {
             log.error("Error loading configuration from file {}", e.getMessage(), e);
