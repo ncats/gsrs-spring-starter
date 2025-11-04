@@ -72,18 +72,6 @@ public class ValidationResponseBuilder<T> implements ValidatorCallback {
     }
 
     public ValidationResponse<T> buildResponse() {
-        if (!allowDuplicates) {
-            for (ValidationMessage m : resp.getValidationMessages()) {
-                if (m instanceof GinasProcessingMessage) {
-                    GinasProcessingMessage gpm = (GinasProcessingMessage) m;
-                    if (gpm.isProblem() && gpm.isPossibleDuplicate()) {
-                        gpm.makeError();
-                    }
-                }
-            }
-        }
-
-
         return resp;
     }
 
