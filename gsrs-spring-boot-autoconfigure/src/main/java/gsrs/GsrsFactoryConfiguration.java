@@ -53,6 +53,8 @@ public class GsrsFactoryConfiguration {
 
     private Map<String, Boolean> sortExportOutput;
 
+    private Map<String, List<? extends MatchableCalculationConfig>> matchableConfigsByContext = new LinkedHashMap<>();
+
     public Optional<Map<String, Object>> getSearchSettingsFor(String context) {
         if (search == null) return Optional.empty();
         return Optional.ofNullable(search.get(context));
@@ -162,33 +164,37 @@ public class GsrsFactoryConfiguration {
 
     public List<? extends MatchableCalculationConfig> getMatchableCalculationConfig(String context) {
         log.trace("in getMatchableCalculationConfig");
-        String reportTag = "MatchableCalculationConfig";
-        if(matchableCalculators==null){
-            return Collections.emptyList();
-        }
-        try {
-            Map<String, Map<String, Object>> map = matchableCalculators.get(context).get("list");
-            if (map == null || map.isEmpty()) {
-                log.warn("no matchable calculation configuration info found!");
+        return this.matchableConfigsByContext.computeIfAbsent(context, ctxt->
+        {
+            String reportTag = "MatchableCalculationConfig";
+            if (matchableCalculators == null) {
                 return Collections.emptyList();
             }
-            // Copy the key into the Object for quality control and maybe as a way to access by key from the list
-            for (String k: map.keySet()) {
-                map.get(k).put("parentKey", k);
+            try {
+                Map<String, Map<String, Object>> map = matchableCalculators.get(ctxt).get("list");
+                if (map == null || map.isEmpty()) {
+                    log.warn("no matchable calculation configuration info found!");
+                    return Collections.emptyList();
+                }
+                // Copy the key into the Object for quality control and maybe as a way to access by key from the list
+                for (String k : map.keySet()) {
+                    map.get(k).put("parentKey", k);
+                }
+                List<Object> list = map.values().stream().collect(Collectors.toList());
+                List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() {
+                });
+                System.out.println(reportTag + " found before filtering: " + configs.size());
+                configs = configs.stream().filter(c -> !c.isDisabled()).sorted(Comparator.comparing(c -> c.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
+                System.out.println(reportTag + " active after filtering: " + configs.size());
+                System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
+                for (MatchableCalculationConfig config : configs) {
+                    System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getMatchableCalculationClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
+                }
+                return configs;
+            } catch (Throwable t) {
+                throw t;
             }
-            List<Object> list = map.values().stream().collect(Collectors.toList());
-            List<? extends MatchableCalculationConfig> configs = EntityUtils.convertClean(list, new TypeReference<List<? extends MatchableCalculationConfig>>() { });
-            System.out.println(reportTag + " found before filtering: " + configs.size());
-            configs = configs.stream().filter(c->!c.isDisabled()).sorted(Comparator.comparing(c->c.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
-            System.out.println(reportTag + " active after filtering: " + configs.size());
-            System.out.printf("%s|%s|%s|%s|%s\n", reportTag, "class", "parentKey", "order", "isDisabled");
-            for (MatchableCalculationConfig config : configs) {
-                System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getMatchableCalculationClass(), config.getParentKey(), config.getOrder(), config.isDisabled());
-            }
-            return configs;
-        } catch (Throwable t) {
-            throw t;
-        }
+        });
     }
 
     public List<ValidationMessageSubstitution> getValidationMessageSubstitutions(String context) {

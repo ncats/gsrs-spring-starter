@@ -44,7 +44,14 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
         log.trace("substitutions from config: {}", substitutions== null ? "null" : substitutions.size());
         if( substitutions == null || substitutions.isEmpty()) {
             log.warn("configured substitutions empty; used hard-coded values");
-            substitutions = Arrays.asList(
+            substitutions = getDefaultSubstitutions();
+        }
+
+        log.trace("initialized substitution list with {}, items", substitutions.size());
+    }
+
+    private List<ValidationMessageSubstitution> getDefaultSubstitutions() {
+        return Arrays.asList(
                 ValidationMessageSubstitution.of("Substance .* appears to be a full duplicate",
                         "Substance appears to have a full duplicate"),
                 ValidationMessageSubstitution.of("Record .* is a potential duplicate",
@@ -64,9 +71,6 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
                 ValidationMessageSubstitution.of("Substance has no UUID, will generate uuid:.*", "Generated UUID because none was supplied"),
                 ValidationMessageSubstitution.of("Valence Error on .*", "Valence error on one or more atoms")
         );
-        }
-
-        log.trace("initialized substitution list with {}, items", substitutions.size());
     }
 
     @Override
