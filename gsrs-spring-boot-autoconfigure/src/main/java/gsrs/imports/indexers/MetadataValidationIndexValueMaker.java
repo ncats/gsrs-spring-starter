@@ -13,8 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class MetadataValidationIndexValueMaker implements IndexValueMaker<ImportMetadata> {
@@ -30,6 +33,32 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
         return ImportMetadata.class;
+    }
+
+    private List<ValidationMessageSubstitution> substitutions;
+
+    public MetadataValidationIndexValueMaker() {
+        substitutions = Arrays.asList(
+                ValidationMessageSubstitution.of("Substance .* appears to be a full duplicate",
+                        "Substance appears to have a full duplicate"),
+                ValidationMessageSubstitution.of("Record .* is a potential duplicate",
+                        "Record has a potential duplicate"),
+                ValidationMessageSubstitution.of("Name .* minimally standardized to .*",
+                        "Name was minimally standardized"),
+                ValidationMessageSubstitution.of("Substances should have exactly one \\(1\\) display name.*",
+                        "Display name was selected automatically"),
+                ValidationMessageSubstitution.of("Each fragment should be present as a separate record in the database. Please register:.*",
+                        "Substance contains a fragment that has not been registered as an individual record"),
+                ValidationMessageSubstitution.of("Substance .* is a possible duplicate", "Record has a possible duplicate"),
+                ValidationMessageSubstitution.of("This fragment is present as a separate record in the database but in a different form. Please register: .* as an individual substance",
+                        "Substance contains a fragment that has not been registered as an individual record in its current form"),
+                ValidationMessageSubstitution.of("Name .* collides \\(possible duplicate\\) with existing name for substance.*", "Duplicate name"),
+                ValidationMessageSubstitution.of("Structure is not charged balanced, net charge of:.*", "Structure is not charged balanced"),
+                ValidationMessageSubstitution.of("Substance may be represented as protein as well. Sequence:.*", "Substance may be represented as protein as well"),
+                ValidationMessageSubstitution.of("Substance has no UUID, will generate uuid:.*", "Generated UUID because none was supplied"),
+                ValidationMessageSubstitution.of("Valence Error on .*", "Valence error on one or more atoms")
+        );
+        log.trace("initialized substitution list with {}, items", substitutions.size());
     }
 
     @Override
@@ -57,15 +86,26 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
                 consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
                         String.valueOf(((ValidationMessage) vm).getMessageType())));
                 consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_MESSAGE_FACET,
-                        ((ValidationMessage) vm).getMessage()));
+                        cleanValidationMessage(((ValidationMessage) vm).getMessage())));
             });
             return;
         }
         validations.forEach(v->{
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
                     String.valueOf((v.getValidationType()))));
+
             consumer.accept (IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_MESSAGE_FACET,
-                    (v.getValidationMessage())));
+                    cleanValidationMessage((v.getValidationMessage()))));
         });
+    }
+
+    public String cleanValidationMessage(String inputMessage){
+        for( ValidationMessageSubstitution substitution : substitutions){
+            if(substitution.getToMatch().matcher(inputMessage).find()) {
+                return substitution.getSubstitution();
+            }
+        }
+        log.trace("cleanValidationMessage found no match for {}", inputMessage);
+        return inputMessage;
     }
 }
