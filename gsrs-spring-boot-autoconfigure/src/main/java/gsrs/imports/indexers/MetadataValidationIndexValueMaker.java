@@ -1,5 +1,6 @@
 package gsrs.imports.indexers;
 
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
@@ -13,22 +14,23 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class MetadataValidationIndexValueMaker implements IndexValueMaker<ImportMetadata> {
-    public final static String IMPORT_METADATA_VALIDATION_TYPE_FACET="Validation Type";
-    public final static String IMPORT_METADATA_VALIDATION_MESSAGE_FACET="Validation Message";
+    public static final String IMPORT_METADATA_VALIDATION_TYPE_FACET="Validation Type";
+    public static final String IMPORT_METADATA_VALIDATION_MESSAGE_FACET="Validation Message";
 
     //@Autowired
     StagingAreaService stagingAreaService;
 
     @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
+
+    @Autowired
+    private GsrsFactoryConfiguration config;
 
     @Override
     public Class<ImportMetadata> getIndexedEntityClass() {
@@ -37,8 +39,12 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
 
     private List<ValidationMessageSubstitution> substitutions;
 
-    public MetadataValidationIndexValueMaker() {
-        substitutions = Arrays.asList(
+    private void init(String context) {
+        substitutions = config.getValidationMessageSubstitutions(context);
+        log.trace("substitutions from config: {}", substitutions== null ? "null" : substitutions.size());
+        if( substitutions == null || substitutions.isEmpty()) {
+            log.warn("configured substitutions empty; used hard-coded values");
+            substitutions = Arrays.asList(
                 ValidationMessageSubstitution.of("Substance .* appears to be a full duplicate",
                         "Substance appears to have a full duplicate"),
                 ValidationMessageSubstitution.of("Record .* is a potential duplicate",
@@ -58,6 +64,8 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
                 ValidationMessageSubstitution.of("Substance has no UUID, will generate uuid:.*", "Generated UUID because none was supplied"),
                 ValidationMessageSubstitution.of("Valence Error on .*", "Valence error on one or more atoms")
         );
+        }
+
         log.trace("initialized substitution list with {}, items", substitutions.size());
     }
 
@@ -73,7 +81,11 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
                 throw new RuntimeException(e);
             }
         }
-        if( importMetadata.getInstanceId()==null) {
+        if( substitutions == null || substitutions.isEmpty()) {
+            String contextName = EntityContextLookup.getContextFromEntityClass( importMetadata.getEntityClassName());
+            init(contextName);
+        }
+            if( importMetadata.getInstanceId()==null) {
             log.warn("importMetadata.getInstanceId() null! ");
             return;
         }
@@ -102,7 +114,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     public String cleanValidationMessage(String inputMessage){
         for( ValidationMessageSubstitution substitution : substitutions){
             if(substitution.getToMatch().matcher(inputMessage).find()) {
-                return substitution.getSubstitution();
+                return substitution.getReplacement();
             }
         }
         log.trace("cleanValidationMessage found no match for {}", inputMessage);

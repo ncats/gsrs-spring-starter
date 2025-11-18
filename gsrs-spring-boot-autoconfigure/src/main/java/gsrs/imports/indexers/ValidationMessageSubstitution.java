@@ -9,9 +9,9 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class ValidationMessageSubstitution {
     private Pattern toMatch;
-    private String substitution;
+    private String replacement;
 
-    public static ValidationMessageSubstitution of(String patternInfo, String substitutionInfo) {
-        return new ValidationMessageSubstitution(Pattern.compile(patternInfo), substitutionInfo);
+    public static ValidationMessageSubstitution of(String patternInfo, String replacementInfo) {
+        return new ValidationMessageSubstitution(Pattern.compile(patternInfo), replacementInfo);
     }
 }
