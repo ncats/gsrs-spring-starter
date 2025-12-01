@@ -31,7 +31,7 @@
     </parent>
     <properties>
         <java.version>17</java.version>
-        <gsrs.version>3.1.3-SNAPSHOT</gsrs.version>
+        <gsrs.version>3.1.3-3x-SNAPSHOT</gsrs.version>
         <spring-boot.version>3.5.7</spring-boot.version>
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
@@ -39,7 +39,7 @@
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>3.1.3-SNAPSHOT</version>
+    <version>3.1.3-3x-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
     <url>https://github.com/ncats/gsrs-spring-starter</url>
