@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.cfg.Environment;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +30,9 @@ public class PrivilegeService {
     @Lazy
     private UserRoleConfiguration configuration;
 
+    @Autowired
+    private RolesConfig rolesConfig;
+
     private List<RoleConfiguration> _roles;
 
     public static PrivilegeService instance() {
@@ -37,6 +42,10 @@ public class PrivilegeService {
     public PrivilegeService(){
         try {
             String filePath = Environment.getProperties().getProperty("gsrs.security.info.filepath");
+            if( filePath == null && rolesConfig != null ) {
+                log.trace("rolesConfig.getJsonFile(): {}", rolesConfig.getJsonFile());
+                filePath = rolesConfig.getJsonFile();
+            }
             log.trace("filePath: {}", filePath);
             UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
             if( filePath != null && filePath.length() >0) {

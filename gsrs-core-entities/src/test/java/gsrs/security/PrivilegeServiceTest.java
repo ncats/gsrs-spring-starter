@@ -68,7 +68,7 @@ public class PrivilegeServiceTest {
     @Test
     void getPrivilegesForConfiguredRoleTest() {
         String startingRole = "DataEntry";
-        String[] expectedPrivileges = {"Create", "Edit", "Search", "Browse", "Export Data","Export Relationships", "Save Record JSON" };
+        String[] expectedPrivileges = {"Create", "Edit", "Login", "Search", "Browse", "Export Data" };
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
@@ -78,13 +78,12 @@ public class PrivilegeServiceTest {
     }
 
     @Test
-    void getPrivilegesForConfiguredRoleTest2() {
+    void getPrivilegesForConfiguredRoleTestAdmin() {
         String startingRole = "Admin";
-        String[] expectedPrivileges = {"Create", "Edit", "Search", "Browse", "Export Data", "Approve Records", "Edit Public Data",
-                "Delete Lower Level Items", "Export Relationships", "Restore Previous Versions", "Save Record JSON",
-                "Manage Users", "Configure System", "Manage CVs", "Import Data", "Index Data", "Run Backup",
-                "Run Tasks", "Override Duplicate Checks", "Merge Subconcepts","Modify Relationships", "Make Records Public",
-                "Edit Approved Records", "Edit Approval IDs", "Manage Others Lists", "View Files", "View Service Info"};
+        String[] expectedPrivileges = {"Login", "Create", "Edit", "Search", "Browse", "Export Data", "Approve Records", "Edit Public Data",
+                "Manage Users", "Configure System", "Manage CVs", "Import Data",
+                "Merge Subconcepts","Modify Relationships", "Make Records Public",
+                "Edit Approved Records", "Edit Approval IDs", "View Files", "View Service Info"};
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
