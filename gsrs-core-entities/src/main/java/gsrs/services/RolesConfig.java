@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("roleConfig")
 @ConfigurationProperties(prefix = "gsrs.roles")
 @Data
 public class RolesConfig {
