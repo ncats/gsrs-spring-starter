@@ -1,10 +1,7 @@
 package gsrs.security;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
@@ -15,6 +12,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
 import gsrs.model.UserProfileAuthenticationResult;
+import gsrs.services.PrivilegeService;
+import org.apache.tomcat.util.http.parser.Authorization;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -57,6 +56,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    private PrivilegeService privilegeService;
+
     private void logHeaders(HttpServletRequest req){
         if(log.isDebugEnabled()) {
             log.debug("HEADERS ON REQUEST ===================");
@@ -89,7 +91,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }catch(Exception e) {
 
                 }
-//                UUID cachedSessionId = (UUID) gsrsCache.getRaw(id);
                 if(cachedSessionIdt !=null) {
                     UUID cachedSessionId = cachedSessionIdt;
 
@@ -100,7 +101,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                             //Do we need to save this?
                             session.accessed = TimeUtil.getCurrentTimeMillis();
                             request.getSession().setAttribute("username", session.profile.getIdentifier());
-                            return new SessionIdAuthentication(session.profile, id);
+                            List<String> privileges = privilegeService.getPrivilegesForRoles(session.profile.getRoles());
+                            return new SessionIdAuthentication(session.profile, id, privileges);
                         }
                         return null;
                     });
@@ -131,8 +133,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             List<Role> roles =    Optional.ofNullable(authenticationConfiguration.getUserrolesheader())
                     .map(e->request.getHeader(e))
                     .map(v->Arrays.stream(v.split(";"))
-                            .filter(r->Arrays.stream(Role.values()).map(Role::name).anyMatch(r.trim()::equals))
-                            .map(r->Role.valueOf(r.trim()))
+                            .filter(r->Arrays.stream(PrivilegeService.instance().getAllRoleNames().toArray(new String[0])).anyMatch(r.trim()::equals))
+                            .map(r->Role.of(r.trim()))
                             .distinct()
                             .collect(Collectors.toList())
                     )
@@ -147,19 +149,14 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                         .map(oo->oo.standardize())
                         .orElse(null);
                 if(up ==null && authenticationConfiguration.isAutoregister()){
-
                     up = autoregisterNewUser(username, email, roles);
-
                 }
                 if(up !=null && up.active){
+                    //privileges handled by UserProfilePasswordAuthentication's constructor
                     auth = new UserProfilePasswordAuthentication(up);
                 }
             }
         }
-        /*
-        String user=r.getHeader("auth-username");
-        String key=r.getHeader("auth-key");
-         */
         if(auth ==null) {
             String username = request.getHeader("auth-username");
             String pass = request.getHeader("auth-password");
@@ -201,7 +198,8 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             if(token !=null){
                 UserProfile up = userTokenCache.getUserProfileFromToken(token);
                 if(up!=null && up.active) {
-                    auth = new LegacyUserTokenAuthentication(up, token);
+                    List<String> privileges = privilegeService.getPrivilegesForRoles(up.getRoles());
+                    auth = new LegacyUserTokenAuthentication(up, token, privileges);
                 }
             }
         }
@@ -220,11 +218,11 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 if (up != null && up.active) {
                     if (up.acceptKey(key)) {
                         //valid key!
-                        auth = new LegacyUserKeyAuthentication(up, key);
+                        List<String> privileges = privilegeService.getPrivilegesForRoles(up.getRoles());
+                        auth = new LegacyUserKeyAuthentication(up, key, privileges);
                     } else {
                         throw new BadCredentialsException("invalid credentials for username: " + username);
                     }
-
                 }
             }
         }
@@ -236,13 +234,6 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             try {
                 response.setContentType("application/json");
                 response.getWriter().println("{\"status\" : \"403\", \"message\" : \""+message+"\"}");
-//                response.getWriter().println("<!DOCTYPE html>\n" +
-//                        "<html>\n" +
-//                        "<head></head>\n" +
-//                        "<body>\n" +
-//                        message +
-//                        "</body>\n" +
-//                        "</html>");
                 return;
             } catch (IOException e) {
                 throw new NonAuthenticatedUserAllowedException("not authorized to see this resource");
@@ -253,6 +244,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
             if (auth instanceof GsrsUserProfileDetails) {
                 userTokenCache.updateUserCache(((GsrsUserProfileDetails)auth).getPrincipal());
             }
+
             //TODO: perhaps allow a short-circuit here if auth is outsourced
             request.getSession().setAttribute("username", auth.getName());
             // Check value to avoid error on UI login I think related to token
@@ -265,8 +257,10 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
 
     }
+
     private UserProfile autoregisterNewUser(String username ) {
-        return autoregisterNewUser(username, null, null);
+        List<Role> defaultRoles = Collections.singletonList(Role.of("Query"));
+        return autoregisterNewUser(username, null, defaultRoles);
     }
     private UserProfile autoregisterNewUser(String username, String email, List<Role> roles ) {
         Principal p =  Principal.createStandardized(username, email);
