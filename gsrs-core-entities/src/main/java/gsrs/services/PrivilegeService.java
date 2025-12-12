@@ -42,6 +42,7 @@ public class PrivilegeService {
     public PrivilegeService(){
         try {
             String filePath = Environment.getProperties().getProperty("gsrs.security.info.filepath");
+            log.trace("rolesConfig: {}", rolesConfig);
             if( filePath == null && rolesConfig != null ) {
                 log.trace("rolesConfig.getJsonFile(): {}", rolesConfig.getJsonFile());
                 filePath = rolesConfig.getJsonFile();
