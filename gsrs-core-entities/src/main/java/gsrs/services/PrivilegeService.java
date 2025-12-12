@@ -30,9 +30,6 @@ public class PrivilegeService {
     @Lazy
     private UserRoleConfiguration configuration;
 
-    @Autowired
-    private RolesConfig rolesConfig;
-
     private List<RoleConfiguration> _roles;
 
     public static PrivilegeService instance() {
@@ -42,16 +39,15 @@ public class PrivilegeService {
     public PrivilegeService(){
         try {
             String filePath = Environment.getProperties().getProperty("gsrs.security.info.filepath");
-            log.trace("rolesConfig: {}", rolesConfig);
-            if( filePath == null && rolesConfig != null ) {
-                log.trace("rolesConfig.getJsonFile(): {}", rolesConfig.getJsonFile());
-                filePath = rolesConfig.getJsonFile();
-            }
-            log.trace("filePath: {}", filePath);
+            String filePathSys = System.getenv("gsrs.security.info.filepath");
+
+            log.trace("init filePath: {};  filePathSys: {}",
+                    filePath, filePathSys);
+            log.trace("filePathSys: {}", filePathSys);
             UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            if( filePath != null && filePath.length() >0) {
-                log.info("loading configuration from configured file path {}", filePath);
-                loader.loadConfigFromFile(filePath);
+            if( filePathSys != null && filePathSys.length() >0) {
+                log.info("loading configuration from configured file path {}", filePathSys);
+                loader.loadConfigFromFile(filePathSys);
             }
             configuration = loader.getConfiguration();
             _roles = configuration.getRoles();

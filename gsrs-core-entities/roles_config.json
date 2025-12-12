@@ -13,9 +13,7 @@
 			"name": "DataEntry",
 			"privileges": [
 				"Create",
-				"Edit",
-				"Export Relationships",
-				"Save Record JSON"
+				"Edit"
 			],
 			"include": [
 				"Query"
@@ -26,8 +24,8 @@
 			"privileges": [
 				"Approve Records",
 				"Edit Public Data",
-				"Edit Approved Records",
 				"Make Records Public",
+				"Modify Relationships",
 				"Restore Previous Versions",
 				"Delete Lower Level Items"
 			],
