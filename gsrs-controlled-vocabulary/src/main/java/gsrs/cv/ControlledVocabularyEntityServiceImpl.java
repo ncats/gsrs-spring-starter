@@ -9,6 +9,7 @@ import gsrs.cv.events.CvUpdatedEvent;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.ControlledVocabularyRepository;
+import gsrs.security.canManageCVs;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.models.v1.ControlledVocabulary;
@@ -24,8 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
 public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntityService<ControlledVocabulary, Long> implements ControlledVocabularyEntityService {
@@ -54,6 +55,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return Long.parseLong(idAsString);
     }
 
+    @canManageCVs
     @Override
     protected ControlledVocabulary fromNewJson(JsonNode json) throws IOException {
         return CvUtils.adaptSingleRecord(json, objectMapper, true);
@@ -66,12 +68,14 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return repository.findAll(pageable);
     }
 
+    @canManageCVs
     @Override
     @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
+    @canManageCVs
     @Override
     @Transactional
     protected ControlledVocabulary update(ControlledVocabulary controlledVocabulary) {
@@ -83,6 +87,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return new CvUpdatedEvent(updatedEntity);
     }
 
+    @canManageCVs
     @Override
     protected AbstractEntityCreatedEvent<ControlledVocabulary> newCreationEvent(ControlledVocabulary createdEntity) {
         return new CvCreatedEvent(createdEntity);
