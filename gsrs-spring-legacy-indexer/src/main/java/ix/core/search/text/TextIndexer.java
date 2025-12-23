@@ -4143,6 +4143,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static FacetsConfig loadFacetsConfig(File file) {
+        log.trace("going to read facet config from {}", file.getAbsolutePath());
 		FacetsConfig config = null;
 		if (file.exists()) {
 			ObjectMapper mapper = new ObjectMapper();
@@ -4151,7 +4152,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				config = getFacetsConfig(conf);
 				log.info("## FacetsConfig loaded with " + config.getDimConfigs().size() + " dimensions!");
 			} catch (Exception ex) {
-				log.trace("Can't read file " + file, ex);
+				log.warn("Can't read file " + file, ex);
 			}
 		}
 		return config;

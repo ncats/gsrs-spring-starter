@@ -123,6 +123,10 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         //so the solution is to do an exact search query first and then
         //append the normal suggest results after dealing with duplicate hits.
 
+        log.trace("in lookup with key: {}", key);
+        if(key== null || key.length()==0) {
+            return Collections.emptyList();
+        }
         List<LookupResult> exactMatches = getExactHitsFor(key, num);
 
         // return lookup(key, contexts, num, true, true);
