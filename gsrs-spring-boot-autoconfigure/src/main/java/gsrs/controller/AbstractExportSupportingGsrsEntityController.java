@@ -184,7 +184,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @DeleteGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigDelete(@PathVariable("id") Long id,
                                                            @RequestParam Map<String, String> queryParameters) {
-        log.trace("starting in handleExportConfigFetch");
+        log.trace("starting in handleExportConfigDelete");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
 
 
@@ -226,16 +226,6 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
                 resultNode.put("Error!", String.format("Attempt to update configuration created by %s", retrievedSettings.getOwner()));
                 status=HttpStatus.UNAUTHORIZED;
             } else {
-                Text textObj = new Text();
-                textObj.setValue(exportConfigJson);
-                SpecificExporterSettings exporterSettingsFromInput = SpecificExporterSettings.fromText(textObj);
-                if( retrievedSettings.getOwner() == null || retrievedSettings.getOwner().length()==0){
-                    log.info("retrieved export configuration without an owner; setting to current user ");
-                    retrievedSettings.setOwner(currentUser);
-                }
-                exporterSettingsFromInput.setOwner(retrievedSettings.getOwner());
-                exporterSettingsFromInput.setConfigurationId(id.toString());
-                exportConfigJson = exporterSettingsFromInput.asText().getValue();
                 retrievedText.setValue(exportConfigJson);
                 log.trace("made call to setValue");
                 TransactionTemplate transactionTemplateUpdate = new TransactionTemplate(transactionManager);

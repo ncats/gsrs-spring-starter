@@ -407,19 +407,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-/*
-        if(_stagingAreaService == null) {
-            lock.lock();
-            try {
-                if(_stagingAreaService==null) {
-                    _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-                }
-            }finally {
-                lock.unlock();
-            }
-        }
-        return _stagingAreaService;
-*/
     }
 
     //STEP 0: list adapter classes
@@ -723,22 +710,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
     }
 
-    @hasAdminRole
-    @PostGsrsRestApiMapping(value = {"/stagingArea({id})/@validate", "/stagingArea/{id}/@validate"})
-    public ResponseEntity<Object> executeValidatePut(@PathVariable("id") String id,
-                                                     @RequestBody JsonNode updateEntity,
-                                                     @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("executeValidatePut  id: " + id);
-        StagingAreaService stagingAreaService = getDefaultStagingAreaService();
-        ImportMetadata importObject = stagingAreaService.getImportMetaData(id, 0);
-        Object response = stagingAreaService.validateRecord(importObject.getEntityClassName(), updateEntity.toString());
-        if (response == null) {
-            ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
-            responseNode.put("message", "unable to process input");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(responseNode, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(response, queryParameters), HttpStatus.OK);
-    }
 
     //search for records that have the same values for key fields
     @hasAdminRole
@@ -1074,7 +1045,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                                  @RequestParam("top") Optional<Integer> top,
                                                  @RequestParam("skip") Optional<Integer> skip,
                                                  @RequestParam("sortBy") Optional<String> sortBy,
-                                                 @RequestParam("sortDesc") Optional<Boolean> sortOrder,
+                                                 @RequestParam("sortDesc") Optional<Boolean> sortDesc,
                                                  HttpServletRequest request) throws ParseException, IOException {
         log.trace("fetching facets for ImportMetadata");
         SearchOptions so = new SearchOptions.Builder()
@@ -1089,23 +1060,15 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         List<String> userLists = new ArrayList<>();
         String userName = "";
-        if(field.isPresent() && field.get().equalsIgnoreCase("User List") && GsrsSecurityUtils.getCurrentUsername().isPresent()) {
+        if(GsrsSecurityUtils.getCurrentUsername().isPresent()) {
             userName = GsrsSecurityUtils.getCurrentUsername().get();
             userLists= userSavedListService.getUserSearchResultLists(userName, getEntityService().getEntityClass().getName());
         }
-                
-        String cacheID = getFacetCacheID("Staging", query.orElse(""), so, field.orElse(""));        
-        TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
-        if(tv == null) {
-            tv = getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
-        	gsrscache.setRaw(cacheID, tv);        	
-        }
 
-        String sortByProp = sortBy.isPresent()?sortBy.get():"";
-        boolean sortDesc = sortOrder.isPresent()?sortOrder.get().booleanValue():true;
+        TextIndexer.TermVectors tv= getlegacyGsrsSearchService().getTermVectorsFromQueryNew(query.orElse(null), so, field.orElse(null));
         return tv.getFacet(so.getFdim(), so.getFskip(), so.getFfilter(),
                 StaticContextAccessor.getBean(IxContext.class).getEffectiveAdaptedURI(request).toString(),
-                userName, userLists, sortByProp, sortDesc);
+                userName, userLists, sortBy.isPresent()  ? sortBy.get() : null, sortDesc.isPresent() ? sortDesc.get() : false);
 
     }
 
