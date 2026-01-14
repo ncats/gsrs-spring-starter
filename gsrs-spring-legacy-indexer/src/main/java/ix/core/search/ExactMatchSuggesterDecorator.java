@@ -193,6 +193,15 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
             Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num,SORT2);
+            if(query == null || query.length()==0) {
+                log.trace("input was empty/blank");
+                return Collections.emptyList();
+            }
+            if(searcherMgr == null ||searcherMgr.get() == null){
+                log.warn("searchMgr was null!");
+                return Collections.emptyList();
+            }
+            log.trace("searchMgr was NOT null");
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
