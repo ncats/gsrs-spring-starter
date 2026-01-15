@@ -1340,8 +1340,13 @@ public class TextIndexer implements Closeable, ProcessListener {
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
         taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
-        CheckIndex checker = new CheckIndex(taxonDir);
-        log.trace("state of dir: {}", checker.checkIndex().clean);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+            log.trace("state of dir: {}", checker.checkIndex().clean);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
         facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
@@ -1516,8 +1521,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		indexer.searchManager = indexer.indexerService.createSearchManager();
 		indexer.taxonWriter = new DirectoryTaxonomyWriter(indexer.taxonDir);
-        CheckIndex checker = new CheckIndex(taxonDir);
-        log.trace("in config, state of dir: {}", checker.checkIndex().clean);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+            log.trace("in config, state of dir: {}", checker.checkIndex().clean);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
 		indexer.facetsConfig = new FacetsConfig();
 
 		//This should also be reset by the re-indexing trigger
