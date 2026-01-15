@@ -83,13 +83,7 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -985,9 +979,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 			} else if (!dir.isDirectory())
 				throw new IllegalArgumentException("Not a directory: " + dir);
 
-
-			AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
-					new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
+            log.trace("creating suggester in dir {}", dir.toPath().toString());
+            AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
+                    new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
 
 
 			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester);
@@ -1026,7 +1020,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			}
 
 			public void addToWeight(long value) {
-                log.trace("adding {} to weight in Addition", value);
 				weight.getAndAdd(value);
 
 			}
@@ -1039,7 +1032,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		 * a way to do this short of closing/opening in the version we use.
 		 */
 		private synchronized void flush() throws IOException{
-            log.trace("Starting addition flush");
+            log.trace("Starting addition flush in {}", this.dir.toPath().toString());
 			this.close();
 			lookup.resetCache();
             log.trace("completed addition flush");
@@ -1347,6 +1340,8 @@ public class TextIndexer implements Closeable, ProcessListener {
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
         taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
+        CheckIndex checker = new CheckIndex(taxonDir);
+        log.trace("state of dir: {}", checker.checkIndex().clean);
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
         facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
@@ -1521,6 +1516,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		indexer.searchManager = indexer.indexerService.createSearchManager();
 		indexer.taxonWriter = new DirectoryTaxonomyWriter(indexer.taxonDir);
+        CheckIndex checker = new CheckIndex(taxonDir);
+        log.trace("in config, state of dir: {}", checker.checkIndex().clean);
 		indexer.facetsConfig = new FacetsConfig();
 
 		//This should also be reset by the re-indexing trigger
