@@ -262,6 +262,10 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             // only retrieve the first num hits now:
             Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
             manager = searcherMgr.get();
+            if( manager == null) {
+                log.info("in getWeightFor, manager is null");
+                return 0;
+            }
             searcher = manager.acquire();
             searcher.search(tq, c2);
 
