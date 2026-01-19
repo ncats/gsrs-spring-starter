@@ -201,7 +201,6 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
                 log.warn("searchMgr was null!");
                 return Collections.emptyList();
             }
-            log.trace("searchMgr was NOT null");
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);

@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -123,7 +122,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -146,8 +144,6 @@ import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.services.TextService;
-import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -174,7 +170,6 @@ import ix.utils.Util;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -658,8 +653,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                           .collect(Collectors.toList());
 
                     tvec.docs.add(TermList.of(idstring, terms));
-                }else {
-                    //log.debug("No term vector for field \""+field+"\"!");
                 }
                 ++tvec.numDocs;
             }catch (Exception ex) {
@@ -979,7 +972,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			} else if (!dir.isDirectory())
 				throw new IllegalArgumentException("Not a directory: " + dir);
 
-            log.trace("creating suggester in dir {}", dir.toPath().toString());
             AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
                     new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
 
@@ -1032,14 +1024,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 		 * a way to do this short of closing/opening in the version we use.
 		 */
 		private synchronized void flush() throws IOException{
-            log.trace("Starting addition flush in {}", this.dir.toPath().toString());
 			this.close();
 			lookup.resetCache();
-            log.trace("completed addition flush");
 		}
 
 		private SuggestLookup(File dir) throws IOException {
-            log.trace("constructor for suggestLookup dir {}", dir.getAbsolutePath());
 			this.dir = dir;
 			this.name = dir.getName();
 			//store for cache
@@ -1047,7 +1036,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			if(ot.isPresent()){
 				throw new IOException(ot.get());
 			}
-            log.trace("end of constructor for suggestLookup dir {}", dir.getAbsolutePath());
 		}
 
 		private SuggestLookup(String name) throws IOException {
@@ -1060,11 +1048,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		public void addSuggest(String text, int weight) throws IOException {
-            log.trace("going to add text '{}' with weight {} to suggest", text, weight);
 			Addition add = additions.computeIfAbsent(text, t -> new Addition(t, 0));
 			add.addToWeight(weight);
 			incr();
-            log.trace("end of addSuggest");
 		}
 		
 
@@ -1081,11 +1067,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 					log.warn("Can't refresh suggest index!", ex);
 				}
 			}
-            log.trace("end of refereshIfDirty");
 		}
 
 		private synchronized void refresh() throws IOException {
-            log.trace("starting SuggestLookup refresh");
 			Iterator<Addition> additionIterator = additions.values().iterator();
 			ExactMatchSuggesterDecorator emd = lookup.get().get();
 
@@ -1104,7 +1088,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				additionIterator.remove();
 			}
-            log.trace("after while loop SuggestLookup refresh");
 			long start = TimeUtil.getCurrentTimeMillis();
 			emd.refresh();
 			lastRefresh = System.currentTimeMillis();
@@ -1112,23 +1095,18 @@ public class TextIndexer implements Closeable, ProcessListener {
 					+ String.format("%1$.2fs", 1e-3 * (lastRefresh - start)));
 			dirty.set(false);
 			flush();
-            log.trace("end of SuggestLookup refresh");
 		}
 
 		@Override
 		public void close() throws IOException {
-            log.trace("in SuggestLookup close");
 			refreshIfDirty();
 			//This needs to be run for it to persist. Weird.
 			if(lookup.hasRun()){
 				lookup.get().get().close();
-                log.trace("in SuggestLookup close hasRun");
 			}
-            log.trace("end of SuggestLookup close");
 		}
 
 		long build(ExactMatchSuggesterDecorator lookup) throws IOException {
-            log.trace("in SuggestLookup build");
 			try(IndexReader reader = indexerService.createIndexReader()){
 
 				// now weight field
@@ -1142,7 +1120,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		List<SuggestResult> suggest(CharSequence key, int max) throws IOException {
-            log.trace("SuggestLookup suggest for key {}", key);
             if( key == null || key.length() == 0) {
                 log.info("in suggest, key was blank");
                 return Collections.emptyList();
@@ -1170,7 +1147,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		public void run() {
-            log.trace("FlushDaemon run");
 			if(!latch.tryLock()){
 				//someone else has the lock
 				//we won't wait the schedule deamon
@@ -1204,8 +1180,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		private void flush() {
-            log.trace("FlushDaemon starting flush()");
-			File configFile = getFacetsConfigFile();
+            File configFile = getFacetsConfigFile();
 			if (TextIndexer.this.hasBeenModifiedSince(configFile.lastModified())) {
 				log.debug(
 						Thread.currentThread() + ": " + getClass().getName() + " writing FacetsConfig " + new Date());
@@ -1311,7 +1286,6 @@ public class TextIndexer implements Closeable, ProcessListener {
     public TextIndexer(File dir, IndexerServiceFactory indexerServiceFactory, IndexerService indexerService, TextIndexerConfig textIndexerConfig, 
     			IndexValueMakerFactory indexValueMakerFactory,GsrsCache cache, 
     			Function<EntityWrapper, Boolean> deepKindFunction, UserSavedListService userSavedListService) throws IOException{
-        log.trace("TextIndexer constructor");
         this.gsrscache=cache;
         this.textIndexerConfig = textIndexerConfig;
         this.indexValueMakerFactory = indexValueMakerFactory;
@@ -1342,7 +1316,6 @@ public class TextIndexer implements Closeable, ProcessListener {
         taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
         try {
             CheckIndex checker = new CheckIndex(taxonDir);
-            log.trace("state of dir: {}", checker.checkIndex().clean);
         }
         catch (Exception ex){
             log.debug("Error checking index");
@@ -1360,7 +1333,6 @@ public class TextIndexer implements Closeable, ProcessListener {
             facetsConfig.setRequireDimCount(DIM_CLASS, true);
         }
 
-        log.trace("TextIndexer initialSetup going to int suggest dir");
         suggestDir = new File(baseDir, "suggest");
         Files.createDirectories(suggestDir.toPath());
         lookups = new ConcurrentHashMap<String, SuggestLookup>();
@@ -1517,13 +1489,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	protected TextIndexer config(TextIndexer indexer) throws IOException {
-        log.trace("starting config");
 
 		indexer.searchManager = indexer.indexerService.createSearchManager();
 		indexer.taxonWriter = new DirectoryTaxonomyWriter(indexer.taxonDir);
         try {
             CheckIndex checker = new CheckIndex(taxonDir);
-            log.trace("in config, state of dir: {}", checker.checkIndex().clean);
         }
         catch (Exception ex){
             log.debug("Error checking index");
@@ -1550,7 +1520,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	public List<? extends GsrsSuggestResult> suggest(String field, CharSequence key, int max) throws IOException {
-        log.trace("trace for field {}, key: {}", field, key);
 		SuggestLookup lookup = lookups.get(field);
 		if (lookup == null) {
 			log.debug("Unknown suggest field \"" + field + "\"");
@@ -2030,20 +1999,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
 				String userName = dataItem.getUserName();
 				String listName = dataItem.getListName();
-//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
-				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) &&
 						userLists.size() > 0 && userLists.contains(listName)) {
 					userListInResult.add(lv);					
-//					log.info("adding facet: username: " + userName + "  listName: " + listName );
-				}									
+				}
 			}	
 		}
-		
-		
-//		if (DEBUG(1)) {
-//			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
-//		}
-
 		
 		//Convert FacetResult -> Facet, and add to
 		//search result
@@ -2240,15 +2201,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try (TaxonomyReader taxon = new DirectoryTaxonomyReader(taxonWriter)) {
 		    hits=firstPassLuceneSearch(searcher,taxon,searchResult,filter, query, gsrsRepository);
 		}
-
-//		if (DEBUG(1)) {
-//			log.debug(
-//					"## Query executes in "
-//							+ String.format("%1$.3fs", (TimeUtil.getCurrentTimeMillis() - start) * 1e-3)
-//							+ "..."
-//							+ hits.totalHits
-//							+ " hit(s) found!");
-//		}
 
 		try {
 			LuceneSearchResultPopulator payload = new LuceneSearchResultPopulator(gsrsRepository, searchResult, hits, searcher);
@@ -2876,10 +2828,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			FacetImpl f = new FacetImpl(result.dim, searchResult);
 
 			f.enhanced=false;
-//			if (DEBUG(1)) {
-//				log.info(" + [" + result.dim + "]");
-//			}
-
 			Arrays.stream(result.labelValues)
 				.forEach(lv->f.add(lv.label, lv.value.intValue()));
 
@@ -3259,8 +3207,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker = indexValueMakerFactory.createIndexValueMakerFor(ew).restrictedForm(ivmSpecs.getTags(), ivmSpecs.isInclude());
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
-						 
+
 			Set<String> filterFields = valueMaker.getFieldNames();				
 			if(ivmSpecs.isInclude()) {
 				ix.facets=ix.facets.stream().filter(iff->!filterFields.contains(iff.getFacetName())).collect(Collectors.toList());
@@ -3268,7 +3215,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->!filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 	    		
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3279,7 +3225,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 				
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return !filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3375,10 +3320,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3801,9 +3742,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 				this.instrumentIndexableValue(ix, iv);
 			});
 			ix.fields.add(IndexedField.builder()
@@ -3893,10 +3832,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3913,8 +3848,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public void addDoc(Document doc) throws IOException {
 		doc = facetsConfig.build(taxonWriter, doc);
-//		if (DEBUG(2))
-//			log.debug("++ adding document " + doc);
 		indexerService.addDocument(doc);
         notifyListenersAddDocument(doc);
 		markChange();
@@ -3960,10 +3893,6 @@ public class TextIndexer implements Closeable, ProcessListener {
         try {
         	
             Tuple<String, String> docKey = key.asLuceneIdTuple();
-            //if (DEBUG(2)){
-//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
-            //}
-
             Query q = getUniqueEntityQuery(key);
 
             indexerService.deleteDocuments(q);
@@ -3982,7 +3911,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					});
 				}
 			} catch (Exception e1) {
-                                log.warn("trouble removing autosugget index elements",e1);
+                log.warn("trouble removing autosugget index elements",e1);
 			}
 
             try {
@@ -4173,7 +4102,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static FacetsConfig loadFacetsConfig(File file) {
-        log.trace("going to read facet config from {}", file.getAbsolutePath());
 		FacetsConfig config = null;
 		if (file.exists()) {
 			ObjectMapper mapper = new ObjectMapper();
@@ -4190,7 +4118,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	static ConcurrentMap<String, SortField.Type> loadSorters(File file) {
-        log.trace("going to read sorters config from {}", file.getAbsolutePath());
 		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<String, SortField.Type>();
 		if (file.exists()) {
 			ObjectMapper mapper = new ObjectMapper();
@@ -4213,7 +4140,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static void saveSorters(File file, Map<String, SortField.Type> sorters) {
-        log.trace("starting saveSorters. There are {}", sorters == null ? 0 : sorters.size());
 		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode conf = mapper.createObjectNode();
@@ -4234,8 +4160,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			log.error("Can't persist sorter config!", ex);
 			ex.printStackTrace();
 		}
-        log.trace("finished saveSorters");
-	}
+    }
 
 	/**
 	 * Closing this indexer will shut it down. This is the same as calling
@@ -4322,7 +4247,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
     private <K, V extends Closeable> void closeAndClear(Map<K, V> map){
-        log.trace("starting closeAndClear");
         Iterator<Map.Entry<K, V>> iter = map.entrySet().iterator();
         while(iter.hasNext()){
             closeAndIgnore(iter.next().getValue());
@@ -4368,7 +4292,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
-//					throw new RuntimeException(e);
 				}
 			}
 
@@ -4512,7 +4435,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		//TODO: may need to change
 		
 		if(indexableValue.isDirectIndexField()){
-//			log.warn("Using direct indexed field which is discouraged");
 			IndexableField ifx=(IndexableField) indexableValue.getDirectIndexableField();
 			if(ifx instanceof TextField || ifx instanceof StringField) {
 				IndexedFieldType type=null;
