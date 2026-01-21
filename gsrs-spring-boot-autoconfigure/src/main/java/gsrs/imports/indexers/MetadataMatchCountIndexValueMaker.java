@@ -3,7 +3,6 @@ package gsrs.imports.indexers;
 import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
-import gsrs.stagingarea.model.MatchedKeyValue;
 import gsrs.stagingarea.model.MatchedRecordSummary;
 import gsrs.stagingarea.repository.ImportDataRepository;
 import gsrs.stagingarea.service.StagingAreaService;
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -53,13 +51,16 @@ public class MetadataMatchCountIndexValueMaker implements IndexValueMaker<Import
         String instanceData= importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
         MatchedRecordSummary matchedRecordSummary = stagingAreaService.findMatchesForJson(importMetadata.getEntityClassName(), instanceData,
                 importMetadata.getRecordId().toString());
-        long matchCount= matchedRecordSummary.getMatches().stream()
-                .map(MatchedKeyValue::getMatchingRecords)
-                .flatMap(Collection::stream)
-                .filter(m->m. getSourceName().equals(USED_SOURCE))
+
+        long matchCount=matchedRecordSummary.getMatches().stream()
+                .flatMap(m->m.getMatchingRecords().stream())
+                .filter(r->r.getSourceName().equals(USED_SOURCE))
+                .map(r->r.getRecordId())
+                .distinct()
                 .count();
         consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_MATCH_COUNT_FACET, Long.toString(matchCount)));
         log.trace("created string facet {} with value {}", IMPORT_METADATA_MATCH_COUNT_FACET, matchCount);
+
         matchedRecordSummary.getMatches().stream()
                         .filter(m->m.getMatchingRecords().stream().anyMatch(r->r.getSourceName().equals(USED_SOURCE)))
                 .forEach(r->r.getMatchingRecords()
