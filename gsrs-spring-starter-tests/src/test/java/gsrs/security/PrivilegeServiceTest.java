@@ -3,20 +3,20 @@ package gsrs.security;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsEntityTestConfiguration;
+import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.GsrsSpringApplication;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -25,12 +25,14 @@ import java.util.stream.Stream;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
-class PrivilegeServiceTest {
+@GsrsJpaTest( classes = { GsrsSpringApplication.class, GsrsControllerConfiguration.class, GsrsEntityTestConfiguration.class})
+public class PrivilegeServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @ParameterizedTest
     @MethodSource("inputData")
     void testCanUserDoSomething(String thingToDo, Role userRole, UserRoleConfiguration.PermissionResult expectedResult) {
         PrivilegeService service = new PrivilegeService();
+        service = AutowireHelper.getInstance().autowireAndProxy(service);
         UserProfile user1 = mock(UserProfile.class);
         List<Role> userRoles = Collections.singletonList(userRole);
         try (MockedStatic<GsrsSecurityUtils> mockedSecurityContext = mockStatic(GsrsSecurityUtils.class)) {
@@ -74,9 +76,8 @@ class PrivilegeServiceTest {
     void getPrivilegesForConfiguredRoleTest() {
         String startingRole = "DataEntry";
         String[] expectedPrivileges = {"Create", "Edit", "Search", "Browse", "Export Data", "Export Relationships",
-                "Save Record JSON" };
+                "Save Record JSON","Modify Relationships" };
         PrivilegeService service = new PrivilegeService();
-        AutowireHelper.getInstance().autowireAndProxy(service);
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
         Arrays.sort(expectedPrivileges);
@@ -87,11 +88,31 @@ class PrivilegeServiceTest {
     @Test
     void getPrivilegesForConfiguredRoleTestAdmin() {
         String startingRole = "Admin";
-        String[] expectedPrivileges = {"Create", "Edit", "Search", "Browse", "Export Data", "Approve Records", "Edit Public Data",
-                "Manage Users", "Configure System", "Manage CVs", "Import Data", "Export Relationships",
-                "Save Record JSON", "Merge Subconcepts","Modify Relationships", "Make Records Public",
-                "Edit Approved Records", "Edit Approval IDs", "View Files", "View Service Info"};
+        String[] expectedPrivileges = {
+                "Approve Records",
+                "Browse",
+                "Configure System",
+                "Create",
+                "Delete Lower Level Items",
+                "Edit",
+                "Edit Approved Records",
+                "Edit Public Data",
+                "Export Data",
+                "Export Relationships",
+                "Import Data",
+                "Make Records Public",
+                "Manage CVs",
+                "Manage Others Lists",
+                "Manage Users",
+                "Modify Relationships",
+                "Restore Previous Versions",
+                "Run Tasks",
+                "Save Record JSON",
+                "Search",
+                "View Files",
+                "View Service Info"};
         PrivilegeService service = new PrivilegeService();
+        service = AutowireHelper.getInstance().autowireAndProxy(service);
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
         Arrays.sort(expectedPrivileges);
@@ -109,4 +130,5 @@ class PrivilegeServiceTest {
         Arrays.sort(actualRoles);
         Assert.assertArrayEquals(expectedRoles, actualRoles);
     }
+
 }

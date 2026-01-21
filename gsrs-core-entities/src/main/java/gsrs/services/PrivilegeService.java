@@ -4,19 +4,19 @@ import gsrs.security.RoleConfiguration;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.UserRoleConfigurationLoader;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.cfg.Environment;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Data
@@ -24,31 +24,37 @@ import java.util.stream.Collectors;
 @Component("permission")
 public class PrivilegeService {
 
-    private static PrivilegeService instance = new PrivilegeService();
-
     @Autowired
     @Lazy
     private UserRoleConfiguration configuration;
 
+    @Autowired
+    private org.springframework.core.env.Environment env;
+
     private List<RoleConfiguration> _roles;
 
+    private static Lock lock = new ReentrantLock();
+    private static class Holder {
+        static final PrivilegeService INSTANCE = new PrivilegeService();
+    }
+
     public static PrivilegeService instance() {
-        return instance;
+        return Holder.INSTANCE;
     }
 
     public PrivilegeService(){
-        try {
-            String filePath = Environment.getProperties().getProperty("gsrs.security.info.filepath");
-            String filePathSys = System.getenv("gsrs.security.info.filepath");
+    }
 
-            log.trace("init filePath: {};  filePathSys: {}",
-                    filePath, filePathSys);
-            log.trace("filePathSys: {}", filePathSys);
-            UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            if( filePathSys != null && filePathSys.length() >0) {
-                log.info("loading configuration from configured file path {}", filePathSys);
-                loader.loadConfigFromFile(filePathSys);
+    private void setupConfig() {
+        try {
+            if( env == null) {
+                AutowireHelper.getInstance().autowireAndProxy(this);
             }
+            String filePathReal = env.getProperty("gsrs.security.info.filepath");
+            log.trace("init filePathReal: {}", filePathReal);
+            UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
+            log.info("loading configuration from real configured file path {}", filePathReal);
+            loader.loadConfigFromFile(filePathReal);
             configuration = loader.getConfiguration();
             _roles = configuration.getRoles();
             log.trace("loaded configuration from file. total: {}", _roles.size());
@@ -110,6 +116,7 @@ public class PrivilegeService {
 
     public UserRoleConfiguration.PermissionResult canUserPerform(String task) {
         log.trace("in canUserPerform going to evaluate {}",task);
+        checkRoles();
         if( GsrsSecurityUtils.getCurrentUser() instanceof UserProfile) {
             UserProfile currentUserProfile = (UserProfile)GsrsSecurityUtils.getCurrentUser();
             for(Role role: currentUserProfile.getRoles() ){
@@ -139,6 +146,7 @@ public class PrivilegeService {
 
     public boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
+        checkRoles();
         for(RoleConfiguration configuredRole : _roles) {
             if( configuredRole.getName().equalsIgnoreCase(role)){
                 log.trace("roles match; now look through it privs {}", configuredRole.getPrivileges());
@@ -158,6 +166,7 @@ public class PrivilegeService {
     }
 
     public List<String> getPrivilegesForConfiguredRole(String configuredRole) {
+        checkRoles();
         Set<String> basePrivileges = new HashSet<>();
         RoleConfiguration matchingRole = _roles.stream()
                 .filter(r->r.getName().equalsIgnoreCase(configuredRole))
@@ -172,11 +181,19 @@ public class PrivilegeService {
         return new ArrayList<>(basePrivileges);
     }
 
+    private void checkRoles() {
+        if( configuration == null || _roles == null || _roles.isEmpty()) {
+            setupConfig();
+        }
+
+    }
     public List<String> getAllRoleNames() {
+        checkRoles();
         return _roles.stream().map(RoleConfiguration::getName).collect(Collectors.toList());
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
+        checkRoles();
         Set<String> privileges = new HashSet<>();
         roles.stream()
                 .map(Role::getRole)

@@ -1121,7 +1121,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		List<SuggestResult> suggest(CharSequence key, int max) throws IOException {
             if( key == null || key.length() == 0) {
-                log.info("in suggest, key was blank");
                 return Collections.emptyList();
             }
 			refreshIfDirty();
