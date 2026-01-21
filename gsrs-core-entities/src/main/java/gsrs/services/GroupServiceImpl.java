@@ -38,10 +38,13 @@ public class GroupServiceImpl implements GroupService{
         for(Group g : oldGroups){
             if(!newGroups.contains(g.name)) {
                 g.removeMember(user);
+                repository.save(g);
             }
         }
         for(String g : newGroups){
-            registerIfAbsent(g).addMember(user);
+            Group group = registerIfAbsent(g);
+            group.addMember(user);
+            repository.save(group);
         }
 
     }
