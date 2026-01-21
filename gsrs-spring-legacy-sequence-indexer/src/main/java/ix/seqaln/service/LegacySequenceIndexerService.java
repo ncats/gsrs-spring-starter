@@ -3,8 +3,8 @@ package ix.seqaln.service;
 import java.io.File;
 import java.io.IOException;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;

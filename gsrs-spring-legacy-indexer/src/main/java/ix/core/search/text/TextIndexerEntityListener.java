@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-@Transactional(readOnly = true)
+//@Transactional(readOnly = true)
 public class TextIndexerEntityListener {
 	   
     private HashSet<Key> working =new LinkedHashSet<>();

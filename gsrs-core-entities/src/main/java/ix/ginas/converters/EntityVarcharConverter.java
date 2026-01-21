@@ -2,7 +2,7 @@ package ix.ginas.converters;
 
 
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 
 
 public abstract class EntityVarcharConverter<K> implements AttributeConverter<K, String> {

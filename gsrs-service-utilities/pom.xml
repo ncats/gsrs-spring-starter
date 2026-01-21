@@ -42,8 +42,8 @@
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <gsrs-services-common.version>1.0-SNAPSHOT</gsrs-services-common.version>
     </properties>
 
