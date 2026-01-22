@@ -31,7 +31,7 @@ public class PrivilegeService {
     @Autowired
     private org.springframework.core.env.Environment env;
 
-    private List<RoleConfiguration> _roles;
+    private List<RoleConfiguration> configuredRoles;
 
     private static Lock lock = new ReentrantLock();
     private static class Holder {
@@ -40,9 +40,6 @@ public class PrivilegeService {
 
     public static PrivilegeService instance() {
         return Holder.INSTANCE;
-    }
-
-    public PrivilegeService(){
     }
 
     private void setupConfig() {
@@ -56,8 +53,8 @@ public class PrivilegeService {
             log.info("loading configuration from real configured file path {}", filePathReal);
             loader.loadConfigFromFile(filePathReal);
             configuration = loader.getConfiguration();
-            _roles = configuration.getRoles();
-            log.trace("loaded configuration from file. total: {}", _roles.size());
+            configuredRoles = configuration.getRoles();
+            log.trace("loaded configuration from file. total: {}", configuredRoles.size());
         } catch (Exception e) {
             log.error("Error loading configuration from file {}", e.getMessage(), e);
             log.warn("Will use default configuration");
@@ -100,7 +97,7 @@ public class PrivilegeService {
         adminRole.setPrivileges(Arrays.asList(adminPrivileges));
         adminRole.setInclude(Collections.singletonList("Approver"));
         roles.add(adminRole);
-        _roles = roles;
+        configuredRoles = roles;
     }
 
     public UserRoleConfiguration getConfiguration() {
@@ -126,7 +123,7 @@ public class PrivilegeService {
                     return UserRoleConfiguration.PermissionResult.MayPerform;
                 }
             }
-            if(_roles.stream()
+            if(configuredRoles.stream()
                     .map(RoleConfiguration::getName)
                     .anyMatch(rn->currentUserProfile.getRoles().stream().anyMatch(ur->ur.getRole().equalsIgnoreCase(rn)))){
                 return UserRoleConfiguration.PermissionResult.MayNotPerform;
@@ -147,7 +144,7 @@ public class PrivilegeService {
     public boolean canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
         checkRoles();
-        for(RoleConfiguration configuredRole : _roles) {
+        for(RoleConfiguration configuredRole : configuredRoles) {
             if( configuredRole.getName().equalsIgnoreCase(role)){
                 log.trace("roles match; now look through it privs {}", configuredRole.getPrivileges());
                 if( configuredRole.getPrivileges().stream().anyMatch( p-> p.equalsIgnoreCase(task))) {
@@ -168,7 +165,7 @@ public class PrivilegeService {
     public List<String> getPrivilegesForConfiguredRole(String configuredRole) {
         checkRoles();
         Set<String> basePrivileges = new HashSet<>();
-        RoleConfiguration matchingRole = _roles.stream()
+        RoleConfiguration matchingRole = configuredRoles.stream()
                 .filter(r->r.getName().equalsIgnoreCase(configuredRole))
                 .findFirst()
                 .orElse(null);
@@ -182,14 +179,14 @@ public class PrivilegeService {
     }
 
     private void checkRoles() {
-        if( configuration == null || _roles == null || _roles.isEmpty()) {
+        if( configuration == null || configuredRoles == null || configuredRoles.isEmpty()) {
             setupConfig();
         }
 
     }
     public List<String> getAllRoleNames() {
         checkRoles();
-        return _roles.stream().map(RoleConfiguration::getName).collect(Collectors.toList());
+        return configuredRoles.stream().map(RoleConfiguration::getName).collect(Collectors.toList());
     }
 
     public List<String> getPrivilegesForRoles(List<Role> roles) {
