@@ -141,7 +141,7 @@ public class PrivilegeService {
         return  UserRoleConfiguration.PermissionResult.RoleNotFound;
     }
 
-    public boolean canRolePerform(String role, String task) {
+    public boolean  canRolePerform(String role, String task) {
         log.trace("in canRolePerform with role {} and task {}", role, task);
         checkRoles();
         for(RoleConfiguration configuredRole : configuredRoles) {
