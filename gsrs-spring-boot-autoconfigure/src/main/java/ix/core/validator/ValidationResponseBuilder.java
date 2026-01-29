@@ -1,11 +1,14 @@
 package ix.core.validator;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
  * Created by katzelda on 7/17/18.
  */
+@Slf4j
 public class ValidationResponseBuilder<T> implements ValidatorCallback {
 
     private final ValidationResponse<T> resp;
@@ -41,14 +44,6 @@ public class ValidationResponseBuilder<T> implements ValidatorCallback {
                 try {
                     appyAction.run();
                     gpm.appliedChange = true;
-                    //downgrade applied change from error to warning
-                    //TODO or should we make the lambda do it ?
-                    //TODO: this is being commented out now. It's unclear why this code never seemed to be called
-                    // in 2.X but is called in 3.0. For now it should be okay to disable it.
-                    
-                    if (gpm.isError()) {
-//                        gpm.messageType = GinasProcessingMessage.MESSAGE_TYPE.WARNING;
-                    }
                 } catch (Exception e) {
                     throw e;
                 }
