@@ -272,7 +272,9 @@ public class IxCacheTest {
 
     @Test
     public void cacheAfterDirtyMarkRawShouldWork() throws Exception {
-        MyEntityClass s = new MyEntityClass();
+		System.out.println(System.getProperty("java.class.path"));
+
+		MyEntityClass s = new MyEntityClass();
         MyEntityClass sOther = new MyEntityClass();
         
         MyEntityClass actualFound1=IxCache.getOrElseRawIfDirty("Test", ()->{
@@ -291,6 +293,7 @@ public class IxCacheTest {
         got=IxCache.getOrElseRawIfDirty("Test", ()->{
             return sOther;
         });
+		System.out.printf("sOther: %s; got: %s \n", sOther.uuid,  got.uuid );
         assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
         got=IxCache.getOrElseRawIfDirty("Test", ()->{
             return s;
