@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import gsrs.security.canEditData;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +62,8 @@ public interface GsrsEntityService<T, I> {
      * Remove the given entity from the repository.
      * @param id the id of the entity to delete.
      */
-    @hasUpdateRole
+    //@hasUpdateRole
+    @canEditData
     void delete(I id);
 
     /**
@@ -79,21 +81,26 @@ public interface GsrsEntityService<T, I> {
      * @see OffsetBasedPageRequest
      */
     Page page(Pageable pageable);
-    @hasDataEntryRole
+    //@hasDataEntryRole
+    @canEditData
     CreationResult<T> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) throws IOException;
 
-    @hasDataEntryRole
+    //@hasDataEntryRole
+    @canEditData
     default CreationResult<T> createEntity(JsonNode newEntityJson) throws IOException{
         return createEntity(newEntityJson, false);
     }
 
-    @hasUpdateRole
+    //@hasUpdateRole
+    @canEditData
     UpdateResult<T> updateEntity(T updatedEntity, EntityPersistAdapter.ChangeOperation<T> changeOperation) throws Exception;
 
-    @hasUpdateRole
+    //@hasUpdateRole
+    @canEditData
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson) throws Exception;
 
-    @hasUpdateRole
+    //@hasUpdateRole
+    @canEditData
     UpdateResult<T> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception;
 
     default ValidationResponse<T> validateEntity(JsonNode updatedEntityJson) throws Exception{

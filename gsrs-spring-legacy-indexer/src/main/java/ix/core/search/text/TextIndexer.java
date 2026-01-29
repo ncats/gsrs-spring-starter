@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,13 +82,7 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -129,7 +122,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -152,8 +144,6 @@ import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.services.TextService;
-import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -180,7 +170,6 @@ import ix.utils.Util;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -664,8 +653,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                           .collect(Collectors.toList());
 
                     tvec.docs.add(TermList.of(idstring, terms));
-                }else {
-                    //log.debug("No term vector for field \""+field+"\"!");
                 }
                 ++tvec.numDocs;
             }catch (Exception ex) {
@@ -985,9 +972,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			} else if (!dir.isDirectory())
 				throw new IllegalArgumentException("Not a directory: " + dir);
 
-
-			AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
-					new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
+            AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
+                    new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
 
 
 			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester);
@@ -1078,7 +1064,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					refresh();
 				} catch (IOException ex) {
 					ex.printStackTrace();
-					log.trace("Can't refresh suggest index!", ex);
+					log.warn("Can't refresh suggest index!", ex);
 				}
 			}
 		}
@@ -1102,7 +1088,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				additionIterator.remove();
 			}
-
 			long start = TimeUtil.getCurrentTimeMillis();
 			emd.refresh();
 			lastRefresh = System.currentTimeMillis();
@@ -1135,6 +1120,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		List<SuggestResult> suggest(CharSequence key, int max) throws IOException {
+            if( key == null || key.length() == 0) {
+                return Collections.emptyList();
+            }
 			refreshIfDirty();
 			return lookup.get().get().lookup(key, null, false, max).stream()
 					.map(r -> new SuggestResult(r.payload.utf8ToString(), r.key, r.value))
@@ -1158,7 +1146,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		public void run() {
-
 			if(!latch.tryLock()){
 				//someone else has the lock
 				//we won't wait the schedule deamon
@@ -1192,7 +1179,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		private void flush() {
-			File configFile = getFacetsConfigFile();
+            File configFile = getFacetsConfigFile();
 			if (TextIndexer.this.hasBeenModifiedSince(configFile.lastModified())) {
 				log.debug(
 						Thread.currentThread() + ": " + getClass().getName() + " writing FacetsConfig " + new Date());
@@ -1326,6 +1313,12 @@ public class TextIndexer implements Closeable, ProcessListener {
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
         taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
         facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
@@ -1496,9 +1489,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	protected TextIndexer config(TextIndexer indexer) throws IOException {
 
-
 		indexer.searchManager = indexer.indexerService.createSearchManager();
 		indexer.taxonWriter = new DirectoryTaxonomyWriter(indexer.taxonDir);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
 		indexer.facetsConfig = new FacetsConfig();
 
 		//This should also be reset by the re-indexing trigger
@@ -2000,20 +1998,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
 				String userName = dataItem.getUserName();
 				String listName = dataItem.getListName();
-//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
-				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) &&
 						userLists.size() > 0 && userLists.contains(listName)) {
 					userListInResult.add(lv);					
-//					log.info("adding facet: username: " + userName + "  listName: " + listName );
-				}									
+				}
 			}	
 		}
-		
-		
-//		if (DEBUG(1)) {
-//			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
-//		}
-
 		
 		//Convert FacetResult -> Facet, and add to
 		//search result
@@ -2210,15 +2200,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try (TaxonomyReader taxon = new DirectoryTaxonomyReader(taxonWriter)) {
 		    hits=firstPassLuceneSearch(searcher,taxon,searchResult,filter, query, gsrsRepository);
 		}
-
-//		if (DEBUG(1)) {
-//			log.debug(
-//					"## Query executes in "
-//							+ String.format("%1$.3fs", (TimeUtil.getCurrentTimeMillis() - start) * 1e-3)
-//							+ "..."
-//							+ hits.totalHits
-//							+ " hit(s) found!");
-//		}
 
 		try {
 			LuceneSearchResultPopulator payload = new LuceneSearchResultPopulator(gsrsRepository, searchResult, hits, searcher);
@@ -2846,10 +2827,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			FacetImpl f = new FacetImpl(result.dim, searchResult);
 
 			f.enhanced=false;
-//			if (DEBUG(1)) {
-//				log.info(" + [" + result.dim + "]");
-//			}
-
 			Arrays.stream(result.labelValues)
 				.forEach(lv->f.add(lv.label, lv.value.intValue()));
 
@@ -3229,8 +3206,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker = indexValueMakerFactory.createIndexValueMakerFor(ew).restrictedForm(ivmSpecs.getTags(), ivmSpecs.isInclude());
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
-						 
+
 			Set<String> filterFields = valueMaker.getFieldNames();				
 			if(ivmSpecs.isInclude()) {
 				ix.facets=ix.facets.stream().filter(iff->!filterFields.contains(iff.getFacetName())).collect(Collectors.toList());
@@ -3238,7 +3214,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->!filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 	    		
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3249,7 +3224,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 				
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return !filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3345,10 +3319,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3771,9 +3741,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 				this.instrumentIndexableValue(ix, iv);
 			});
 			ix.fields.add(IndexedField.builder()
@@ -3863,10 +3831,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3883,8 +3847,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public void addDoc(Document doc) throws IOException {
 		doc = facetsConfig.build(taxonWriter, doc);
-//		if (DEBUG(2))
-//			log.debug("++ adding document " + doc);
 		indexerService.addDocument(doc);
         notifyListenersAddDocument(doc);
 		markChange();
@@ -3930,10 +3892,6 @@ public class TextIndexer implements Closeable, ProcessListener {
         try {
         	
             Tuple<String, String> docKey = key.asLuceneIdTuple();
-            //if (DEBUG(2)){
-//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
-            //}
-
             Query q = getUniqueEntityQuery(key);
 
             indexerService.deleteDocuments(q);
@@ -3952,7 +3910,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					});
 				}
 			} catch (Exception e1) {
-                                log.warn("trouble removing autosugget index elements",e1);
+                log.warn("trouble removing autosugget index elements",e1);
 			}
 
             try {
@@ -4151,7 +4109,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 				config = getFacetsConfig(conf);
 				log.info("## FacetsConfig loaded with " + config.getDimConfigs().size() + " dimensions!");
 			} catch (Exception ex) {
-				log.trace("Can't read file " + file, ex);
+				log.warn("Can't read file " + file, ex);
 			}
 		}
 		return config;
@@ -4198,10 +4156,10 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(fos, conf);
 		} catch (Exception ex) {
-			log.trace("Can't persist sorter config!", ex);
+			log.error("Can't persist sorter config!", ex);
 			ex.printStackTrace();
 		}
-	}
+    }
 
 	/**
 	 * Closing this indexer will shut it down. This is the same as calling
@@ -4333,7 +4291,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
-//					throw new RuntimeException(e);
 				}
 			}
 
@@ -4477,7 +4434,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		//TODO: may need to change
 		
 		if(indexableValue.isDirectIndexField()){
-//			log.warn("Using direct indexed field which is discouraged");
 			IndexableField ifx=(IndexableField) indexableValue.getDirectIndexableField();
 			if(ifx instanceof TextField || ifx instanceof StringField) {
 				IndexedFieldType type=null;

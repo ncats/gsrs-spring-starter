@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import gsrs.services.PrivilegeService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,7 +53,7 @@ import ix.core.cache.IxCache;
         ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
         ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
         ClearDeserializerCachesBeforeEachExtension.class,
-
+        PrivilegeService.class
 })
 
 public abstract class AbstractGsrsJpaEntityJunit5Test {
