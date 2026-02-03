@@ -6,6 +6,9 @@ import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.security.AdminService;
 import gsrs.security.SessionConfiguration;
 import gsrs.security.TokenConfiguration;
+import gsrs.security.UserRoleConfiguration;
+import gsrs.services.PrivilegeService;
+import gsrs.services.RolesConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -49,6 +52,9 @@ import org.springframework.transaction.annotation.Transactional;
         HttpLoopBackConfig.class,
         DefaultIndexerEventFactoryFactory.class,
         DefaultIndexerEventFactory.class,
+        UserRoleConfiguration.class,
+        PrivilegeService.class,
+        RolesConfig.class
 })
 public class GsrsApiAutoConfiguration {
 

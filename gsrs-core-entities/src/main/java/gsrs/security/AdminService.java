@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import gsrs.services.PrivilegeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,10 +27,10 @@ public class AdminService {
      * Get the {@code Authentication} object for the
      * current logged in Admin.
      * @apiNote This method will only work if the caller
-     * IS an admin defined by @hasAdminRole
+     * has the 'Configure System' priv
      * @return an Authentication; should never be null.
      */
-    @hasAdminRole
+    @canConfigureSystem
     public Authentication getCurrentAdminAuth(){
         return SecurityContextHolder.getContext().getAuthentication();
     }
@@ -37,7 +38,7 @@ public class AdminService {
 
     public Authentication getAnyAdmin(){
         return new UsernamePasswordAuthenticationToken(principalRepository.findAnAdminUsername().orElse("admin"), null,
-                Arrays.stream(Role.values()).map(r -> new SimpleGrantedAuthority("ROLE_" + r.name())).collect(Collectors.toList()));
+                Arrays.stream(PrivilegeService.instance().getAllRoleNames().toArray(new String[0])).map(r -> new SimpleGrantedAuthority("ROLE_" + r)).collect(Collectors.toList()));
 
     }
     /**
@@ -95,7 +96,7 @@ public class AdminService {
         }
         try {
             Authentication auth = new UsernamePasswordAuthenticationToken(principalRepository.findAnAdminUsername().orElse("admin"), null,
-                    Arrays.stream(Role.values()).map(r -> new SimpleGrantedAuthority("ROLE_" + r.name())).collect(Collectors.toList()));
+                    Arrays.stream(PrivilegeService.instance().getAllRoleNames().toArray(new String[0])).map(r -> new SimpleGrantedAuthority("ROLE_" + r)).collect(Collectors.toList()));
 
             SecurityContextHolder.getContext().setAuthentication(auth);
             runnable.run();
