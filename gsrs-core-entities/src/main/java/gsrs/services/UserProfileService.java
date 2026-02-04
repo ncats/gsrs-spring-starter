@@ -188,7 +188,8 @@ public class UserProfileService {
             return oldUser;
         }
     }
-    //    @hasAdminRole
+
+    @canManageUsers
     @Transactional
     public UserProfile createNewUserProfile(ValidatedNewUserRequest newUserRequest){
         Principal principal = new Principal();
