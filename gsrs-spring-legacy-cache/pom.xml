@@ -58,42 +58,26 @@
             <version>${gsrs.version}</version>
         </dependency>
 
-        <!-- __aw__ Disabling for now -->
-        <!-- dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>1.1.1</version>
-        </dependency -->
-        <!-- __aw__ this is old but so far works -->
-        <dependency>
-            <groupId>net.sf.ehcache</groupId>
-            <artifactId>ehcache</artifactId>
-            <version>2.10.4</version>
-        </dependency>
 
-    <!-- __aw__ internet seaches said we'd have to do this ? but mostly not working -->
-    <!-- Use the starter to bring in caching dependencies -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-cache</artifactId>
     </dependency>
-
-    <!-- Use the Jakarta cache API -->
-<!--    <dependency>-->
-<!--        <groupId>jakarta.cache</groupId>-->
-<!--        <artifactId>jakarta.cache-api</artifactId>-->
-<!--        <version>1.1.1</version>-->
-<!--    </dependency>-->
-
-    <!-- Include a compatible JCache provider (e.g., Ehcache 3) -->
-<!--    <dependency>-->
-<!--        <groupId>org.ehcache</groupId>-->
-<!--        <artifactId>ehcache</artifactId>-->
-<!--        <version>3.11.1</version>-->
-<!--    </dependency>-->
-    <!-- Note: Ehcache 3 includes JSR-107 support. The correct version needs to be compatible with Jakarta EE -->
-
-
+        <!--
+            net.sf.ehcache seems to still work with these dependencies.
+            Keep an eye on this.
+        -->
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>3.10.8</version>
+            <classifier>jakarta</classifier>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
