@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
 import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.services.PrivilegeService;
@@ -179,7 +179,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                             UserProfile savedUp=transactionTemplate.execute(status -> {
                                 Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(finalUp.user.username));
                                 opt.get().setPassword(pass);
-                                saveUserProfile(opt.get());
+                                repository.saveAndFlush(opt.get());
                                 return opt.get();
                             });
                             auth = new UserProfilePasswordAuthentication(savedUp);
@@ -275,11 +275,5 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         //should cascade new Principal
         repository.saveAndFlush(up);
         return up;
-    }
-
-    @Transactional
-    private void saveUserProfile(UserProfile profile) {
-       log.trace("saving up within transaction");
-       repository.saveAndFlush(profile);
     }
 }

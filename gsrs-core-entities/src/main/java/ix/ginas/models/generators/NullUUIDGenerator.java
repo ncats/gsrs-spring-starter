@@ -9,8 +9,10 @@ import java.util.UUID;
 
 public class NullUUIDGenerator implements IdentifierGenerator {
 
+    //sources suggested that returing a Serializable would be more compatible with Hibernate >= 6.6
+    //TODO: reevaluate
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-        Serializable id = session.getEntityPersister(null, object).getIdentifier(object, session);
-        return id != null ? id : UUID.randomUUID();
+        Object id = session.getEntityPersister(null, object).getIdentifier(object, session);
+        return id != null ? (Serializable) id : UUID.randomUUID();
     }
 }

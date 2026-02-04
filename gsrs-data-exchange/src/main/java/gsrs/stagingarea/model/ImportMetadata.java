@@ -19,11 +19,10 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.*;
 
@@ -47,6 +46,7 @@ import java.util.*;
 //@NoArgsConstructor    commented out because of "constructor ImportMetadata() is already defined"
 public class ImportMetadata implements Serializable, GinasAccessControlled {
 
+    //OLD WAY
     //OLD WAY
     @JsonIgnore
     @Basic(fetch = FetchType.LAZY)
@@ -116,21 +116,14 @@ public class ImportMetadata implements Serializable, GinasAccessControlled {
         indexed
     }
 
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
-    @GeneratedValue(generator = "NullUUIDGenerator")
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
-    private UUID instanceId; //always unique!  changes when data change
+    private UUID instanceId = UUID.randomUUID(); //always unique!  changes when data change
 
     /**
      * Primary key.  value is assigned in code
      */
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     //@OneToOne
     private UUID recordId; //stays the same for a given record
 

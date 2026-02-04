@@ -8,7 +8,7 @@ import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.PathStack;
 import ix.utils.pojopatch.PojoDiffAware;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Objects;
 import java.util.function.Consumer;
 

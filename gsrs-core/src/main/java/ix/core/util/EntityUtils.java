@@ -40,7 +40,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import gov.nih.ncats.common.Tuple;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;

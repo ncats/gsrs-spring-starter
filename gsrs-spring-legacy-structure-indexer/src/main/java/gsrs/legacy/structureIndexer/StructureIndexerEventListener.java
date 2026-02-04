@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import com.google.common.util.concurrent.Striped;
 import org.springframework.beans.factory.annotation.Autowired;

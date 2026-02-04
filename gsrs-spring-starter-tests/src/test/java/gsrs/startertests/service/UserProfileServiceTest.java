@@ -10,6 +10,7 @@ import ix.core.models.Group;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 
 @GsrsJpaTest()
 @ActiveProfiles("test")
+// @Disabled
 public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired

@@ -20,6 +20,7 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.pojopointer.LambdaParseRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,8 @@ public class ExtensionConfigsInfoController {
     // entityContext is not always, depending on whether the extension puts configs
     // into buckets by entity.
 
+    @Autowired
+    private ConfigurableApplicationContext configurableApplicationContext;
 
     @Value("#{new Boolean('${gsrs.extensions.config.report.api.enabled:false}')}")
     private boolean extensionsConfigReportApiEnabled;
@@ -83,11 +86,11 @@ public class ExtensionConfigsInfoController {
     private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
     private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
     private static final String noDataMessage = "{\"message\": \"A null or empty value was returned, or " +
-    "an error occurred. This can happen if configs have not yet been populated or if there are no config " +
-    "objects corresponding to the serviceContext (and/or entityContext) provided. In some cases, API " +
-    "actions trigger the population of the data into cached suppliers or autowired values. These values " +
-    "are null or empty until populated. In other cases, data is populated when the service starts. See " +
-    "the doc: 'How Configuration Works' for some more detail.\"}";
+            "an error occurred. This can happen if configs have not yet been populated or if there are no config " +
+            "objects corresponding to the serviceContext (and/or entityContext) provided. In some cases, API " +
+            "actions trigger the population of the data into cached suppliers or autowired values. These values " +
+            "are null or empty until populated. In other cases, data is populated when the service starts. See " +
+            "the doc: 'How Configuration Works' for some more detail.\"}";
 
     private static final String entityEndPointTemplate = "/service-info/api/v1/%s/%s/%s";
     private static final String basicEndPointTemplate = "/service-info/api/v1/%s/%s";
@@ -112,8 +115,8 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
     public ResponseEntity<?> getValidatorConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -134,7 +137,7 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@entityProcessorConfigs")
     public ResponseEntity<?> getFinishedVEntityProcessorConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -146,8 +149,8 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@importAdapterFactoryConfigs/{entityContext}")
     public ResponseEntity<?> getImportAdapterFactoryConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -168,7 +171,7 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@exporterFactoryConfigs")
     public ResponseEntity<?> getExporterFactoryConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -189,8 +192,8 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@matchableCalculationConfigs/{entityContext}")
     public ResponseEntity<?> getMatchableCalculationConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -211,7 +214,7 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@scheduledTaskConfigs")
     public ResponseEntity<?> getScheduledTaskConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -232,7 +235,7 @@ public class ExtensionConfigsInfoController {
     @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@registeredFunctionConfigs")
     public ResponseEntity<?> getRegisteredFunctionConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
