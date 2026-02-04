@@ -24,6 +24,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 
+import gsrs.security.canIndexData;
+import gsrs.security.canManageUsers;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
@@ -59,7 +61,6 @@ import gsrs.legacy.GsrsSuggestResult;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.repository.ETagRepository;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.security.hasAdminRole;
 import gsrs.service.EtagExportGenerator;
 import gsrs.services.TextService;
 import gsrs.springUtils.StaticContextAccessor;
@@ -189,7 +190,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      *                  defaults to {@code false}.
      * @return
      */    
-    @hasAdminRole
+    @canIndexData
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)
     public ResponseEntity forceFullReindex(@RequestParam(value= "wipeIndex", defaultValue = "false") boolean wipeIndex){
         getlegacyGsrsSearchService().reindexAndWait(wipeIndex);
@@ -213,7 +214,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	});
     }    
     
-    @hasAdminRole
+    @canIndexData
     @PostGsrsRestApiMapping(value="/@reindexBulk", apiVersions = 1)
     public ResponseEntity bulkReindex(@RequestBody String ids, 
     		@RequestParam(value= "excludeExternal", defaultValue = "false") boolean excludeExternal, 
@@ -326,7 +327,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     }
     
     
-    
+
 
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="({id})/@reindex", apiVersions = 1)
@@ -361,7 +362,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
 		return gsrsControllerConfiguration.handleNotFound(queryParameters);
 	}
 
-    @hasAdminRole
+    @canIndexData
     @GetGsrsRestApiMapping(value = {"({id})/@rebackupAndReindex", "/{id}/@rebackupAndReindex" })
     public ResponseEntity<Object> rebackupAndReindexEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
         Optional<T> obj = rebackupEntity(id);
@@ -372,7 +373,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
-    @hasAdminRole
+    @canIndexData
     @PutGsrsRestApiMapping("/@rebackupAndReindex")
     public ResponseEntity<Object> rebackupAndReindexEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
         List<String> processed = new ArrayList<>();
@@ -1058,7 +1059,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     }
     
-    @hasAdminRole
+    @canManageUsers
     @GetGsrsRestApiMapping(value="/@userLists/otherUser")
     public ResponseEntity<String> getOtherUserSavedLists(@RequestParam("name") Optional<String> name,
     										   @RequestParam("top") Optional<Integer> top,
@@ -1160,7 +1161,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     }
     
-    @hasAdminRole
+    @canManageUsers
     @GetGsrsRestApiMapping(value="/@userList/{user}/{list}")
     public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
     										   @RequestParam("top") Optional<Integer> top,
@@ -1307,7 +1308,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	return new ResponseEntity<>(HttpStatus.OK);	
     }
     
-    @hasAdminRole
+    @canManageUsers
     @DeleteGsrsRestApiMapping(value="/@userList/otherUser")
     public ResponseEntity<String> deleteOtherUserSavedList(@RequestParam String userName,    											
     										   @RequestParam String listName,    										   
@@ -1432,7 +1433,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	}    		
     }
     
-    @hasAdminRole
+    @canManageUsers
     @PutGsrsRestApiMapping(value="/@userList/otherUser")
     public ResponseEntity<String> updateOtherUserSavedList(   		
     										   @RequestParam String userName, 	

@@ -1,6 +1,6 @@
 package gsrs.controller;
 
-import gsrs.security.hasAdminRole;
+import gsrs.security.canConfigureSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 @RestController
-@hasAdminRole()
+@canConfigureSystem
 public class LogController {
 
     @Autowired

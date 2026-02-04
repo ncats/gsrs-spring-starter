@@ -23,6 +23,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.servlet.http.HttpServletRequest;
 
+import gsrs.security.canRunBackup;
+import gsrs.services.CommonPrivileges;
+import gsrs.services.PrivilegeService;
 import org.hibernate.metadata.ClassMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -45,7 +48,6 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.BackupRepository;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasAdminRole;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.service.GsrsEntityService;
 import ix.core.EntityFetcher;
@@ -131,21 +133,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
     protected abstract GsrsEntityService<T, I> getEntityService();
 
-    //    @GetGsrsRestApiMapping("/{id:$ID}/index")
-//    public void indexInfo(@PathVariable String id ){
-//        Optional<T> t = get(parseIdFromString(id));
-//        if(t.isPresent()){
-//            new ReflectingIndexValueMaker().createIndexableValues(t.get(), iv->{
-//                System.out.println("name = " + iv.name()+  " + path = " + iv.path() + " value =  " + iv.value());
-//            });
-//        }
-//    }
-
-
-
-
-
-
 
     @Override
     @PreAuthorize("isAuthenticated()")
@@ -189,7 +176,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @Transactional(readOnly = true)
     public ValidationResponse<T> validateEntity(@RequestBody JsonNode updatedEntityJson, @RequestParam Map<String, String> queryParameters) throws Exception {
 
-        
+
         ValidatorCategory vcat = Optional.ofNullable(queryParameters.get("category"))
                                          .map(term->ValidatorCategory.of(term))
                                          .orElse(ValidatorCategory.CATEGORY_ALL());
@@ -211,7 +198,11 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
             String message = "Please use the parent object to perform this operation";
             return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
         }
-
+        log.info("updating entity {}", getEntityService().getContext());
+        if( getEntityService().getContext().toUpperCase().contains("VOCAB") && !PrivilegeService.instance().canDo(CommonPrivileges.MANAGE_VOCABULARIES)) {
+            String message = "You do not have the required privilege to update this vocabulary";
+            return new ResponseEntity<>(message, gsrsControllerConfiguration.getHttpStatusFor(HttpStatus.UNAUTHORIZED, queryParameters));
+        }
         AbstractGsrsEntityService.UpdateResult<T> result = getEntityService().updateEntity(updatedEntityJson);
         if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
@@ -546,7 +537,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @hasAdminRole
+    @canRunBackup
     @GetGsrsRestApiMapping(value = {"({id})/@rebackup", "/{id}/@rebackup" })
     public ResponseEntity<Object> rebackupEntity(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters) throws Exception{
         Optional<T> obj = rebackupEntity(id);
@@ -557,7 +548,7 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     }
 
     @Override
-    @hasAdminRole
+    @canRunBackup
     @PutGsrsRestApiMapping("/@rebackup")
     public ResponseEntity<Object> rebackupEntities(@RequestBody ArrayNode idList, @RequestParam Map<String, String> queryParameters) throws Exception{
         List<String> processed = new ArrayList<>();

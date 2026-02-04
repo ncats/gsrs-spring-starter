@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import gsrs.services.BackupService;
+import gsrs.services.PrivilegeService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;

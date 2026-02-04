@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.55-SNAPSHOT</version>
+        <version>3.2.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -57,11 +57,44 @@
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
+
+        <!-- __aw__ Disabling for now -->
+        <!-- dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>1.1.1</version>
+        </dependency -->
+        <!-- __aw__ this is old but so far works -->
         <dependency>
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache</artifactId>
             <version>2.10.4</version>
         </dependency>
+
+    <!-- __aw__ internet seaches said we'd have to do this ? but mostly not working -->
+    <!-- Use the starter to bring in caching dependencies -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+
+    <!-- Use the Jakarta cache API -->
+<!--    <dependency>-->
+<!--        <groupId>jakarta.cache</groupId>-->
+<!--        <artifactId>jakarta.cache-api</artifactId>-->
+<!--        <version>1.1.1</version>-->
+<!--    </dependency>-->
+
+    <!-- Include a compatible JCache provider (e.g., Ehcache 3) -->
+<!--    <dependency>-->
+<!--        <groupId>org.ehcache</groupId>-->
+<!--        <artifactId>ehcache</artifactId>-->
+<!--        <version>3.11.1</version>-->
+<!--    </dependency>-->
+    <!-- Note: Ehcache 3 includes JSR-107 support. The correct version needs to be compatible with Jakarta EE -->
+
+
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -78,6 +111,12 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-test</artifactId>
             <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>2.10.9.2</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <!-- Uncomment this for maven public release deployment

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import gsrs.security.canIndexData;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
@@ -22,7 +23,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
-import gsrs.security.hasAdminRole;
 import ix.core.EntityFetcher;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
@@ -147,7 +147,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
 
-    @hasAdminRole
+    @canIndexData
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){
         //only run if we are not reindexing

@@ -10,6 +10,7 @@ import ix.core.models.Group;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
@@ -28,8 +29,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GsrsJpaTest
+@GsrsJpaTest()
 @ActiveProfiles("test")
+// @Disabled
 public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
@@ -141,16 +143,21 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @Test
     @WithMockUser(username = "admin", roles="Admin")
     public void createUserWithRoles(){
-        List<Role> roles = Role.roles(Role.Query, Role.Updater);
+        List<Role> roles = Arrays.asList(Role.of("Query"), Role.of("DataEntry"));
         UserProfileService.NewUserRequest request =  UserProfileService.NewUserRequest.builder()
                 .username("myUser")
-                .roles(roles.stream().map(Role::name).collect(Collectors.toSet()))
+                .roles(roles.stream().map(Role::getRole).collect(Collectors.toSet()))
                 .build();
         UserProfile up = userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
         assertEqualsIgnoreCase("myUser", up.user.username);
         assertNotNull(up.id);
         assertNotNull(up.user.id);
-        assertEquals(roles, up.getRoles());
+
+        List<Role> returnedRoles =up.getRoles();
+        returnedRoles.forEach(r->{
+            System.out.printf("role: %s\n", r.getRole());
+        });
+        assertTrue(roles.stream().map(r->r.getRole()).allMatch(r-> returnedRoles.stream().anyMatch(r2->r2.getRole().equals(r))));
         assertEquals(1, userProfileRepository.count());
         assertEquals(1, principalRepository.count());
 

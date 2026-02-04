@@ -1,10 +1,8 @@
 package gsrs.services;
 
 import gsrs.repository.GroupRepository;
-import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.security.hasAdminRole;
-import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.security.canManageUsers;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -14,12 +12,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -42,7 +38,7 @@ public class UserProfileService {
                               GroupService groupService,
                               GroupRepository groupRepository,
                               EntityManager entityManager
-                              ) {
+    ) {
         this.userProfileRepository = userProfileRepository;
         this.groupService = groupService;
         this.groupRepository = groupRepository;
@@ -69,7 +65,7 @@ public class UserProfileService {
             return new ValidatedNewUserRequest(validateUserName(username.trim()), nullSafeTrim(password),
                     nullSafeTrim(email), isAdmin, isActive,
                     trimAndRemoveNulls(groups), convertToRoles(roles)
-                                                );
+            );
         }
         private String validateUserName(String name){
             Objects.requireNonNull(name);
@@ -94,8 +90,9 @@ public class UserProfileService {
             if(input==null){
                 return null;
             }
-            return input.stream().map(s-> s ==null?null: s.trim()).filter(Objects::nonNull)
-                    .map(Role::valueOf).collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
+            Set<Role> roles= input.stream().map(s-> s ==null?null: s.trim()).filter(Objects::nonNull)
+                    .map(rname -> Role.of(rname)).collect(Collectors.toCollection(() -> new HashSet<>()));
+            return roles;
         }
     }
 
@@ -149,7 +146,7 @@ public class UserProfileService {
 
     }
     @Transactional
-    @hasAdminRole
+    @canManageUsers
     public UserProfile updateUserProfile(ValidatedNewUserRequest newUserRequest) {
 
         synchronized (this) {
@@ -191,7 +188,7 @@ public class UserProfileService {
             return oldUser;
         }
     }
-    @hasAdminRole
+    //    @hasAdminRole
     @Transactional
     public UserProfile createNewUserProfile(ValidatedNewUserRequest newUserRequest){
         Principal principal = new Principal();

@@ -123,6 +123,10 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
         //so the solution is to do an exact search query first and then
         //append the normal suggest results after dealing with duplicate hits.
 
+        log.trace("in lookup with key: {}", key);
+        if(key== null || key.length()==0) {
+            return Collections.emptyList();
+        }
         List<LookupResult> exactMatches = getExactHitsFor(key, num);
 
         // return lookup(key, contexts, num, true, true);
@@ -189,6 +193,14 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             // We sorted postings by weight during indexing, so we
             // only retrieve the first num hits now:
             Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, num,SORT2);
+            if(query == null || query.length()==0) {
+                log.trace("input was empty/blank");
+                return Collections.emptyList();
+            }
+            if(searcherMgr == null ||searcherMgr.get() == null){
+                log.warn("searchMgr was null!");
+                return Collections.emptyList();
+            }
             manager = searcherMgr.get();
             searcher = manager.acquire();
             searcher.search(tq, c2);
@@ -249,6 +261,10 @@ public InxightInfixSuggester(Version matchVersion, Directory dir,
             // only retrieve the first num hits now:
             Collector c2 = new EarlyTerminatingSortingCollector(c, SORT2, 2, SORT2);
             manager = searcherMgr.get();
+            if( manager == null) {
+                log.info("in getWeightFor, manager is null");
+                return 0;
+            }
             searcher = manager.acquire();
             searcher.search(tq, c2);
 

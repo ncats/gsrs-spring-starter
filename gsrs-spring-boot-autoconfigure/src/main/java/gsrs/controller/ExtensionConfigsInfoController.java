@@ -10,7 +10,7 @@ import gsrs.indexer.ConfigBasedIndexValueMakerConfiguration;
 import gsrs.indexer.ConfigBasedIndexValueMakerFactory;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
-import gsrs.security.hasAdminRole;
+import gsrs.security.canConfigureSystem;
 import gsrs.config.GsrsServiceInfoEndpointPathConfiguration;
 import gsrs.util.RegisteredFunctionConfig;
 import gsrs.config.ServiceInfoEndpointPathConfig;
@@ -29,10 +29,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.util.*;
 
 @RestController
 @Profile("!test")
+
 public class ExtensionConfigsInfoController {
 
     // These endpoints provide config objects that have been transformed from mapped
@@ -84,11 +86,11 @@ public class ExtensionConfigsInfoController {
     private static final MediaType jmt = MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE);
     private static final String notEnabledMessage = "{ \"message\" : \"Resource Not Enabled.\"}";
     private static final String noDataMessage = "{\"message\": \"A null or empty value was returned, or " +
-    "an error occurred. This can happen if configs have not yet been populated or if there are no config " +
-    "objects corresponding to the serviceContext (and/or entityContext) provided. In some cases, API " +
-    "actions trigger the population of the data into cached suppliers or autowired values. These values " +
-    "are null or empty until populated. In other cases, data is populated when the service starts. See " +
-    "the doc: 'How Configuration Works' for some more detail.\"}";
+            "an error occurred. This can happen if configs have not yet been populated or if there are no config " +
+            "objects corresponding to the serviceContext (and/or entityContext) provided. In some cases, API " +
+            "actions trigger the population of the data into cached suppliers or autowired values. These values " +
+            "are null or empty until populated. In other cases, data is populated when the service starts. See " +
+            "the doc: 'How Configuration Works' for some more detail.\"}";
 
     private static final String entityEndPointTemplate = "/service-info/api/v1/%s/%s/%s";
     private static final String basicEndPointTemplate = "/service-info/api/v1/%s/%s";
@@ -110,11 +112,11 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(endpoints);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@validatorConfigs/{entityContext}")
     public ResponseEntity<?> getValidatorConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -132,10 +134,10 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@entityProcessorConfigs")
     public ResponseEntity<?> getFinishedVEntityProcessorConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -144,11 +146,11 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@importAdapterFactoryConfigs/{entityContext}")
     public ResponseEntity<?> getImportAdapterFactoryConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -166,10 +168,10 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@exporterFactoryConfigs")
     public ResponseEntity<?> getExporterFactoryConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -187,11 +189,11 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(mapList);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@matchableCalculationConfigs/{entityContext}")
     public ResponseEntity<?> getMatchableCalculationConfigs(
-        @PathVariable("serviceContext") String serviceContext,
-        @PathVariable("entityContext") String entityContext
+            @PathVariable("serviceContext") String serviceContext,
+            @PathVariable("entityContext") String entityContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -209,10 +211,10 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@scheduledTaskConfigs")
     public ResponseEntity<?> getScheduledTaskConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -230,10 +232,10 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@registeredFunctionConfigs")
     public ResponseEntity<?> getRegisteredFunctionConfigs(
-        @PathVariable("serviceContext") String serviceContext
+            @PathVariable("serviceContext") String serviceContext
     ) {
         if (!extensionsConfigReportApiEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
@@ -251,27 +253,7 @@ public class ExtensionConfigsInfoController {
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
-    @hasAdminRole
-    @GetMapping("/service-info/api/v1/{serviceContext}/@appContextBeans")
-    public ResponseEntity<?> getAppContextBeans() {
-        StringBuilder sb = new StringBuilder();
-        if (!extensionsConfigReportApiEnabled) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(notEnabledMessage);
-        }
-        boolean thrown = false;
-        List<String>  list = null;
-        try {
-            list= Arrays.asList(configurableApplicationContext.getBeanDefinitionNames());
-        } catch (Throwable t) {
-            thrown = true;
-        }
-        if (thrown || list.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.OK).contentType(jmt).body(noDataMessage);
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(list);
-    }
-
-    @hasAdminRole
+    @canConfigureSystem
     @GetMapping("/service-info/api/v1/{serviceContext}/@indexValueMakerConfigs")
     public ResponseEntity<?> getIndexValueMakerConfigs() {
         List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> list = null;
