@@ -18,10 +18,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Id;
-import javax.persistence.metamodel.Metamodel;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Id;
+import jakarta.persistence.metamodel.Metamodel;
+import jakarta.servlet.http.HttpServletRequest;
 
 import gsrs.security.canRunBackup;
 import gsrs.services.CommonPrivileges;

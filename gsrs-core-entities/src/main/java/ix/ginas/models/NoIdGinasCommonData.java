@@ -19,7 +19,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
 
 
     @Version
-    private Long internalVersion;
+    private Long internalVersion = 0L;
 
 
 
