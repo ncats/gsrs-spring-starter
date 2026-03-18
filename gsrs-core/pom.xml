@@ -10,9 +10,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <!--jackson.version>2.12.6</jackson.version=-->
-        <jackson.version>2.16.0</jackson.version>
-        <jackson.databind.version>2.16.0</jackson.databind.version>
+        <jackson.version>2.20.1</jackson.version>
+        <jackson.annotations.version>2.20</jackson.annotations.version>
+        <jackson.databind.version>2.20.1</jackson.databind.version>
     </properties>
     <artifactId>gsrs-core</artifactId>
 
@@ -93,7 +93,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
