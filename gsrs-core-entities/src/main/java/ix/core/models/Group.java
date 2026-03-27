@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import ix.core.History;
+
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Objects;
@@ -27,13 +29,13 @@ public class Group extends LongBaseModel {
     @JoinTable(name="ix_core_group_principal", inverseJoinColumns = {
             @JoinColumn(name="ix_core_principal_id")
     })
-    @JsonIgnore
+//    @JsonIgnore
     public Set<Principal> members = new HashSet<>();
 
     public Group(){
         //required for hibernate?
     }
-    @JsonIgnore
+//    @JsonIgnore
     public Set<Principal> getMembers(){
         return members;
     }
