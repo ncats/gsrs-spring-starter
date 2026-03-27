@@ -18,7 +18,7 @@ import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @Slf4j

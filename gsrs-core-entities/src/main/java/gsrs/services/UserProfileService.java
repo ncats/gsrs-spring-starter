@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -38,7 +38,7 @@ public class UserProfileService {
                               GroupService groupService,
                               GroupRepository groupRepository,
                               EntityManager entityManager
-                              ) {
+    ) {
         this.userProfileRepository = userProfileRepository;
         this.groupService = groupService;
         this.groupRepository = groupRepository;
@@ -65,7 +65,7 @@ public class UserProfileService {
             return new ValidatedNewUserRequest(validateUserName(username.trim()), nullSafeTrim(password),
                     nullSafeTrim(email), isAdmin, isActive,
                     trimAndRemoveNulls(groups), convertToRoles(roles)
-                                                );
+            );
         }
         private String validateUserName(String name){
             Objects.requireNonNull(name);
@@ -188,6 +188,7 @@ public class UserProfileService {
             return oldUser;
         }
     }
+
     @canManageUsers
     @Transactional
     public UserProfile createNewUserProfile(ValidatedNewUserRequest newUserRequest){
