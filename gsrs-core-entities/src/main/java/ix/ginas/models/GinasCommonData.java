@@ -26,6 +26,13 @@ public class GinasCommonData extends NoIdGinasCommonData{
         return uuid;
     }
 
+    @PrePersist
+    public void ensureUuid() {
+        if (uuid == null) {
+            uuid = UUID.randomUUID();
+        }
+    }
+
     public void setUuid(UUID uuid) {
         if (this.uuid == null) {
             this.uuid = uuid;
