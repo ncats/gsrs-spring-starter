@@ -14,7 +14,6 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -53,11 +52,9 @@ public class PrincipalServiceImpl implements PrincipalService {
     @Override
     public Principal registerIfAbsent(String username){
         Boolean[] created = new Boolean[]{Boolean.FALSE};
-        log.info("currently there are " + principalRepository.count() + " principals in db");
 
         Principal p= cache.computeIfAbsent(username.toUpperCase(), name-> {
             // __aw__ should we not update the cache from database?
-            log.info("= currently there are " + principalRepository.count() + " principals in db");
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
             if (alreadyInDb != null) {
                 return alreadyInDb;
@@ -80,10 +77,6 @@ public class PrincipalServiceImpl implements PrincipalService {
 
 
                 if(!TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-//                  //  if(!entityManager.contains(p)){
-                    // __aw__ not contains didn't work correctly, perhaps because id was null in some cases
-                    // See PrincipalRepositoryIntegrationTest.
-
                     CriteriaBuilder cb = entityManager.getCriteriaBuilder();
                     CriteriaQuery<Principal> cq = cb.createQuery(Principal.class);
                     Root<Principal> principal = cq.from(Principal.class);
@@ -103,7 +96,6 @@ public class PrincipalServiceImpl implements PrincipalService {
                 //TODO: this detach mechanism isn't proven to do anything
                 // we need at this time.
                 entityManager.detach(p);
-//                
             }
         }
         return p;
