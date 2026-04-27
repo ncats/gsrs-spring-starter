@@ -15,4 +15,9 @@ public class NullUUIDGenerator implements IdentifierGenerator {
         Object id = session.getEntityPersister(null, object).getIdentifier(object, session);
         return id != null ? (Serializable) id : UUID.randomUUID();
     }
+
+    @Override
+    public boolean allowAssignedIdentifiers() {
+        return true;
+    }
 }
