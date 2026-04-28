@@ -40,6 +40,8 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static gsrs.stagingarea.model.ImportValidation.MAX_VALIDATION_MESSAGE_LENGTH;
+
 @Slf4j
 public class DefaultStagingAreaService<T> implements StagingAreaService {
 
@@ -671,7 +673,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                     .ValidationDate(new Date())
                     .ValidationType(type)
                     .ValidationJson(validationResponse.toString())
-                    .ValidationMessage(m.getMessage())
+                    .ValidationMessage(m.getMessage() != null ? m.getMessage().substring(0, Math.min( MAX_VALIDATION_MESSAGE_LENGTH, m.getMessage().length())) : null)
                     .version(version)
                     .instanceId(instanceId)
                     .build();
