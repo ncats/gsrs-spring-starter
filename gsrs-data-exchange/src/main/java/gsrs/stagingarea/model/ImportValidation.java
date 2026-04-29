@@ -39,6 +39,7 @@ public class ImportValidation {
         error
     }
 
+    public static int MAX_VALIDATION_MESSAGE_LENGTH = 2048;
 
     /**
      * foreign key to ImportData object
