@@ -13,7 +13,7 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * Created by sheilstk on 6/29/15.

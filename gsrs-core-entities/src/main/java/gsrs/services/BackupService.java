@@ -148,6 +148,7 @@ public class BackupService {
     public void backupIfNeededAsync(Object o, Consumer<BackupEntity> consumer){
         backupIfNeeded(o, consumer);
     }
+
     public void backupIfNeeded(Object o, Consumer<BackupEntity> consumer){
         EntityUtils.EntityWrapper ew = EntityUtils.EntityWrapper.of(o);
         if(o instanceof FetchableEntity && ew.getEntityInfo().hasBackup()){
