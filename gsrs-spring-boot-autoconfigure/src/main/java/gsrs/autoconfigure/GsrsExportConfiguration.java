@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import gsrs.services.PrivilegeService;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -69,7 +70,9 @@ public class GsrsExportConfiguration {
     public Map<String, List<? extends ExporterFactoryConfig>> reportConfigs() {
         return exporterFactoriesMapList;
     }
-    ObjectMapper mapper = new ObjectMapper();
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final ObjectMapper mapper = new ObjectMapper();
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
         log.trace("inside initializer");
