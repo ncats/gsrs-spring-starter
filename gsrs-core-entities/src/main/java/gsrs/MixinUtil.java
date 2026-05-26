@@ -2,9 +2,7 @@ package gsrs;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,12 +10,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import gov.nih.ncats.common.util.CachedSupplier;
-import ix.utils.LiteralReference;
+import ix.utils.StarterLiteralReference;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MixinUtil {
-    private final static Map<LiteralReference<Object>,Map<String,Object>> _store = new ConcurrentHashMap<>();
+    private final static Map<StarterLiteralReference<Object>,Map<String,Object>> _store = new ConcurrentHashMap<>();
     @SuppressWarnings("rawtypes")
     private final static ReferenceQueue refq = new ReferenceQueue<>();
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -53,7 +51,7 @@ public class MixinUtil {
     
     protected static Map<String,Object> getStore(Object o) {
         initializer.get();
-        LiteralReference lr = LiteralReference.of(o,refq);
+        StarterLiteralReference<Object> lr = StarterLiteralReference.of(o,refq);
         try {
             semaphore.acquireUninterruptibly(1);
             return _store.computeIfAbsent(lr, k->{
@@ -66,7 +64,8 @@ public class MixinUtil {
     
     protected static void clearStore(Object o) {
         initializer.get();
-        LiteralReference lr = LiteralReference.of(o,refq);
+        StarterLiteralReference<Object> lr = StarterLiteralReference.of(o,refq);
+
         try {
             semaphore.acquireUninterruptibly(1);
             _store.remove(lr);

@@ -6,17 +6,17 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public class LinkedReferenceSet<K> implements ExecutionStack<K> {
-	UniqueStack<LiteralReference<K>> internalStack = new UniqueStack<LiteralReference<K>>();
+	UniqueStack<StarterLiteralReference<K>> internalStack = new UniqueStack<StarterLiteralReference<K>>();
 	
 	
 	public boolean contains(K k){
-		return internalStack.contains(LiteralReference.of(k));
+		return internalStack.contains(StarterLiteralReference.of(k));
 	}
 	
 	
 	@Override
 	public void pushAndPopWith(K obj, Runnable r) {
-		internalStack.pushAndPopWith(LiteralReference.of(obj), r);
+		internalStack.pushAndPopWith(StarterLiteralReference.of(obj), r);
 	}
 
 	@Override
@@ -26,7 +26,7 @@ public class LinkedReferenceSet<K> implements ExecutionStack<K> {
 	
 	@Override
 	public Optional<K> getOptionalFirst() {
-		Optional<LiteralReference<K>> ret =internalStack.getOptionalFirst();
+		Optional<StarterLiteralReference<K>> ret =internalStack.getOptionalFirst();
 		if(ret.isPresent()){
 			return Optional.of(ret.get().get());
 		}
