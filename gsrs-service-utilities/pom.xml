@@ -44,7 +44,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <gsrs-services-common.version>1.0-SNAPSHOT</gsrs-services-common.version>
+        <gsrs-services-common.version>1.1-SNAPSHOT</gsrs-services-common.version>
     </properties>
 
     <dependencies>
