@@ -7,7 +7,6 @@ import java.util.stream.Stream;
 import gsrs.cache.GsrsCache.CacheStatistics;
 import ix.utils.CallableUtil.TypedCallable;
 import net.sf.ehcache.Element;
-
 /**
  * Created by katzelda on 5/26/16.
  */

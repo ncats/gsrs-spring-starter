@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.json.JacksonTester;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

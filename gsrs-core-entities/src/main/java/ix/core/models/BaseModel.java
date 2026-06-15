@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import gsrs.model.AbstractGsrsManualDirtyEntity;
 import ix.core.util.EntityUtils.EntityWrapper;
 
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import java.util.*;
 import java.util.Map.Entry;
 
