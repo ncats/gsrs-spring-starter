@@ -60,6 +60,39 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>log-no-tests-message</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fileset id="gsrs.test.classes" dir="${project.build.testOutputDirectory}" erroronmissingdir="false">
+                                    <include name="**/*Test.class"/>
+                                    <include name="**/*Tests.class"/>
+                                    <include name="**/*TestCase.class"/>
+                                </fileset>
+                                <resourcecount property="gsrs.test.class.count" refid="gsrs.test.classes"/>
+                                <condition property="gsrs.no.tests.message" value="[INFO] No tests to run." else="">
+                                    <equals arg1="${gsrs.test.class.count}" arg2="0"/>
+                                </condition>
+                                <echo message="${gsrs.no.tests.message}" level="info"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <licenses>
         <license>
             <name>Apache-2.0</name>
