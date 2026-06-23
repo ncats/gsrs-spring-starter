@@ -1,8 +1,6 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -10,7 +8,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
-import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.History;
 import ix.core.ResourceReference;
@@ -19,10 +16,9 @@ import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
 
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
@@ -51,17 +47,9 @@ public class Edit extends BaseModel {
     
     @JsonIgnore
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false)    
-    
-//    @JsonIgnore
-//    @Id
-//    @GeneratedValue
     public UUID id; // internal random id
-    
 
     //don't use @CreateDate annotation here just set it on creation time and mark it final
     public final Long created = TimeUtil.getCurrentTimeMillis();

@@ -5,20 +5,8 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.2.0-SNAPSHOT</version>
+        <version>3.2.5-SNAPSHOT</version>
     </parent>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-core-entities</artifactId>
@@ -110,12 +98,6 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>5.1.1</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
     <!-- Uncomment this for maven public release deployment 

@@ -11,7 +11,8 @@ import ix.ginas.models.serialization.GsrsDateSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+
 import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -25,7 +26,7 @@ public class IxModel extends BaseModel {
     @Column(unique = true)
     public Long id;
     @Version
-    public Long version;
+    public Long version = 0L;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonView(BeanViews.Full.class)

@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.18</version>
+        <version>3.5.7</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-discovery</artifactId>
-    <version>3.2.0-SNAPSHOT</version>
+    <version>3.2.5-SNAPSHOT</version>
     <name>gsrs-discovery</name>
     <description>gsrs-discovery</description>
     
@@ -44,8 +44,8 @@
     </scm>
 
     <properties>
-        <java.version>1.8</java.version>
-        <spring-cloud.version>2021.0.8</spring-cloud.version>
+        <java.version>17</java.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
     </properties>
 
     <dependencies>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <version>2.7.18</version>
+            <version>3.5.7</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -115,9 +115,37 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>log-no-tests-message</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fileset id="gsrs.test.classes" dir="${project.build.testOutputDirectory}" erroronmissingdir="false">
+                                    <include name="**/*Test.class"/>
+                                    <include name="**/*Tests.class"/>
+                                    <include name="**/*TestCase.class"/>
+                                </fileset>
+                                <resourcecount property="gsrs.test.class.count" refid="gsrs.test.classes"/>
+                                <condition property="gsrs.no.tests.message" value="[INFO] No tests to run." else="">
+                                    <equals arg1="${gsrs.test.class.count}" arg2="0"/>
+                                </condition>
+                                <echo message="${gsrs.no.tests.message}" level="info"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.18</version>
+                <version>3.2.2</version>
             </plugin>
             <!-- Uncomment this for maven public release deployment
              <plugin>
