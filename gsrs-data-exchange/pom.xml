@@ -3,16 +3,17 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>gsrs-module-substances</artifactId>
+        <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.2.0</version>
+        <version>3.2.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>gsrs-module-substances-data-exchange</artifactId>
-    <name>gsrs-module-substances-data-exchange</name>
-    <description>gsrs-module-substances-data-exchange</description>
-    <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+    <artifactId>gsrs-data-exchange</artifactId>
+
+    <name>gsrs-data-exchange</name>
+    <description>gsrs-data-exchange</description>
+    <url>https://github.com/ncats/gsrs-spring-starter.git</url>
 
     <licenses>
         <license>
@@ -36,61 +37,60 @@
     </developers>
 
     <scm>
-        <connection>scm:https://github.com/ncats/gsrs-spring-module-substances.git</connection>
-        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-module-substances.git</developerConnection>
-        <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+        <connection>scm:https://github.com/ncats/gsrs-spring-starter.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-starter.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
 
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
     <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core</artifactId>
+            <version>${gsrs.version}</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
             <version>${gsrs.version}</version>
             <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-slf4j-impl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-to-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-data-exchange</artifactId>
+            <artifactId>gsrs-spring-legacy-indexer</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.3.31</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-scheduled-tasks</artifactId>
             <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-module-substances-core</artifactId>
-            <version>${gsrs.substance.version}</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
-
-    <properties>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-    </properties>
 </project>
