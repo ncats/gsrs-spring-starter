@@ -7,11 +7,9 @@ import gsrs.junit.TimeTraveller;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -36,17 +34,11 @@ public class MyEntityServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @RegisterExtension
     TimeTraveller timeTraveller = new TimeTraveller(LocalDate.of(1955, 11, 05));
 
-    private JacksonTester<MyEntity> json;
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private EntityManager em;
 
-    @BeforeEach
-    public void setup() {
-
-        JacksonTester.initFields(this, objectMapper);
-    }
     @Test
     public void noDataLoadedShouldHave0Results() throws Exception {
         assertEquals(0, myEntityService.count());

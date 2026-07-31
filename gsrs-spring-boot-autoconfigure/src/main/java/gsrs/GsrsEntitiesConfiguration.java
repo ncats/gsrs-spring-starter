@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
+import org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -35,7 +35,7 @@ import jakarta.persistence.PersistenceContext;
 //TODO: Discuss the meaning of this in the context of
 // explicit datasource configurations and lack of
 // automatic JPA repositories
-@AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
+@AutoConfigureAfter(DataJpaRepositoriesAutoConfiguration.class)
 @Import({StarterEntityRegistrar.class, GsrsRabbitMqConfiguration.class})
 public class GsrsEntitiesConfiguration {
 
