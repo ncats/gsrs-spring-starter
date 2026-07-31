@@ -6,7 +6,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +26,6 @@ public class CvApiTest {
 
     @Autowired
     private MockRestServiceServer mockRestServiceServer;
-
-    @Autowired
-    private ObjectMapper mapper;
 
     @Autowired
     RestTemplateBuilder restTemplateBuilder;

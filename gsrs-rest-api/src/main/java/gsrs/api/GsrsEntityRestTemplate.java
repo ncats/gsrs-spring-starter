@@ -39,7 +39,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
             builder.setLength(builder.length()-1);
         }
         this.prefix = builder.toString();
-        this.restTemplate = restTemplateBuilder.rootUri(baseUrl)
+        this.restTemplate = restTemplateBuilder.baseUri(baseUrl)
                 .errorHandler(RestTemplateResponseErrorHandler.INSTANCE)
                 .build();
     }
