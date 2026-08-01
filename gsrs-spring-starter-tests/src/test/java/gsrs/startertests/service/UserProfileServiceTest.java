@@ -18,7 +18,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -89,7 +88,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     @Test
 
     public void notloggedInCreateUserShouldErrorOut(){
-        Assertions.assertThrows(AuthenticationException.class, ()->{
+        Assertions.assertThrows(AccessDeniedException.class, ()->{
             UserProfileService.NewUserRequest request =  UserProfileService.NewUserRequest.builder()
                     .username("myUser")
                     .build();
