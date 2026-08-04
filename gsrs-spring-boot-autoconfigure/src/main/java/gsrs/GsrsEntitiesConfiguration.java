@@ -27,8 +27,8 @@ import gsrs.autoconfigure.GsrsRabbitMqConfiguration;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Configuration(proxyBeanMethods = false)
 

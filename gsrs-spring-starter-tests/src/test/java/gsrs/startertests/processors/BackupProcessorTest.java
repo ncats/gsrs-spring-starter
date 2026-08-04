@@ -1,5 +1,6 @@
 package gsrs.startertests.processors;
 
+import gsrs.backup.BackupEventListener;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.repository.BackupRepository;
 import gsrs.startertests.GsrsEntityTestConfiguration;
@@ -12,20 +13,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
+import jakarta.persistence.*;
 
-import javax.persistence.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 //This has to be a full spring boot Test not just a JPA test because we need the full applicaton context for all the application events to get fired and recieved
-@SpringBootTest(classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class},
-properties = {"spring.application.name=starter"}
+@SpringBootTest(
+        classes = {GsrsSpringApplication.class,  GsrsEntityTestConfiguration.class, BackupEventListener.class},
+        properties = {"spring.application.name=starter"}
 )
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -81,7 +82,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         }
     }
 
-    @Autowired
+    @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
@@ -90,7 +91,7 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
     @Autowired
     PlatformTransactionManager platformTransactionManager;
 
-    @MockBean
+    @MockitoBean
     WebMvcRegistrations webMvcRegistrations;
 
     TransactionTemplate transactionTemplate;
@@ -172,6 +173,8 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
             entityManager.flush();
             return sut2;
         });
+        backupRepository.flush();
+        System.out.println("Hello A1 " + backupRepository.findAll().size());
         assertEquals(1, backupRepository.count());
         assertEquals("bar2", entityManager.find(MyBackedUpEntity.class, saved2.id).foo);
 
@@ -239,4 +242,5 @@ public class BackupProcessorTest extends AbstractGsrsJpaEntityJunit5Test {
         assertEquals(sut2, fromJson2);
         assertNotEquals(sut, sut2);
     }
+
 }

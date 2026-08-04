@@ -6,10 +6,8 @@ import ix.core.models.IndexableRoot;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
-
-import javax.persistence.*;
 import java.util.UUID;
+import jakarta.persistence.*;
 
 /**
  * Tracks the Key/Value/Qualifier triplets computed for all records in the staging area and in the main database
@@ -30,25 +28,18 @@ public class KeyValueMapping {
      * Primary key
      */
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     private UUID mappingId;
 
     /**
      * Foreign key to ImportData
      */
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
     private UUID instanceId;
 
     /**
      * Foreign key to ImportMetadata
      */
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
     private UUID recordId;
 
     /**

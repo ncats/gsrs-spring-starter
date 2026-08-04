@@ -2,7 +2,7 @@ package ix.core.models;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * Base class of objects in our model which

@@ -6,7 +6,7 @@ import ix.core.models.Group;
 import ix.ginas.models.serialization.GroupDeserializer;
 import ix.ginas.models.serialization.GroupSerializer;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;

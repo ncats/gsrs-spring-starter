@@ -31,7 +31,7 @@ public class VersionFileBuildInfoFetcherConfiguation {
     private String time;
 
 
-    public BuildInfo getBuildInfo() {
+    public BuildInfo createBuildInfo() {
             LocalDateTime dateTime = LocalDateTime.parse(time,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz YYYY");
             return BuildInfo.builder()

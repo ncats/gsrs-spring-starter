@@ -155,7 +155,7 @@ public class EmbeddedKeywordList implements List<Keyword>, Serializable{
 	 * Hibernate Converter to turn an EmbeddedKeywordList into a Json Clob in the database.
 	 * This should mimic what GSRS 2.x did with Ebean but for Hibernate.
 	 */
-	@javax.persistence.Converter(autoApply = true)
+	@jakarta.persistence.Converter(autoApply = true)
 	public static class Converter extends EntityJsonClobConverter<EmbeddedKeywordList> {
 		public Converter() {
 			super(EmbeddedKeywordList.class);
