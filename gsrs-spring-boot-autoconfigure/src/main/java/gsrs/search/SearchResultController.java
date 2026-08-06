@@ -3,15 +3,13 @@ package gsrs.search;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -29,7 +27,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
@@ -120,11 +117,11 @@ public class SearchResultController {
 
         
         //Play used a Map<String,String[]> while Spring uses a MultiMap<String,String>
-        Map<String, String[]> paramMap =queryParameters.entrySet().stream()
-                .map(Tuple::of)
-                .map(Tuple.vmap(sl->sl.toArray(new String[0])))
-                .collect(Tuple.toMap())
-                ;
+        Map<String, String[]> paramMap = new java.util.LinkedHashMap<>(queryParameters.size());
+        for (Map.Entry<String, List<String>> entry : queryParameters.entrySet()) {
+            List<String> values = entry.getValue();
+            paramMap.put(entry.getKey(), values.toArray(new String[values.size()]));
+        }
 
         // if query is null, add q parameter
         if(query == null){
@@ -163,7 +160,11 @@ public class SearchResultController {
         	}else if(FIELD_ID.equals(viewField)){
         		List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>();
         		results.copyKeysTo(klist, so.getSkip(), so.getTop(), true);
-        		resultSet = klist.stream().map(item->item.getIdString()).collect(Collectors.toList());
+        		List<String> idList = new ArrayList<>(klist.size());
+        		for (ix.core.util.EntityUtils.Key item : klist) {
+        			idList.add(item.getIdString());
+        		}
+        		resultSet = idList;
         	}
         }
         else{
@@ -200,9 +201,12 @@ public class SearchResultController {
         	List<Facet> facetList = results.getFacets();
         	String facetLabel = queryParameters.getFirst("facetlabel");
         	if(facetLabel!=null) {
-        		List<Facet> filteredList = facetList.stream()
-        				.filter(f->f.getName().equalsIgnoreCase(facetLabel))
-        				.collect(Collectors.toList());
+        		List<Facet> filteredList = new ArrayList<>(facetList.size());
+        		for (Facet facet : facetList) {
+        			if (facet.getName().equalsIgnoreCase(facetLabel)) {
+        				filteredList.add(facet);
+        			}
+        		}
         		etag.setFacets(filteredList);
         				
         	}else {
@@ -230,8 +234,9 @@ public class SearchResultController {
 		builder.qTotal(savedSummary.getQTotal())
 			   .qTop(qTop)
 			   .qSkip(qSkip)
-			   .qMatchTotal(savedSummary.getQTotal() - savedSummary.getQUnMatchTotal())
+			   .qMatchTotal(savedSummary.getQMatchTotal())
 			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
+			   .qCompleted(savedSummary.getQCompleted())
 			   .qFilteredTotal(savedSummary.getQTotal())
 			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
@@ -249,7 +254,7 @@ public class SearchResultController {
 
 		if(sortOn!=null) {
 			if(sortOn.equalsIgnoreCase("records_length")) {
-				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getRecords().size());
+				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getRecordCount());
 			}else if(sortOn.equalsIgnoreCase("searchTerm")) {
 				comp= Comparator.comparing((sr)->((SearchResultSummaryRecord)sr).getSearchTerm());	
 			}
@@ -264,31 +269,22 @@ public class SearchResultController {
 			String qf=qFilter.toLowerCase();
 			
 			if(qf.startsWith("records_length:")) {
-				int count=-1;
-				try {
-					count = Integer.parseInt(qf.split(":")[1]);
-				}catch(Exception e) {}
+				int count = parseFilterValue(qf, ':');
 				if(count>=0) {
 					int fcount=count;
-					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()==fcount;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecordCount()==fcount;
 				}
 			}else if(qf.startsWith("records_length>")) {
-				int count=-1;
-				try {
-					count = Integer.parseInt(qf.split(">")[1]);
-				}catch(Exception e) {}
+				int count = parseFilterValue(qf, '>');
 				if(count>=0) {
 					int fcount=count;
-					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()>fcount;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecordCount()>fcount;
 				}
 			}else if(qf.startsWith("records_length<")) {
-				int count=-1;
-				try {
-					count = Integer.parseInt(qf.split("<")[1]);
-				}catch(Exception e) {}
+				int count = parseFilterValue(qf, '<');
 				if(count>=0) {
 					int fcount=count;
-					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecords().size()<fcount;
+					filter = (sr)-> ((SearchResultSummaryRecord)sr).getRecordCount()<fcount;
 				}
 			}
 			if(filter!=null) {
@@ -297,34 +293,51 @@ public class SearchResultController {
 		}
 		
 		if(filter==null && comp==null) {
-			if(qSkip > queriesList.size()-1) {
-				builder.queries(new ArrayList<SearchResultSummaryRecord>());
-			}else {        
-				builder.queries(IntStream.range(qSkip, Math.min(qSkip+qTop,queriesList.size()))
-						.mapToObj(i->queriesList.get(i))
-						.collect(Collectors.toList()));
+			int start = Math.min(qSkip, queriesList.size());
+			int end = Math.min(start + qTop, queriesList.size());
+			if(start >= end) {
+				builder.queries(Collections.emptyList());
+			}else {
+				builder.queries(new ArrayList<>(queriesList.subList(start, end)));
 			}
 		}else {
 			if(comp==null)comp=(Comparator<SearchResultSummaryRecord>) (a,b)->0;
 			if(filter==null)filter=(s)->true;
-			Predicate<SearchResultSummaryRecord> finalfilter=filter;
-			Comparator<SearchResultSummaryRecord> finalcomp=comp;
-			
-			AtomicInteger filteredTotal = new AtomicInteger();
-			
-			List<SearchResultSummaryRecord> recs= IntStream.range(0, queriesList.size())
-				     .mapToObj(i->queriesList.get(i))
-				     .filter(finalfilter)
-				     .peek(s->filteredTotal.addAndGet(1))
-				     .sorted(finalcomp)
-				     .skip(qSkip)
-				     .limit(qTop)
-				     .collect(Collectors.toList());
-			builder.queries(recs);
-			builder.qFilteredTotal(filteredTotal.get());
+
+			List<SearchResultSummaryRecord> filtered = new ArrayList<>(queriesList.size());
+			int filteredTotal = 0;
+			for(SearchResultSummaryRecord record : queriesList) {
+				if(filter.test(record)) {
+					filtered.add(record);
+					filteredTotal++;
+				}
+			}
+			if(!filtered.isEmpty()) {
+				filtered.sort(comp);
+			}
+			int start = Math.min(qSkip, filtered.size());
+			int end = Math.min(start + qTop, filtered.size());
+			if(start >= end) {
+				builder.queries(Collections.emptyList());
+			}else {
+				builder.queries(new ArrayList<>(filtered.subList(start, end)));
+			}
+			builder.qFilteredTotal(filteredTotal);
 		}
     	
     	return builder.build();
+    }
+
+    private int parseFilterValue(String filter, char separator) {
+    	int separatorIndex = filter.indexOf(separator);
+    	if(separatorIndex < 0 || separatorIndex + 1 >= filter.length()) {
+    		return -1;
+    	}
+    	try {
+    		return Integer.parseInt(filter.substring(separatorIndex + 1));
+    	}catch(Exception e) {
+    		return -1;
+    	}
     }
     
     private SearchResultContext.SearchResultContextOrSerialized getContextForKey(String key){
@@ -357,11 +370,20 @@ public class SearchResultController {
         }
 	    if(context!=null){
 	    	context.setKey(key);
+            context.setSummary(getBulkSummaryForKey(key));
 	    	return new SearchResultContext.SearchResultContextOrSerialized(context);
 	    }else if(serial !=null){
 	    	return new SearchResultContext.SearchResultContextOrSerialized(serial);
 	    }
 	    return null;
+    }
+
+    private BulkQuerySummary getBulkSummaryForKey(String key) {
+        Object cached = gsrsCache.getRaw("BulkSearchSummary/" + key);
+        if (cached instanceof BulkQuerySummary) {
+            return (BulkQuerySummary) cached;
+        }
+        return null;
     }
     
 }

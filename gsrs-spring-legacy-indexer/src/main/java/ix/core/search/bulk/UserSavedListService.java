@@ -1,11 +1,10 @@
 package ix.core.search.bulk;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -84,13 +83,12 @@ public class UserSavedListService {
 	
 	
 	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, int top, int skip, String kind){
-		List<String> keyList = new ArrayList<String>();
 		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		
 		if(listString == null || listString.trim().isEmpty())
-			return keyList;
+			return new ArrayList<String>();
 		
-		keyList = Arrays.asList(listString.split(","));
+		List<String> keyList = parseCommaSeparatedValues(listString);
 		
 		if(skip >= keyList.size())
 			return new ArrayList<String>();
@@ -117,13 +115,11 @@ public class UserSavedListService {
 	}
 		
 	public List<String> getUserSavedBulkSearchResultListContent(Long userId, String listName, String kind){
-		List<String> keyList = new ArrayList<String>();
 		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		if(listString == null || listString.trim().isEmpty())
-			return keyList;
+			return new ArrayList<String>();
 		
-		keyList = Arrays.asList(listString.split(","));
-		return keyList;
+		return parseCommaSeparatedValues(listString);
 	}
 	
 	public boolean userListExists(String userName, String listName, String kind) {
@@ -162,14 +158,20 @@ public class UserSavedListService {
 		
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);		
 		
-		List<String> processedList = keyList.stream()
-				.filter(s->s.length()>0)
-				.map(s->s.trim())
-				.collect(Collectors.toList());
-		
-		String listString = processedList.stream()				
-				.reduce("", (substring, key)-> substring.concat(","+key));
-		listString = listString.substring(listString.indexOf(",")+1);
+		List<String> processedList = new ArrayList<>(keyList.size());
+		StringJoiner listJoiner = new StringJoiner(",");
+		for (String key : keyList) {
+			if (key == null) {
+				continue;
+			}
+			String trimmed = key.trim();
+			if (trimmed.isEmpty()) {
+				continue;
+			}
+			processedList.add(trimmed);
+			listJoiner.add(trimmed);
+		}
+		String listString = listJoiner.toString();
 		UserSavedList record = new UserSavedList(user, listName, listString, kind);
 		userSavedListRepository.saveAndFlush(record);
 		
@@ -200,23 +202,21 @@ public class UserSavedListService {
 		String listString = userSavedListRepository.getUserSavedBulkSearchResult(userId, listName, kind);
 		if(listString == null || listString.trim().isEmpty())
 			return changeSet;
-		list = Arrays.asList(listString.split(","));
+		list = parseCommaSeparatedValues(listString);
 		SortedSet<String> sortedSet = new TreeSet<>(list);
 		
 		
 		switch(operation) {
 			case ADD:
 				for(String string: keyList) {
-					if(!sortedSet.contains(string)) {
-						sortedSet.add(string);
+					if(sortedSet.add(string)) {
 						changeSet.add(string);
 					}
 				}
 				break;
 			case REMOVE:
 				for(String string: keyList) {
-					if(sortedSet.contains(string)) {
-						sortedSet.remove(string);
+					if(sortedSet.remove(string)) {
 						changeSet.add(string);
 					}
 				}
@@ -226,9 +226,11 @@ public class UserSavedListService {
 			}				
 					
 		
-		List<String> sortedList = new ArrayList<>(sortedSet);
-	    String resultString = sortedList.stream().reduce("", (substring, key)-> substring.concat(","+key));
-	    resultString = resultString.substring(resultString.indexOf(",")+1);
+		StringJoiner resultJoiner = new StringJoiner(",");
+		for (String key : sortedSet) {
+			resultJoiner.add(key);
+		}
+	    String resultString = resultJoiner.toString();
 	    userSavedListRepository.updateUserSavedBulkSearchResult(userId, listName, resultString, kind);	
 	    
 	    return changeSet; 
@@ -288,18 +290,38 @@ public class UserSavedListService {
 	}
 	
 	public static UserListIndexedValue getUserNameAndListNameFromIndexedValue(String value) {
-		List<String> resultList = Arrays.asList(value.split(":"));
-		if(resultList.size()!=2)
+		int separator = value.indexOf(':');
+		if(separator < 0)
 			return new UserListIndexedValue("","");		
-		return new UserListIndexedValue(resultList.get(0), resultList.get(1));
+		return new UserListIndexedValue(value.substring(0, separator), value.substring(separator + 1));
 	}	
 	
 	public static String getUserNameFromIndexedValue(String value) {
-		List<String> resultList = Arrays.asList(value.split(":"));
-		if(resultList.size()!=2)
+		int separator = value.indexOf(':');
+		if(separator < 0)
 			return "";
-		return resultList.get(0);			
+		return value.substring(0, separator);			
 	}	
+
+	private List<String> parseCommaSeparatedValues(String listString) {
+		int estimatedSize = 1;
+		for (int i = 0; i < listString.length(); i++) {
+			if (listString.charAt(i) == ',') {
+				estimatedSize++;
+			}
+		}
+		List<String> values = new ArrayList<>(estimatedSize);
+		int length = listString.length();
+		int start = 0;
+		for (int i = 0; i < length; i++) {
+			if (listString.charAt(i) == ',') {
+				values.add(listString.substring(start, i));
+				start = i + 1;
+			}
+		}
+		if (start < length) {
+			values.add(listString.substring(start));
+		}
+		return values;
+	}
 }
-
-
