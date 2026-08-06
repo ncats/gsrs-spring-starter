@@ -15,6 +15,7 @@ public class KeyUserList {
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 	@SequenceGenerator(
 			name = "LONG_SEQ_ID",
+			sequenceName = "LONG_SEQ_ID",
 			allocationSize = 1
 	)
 	public Long id;

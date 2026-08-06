@@ -7,6 +7,7 @@ import jakarta.persistence.*;
  * use a long as an Id instead of a String or UUID.
  */
 @MappedSuperclass
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "LONG_SEQ_ID", allocationSize = 1)
 public abstract class LongBaseModel extends BaseModel {
 
     @Id
