@@ -2,30 +2,26 @@ package ix.core.models;
 
 import java.util.Objects;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ix_core_user_saved_list", 
 	uniqueConstraints={@UniqueConstraint(columnNames={"name", "user_id", "kind"})})
 @Indexable(indexed = false)
 public class UserSavedList {
-	
+
 	@Id
 	@Column(unique = true)
-	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+	@SequenceGenerator(
+			name = "USER_SAVED_LIST_SEQ_GENERATOR",
+			sequenceName = "ix_core_user_saved_list_seq",
+			allocationSize = 1
+	)
+	@GeneratedValue(
+			strategy = GenerationType.SEQUENCE,
+			generator = "USER_SAVED_LIST_SEQ_GENERATOR"
+	)
 	private Long id;
-	
 	@ManyToOne  
 	@JoinColumn(name="user_id")
 	public Principal principal;

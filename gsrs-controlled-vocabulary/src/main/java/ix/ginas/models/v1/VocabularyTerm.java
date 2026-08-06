@@ -27,6 +27,11 @@ import jakarta.persistence.*;
 @Getter
 @Setter
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_vocabulary_term_seq", allocationSize = 1)
+@SequenceGenerator(
+		name = "LONG_SEQ_ID",
+		sequenceName = "ix_ginas_vocabulary_term_seq",
+		allocationSize = 1
+)
 public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	/**
 	 * 

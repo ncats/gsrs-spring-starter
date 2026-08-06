@@ -1,7 +1,5 @@
 package ix.core.models;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import jakarta.persistence.*;
 
 /**
@@ -14,11 +12,6 @@ public abstract class LongBaseModel extends BaseModel {
     @Id
 	@Column(unique = true)
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
-
-//    @GeneratedValue //Ebean added GeneratedValue by default we have to be explicit in hibernate
-//	@Id
-//	@GeneratedValue(strategy= GenerationType.SEQUENCE, generator = "non-nullGen")
-//	@GenericGenerator(name = "non-nullGen", strategy = "ix.ginas.models.generators.NullLongGenerator")
 	public Long id;
 	
 	@Override
