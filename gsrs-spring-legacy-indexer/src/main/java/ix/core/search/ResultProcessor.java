@@ -111,13 +111,6 @@ public abstract class ResultProcessor<T, R> implements ResultMapper<T,R> {
 		setResults(results);
 		run(rows);
     }
-
-	/**
-	 * Hook invoked after {@link #process()} finishes on the async search actor.
-	 * Subclasses can override to finalize buffered state.
-	 */
-	public void afterProcess() throws Exception {
-	}
 	
 	public Future<Void> getCompletedFuture(){
 	    return this.getContext().getDeterminedFuture();
