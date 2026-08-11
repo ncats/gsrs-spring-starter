@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <jackson.version>2.20.1</jackson.version>
+        <jackson.version>2.21.1</jackson.version>
         <jackson.annotations.version>2.20</jackson.annotations.version>
         <jackson.databind.version>2.20.1</jackson.databind.version>
     </properties>
