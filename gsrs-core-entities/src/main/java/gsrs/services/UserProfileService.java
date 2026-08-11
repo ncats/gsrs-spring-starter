@@ -185,7 +185,10 @@ public class UserProfileService {
             if(newUserRequest.getRoles() !=null){
                 oldUser.setRoles(newUserRequest.getRoles());
             }
-            return oldUser;
+            
+            UserProfile saved = userProfileRepository.saveAndFlush(oldUser);
+            
+            return saved;
         }
     }
     @canManageUsers
