@@ -89,7 +89,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
             ScheduledTaskInitializer task = null;
             try {
-            	System.out.println("Doing:" + config.scheduledTaskClass);
+            	System.out.println("Doing: " + config.scheduledTaskClass);
                 task = (ScheduledTaskInitializer) mapper.convertValue(params, Class.forName(config.scheduledTaskClass));
             } catch (Exception e) {
             	JsonNode jsn= mapper.convertValue(params, JsonNode.class);
