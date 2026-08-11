@@ -42,7 +42,7 @@
     </scm>
 
     <properties>
-        <lucene.version>5.5.0</lucene.version>
+        <lucene.version>10.0.0</lucene.version>
     </properties>
     <dependencies>
     <dependency>
