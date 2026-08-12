@@ -79,6 +79,7 @@ public class SearchResultContext {
     private BulkQuerySummary summary;
     private Integer completedQueries;
     private Integer totalQueries;
+    private Integer runningBulkSearchTotal;
 
 
 	private String originalRequest = null;
@@ -267,9 +268,11 @@ public class SearchResultContext {
         if (summary != null) {
             this.completedQueries = summary.getQCompleted();
             this.totalQueries = summary.getQTotal();
+            this.runningBulkSearchTotal = summary.getQRunningTotal();
         } else {
             this.completedQueries = null;
             this.totalQueries = null;
+            this.runningBulkSearchTotal = null;
         }
     }
  
@@ -287,6 +290,14 @@ public class SearchResultContext {
  
     public void setTotalQueries(Integer totalQueries) {
         this.totalQueries = totalQueries;
+    }
+
+    public Integer getRunningBulkSearchTotal() {
+        return runningBulkSearchTotal;
+    }
+
+    public void setRunningBulkSearchTotal(Integer runningBulkSearchTotal) {
+        this.runningBulkSearchTotal = runningBulkSearchTotal;
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore

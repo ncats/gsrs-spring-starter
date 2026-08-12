@@ -3,10 +3,12 @@ package ix.core.search.bulk;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +17,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PreDestroy;
@@ -32,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class CrossEntityBulkSearchService {
+    private static final long CROSS_ENTITY_PROGRESS_UPDATE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(250);
+    private static final long SERVICE_SUMMARY_REFRESH_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(300);
 
     private static class ServiceTarget {
         final String beanName;
@@ -40,6 +43,38 @@ public class CrossEntityBulkSearchService {
         ServiceTarget(String beanName, LegacyGsrsSearchService service) {
             this.beanName = beanName;
             this.service = service;
+        }
+    }
+
+    private static class ServiceSearchHandle {
+        final String beanName;
+        final SearchResultContext context;
+        final Future<Void> determinedFuture;
+        final String summaryCacheKey;
+        int lastKnownRunningTotal;
+        int lastKnownCompletedQueries;
+        long nextSummaryRefreshNanos;
+        boolean processed;
+
+        ServiceSearchHandle(String beanName, SearchResultContext context, Future<Void> determinedFuture) {
+            this.beanName = beanName;
+            this.context = context;
+            this.determinedFuture = determinedFuture;
+            this.summaryCacheKey = context == null || context.getKey() == null ? null : "BulkSearchSummary/" + context.getKey();
+            this.lastKnownRunningTotal = 0;
+            this.lastKnownCompletedQueries = 0;
+            this.nextSummaryRefreshNanos = 0L;
+            this.processed = false;
+        }
+    }
+
+    private static class ProgressTotals {
+        final int runningTotal;
+        final int completedQueries;
+
+        ProgressTotals(int runningTotal, int completedQueries) {
+            this.runningTotal = runningTotal;
+            this.completedQueries = completedQueries;
         }
     }
 
@@ -139,57 +174,205 @@ public class CrossEntityBulkSearchService {
                                                    SearchOptions options,
                                                    List<ServiceTarget> selectedServices,
                                                    String jobKey) throws Exception {
-        CompletionService<SearchResultContext> completionService = new ExecutorCompletionService<>(getExecutor());
-        List<Future<SearchResultContext>> futures = new ArrayList<>(selectedServices.size());
+        CompletionService<ServiceSearchHandle> completionService = new ExecutorCompletionService<>(getExecutor());
+        List<Future<ServiceSearchHandle>> submitFutures = new ArrayList<>(selectedServices.size());
         for (ServiceTarget target : selectedServices) {
-            futures.add(completionService.submit(serviceSearchTask(target, request, copyOptions(options))));
+            submitFutures.add(completionService.submit(serviceSearchTask(target, request, copyOptions(options))));
         }
 
         SearchResultContext merged = new SearchResultContext();
         merged.setKey(jobKey);
         merged.setStart(System.currentTimeMillis());
+        merged.setStatus(SearchResultContext.Status.Running);
+        merged.setRunningBulkSearchTotal(0);
+        persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(), 0, 0);
 
         Set<Key> seenRootKeys = new HashSet<>();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        int remaining = futures.size();
-        while (remaining > 0) {
+        List<ServiceSearchHandle> handles = new ArrayList<>(selectedServices.size());
+        List<ServiceSearchHandle> allHandles = new ArrayList<>(selectedServices.size());
+        int lastPersistedRunningTotal = -1;
+        int lastPersistedCompletedQueries = -1;
+        int completedServiceCount = 0;
+        long nextProgressUpdateNanos = System.nanoTime();
+        int awaitingHandles = submitFutures.size();
+        while (awaitingHandles > 0) {
             long waitNanos = deadline - System.nanoTime();
             if (waitNanos <= 0) {
-                cancelOutstanding(futures);
-                log.warn("Cross-entity search timed out waiting for service results; cancelling remaining tasks");
+                cancelOutstanding(submitFutures);
                 break;
             }
-
-            Future<SearchResultContext> completed;
+            Future<ServiceSearchHandle> completedHandle;
             try {
-                completed = completionService.poll(waitNanos, TimeUnit.NANOSECONDS);
+                completedHandle = completionService.poll(waitNanos, TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                cancelOutstanding(futures);
+                cancelOutstanding(submitFutures);
                 throw e;
             }
-            if (completed == null) {
-                cancelOutstanding(futures);
-                log.warn("Cross-entity search timed out waiting for service results; cancelling remaining tasks");
+            if (completedHandle == null) {
+                cancelOutstanding(submitFutures);
                 break;
             }
-
-            remaining--;
+            awaitingHandles--;
             try {
-                SearchResultContext ctx = completed.get();
-                if (ctx != null && ctx.getResults() != null) {
-                    processServiceContext(ctx, merged, seenRootKeys);
+                ServiceSearchHandle handle = completedHandle.get();
+                if (handle != null && handle.context != null) {
+                    handles.add(handle);
+                    allHandles.add(handle);
                 }
             } catch (Exception e) {
-                log.warn("Error retrieving search results from one service", e);
+                log.warn("Error starting one cross-entity bulk search task", e);
             }
         }
 
+        while (!handles.isEmpty()) {
+            long waitNanos = deadline - System.nanoTime();
+            if (waitNanos <= 0) {
+                break;
+            }
+
+            Iterator<ServiceSearchHandle> handleIterator = handles.iterator();
+            while (handleIterator.hasNext()) {
+                ServiceSearchHandle handle = handleIterator.next();
+                if (isServiceDetermined(handle)) {
+                    processServiceIfNeeded(handle, merged, seenRootKeys);
+                    completedServiceCount++;
+                    handleIterator.remove();
+                }
+            }
+            if (handles.isEmpty()) {
+                break;
+            }
+
+            long now = System.nanoTime();
+            if (now >= nextProgressUpdateNanos) {
+                ProgressTotals totals = computeProgressTotals(handles, request.getQueries().size(), merged.getCount(), completedServiceCount);
+                merged.setRunningBulkSearchTotal(totals.runningTotal);
+                if (totals.runningTotal != lastPersistedRunningTotal
+                        || totals.completedQueries != lastPersistedCompletedQueries) {
+                    persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(),
+                            totals.runningTotal, totals.completedQueries);
+                    lastPersistedRunningTotal = totals.runningTotal;
+                    lastPersistedCompletedQueries = totals.completedQueries;
+                }
+                nextProgressUpdateNanos = now + CROSS_ENTITY_PROGRESS_UPDATE_INTERVAL_NANOS;
+            }
+
+            try {
+                TimeUnit.MILLISECONDS.sleep(Math.min(200L, Math.max(10L, TimeUnit.NANOSECONDS.toMillis(waitNanos))));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw e;
+            }
+        }
+
+        for (ServiceSearchHandle handle : handles) {
+            processServiceIfNeeded(handle, merged, seenRootKeys);
+            if (isServiceDetermined(handle)) {
+                completedServiceCount++;
+            }
+        }
+        int finalCompletedQueries = request.getQueries().size() * selectedServices.size();
         merged.setTotal(merged.getCount());
+        merged.setRunningBulkSearchTotal(merged.getCount());
+        persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(), merged.getCount(),
+                finalCompletedQueries);
         merged.setStatus(SearchResultContext.Status.Done);
         merged.setStop(System.currentTimeMillis());
         merged.setMessage("Cross-entity bulk search complete");
         return merged;
+    }
+
+    private ProgressTotals computeProgressTotals(List<ServiceSearchHandle> handles,
+                                                 int queryCount,
+                                                 int committedRunningTotal,
+                                                 int completedServiceCount) {
+        int runningTotal = committedRunningTotal;
+        int maxPerServiceCompleted = Math.max(1, queryCount);
+        int completedQueries = completedServiceCount * maxPerServiceCompleted;
+        long nowNanos = System.nanoTime();
+        for (ServiceSearchHandle handle : handles) {
+            if (handle.summaryCacheKey != null && nowNanos >= handle.nextSummaryRefreshNanos) {
+                BulkSearchService.BulkQuerySummary summary = getBulkSummaryForHandle(handle);
+                if (summary != null) {
+                    handle.lastKnownRunningTotal = Math.max(0, summary.getQRunningTotal());
+                    handle.lastKnownCompletedQueries = Math.max(0, summary.getQCompleted());
+                } else {
+                    handle.lastKnownRunningTotal = Math.max(handle.lastKnownRunningTotal, handle.context.getCount());
+                    if (isServiceDetermined(handle)) {
+                        handle.lastKnownCompletedQueries = maxPerServiceCompleted;
+                    }
+                }
+                handle.nextSummaryRefreshNanos = nowNanos + SERVICE_SUMMARY_REFRESH_INTERVAL_NANOS;
+            }
+
+            if (handle.summaryCacheKey != null) {
+                runningTotal += handle.lastKnownRunningTotal;
+                completedQueries += Math.min(maxPerServiceCompleted, Math.max(0, handle.lastKnownCompletedQueries));
+                continue;
+            }
+
+            runningTotal += handle.context.getCount();
+            if (isServiceDetermined(handle)) {
+                completedQueries += maxPerServiceCompleted;
+            }
+        }
+        return new ProgressTotals(runningTotal, completedQueries);
+    }
+
+    private void processServiceIfNeeded(ServiceSearchHandle handle,
+                                        SearchResultContext merged,
+                                        Set<Key> seenRootKeys) {
+        if (handle.processed) {
+            return;
+        }
+        SearchResultContext ctx = handle.context;
+        if (ctx != null && ctx.getResults() != null) {
+            processServiceContext(ctx, merged, seenRootKeys);
+        }
+        handle.processed = true;
+    }
+
+    private boolean isServiceDetermined(ServiceSearchHandle handle) {
+        return (handle.determinedFuture != null && handle.determinedFuture.isDone())
+                || (handle.context != null && handle.context.isDetermined());
+    }
+
+    private void persistCrossEntitySummary(String jobKey,
+                                           SearchOptions options,
+                                           int queryCount,
+                                           int serviceCount,
+                                           int runningTotal,
+                                           int completedQueries) {
+        int qTotal = Math.max(0, queryCount * serviceCount);
+        BulkSearchService.BulkQuerySummary summary = BulkSearchService.BulkQuerySummary.builder()
+                .qTotal(qTotal)
+                .qTop(0)
+                .qSkip(0)
+                .qMatchTotal(runningTotal)
+                .qUnMatchTotal(0)
+                .qCompleted(Math.min(qTotal, Math.max(0, completedQueries)))
+                .qRunningTotal(Math.max(0, runningTotal))
+                .qFilteredTotal(Math.min(qTotal, Math.max(0, completedQueries)))
+                .qFilter(options.getFilter())
+                .qSort(options.getOrder() != null ? String.join(",", options.getOrder()) : null)
+                .searchOnIdentifiers(options.getBulkSearchOnIdentifiers())
+                .facets(options.getFacets() == null ? Collections.emptyList() : new ArrayList<>(options.getFacets()))
+                .queries(Collections.emptyList())
+                .build();
+        cache.setRaw("BulkSearchSummary/" + jobKey, summary);
+    }
+
+    private BulkSearchService.BulkQuerySummary getBulkSummaryForHandle(ServiceSearchHandle handle) {
+        if (handle == null || handle.summaryCacheKey == null) {
+            return null;
+        }
+        Object cached = cache.getRaw(handle.summaryCacheKey);
+        if (cached instanceof BulkSearchService.BulkQuerySummary) {
+            return (BulkSearchService.BulkQuerySummary) cached;
+        }
+        return null;
     }
 
     private void processServiceContext(SearchResultContext ctx, SearchResultContext merged,
@@ -197,9 +380,6 @@ public class CrossEntityBulkSearchService {
         if (ctx.getResults().isEmpty()) {
             return;
         }
-
-        // Collect context updates locally to avoid interleaving reads and writes in the cache
-        Map<Key, Map<String, Object>> pendingUpdates = new HashMap<>();
 
         for (Object result : ctx.getResults()) {
             if (!(result instanceof Key)) {
@@ -213,20 +393,10 @@ public class CrossEntityBulkSearchService {
                 merged.add(key);
 
                 Map<String, Object> matching = cache.getMatchingContextByContextID(ctx.getId(), rootKey);
-                Map<String, Object> contextData = matching != null
-                        ? new HashMap<>(matching.size() + 1)
-                        : new HashMap<>(1);
-                if (matching != null) {
-                    contextData.putAll(matching);
-                }
+                Map<String, Object> contextData = matching != null ? matching : new HashMap<>(2);
                 contextData.put("entityKind", key.getKind());
-                pendingUpdates.put(rootKey, contextData);
+                cache.setMatchingContext(merged.getId(), rootKey, contextData);
             }
-        }
-
-        // Flush all collected updates in one pass
-        for (Map.Entry<Key, Map<String, Object>> entry : pendingUpdates.entrySet()) {
-            cache.setMatchingContext(merged.getId(), entry.getKey(), entry.getValue());
         }
     }
 
@@ -264,30 +434,18 @@ public class CrossEntityBulkSearchService {
         return serviceKey.toString();
     }
 
-    private void cancelOutstanding(List<Future<SearchResultContext>> futures) {
-        for (Future<SearchResultContext> future : futures) {
+    private <T> void cancelOutstanding(List<Future<T>> futures) {
+        for (Future<T> future : futures) {
             future.cancel(true);
         }
     }
 
-    private Callable<SearchResultContext> serviceSearchTask(ServiceTarget service,
+    private Callable<ServiceSearchHandle> serviceSearchTask(ServiceTarget service,
                                                             BulkSearchService.SanitizedBulkSearchRequest request,
                                                             SearchOptions options) {
         return () -> {
             SearchResultContext ctx = service.service.bulkSearch(request, options);
-            if (ctx != null) {
-                try {
-                    // Reduced timeout from 5 minutes to 30 seconds for better responsiveness
-                    // on slow queries. Partial results are still returned if timeout occurs
-                    ctx.getDeterminedFuture().get(30, TimeUnit.SECONDS);
-                } catch (java.util.concurrent.TimeoutException e) {
-                    // Log timeout but continue - we have partial results from this service
-                    log.debug("Service {} bulk search timed out after 30s, returning partial results",
-                              service.beanName);
-                    // Don't fail the entire cross-entity search due to one slow service
-                }
-            }
-            return ctx;
+            return new ServiceSearchHandle(service.beanName, ctx, ctx == null ? null : ctx.getDeterminedFuture());
         };
     }
 

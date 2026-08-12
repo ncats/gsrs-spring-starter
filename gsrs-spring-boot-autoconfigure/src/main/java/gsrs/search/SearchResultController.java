@@ -237,6 +237,7 @@ public class SearchResultController {
 			   .qMatchTotal(savedSummary.getQMatchTotal())
 			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
 			   .qCompleted(savedSummary.getQCompleted())
+			   .qRunningTotal(savedSummary.getQRunningTotal())
 			   .qFilteredTotal(savedSummary.getQTotal())
 			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
