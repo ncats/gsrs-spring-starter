@@ -6,6 +6,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
@@ -54,7 +55,7 @@ public class BulkSearchService {
 	@Autowired
 	protected PlatformTransactionManager transactionManager;
 
-	private final int MAX_BULK_SUB_QUERY_COUNT = 10000;
+	private static final int MAX_BULK_SUB_QUERY_COUNT = 10000;
 	private static final int BULK_SUMMARY_UPDATE_EVERY_QUERIES = 25;
 	private static final long BULK_SUMMARY_UPDATE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(400);
 	private static final int LARGE_BULK_PROGRESS_UPDATE_EVERY_QUERIES = 100;
@@ -85,17 +86,7 @@ public class BulkSearchService {
 			throw new IOException("Bulk search request must contain at least one query");
 		}
 
-		List<String> normalizedQueries = new ArrayList<>(request.getQueries().size());
-		Set<String> seenQueries = new HashSet<>(request.getQueries().size());
-		for (String rawQuery : request.getQueries()) {
-			if (rawQuery == null) {
-				continue;
-			}
-			String trimmedQuery = rawQuery.trim();
-			if (!trimmedQuery.isEmpty() && seenQueries.add(trimmedQuery)) {
-				normalizedQueries.add(trimmedQuery);
-			}
-		}
+		List<String> normalizedQueries = normalizeQueries(request.getQueries());
 		SanitizedBulkSearchRequest normalizedRequest = new SanitizedBulkSearchRequest();
 		normalizedRequest.setQueries(normalizedQueries);
 		if (normalizedQueries.isEmpty()) {
@@ -145,6 +136,9 @@ public class BulkSearchService {
 				.qTotal(totalQueries)
 				.qUnMatchTotal(0)
 				.qRunningTotal(0)
+				.grossMatchTotal(0)
+				.totalRecordsProcessing(0)
+				.completedRecordsSoFar(0)
 				.searchOnIdentifiers(optionsCopy.getBulkSearchOnIdentifiers())
 				.facets(optionsCopy.getFacets())
 				.qFilter(optionsCopy.getFilter())
@@ -154,6 +148,7 @@ public class BulkSearchService {
 		boolean searchOnIdentifiers = optionsCopy.getBulkSearchOnIdentifiers();
 		final int[] unmatchedCount = new int[] {0};
 		final int[] completedCount = new int[] {0};
+		final int[] grossMatchCount = new int[] {0};
 		final Set<Key> uniqueMatchedKeys = new HashSet<>();
 		final long[] lastSummaryWriteNanos = new long[] {System.nanoTime()};
 		final int queryWorkerCount = determineQueryWorkerCount(totalQueries);
@@ -166,11 +161,8 @@ public class BulkSearchService {
 				if (queryWorkerCount <= 1) {
 					for (int i = 0; i < queries.size(); i++) {
 						QueryOutcome outcome = executeQuery(i, queries.get(i), searchOnIdentifiers, gsrsRepository, optionsCopy, textIndexer);
-						processQueryOutcome(outcome, generator, bq, uniqueMatchedKeys, querySummary, summaryRecords, completedSummaryRecords, unmatchedCount, completedCount);
-						if (shouldPersistProgressSummary(completedCount[0], totalQueries, lastSummaryWriteNanos[0])) {
-							persistProgressSummary(summaryCacheKey, querySummary, completedSummaryRecords, includeProgressQueryDetails);
-							lastSummaryWriteNanos[0] = System.nanoTime();
-						}
+						processQueryOutcome(outcome, generator, bq, uniqueMatchedKeys, grossMatchCount, querySummary, summaryRecords, completedSummaryRecords, unmatchedCount, completedCount);
+						maybePersistProgress(summaryCacheKey, querySummary, completedSummaryRecords, includeProgressQueryDetails, completedCount[0], totalQueries, lastSummaryWriteNanos);
 					}
 				} else {
 					CompletionService<QueryOutcome> completionService = new ExecutorCompletionService<>(ForkJoinPool.commonPool());
@@ -199,17 +191,13 @@ public class BulkSearchService {
 							continue;
 						}
 
-						processQueryOutcome(outcome, generator, bq, uniqueMatchedKeys, querySummary, summaryRecords, completedSummaryRecords, unmatchedCount, completedCount);
+						processQueryOutcome(outcome, generator, bq, uniqueMatchedKeys, grossMatchCount, querySummary, summaryRecords, completedSummaryRecords, unmatchedCount, completedCount);
 						completed++;
 						if (submitted < queries.size()) {
 							final int index = submitted++;
 							completionService.submit(() -> executeQuery(index, queries.get(index), searchOnIdentifiers, gsrsRepository, optionsCopy, textIndexer));
 						}
-
-						if (shouldPersistProgressSummary(completedCount[0], totalQueries, lastSummaryWriteNanos[0])) {
-							persistProgressSummary(summaryCacheKey, querySummary, completedSummaryRecords, includeProgressQueryDetails);
-							lastSummaryWriteNanos[0] = System.nanoTime();
-						}
+						maybePersistProgress(summaryCacheKey, querySummary, completedSummaryRecords, includeProgressQueryDetails, completedCount[0], totalQueries, lastSummaryWriteNanos);
 					}
 				}
 
@@ -221,7 +209,7 @@ public class BulkSearchService {
 				querySummary.setQUnMatchTotal(unmatchedCount[0]);
 				querySummary.setQMatchTotal(totalQueries - unmatchedCount[0]);
 				querySummary.setQFilteredTotal(totalQueries);
-				querySummary.setQRunningTotal(uniqueMatchedKeys.size());
+				updateSummaryCounters(querySummary, uniqueMatchedKeys.size(), grossMatchCount[0]);
 				querySummary.setQueries(finalSummaryList);
 				ixCache.setRaw(summaryCacheKey, snapshotSummary(querySummary, finalSummaryList, true));
 				bulkSearchTaskMap.remove(hashKey);
@@ -257,6 +245,7 @@ public class BulkSearchService {
 									 MatchViewGenerator generator,
 									 BlockingQueue<BulkSearchResult> bq,
 									 Set<Key> uniqueMatchedKeys,
+									 int[] grossMatchCount,
 									 BulkQuerySummary querySummary,
 									 SearchResultSummaryRecord[] summaryRecords,
 									 List<SearchResultSummaryRecord> completedSummaryRecords,
@@ -275,6 +264,7 @@ public class BulkSearchService {
 				log.error("Error processing query: " + outcome.originalQuery, outcome.error);
 			}
 		} else {
+			grossMatchCount[0] += keys.size();
 			List<MatchView> list = new ArrayList<>(keys.size());
 			for (Key k : keys) {
 				uniqueMatchedKeys.add(k);
@@ -288,7 +278,7 @@ public class BulkSearchService {
 			singleQuerySummary.setRecords(list);
 		}
 
-		querySummary.setQRunningTotal(uniqueMatchedKeys.size());
+		updateSummaryCounters(querySummary, uniqueMatchedKeys.size(), grossMatchCount[0]);
 		summaryRecords[outcome.queryIndex] = singleQuerySummary;
 		completedSummaryRecords.add(singleQuerySummary);
 		completedCount[0]++;
@@ -296,6 +286,26 @@ public class BulkSearchService {
 		querySummary.setQMatchTotal(completedCount[0] - unmatchedCount[0]);
 		querySummary.setQUnMatchTotal(unmatchedCount[0]);
 		querySummary.setQFilteredTotal(completedCount[0]);
+	}
+
+	private void updateSummaryCounters(BulkQuerySummary querySummary, int uniqueCount, int grossCount) {
+		querySummary.setQRunningTotal(uniqueCount);
+		querySummary.setGrossMatchTotal(grossCount);
+		querySummary.setTotalRecordsProcessing(grossCount);
+		querySummary.setCompletedRecordsSoFar(grossCount);
+	}
+
+	private void maybePersistProgress(String summaryCacheKey,
+									  BulkQuerySummary querySummary,
+									  List<SearchResultSummaryRecord> completedSummaryRecords,
+									  boolean includeQueryDetails,
+									  int completedQueries,
+									  int totalQueries,
+									  long[] lastWriteNanos) {
+		if (shouldPersistProgressSummary(completedQueries, totalQueries, lastWriteNanos[0])) {
+			persistProgressSummary(summaryCacheKey, querySummary, completedSummaryRecords, includeQueryDetails);
+			lastWriteNanos[0] = System.nanoTime();
+		}
 	}
 
 	private int determineQueryWorkerCount(int totalQueries) {
@@ -354,9 +364,6 @@ public class BulkSearchService {
 		if (completedQueries <= 1 || completedQueries >= totalQueries) {
 			return true;
 		}
-		if (completedQueries % BULK_SUMMARY_UPDATE_EVERY_QUERIES == 0) {
-			return true;
-		}
 		int progressUpdateEvery = getProgressUpdateEveryQueries(totalQueries);
 		if (completedQueries % progressUpdateEvery == 0) {
 			return true;
@@ -397,6 +404,9 @@ public class BulkSearchService {
 				.qUnMatchTotal(summary.getQUnMatchTotal())
 				.qCompleted(summary.getQCompleted())
 				.qRunningTotal(summary.getQRunningTotal())
+				.grossMatchTotal(summary.getGrossMatchTotal())
+				.totalRecordsProcessing(summary.getTotalRecordsProcessing())
+				.completedRecordsSoFar(summary.getCompletedRecordsSoFar())
 				.qFilteredTotal(summary.getQFilteredTotal())
 				.qFilter(summary.getQFilter())
 				.qSort(summary.getQSort())
@@ -454,6 +464,61 @@ public class BulkSearchService {
 			return "\"^" + query + "$\"";
 		}else {
 			return "\"" + query + "\"";
+		}
+	}
+
+	public static List<String> normalizeQueries(List<String> rawQueries) {
+		if (rawQueries == null || rawQueries.isEmpty()) {
+			return Collections.emptyList();
+		}
+		Set<String> seenQueries = new LinkedHashSet<>(rawQueries.size());
+		for (String rawQuery : rawQueries) {
+			if (rawQuery == null) {
+				continue;
+			}
+			String trimmedQuery = rawQuery.trim();
+			if (!trimmedQuery.isEmpty()) {
+				seenQueries.add(trimmedQuery);
+			}
+		}
+		return new ArrayList<>(seenQueries);
+	}
+
+	public static List<String> parseNormalizedQueries(String queryString) {
+		if (queryString == null || queryString.isEmpty()) {
+			return Collections.emptyList();
+		}
+		Set<String> seenQueries = new LinkedHashSet<>(Math.max(8, queryString.length() / 16));
+		int start = 0;
+		int length = queryString.length();
+		for (int i = 0; i < length; i++) {
+			char ch = queryString.charAt(i);
+			if (ch == '\n' || ch == '\r') {
+				addNormalizedQuery(queryString, start, i, seenQueries);
+				if (ch == '\r' && i + 1 < length && queryString.charAt(i + 1) == '\n') {
+					i++;
+				}
+				start = i + 1;
+			}
+		}
+		addNormalizedQuery(queryString, start, length, seenQueries);
+		return new ArrayList<>(seenQueries);
+	}
+
+	private static void addNormalizedQuery(String queryString, int startInclusive, int endExclusive, Set<String> seenQueries) {
+		if (startInclusive >= endExclusive) {
+			return;
+		}
+		int lineStart = startInclusive;
+		int lineEnd = endExclusive;
+		while (lineStart < lineEnd && Character.isWhitespace(queryString.charAt(lineStart))) {
+			lineStart++;
+		}
+		while (lineEnd > lineStart && Character.isWhitespace(queryString.charAt(lineEnd - 1))) {
+			lineEnd--;
+		}
+		if (lineStart < lineEnd) {
+			seenQueries.add(queryString.substring(lineStart, lineEnd));
 		}
 	}
 
@@ -523,7 +588,10 @@ public class BulkSearchService {
 		int qMatchTotal;
 		int qUnMatchTotal;
 		int qCompleted;
-		int qRunningTotal;
+		int qRunningTotal;       // unique (deduped) matched key count
+		int grossMatchTotal;     // raw sum of per-query hit counts (before dedup)
+		int totalRecordsProcessing;
+		int completedRecordsSoFar;
 		int qFilteredTotal;
 		String qFilter;
 		String qSort;

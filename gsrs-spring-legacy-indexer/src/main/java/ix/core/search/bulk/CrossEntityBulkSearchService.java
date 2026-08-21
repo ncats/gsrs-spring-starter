@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +51,7 @@ public class CrossEntityBulkSearchService {
         final Future<Void> determinedFuture;
         final String summaryCacheKey;
         int lastKnownRunningTotal;
+        int lastKnownGrossMatchTotal;
         int lastKnownCompletedQueries;
         long nextSummaryRefreshNanos;
         boolean processed;
@@ -62,6 +62,7 @@ public class CrossEntityBulkSearchService {
             this.determinedFuture = determinedFuture;
             this.summaryCacheKey = context == null || context.getKey() == null ? null : "BulkSearchSummary/" + context.getKey();
             this.lastKnownRunningTotal = 0;
+            this.lastKnownGrossMatchTotal = 0;
             this.lastKnownCompletedQueries = 0;
             this.nextSummaryRefreshNanos = 0L;
             this.processed = false;
@@ -70,11 +71,15 @@ public class CrossEntityBulkSearchService {
 
     private static class ProgressTotals {
         final int runningTotal;
+        final int grossMatchTotal;
         final int completedQueries;
+        final int completedRecordsSoFar;
 
-        ProgressTotals(int runningTotal, int completedQueries) {
+        ProgressTotals(int runningTotal, int grossMatchTotal, int completedQueries, int completedRecordsSoFar) {
             this.runningTotal = runningTotal;
+            this.grossMatchTotal = grossMatchTotal;
             this.completedQueries = completedQueries;
+            this.completedRecordsSoFar = completedRecordsSoFar;
         }
     }
 
@@ -106,7 +111,8 @@ public class CrossEntityBulkSearchService {
             throw new IOException("No legacy search services available for cross-entity bulk search");
         }
 
-        BulkSearchService.SanitizedBulkSearchRequest normalizedRequest = normalizeRequest(request);
+        BulkSearchService.SanitizedBulkSearchRequest normalizedRequest = new BulkSearchService.SanitizedBulkSearchRequest();
+        normalizedRequest.setQueries(BulkSearchService.normalizeQueries(request.getQueries()));
         String serviceKey = buildServiceKey(selectedServices);
         String jobKey = normalizedRequest.computeKey(options.getBulkSearchOnIdentifiers(), options.getFacets())
                 + "/" + serviceKey;
@@ -185,12 +191,11 @@ public class CrossEntityBulkSearchService {
         merged.setStart(System.currentTimeMillis());
         merged.setStatus(SearchResultContext.Status.Running);
         merged.setRunningBulkSearchTotal(0);
-        persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(), 0, 0);
+        persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(), 0, 0, 0, 0);
 
         Set<Key> seenRootKeys = new HashSet<>();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
         List<ServiceSearchHandle> handles = new ArrayList<>(selectedServices.size());
-        List<ServiceSearchHandle> allHandles = new ArrayList<>(selectedServices.size());
         int lastPersistedRunningTotal = -1;
         int lastPersistedCompletedQueries = -1;
         int completedServiceCount = 0;
@@ -219,7 +224,6 @@ public class CrossEntityBulkSearchService {
                 ServiceSearchHandle handle = completedHandle.get();
                 if (handle != null && handle.context != null) {
                     handles.add(handle);
-                    allHandles.add(handle);
                 }
             } catch (Exception e) {
                 log.warn("Error starting one cross-entity bulk search task", e);
@@ -252,7 +256,7 @@ public class CrossEntityBulkSearchService {
                 if (totals.runningTotal != lastPersistedRunningTotal
                         || totals.completedQueries != lastPersistedCompletedQueries) {
                     persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(),
-                            totals.runningTotal, totals.completedQueries);
+                            totals.runningTotal, totals.grossMatchTotal, totals.completedQueries, totals.completedRecordsSoFar);
                     lastPersistedRunningTotal = totals.runningTotal;
                     lastPersistedCompletedQueries = totals.completedQueries;
                 }
@@ -277,7 +281,7 @@ public class CrossEntityBulkSearchService {
         merged.setTotal(merged.getCount());
         merged.setRunningBulkSearchTotal(merged.getCount());
         persistCrossEntitySummary(jobKey, options, request.getQueries().size(), selectedServices.size(), merged.getCount(),
-                finalCompletedQueries);
+                merged.getCount(), finalCompletedQueries, merged.getCount());
         merged.setStatus(SearchResultContext.Status.Done);
         merged.setStop(System.currentTimeMillis());
         merged.setMessage("Cross-entity bulk search complete");
@@ -289,6 +293,8 @@ public class CrossEntityBulkSearchService {
                                                  int committedRunningTotal,
                                                  int completedServiceCount) {
         int runningTotal = committedRunningTotal;
+        int grossMatchTotal = committedRunningTotal;
+        int completedRecordsSoFar = committedRunningTotal;
         int maxPerServiceCompleted = Math.max(1, queryCount);
         int completedQueries = completedServiceCount * maxPerServiceCompleted;
         long nowNanos = System.nanoTime();
@@ -297,9 +303,11 @@ public class CrossEntityBulkSearchService {
                 BulkSearchService.BulkQuerySummary summary = getBulkSummaryForHandle(handle);
                 if (summary != null) {
                     handle.lastKnownRunningTotal = Math.max(0, summary.getQRunningTotal());
+                    handle.lastKnownGrossMatchTotal = Math.max(0, summary.getGrossMatchTotal());
                     handle.lastKnownCompletedQueries = Math.max(0, summary.getQCompleted());
                 } else {
                     handle.lastKnownRunningTotal = Math.max(handle.lastKnownRunningTotal, handle.context.getCount());
+                    handle.lastKnownGrossMatchTotal = Math.max(handle.lastKnownGrossMatchTotal, handle.context.getCount());
                     if (isServiceDetermined(handle)) {
                         handle.lastKnownCompletedQueries = maxPerServiceCompleted;
                     }
@@ -309,16 +317,20 @@ public class CrossEntityBulkSearchService {
 
             if (handle.summaryCacheKey != null) {
                 runningTotal += handle.lastKnownRunningTotal;
+                grossMatchTotal += handle.lastKnownGrossMatchTotal;
+                completedRecordsSoFar += handle.lastKnownGrossMatchTotal;
                 completedQueries += Math.min(maxPerServiceCompleted, Math.max(0, handle.lastKnownCompletedQueries));
                 continue;
             }
 
             runningTotal += handle.context.getCount();
+            grossMatchTotal += handle.context.getCount();
+            completedRecordsSoFar += handle.context.getCount();
             if (isServiceDetermined(handle)) {
                 completedQueries += maxPerServiceCompleted;
             }
         }
-        return new ProgressTotals(runningTotal, completedQueries);
+        return new ProgressTotals(runningTotal, grossMatchTotal, completedQueries, completedRecordsSoFar);
     }
 
     private void processServiceIfNeeded(ServiceSearchHandle handle,
@@ -344,7 +356,9 @@ public class CrossEntityBulkSearchService {
                                            int queryCount,
                                            int serviceCount,
                                            int runningTotal,
-                                           int completedQueries) {
+                                           int grossMatchTotal,
+                                           int completedQueries,
+                                           int completedRecordsSoFar) {
         int qTotal = Math.max(0, queryCount * serviceCount);
         BulkSearchService.BulkQuerySummary summary = BulkSearchService.BulkQuerySummary.builder()
                 .qTotal(qTotal)
@@ -354,6 +368,9 @@ public class CrossEntityBulkSearchService {
                 .qUnMatchTotal(0)
                 .qCompleted(Math.min(qTotal, Math.max(0, completedQueries)))
                 .qRunningTotal(Math.max(0, runningTotal))
+                .grossMatchTotal(Math.max(0, grossMatchTotal))
+                .totalRecordsProcessing(Math.max(0, grossMatchTotal))
+                .completedRecordsSoFar(Math.max(0, completedRecordsSoFar))
                 .qFilteredTotal(Math.min(qTotal, Math.max(0, completedQueries)))
                 .qFilter(options.getFilter())
                 .qSort(options.getOrder() != null ? String.join(",", options.getOrder()) : null)
@@ -400,38 +417,13 @@ public class CrossEntityBulkSearchService {
         }
     }
 
-    private BulkSearchService.SanitizedBulkSearchRequest normalizeRequest(BulkSearchService.SanitizedBulkSearchRequest request) {
-        Set<String> normalizedQueries = new LinkedHashSet<>(request.getQueries().size());
-        for (String rawQuery : request.getQueries()) {
-            if (rawQuery == null) {
-                continue;
-            }
-            String trimmedQuery = rawQuery.trim();
-            if (!trimmedQuery.isEmpty()) {
-                normalizedQueries.add(trimmedQuery);
-            }
-        }
-
-        BulkSearchService.SanitizedBulkSearchRequest normalizedRequest = new BulkSearchService.SanitizedBulkSearchRequest();
-        normalizedRequest.setQueries(new ArrayList<>(normalizedQueries));
-        return normalizedRequest;
-    }
-
     private String buildServiceKey(List<ServiceTarget> selectedServices) {
         List<String> names = new ArrayList<>(selectedServices.size());
         for (ServiceTarget target : selectedServices) {
             names.add(target.beanName);
         }
         names.sort(String::compareTo);
-
-        StringBuilder serviceKey = new StringBuilder();
-        for (String name : names) {
-            if (serviceKey.length() > 0) {
-                serviceKey.append(',');
-            }
-            serviceKey.append(name);
-        }
-        return serviceKey.toString();
+        return String.join(",", names);
     }
 
     private <T> void cancelOutstanding(List<Future<T>> futures) {

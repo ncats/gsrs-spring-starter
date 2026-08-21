@@ -1,7 +1,6 @@
 package gsrs.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,7 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResultContext;
 import ix.core.search.bulk.BulkSearchService;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.core.search.bulk.CrossEntityBulkSearchService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,45 +69,7 @@ public class CrossEntityBulkSearchController {
                 if (queryString == null || queryString.trim().isEmpty()) {
                     throw new RuntimeException("Cannot find bulk query ID.");
                 }
-                List<String> parsedQueries = new ArrayList<>(Math.max(8, queryString.length() / 16));
-                int start = 0;
-                int length = queryString.length();
-                for (int i = 0; i < length; i++) {
-                    char ch = queryString.charAt(i);
-                    if (ch == '\n' || ch == '\r') {
-                        if (i > start) {
-                            int lineStart = start;
-                            int lineEnd = i;
-                            while (lineStart < lineEnd && Character.isWhitespace(queryString.charAt(lineStart))) {
-                                lineStart++;
-                            }
-                            while (lineEnd > lineStart && Character.isWhitespace(queryString.charAt(lineEnd - 1))) {
-                                lineEnd--;
-                            }
-                            if (lineStart < lineEnd) {
-                                parsedQueries.add(queryString.substring(lineStart, lineEnd));
-                            }
-                        }
-                        if (ch == '\r' && i + 1 < length && queryString.charAt(i + 1) == '\n') {
-                            i++;
-                        }
-                        start = i + 1;
-                    }
-                }
-                if (start < length) {
-                    int lineStart = start;
-                    int lineEnd = length;
-                    while (lineStart < lineEnd && Character.isWhitespace(queryString.charAt(lineStart))) {
-                        lineStart++;
-                    }
-                    while (lineEnd > lineStart && Character.isWhitespace(queryString.charAt(lineEnd - 1))) {
-                        lineEnd--;
-                    }
-                    if (lineStart < lineEnd) {
-                        parsedQueries.add(queryString.substring(lineStart, lineEnd));
-                    }
-                }
-                return parsedQueries;
+                return BulkSearchService.parseNormalizedQueries(queryString);
             });
             sanitizedRequest.setQueries(queries);
         } catch (Exception e) {
@@ -118,6 +80,12 @@ public class CrossEntityBulkSearchController {
         try {
             Collection<String> contextFilter = contexts;
             SearchResultContext resultContext = crossEntityBulkSearchService.search(sanitizedRequest, searchOptions, contextFilter);
+            if (resultContext.getKey() != null) {
+                BulkQuerySummary runningSummary = getBulkSummaryForKey(resultContext.getKey());
+                if (runningSummary != null) {
+                    resultContext.setSummary(runningSummary);
+                }
+            }
             updateSearchContextGenerator(resultContext, queryParameters);
             return new ResponseEntity<>(resultContext, HttpStatus.OK);
         } catch (IOException e) {
@@ -144,5 +112,13 @@ public class CrossEntityBulkSearchController {
             }
             resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
         }
+    }
+
+    private BulkQuerySummary getBulkSummaryForKey(String key) {
+        Object cached = gsrscache.getRaw("BulkSearchSummary/" + key);
+        if (cached instanceof BulkQuerySummary) {
+            return (BulkQuerySummary) cached;
+        }
+        return null;
     }
 }

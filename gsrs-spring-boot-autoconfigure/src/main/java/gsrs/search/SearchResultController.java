@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.function.Predicate;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -238,6 +239,9 @@ public class SearchResultController {
 			   .qUnMatchTotal(savedSummary.getQUnMatchTotal())
 			   .qCompleted(savedSummary.getQCompleted())
 			   .qRunningTotal(savedSummary.getQRunningTotal())
+			   .grossMatchTotal(savedSummary.getGrossMatchTotal())
+			   .totalRecordsProcessing(savedSummary.getTotalRecordsProcessing())
+			   .completedRecordsSoFar(savedSummary.getCompletedRecordsSoFar())
 			   .qFilteredTotal(savedSummary.getQTotal())
 			   .searchOnIdentifiers(savedSummary.isSearchOnIdentifiers());
 		
@@ -294,36 +298,71 @@ public class SearchResultController {
 		}
 		
 		if(filter==null && comp==null) {
-			int start = Math.min(qSkip, queriesList.size());
-			int end = Math.min(start + qTop, queriesList.size());
+			int safeSkip = Math.max(0, qSkip);
+			int safeTop = Math.max(0, qTop);
+			int start = Math.min(safeSkip, queriesList.size());
+			int end = Math.min(start + safeTop, queriesList.size());
 			if(start >= end) {
 				builder.queries(Collections.emptyList());
 			}else {
 				builder.queries(new ArrayList<>(queriesList.subList(start, end)));
 			}
 		}else {
-			if(comp==null)comp=(Comparator<SearchResultSummaryRecord>) (a,b)->0;
-			if(filter==null)filter=(s)->true;
-
-			List<SearchResultSummaryRecord> filtered = new ArrayList<>(queriesList.size());
-			int filteredTotal = 0;
-			for(SearchResultSummaryRecord record : queriesList) {
-				if(filter.test(record)) {
-					filtered.add(record);
+			int safeSkip = Math.max(0, qSkip);
+			int safeTop = Math.max(0, qTop);
+			if(comp==null) {
+				Predicate<SearchResultSummaryRecord> effectiveFilter = filter == null ? (s)->true : filter;
+				List<SearchResultSummaryRecord> filteredPage = new ArrayList<>(Math.min(Math.max(safeTop, 1), queriesList.size()));
+				int filteredTotal = 0;
+				for(SearchResultSummaryRecord record : queriesList) {
+					if(!effectiveFilter.test(record)) {
+						continue;
+					}
+					if(filteredTotal >= safeSkip && filteredPage.size() < safeTop) {
+						filteredPage.add(record);
+					}
 					filteredTotal++;
 				}
-			}
-			if(!filtered.isEmpty()) {
-				filtered.sort(comp);
-			}
-			int start = Math.min(qSkip, filtered.size());
-			int end = Math.min(start + qTop, filtered.size());
-			if(start >= end) {
-				builder.queries(Collections.emptyList());
+				builder.queries(filteredPage.isEmpty() ? Collections.emptyList() : filteredPage);
+				builder.qFilteredTotal(filteredTotal);
 			}else {
-				builder.queries(new ArrayList<>(filtered.subList(start, end)));
+				Predicate<SearchResultSummaryRecord> effectiveFilter = filter == null ? (s)->true : filter;
+				int filteredTotal = 0;
+				int windowSize = safeSkip + safeTop;
+				if (windowSize <= 0) {
+					for (SearchResultSummaryRecord record : queriesList) {
+						if (effectiveFilter.test(record)) {
+							filteredTotal++;
+						}
+					}
+					builder.queries(Collections.emptyList());
+					builder.qFilteredTotal(filteredTotal);
+					return builder.build();
+				}
+				PriorityQueue<SearchResultSummaryRecord> window = new PriorityQueue<>(windowSize, comp.reversed());
+				for(SearchResultSummaryRecord record : queriesList) {
+					if(!effectiveFilter.test(record)) {
+						continue;
+					}
+					filteredTotal++;
+					if(window.size() < windowSize) {
+						window.offer(record);
+					}else if(comp.compare(record, window.peek()) < 0) {
+						window.poll();
+						window.offer(record);
+					}
+				}
+				List<SearchResultSummaryRecord> filtered = new ArrayList<>(window);
+				filtered.sort(comp);
+				int start = Math.min(safeSkip, filtered.size());
+				int end = Math.min(start + safeTop, filtered.size());
+				if(start >= end) {
+					builder.queries(Collections.emptyList());
+				}else {
+					builder.queries(new ArrayList<>(filtered.subList(start, end)));
+				}
+				builder.qFilteredTotal(filteredTotal);
 			}
-			builder.qFilteredTotal(filteredTotal);
 		}
     	
     	return builder.build();
