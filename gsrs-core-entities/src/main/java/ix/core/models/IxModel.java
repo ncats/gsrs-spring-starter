@@ -17,6 +17,7 @@ import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @MappedSuperclass
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "LONG_SEQ_ID", allocationSize = 1)
 @Getter
 @Setter
 public class IxModel extends BaseModel {

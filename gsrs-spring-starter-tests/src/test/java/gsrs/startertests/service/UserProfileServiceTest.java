@@ -7,20 +7,23 @@ import gsrs.services.*;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.models.Group;
+import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +54,7 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     private UserProfileService userProfileService;
 
     @TestConfiguration
-    @EnableGlobalMethodSecurity(prePostEnabled = true)
+    @EnableMethodSecurity(prePostEnabled = true)
     static class MyTestConfig{
 //
 //        @Bean
@@ -75,11 +78,17 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
     public void assertEqualsIgnoreCase(String expected, String test) {
         assertEquals(expected.toUpperCase(), test.toUpperCase());
     }
+
+    private TransactionTemplate requiresNewTransaction() {
+        TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return tx;
+    }
     
     @Test
 
     public void notloggedInCreateUserShouldErrorOut(){
-        Assertions.assertThrows(AuthenticationException.class, ()->{
+        Assertions.assertThrows(AccessDeniedException.class, ()->{
             UserProfileService.NewUserRequest request =  UserProfileService.NewUserRequest.builder()
                     .username("myUser")
                     .build();
@@ -100,6 +109,32 @@ public class UserProfileServiceTest extends AbstractGsrsJpaEntityJunit5Test {
             userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
         });
 
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles="Admin")
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    public void createUserRollsBackUserProfileWhenPrincipalSaveFails(){
+        TransactionTemplate tx = requiresNewTransaction();
+        tx.executeWithoutResult(status ->
+                principalRepository.saveAndFlush(new Principal("myUser", null))
+        );
+
+        Assertions.assertThrows(RuntimeException.class, () ->
+                tx.executeWithoutResult(status -> {
+                    UserProfileService.NewUserRequest request = UserProfileService.NewUserRequest.builder()
+                            .username("myUser")
+                            .build();
+                    userProfileService.createNewUserProfile(request.createValidatedNewUserRequest());
+                })
+        );
+
+        tx.executeWithoutResult(status -> {
+            assertNull(userProfileRepository.findByUser_UsernameIgnoreCase("myUser"));
+            assertNotNull(principalRepository.findDistinctByUsernameIgnoreCase("myUser"));
+            assertEquals(0, userProfileRepository.count());
+            assertEquals(1, principalRepository.count());
+        });
     }
 
     @Test

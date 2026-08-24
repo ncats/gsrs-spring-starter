@@ -11,12 +11,12 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.security.core.parameters.P;
 
 import java.io.IOException;
 
-@JsonComponent
+@JacksonComponent
 @Slf4j
 public class PrincipalDeserializer extends JsonDeserializer<Principal> {
 

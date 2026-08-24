@@ -3,7 +3,7 @@ package gsrs.cv.api;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.GsrsEntityRestTemplate;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 
 import java.io.IOException;
 import java.util.Optional;

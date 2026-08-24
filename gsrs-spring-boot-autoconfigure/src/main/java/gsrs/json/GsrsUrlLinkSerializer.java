@@ -7,14 +7,14 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.model.GsrsUrlLink;
 import gsrs.springUtils.AutowireHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 
 import java.io.IOException;
 import java.util.Optional;
 
-@JsonComponent
+@JacksonComponent
 public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
     @Autowired
     private EntityLinks entityLinks;

@@ -212,23 +212,15 @@ public class UserProfileService {
             }
 
             up.setRoles(newUserRequest.getRoles());
+            UserProfile saved= userProfileRepository.saveAndFlush(up);
 
             //groups may not exists
             Set<String> groups = newUserRequest.getGroups();
-
-            Set<Group> groupsToSave = new HashSet<>();
             if (groups != null) {
                 for (String g : groups) {
                     Group group = groupService.registerIfAbsent(g);
-                    group.addMember(principal);
-                    groupsToSave.add(group);
-//                    groupRepository.save(group);
+                    group.addMember(saved.user);
                 }
-            }
-            //TODO do we need to save user too? or will it cascade?
-            UserProfile saved= userProfileRepository.saveAndFlush(up);
-            if(!groupsToSave.isEmpty()) {
-                groupRepository.saveAll(groupsToSave);
             }
             return saved;
         }

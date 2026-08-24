@@ -1,7 +1,7 @@
 package ix.ginas.converters;
 
 
-import org.hibernate.engine.jdbc.ClobProxy;
+import org.hibernate.engine.jdbc.proxy.ClobProxy;
 
 import jakarta.persistence.AttributeConverter;
 import java.sql.Clob;

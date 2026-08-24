@@ -10,7 +10,7 @@ import gsrs.controller.GsrsEntityController;
 import ix.core.validator.ValidationResponse;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.hateoas.Link;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
@@ -39,7 +39,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
             builder.setLength(builder.length()-1);
         }
         this.prefix = builder.toString();
-        this.restTemplate = restTemplateBuilder.rootUri(baseUrl)
+        this.restTemplate = restTemplateBuilder.baseUri(baseUrl)
                 .errorHandler(RestTemplateResponseErrorHandler.INSTANCE)
                 .build();
     }
@@ -226,17 +226,16 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     enum RestTemplateResponseErrorHandler
             implements ResponseErrorHandler {
         INSTANCE;
-
         @Override
         public boolean hasError(ClientHttpResponse httpResponse)
                 throws IOException {
 
-            HttpStatus.Series s = ((HttpStatus) httpResponse.getStatusCode()).series();
-            return (s == HttpStatus.Series.CLIENT_ERROR || s == HttpStatus.Series.SERVER_ERROR);
+            HttpStatusCode statusCode = httpResponse.getStatusCode();
+            return statusCode.is4xxClientError() || statusCode.is5xxServerError();
         }
 
         @Override
-        public void handleError(ClientHttpResponse httpResponse)
+        public void handleError(URI url, HttpMethod method, ClientHttpResponse httpResponse)
                 throws IOException {
 
             //do nothing we will handle it downstream
