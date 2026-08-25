@@ -851,10 +851,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 			queries = gsrscache.getOrElse("/BulkID/" + queryListID, () -> {
 
 				String queryString = textService.getText(queryListID);
-				if (queryString.isEmpty()) {
+				if (queryString == null || queryString.isEmpty()) {
 					throw new RuntimeException("Cannot find bulk query ID. ");
 				}
-				return Arrays.asList(queryString.split("\n"));
+				return BulkSearchService.parseNormalizedQueries(queryString);
 
 			});
 		} catch (Exception e1) {
@@ -868,6 +868,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		SearchResultContext resultContext;
 		try {
 			resultContext = getlegacyGsrsSearchService().bulkSearch(sanitizedRequest, searchOptions);
+			if (resultContext.getKey() != null) {
+				BulkQuerySummary runningSummary = bulkSearchService.getSummary(resultContext.getKey());
+				if (runningSummary != null) {
+					resultContext.setSummary(runningSummary);
+				}
+			}
 			updateSearchContextGenerator(resultContext, queryParameters);
 
 			// TODO: need to add support for qText in the "focused" version of
@@ -876,6 +882,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 					searchOptions.getFdim(), "");
 			if(resultContext.getKey() != null)
 				focused.setKey(resultContext.getKey());
+			if (resultContext.getSummary() != null) {
+				focused.setSummary(resultContext.getSummary());
+			}
 			return entityFactoryDetailedSearch(focused, false);
 
 		} catch (Exception e) {
