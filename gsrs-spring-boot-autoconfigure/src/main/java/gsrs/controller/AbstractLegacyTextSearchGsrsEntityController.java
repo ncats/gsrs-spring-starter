@@ -694,11 +694,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> saveQueryList(@RequestBody String query,
+    public ResponseEntity<ObjectNode> saveQueryList(@RequestBody String query,
     									@RequestParam("top") Optional<Integer> top,
   										@RequestParam("skip") Optional<Integer> skip,
   										HttpServletRequest request){
-    	
+    	log.trace("starting POST bulkquery endpoint");
     	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
@@ -710,8 +710,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
     			.filter(q->q.length()>0)
-//    			.distinct()                            No need to be distinct
-    			.collect(Collectors.toList());    	
+    			.collect(Collectors.toList());
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));
     	Long id = textService.saveTextString("bulkSearch", queryStringToSave);
@@ -722,14 +721,17 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
-    	String returnJsonSrting = createJson(id, qTop, qSkip, list, uri);    	
- 
-        return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
+    	ObjectNode returnJson = createJson(id, qTop, qSkip, list, uri);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("content-type", "application/json;charset=UTF-8");
+        log.trace("bulk query going to set content-type");
+        return new ResponseEntity<>(returnJson, headers, HttpStatus.OK);
     }
     
     
     @PutGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> updateQueryList(@RequestBody String query,
+    public ResponseEntity<ObjectNode> updateQueryList(@RequestBody String query,
     									@RequestParam("id") String queryId,
     									@RequestParam("top") Optional<Integer> top,
   										@RequestParam("skip") Optional<Integer> skip,
@@ -737,7 +739,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	Long id = Long.parseLong(queryId);
     	if(id < 0) {
-    		return new ResponseEntity<>("Invalid ID " + id, HttpStatus.BAD_REQUEST);    		
+            ObjectNode response = JsonNodeFactory.instance.objectNode();
+            response.put("response", "Invalid ID");
+    		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     	}
     	
     	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
@@ -764,14 +768,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
-    	String returnJsonSrting = createJson(returnId, qTop, qSkip, list, uri);    	
+    	ObjectNode returnJson = createJson(returnId, qTop, qSkip, list, uri);
  
-        return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
+        return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
 
 
     @GetGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> getQueryList(@RequestParam String id,
+    public ResponseEntity<ObjectNode> getQueryList(@RequestParam String id,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip,
     										   HttpServletRequest request){    	
@@ -793,7 +797,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	
-    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, uri);
+    	ObjectNode returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, uri);
         return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
     
@@ -906,7 +910,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 	        }		
 	}
     
-    private String createJson(Long id, int top, int skip, List<String> queries, String uri){
+    private ObjectNode createJson(Long id, int top, int skip, List<String> queries, String uri){
     	
     	List<String> sublist = new ArrayList<String>();
     	int endIndex = Math.min(top+skip,queries.size());    		
@@ -924,7 +928,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	sublist.forEach(listNode::add);    	   	
     	baseNode.put("_self", uri);
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
         
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
