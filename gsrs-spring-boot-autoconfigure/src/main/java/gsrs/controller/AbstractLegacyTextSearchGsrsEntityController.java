@@ -38,18 +38,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.DefaultDataSourceConfig;
@@ -722,14 +719,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
     	ObjectNode returnJson = createJson(id, qTop, qSkip, list, uri);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("content-type", "application/json;charset=UTF-8");
-        log.trace("bulk query going to set content-type");
-        return new ResponseEntity<>(returnJson, headers, HttpStatus.OK);
+        return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
-    
-    
+
     @PutGsrsRestApiMapping(value="/@bulkQuery")
     public ResponseEntity<ObjectNode> updateQueryList(@RequestBody String query,
     									@RequestParam("id") String queryId,
@@ -755,8 +747,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
     			.filter(q->q.length()>0)
-//    			.distinct()                            No need to be distinct
-    			.collect(Collectors.toList());    	
+    			.collect(Collectors.toList());
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));    	
     	
@@ -1241,13 +1232,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		reIndexWithKeys(status,list);    		
     	});
     	
-//    	log.warn("testing ");
-    	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);	
+    	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);
     }
-    //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
+
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
-    public ResponseEntity<String> createUserSavedListWithEtag(  											
+    public ResponseEntity<Object> createUserSavedListWithEtag(
     										   @RequestParam(value="listName",required=true) String listName,
     										   @PathVariable("etagId") String etagId,
     										   HttpServletRequest request){ //take an etag and get all the keys
@@ -1290,9 +1280,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	executor.execute(()->{   
     		userSavedListService.createBulkSearchResultList(userName, listName, keyList, kind);       	
     		reIndexWithKeys(listStatus,keyList);
-    	});    	
-
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	});
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("id", listStatus.statusID.toString());
+        log.trace("ID: {},", listStatus.statusID.toString() );
+        return new ResponseEntity<>(node, HttpStatus.OK);
+    	//return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);
     }
         
     
