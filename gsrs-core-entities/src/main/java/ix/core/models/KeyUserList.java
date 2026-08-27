@@ -12,11 +12,14 @@ public class KeyUserList {
 	
 	@Id
 	@Column(unique = true)
-	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
 	@SequenceGenerator(
-			name = "LONG_SEQ_ID",
-			sequenceName = "LONG_SEQ_ID",
+			name = "KEY_USER_LIST_SEQ_GENERATOR",
+			sequenceName = "ix_core_key_user_list_seq",
 			allocationSize = 1
+	)
+	@GeneratedValue(
+			strategy = GenerationType.SEQUENCE,
+			generator = "KEY_USER_LIST_SEQ_GENERATOR"
 	)
 	public Long id;
 	
