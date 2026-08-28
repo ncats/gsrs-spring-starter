@@ -219,9 +219,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                             <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <additionalOptions>-Xdoclint:none</additionalOptions>
-                            <additionalJOption>-Xdoclint:none</additionalJOption>
+                            <doclint>none</doclint>
                         </configuration>
                         <executions>
                             <execution>

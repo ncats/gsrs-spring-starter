@@ -44,7 +44,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <gsrs-services-common.version>1.1-SNAPSHOT</gsrs-services-common.version>
+        <gsrs-services-common.version>1.2-SNAPSHOT</gsrs-services-common.version>
     </properties>
 
     <dependencies>
@@ -73,7 +73,6 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-basic-service-utilities</artifactId>
-            <version>${gsrs-services-common.version}</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
