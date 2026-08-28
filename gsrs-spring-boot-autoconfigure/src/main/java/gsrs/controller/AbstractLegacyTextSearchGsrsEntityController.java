@@ -220,44 +220,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	  
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
-//    			.peek(s->System.out.println(s))
     			.filter(q->q.length()>0)
     			.distinct()
     			.collect(Collectors.toList());  
-//    	ReindexStatus stat = new ReindexStatus();
-//    	stat.statusID = UUID.randomUUID();
-//    	stat.done=false;
-//    	stat.status="initializing";
-//    	stat.ids=list;
-//    	stat.start = TimeUtil.getCurrentTimeMillis();
-//    	stat.total=list.size();
-//    	reindexing.put(stat.statusID.toString(), stat);
-//    	
-//    	executor.execute(()->{
-//    		int[] r = new int[] {0};
-//    		stat.ids.forEach(id->{
-//    			r[0]++;
-//    			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
-//    			//TODO: Should change how this works probably to not use REST endpoint
-//    			try {
-//    				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
-//    				Class eclass = getEntityService().getEntityClass();
-//    				Key k = Key.ofStringId(eclass, entityID.get());
-//    				Object o = EntityFetcher.of(k).call();
-//        			getlegacyGsrsSearchService().reindex(o, true);
-//        			stat.indexed++;  				
-//    				
-//    			}catch(Exception e) {
-//    				log.warn("trouble reindexing id: " + id, e);
-//    				stat.failed++;
-//    			}   
-//    			
-//    		});
-//    		stat.setStatus("finished");
-//    		stat.done=true;
-//    		stat.finished = TimeUtil.getCurrentTimeMillis();
-//    	});    	
-    	
+
         return new ResponseEntity<>(bulkReindexListOfIDs(list, excludeExternal), HttpStatus.OK);
     }
     
@@ -459,7 +425,6 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         }
         
         String cacheID = getFacetCacheID("", "", so, field.orElse(""));
-//        log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
         if(tv == null) {
         	tv = getlegacyGsrsSearchService().getTermVectors(field);                
@@ -653,7 +618,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		}
     }
     
-    
     public ReindexJobStatus syncIndexesWithDatabaseWithStatus() {
 
     	List<Key> keysInDatabase = getKeys();
@@ -695,7 +659,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     									@RequestParam("top") Optional<Integer> top,
   										@RequestParam("skip") Optional<Integer> skip,
   										HttpServletRequest request){
-    	log.trace("starting POST bulkquery endpoint");
     	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
@@ -793,7 +756,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @DeleteGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> deleteQueryList(@RequestParam String id){    	
+    public ResponseEntity<Object> deleteQueryList(@RequestParam String id){
     	textService.deleteText(id); 	    	
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -995,11 +958,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 List<T> rlist = new ArrayList<>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
-//                for (T s : rlist) { 
-//                	if(s instanceof BaseModel) {
-//                		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
-//                	}
-//                }
                 return sr;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1046,7 +1004,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userLists/currentUser")
-    public ResponseEntity<String> getCurrentUserSavedLists(
+    public ResponseEntity<Object> getCurrentUserSavedLists(
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1059,13 +1017,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> list = userSavedListService.getUserSearchResultLists(name, getEntityService().getEntityClass().getName());
     	
-    	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK);   	
-    	
+    	return new ResponseEntity<>(getBulkSearchResultListNames(rTop, rSkip, list), HttpStatus.OK);
     }
     
     @canManageUsers
     @GetGsrsRestApiMapping(value="/@userLists/otherUser")
-    public ResponseEntity<String> getOtherUserSavedLists(@RequestParam("name") Optional<String> name,
+    public ResponseEntity<Object> getOtherUserSavedLists(@RequestParam("name") Optional<String> name,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1077,10 +1034,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);    	    	
-    	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK); 		
+    	return new ResponseEntity<>(getBulkSearchResultListNames(rTop, rSkip, list), HttpStatus.OK);
     }
     
-    private String getBulkSearchResultListNamesString(int top, int skip, List<String> list) {
+    private ObjectNode getBulkSearchResultListNames(int top, int skip, List<String> list) {
     	List<String> topList;
     	if(list.size() <= top)
     		topList = list;
@@ -1095,10 +1052,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ArrayNode listNode = baseNode.putArray("lists");
     	topList.forEach(listNode::add);   
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
     
-    private String getBulkSearchResultListContentString(int top, int skip, List<String> list) {
+    private ObjectNode getBulkSearchResultListContent(int top, int skip, List<String> list) {
     	List<String> topList;
     	if(list.size() <= top)
     		topList = list;
@@ -1142,12 +1099,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	}
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/{list}")
-    public ResponseEntity<String> getCurrentUserSavedListContent(@PathVariable String list,
+    public ResponseEntity<Object> getCurrentUserSavedListContent(@PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1161,13 +1118,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip, 
     			getEntityService().getEntityClass().getName());
     	    	
-    	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
+    	return new ResponseEntity<>(getBulkSearchResultListContent(rTop, rSkip, keys), HttpStatus.OK);
     	
     }
     
     @canManageUsers
     @GetGsrsRestApiMapping(value="/@userList/{user}/{list}")
-    public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
+    public ResponseEntity<Object> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1179,7 +1136,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, rTop, rSkip,
     			getEntityService().getEntityClass().getName());
     	   	
-    	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
+    	return new ResponseEntity<>(getBulkSearchResultListContent(rTop, rSkip, keys), HttpStatus.OK);
     	
     }
     
@@ -1195,7 +1152,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     // if the user list exists, it will fail
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/keys")  
-    public ResponseEntity<String> createUserSavedListWithKeys(  											
+    public ResponseEntity<Object> createUserSavedListWithKeys(
     										   @RequestParam String listName,
     										   @RequestBody String keys){ 
     	
@@ -1292,7 +1249,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value="/@userList/currentUser")
-    public ResponseEntity<String> deleteCurrentUserSavedList(   											
+    public ResponseEntity<Object> deleteCurrentUserSavedList(
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
     	if(!validStringParamater(listName)) {
@@ -1316,7 +1273,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @canManageUsers
     @DeleteGsrsRestApiMapping(value="/@userList/otherUser")
-    public ResponseEntity<String> deleteOtherUserSavedList(@RequestParam String userName,    											
+    public ResponseEntity<Object> deleteOtherUserSavedList(@RequestParam String userName,
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
     	if(!validStringParamater(userName) || !validStringParamater(listName)) {
@@ -1391,7 +1348,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping(value="/@userList/currentUser") 
-    public ResponseEntity<String> updateCurrentUserSavedList(   											
+    public ResponseEntity<Object> updateCurrentUserSavedList(
     										   @RequestParam String listName,
     										   @RequestBody String keys,
     										   @RequestParam String operation,
@@ -1441,7 +1398,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @canManageUsers
     @PutGsrsRestApiMapping(value="/@userList/otherUser")
-    public ResponseEntity<String> updateOtherUserSavedList(   		
+    public ResponseEntity<Object> updateOtherUserSavedList(
     										   @RequestParam String userName, 	
     										   @RequestParam String listName,
     										   @RequestBody String keys,
@@ -1488,7 +1445,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
-    public ResponseEntity<String> getUserSavedListStatus(@PathVariable("id") String id){
+    public ResponseEntity<Object> getUserSavedListStatus(@PathVariable("id") String id){
     	    	
     	UserListStatus status = (UserListStatus)gsrscache.getRaw("UserSavedList/" + id);
     	if(status ==null){
@@ -1498,7 +1455,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	node.put("status", status.getStatus());    	
-    	return new ResponseEntity<>(node.toPrettyString(), HttpStatus.OK);
+    	return new ResponseEntity<>(node, HttpStatus.OK);
     }
     
     boolean validStringParamater(String param) {
@@ -1552,11 +1509,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     }
     
-    private String generateResultIDJson(String id) {
+    private ObjectNode generateResultIDJson(String id) {
     	ObjectMapper mapper = new ObjectMapper();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
-    	return node.toPrettyString();    	
+    	return node;
     }
     
     protected String getFacetCacheID(String namespace, String query, SearchOptions so, String field) {
