@@ -32,6 +32,7 @@
     <properties>
         <java.version>17</java.version>
         <gsrs.version>3.2.6-SNAPSHOT</gsrs.version>
+        <gsrs-services-common.version>1.2-SNAPSHOT</gsrs-services-common.version>
         <spring-boot.version>4.1.0</spring-boot.version>
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
@@ -46,6 +47,16 @@
     <scm>
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>gov.nih.ncats</groupId>
+                <artifactId>gsrs-basic-service-utilities</artifactId>
+                <version>${gsrs-services-common.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
