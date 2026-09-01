@@ -41,49 +41,38 @@
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
 
-    <properties>
-        <lucene.version>5.5.0</lucene.version>
-    </properties>
     <dependencies>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-core</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-common</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-misc</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-highlighter</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-suggest</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-facet</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-queryparser</artifactId>
-        <version>${lucene.version}</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.lucene</groupId>
     	<artifactId>lucene-backward-codecs</artifactId>
-    	<version>${lucene.version}</version>
 	</dependency>
     
         <dependency>
@@ -116,7 +105,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>

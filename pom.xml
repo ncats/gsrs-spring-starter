@@ -33,11 +33,19 @@
         <java.version>17</java.version>
         <gsrs.version>3.2.6-SNAPSHOT</gsrs.version>
         <gsrs-services-common.version>1.2-SNAPSHOT</gsrs-services-common.version>
+        <gsrs-ncats-common.version>0.3.6</gsrs-ncats-common.version>
         <spring-boot.version>4.1.0</spring-boot.version>
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
         <lombok-maven-plugin.version>1.18.20.0</lombok-maven-plugin.version>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
+        <lucene.version>5.5.0</lucene.version>
+<!--        <jackson.version>2.20.1</jackson.version>-->
+<!--        <Ï2.20</jackson.annotations.version>-->
+<!--        <jackson.databind.version>2.20.1</jackson.databind.version>-->
+        <propertiestojson.version>5.3.0</propertiestojson.version>
+        <zjsonpatch.version>0.4.11</zjsonpatch.version>
+
 
     </properties>
     <groupId>gov.nih.ncats</groupId>
@@ -57,6 +65,98 @@
                 <artifactId>gsrs-basic-service-utilities</artifactId>
                 <version>${gsrs-services-common.version}</version>
             </dependency>
+            <dependency>
+                <groupId>gov.nih.ncats</groupId>
+                <artifactId>ncats-common</artifactId>
+                <version>${gsrs-ncats-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+             </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-core</artifactId>
+                <version>${lucene.version}</version>
+             </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-core</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-analyzers-common</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-misc</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <version>${lucene.version}</version>
+                <artifactId>lucene-highlighter</artifactId>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-suggest</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-facet</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-queryparser</artifactId>
+                <version>${lucene.version}</version>
+
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-backward-codecs</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                <artifactId>jackson-core</artifactId>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                <artifactId>jackson-databind</artifactId>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                <artifactId>jackson-annotations</artifactId>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.datatype</groupId>-->
+<!--                <artifactId>jackson-datatype-jsr310</artifactId>-->
+<!--            </dependency>-->
+
+            <dependency>
+                <groupId>pl.jalokim.propertiestojson</groupId>
+                <artifactId>java-properties-to-json</artifactId>
+                <version>${propertiestojson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.flipkart.zjsonpatch</groupId>
+                <artifactId>zjsonpatch</artifactId>
+                <version>${zjsonpatch.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -147,7 +247,7 @@
                     <plugin>
                         <groupId>org.projectlombok</groupId>
                         <artifactId>lombok-maven-plugin</artifactId>
-                        <version>1.18.20.0</version>
+                        <version>${lombok-maven-plugin.version}</version>
                         <executions>
                             <execution>
                                 <phase>generate-sources</phase>

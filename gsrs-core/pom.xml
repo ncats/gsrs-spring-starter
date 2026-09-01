@@ -9,11 +9,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <jackson.version>2.20.1</jackson.version>
-        <jackson.annotations.version>2.20</jackson.annotations.version>
-        <jackson.databind.version>2.20.1</jackson.databind.version>
-    </properties>
     <artifactId>gsrs-core</artifactId>
 
     <name>gsrs-core</name>
@@ -68,12 +63,10 @@
         <dependency>
             <groupId>com.flipkart.zjsonpatch</groupId>
             <artifactId>zjsonpatch</artifactId>
-            <version>0.4.11</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>ncats-common</artifactId>
-            <version>0.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>
@@ -83,17 +76,14 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.databind.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
