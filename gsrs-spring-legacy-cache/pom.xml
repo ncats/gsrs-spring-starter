@@ -77,7 +77,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.sleepycat/je -->

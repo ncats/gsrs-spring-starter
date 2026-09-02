@@ -2,7 +2,6 @@ package ix.core.search;
 
 
 import akka.actor.AbstractActor;
-import akka.actor.UntypedActor;
 import gov.nih.ncats.common.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
