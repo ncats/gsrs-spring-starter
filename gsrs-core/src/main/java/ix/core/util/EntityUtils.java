@@ -770,19 +770,6 @@ public class EntityUtils {
 			return ei.getChangeReasonFor(_k);
 		}
 
-		//TODO katzelda October 2020 : commenting out edit stuff for now
-//		public List<Edit> getEdits(){
-//			Optional<Object> opId= this.ei.getNativeIdFor(this._k);
-//			if(opId.isPresent()){
-//				return EntityFactory.getEdits(opId.get(),
-//						this.getEntityInfo().getInherittedRootEntityInfo().getTypeAndSubTypes()
-//						.stream()
-//						.map(em->em.getEntityClass())
-//						.toArray(len->new Class<?>[len]));
-//			}else{
-//				return new ArrayList<Edit>();
-//			}
-//		}
 
 		public Object getValueFromMethod(String name){
 			return this.streamMethodsAndValues(m->m.getMethodName().equals(name)).findFirst().get().v();
@@ -791,39 +778,6 @@ public class EntityUtils {
 		public boolean isExplicitDeletable() {
 			return this.ei.isExplicitDeletable();
 		}
-		//TODO katzelda October 2020 : commenting out Play save update and delete
-		/**
-		 * This method just delegates to  Model#save() for the
-		 * wrapped entity, only also passing in the datasource
-		 * that was specified via the config file.
-		 */
-//		public void save(){
-//			if(this.ei.datasource!=null) {
-//				((Model) this.getValue()).save(ei.datasource);
-//			}else{
-//				((Model) this.getValue()).save();
-//			}
-//		}
-//
-//		public void delete() {
-//			if(this.ei.datasource!=null) {
-//				((Model) this.getValue()).delete(ei.datasource);
-//			}else{
-//				((Model)this.getValue()).delete();
-//			}
-//		}
-//
-//		public void update() {
-//			if(_k instanceof ForceUpdatableModel){ //TODO: Move to EntityInfo
-//        		((ForceUpdatableModel)_k).forceUpdate();
-//        	}else if(_k instanceof Model){
-//        	    if(this.ei.datasource!=null){
-//        	        ((Model)_k).update(this.ei.datasource);
-//        	    }else{
-//        		((Model)_k).update();
-//				}
-//			}
-//		}
 
 		public Optional<Object> getArrayElementAt(int index) {
 			if(!this.isArrayOrCollection()){
@@ -849,7 +803,7 @@ public class EntityUtils {
 				}
 			}
 		}
-		
+
 		public Stream<Object> streamArrayElements() {
 			if(!this.isArrayOrCollection()){
 				return Stream.empty();

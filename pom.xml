@@ -37,6 +37,10 @@
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <jackson.version>2.20.1</jackson.version>
+        <jackson.annotations.version>3.1.6</jackson.annotations.version>
+        <jackson.databind.version>3.1.6</jackson.databind.version>
+        <jackson-core-version>3.1.6</jackson-core-version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
