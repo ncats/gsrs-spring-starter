@@ -15,7 +15,8 @@ import java.util.Date;
 
 @Entity
 @Table(name="ix_core_principal")
-@Inheritance
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "DTYPE", discriminatorType = DiscriminatorType.STRING, length = 31)
 @DiscriminatorValue("PRI")
 @SequenceGenerator(name = "ix_core_principal_seq", sequenceName = "ix_core_principal_seq", allocationSize = 1)
 public class Principal extends AbstractNonAuditingGsrsEntity implements FetchableEntity{

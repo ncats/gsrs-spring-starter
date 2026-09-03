@@ -1,16 +1,9 @@
 package ix.core.models;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-
 /**
- * This is a fake subclass to trick Hibernate into
- * thinking there are multiple entities that
- * are written into the Principal table
- * so it will create DDL with a discriminator column
- * to be backwards compatible with old GSRS database schemas.
+ * Legacy compatibility shim. Hibernate can create the discriminator column on Principal
+ * directly without a fake mapping subclass; keeping this as a JPA entity creates a
+ * synthetic FAK discriminator check that fails under H2 schema validation.
  */
-@Entity
-@DiscriminatorValue("FAK")
-public class PrincipalPlaceHolder extends Principal{
+public class PrincipalPlaceHolder extends Principal {
 }
