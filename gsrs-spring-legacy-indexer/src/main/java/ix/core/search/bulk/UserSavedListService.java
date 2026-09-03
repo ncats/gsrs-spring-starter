@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import gsrs.repository.KeyUserListRepository;
 import gsrs.repository.PrincipalRepository;
@@ -154,7 +155,8 @@ public class UserSavedListService {
 	} 
 	
 	
-	public void createBulkSearchResultList(String userName, String listName, List<String> keyList, String kind ) {		
+	@Transactional
+	public void createBulkSearchResultList(String userName, String listName, List<String> keyList, String kind ) {
 		
 		Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);		
 		
@@ -173,12 +175,14 @@ public class UserSavedListService {
 		}
 		String listString = listJoiner.toString();
 		UserSavedList record = new UserSavedList(user, listName, listString, kind);
-		userSavedListRepository.saveAndFlush(record);
+		userSavedListRepository.save(record);
 		
-		//todo: use batch insert here
+		List<KeyUserList> keyRecords = new ArrayList<>(processedList.size());
 		for(String key: processedList)	{		
-			keyUserListRepository.saveAndFlush(new KeyUserList(key, user, listName, kind));
-		}		
+			keyRecords.add(new KeyUserList(key, user, listName, kind));
+		}
+		keyUserListRepository.saveAll(keyRecords);
+		keyUserListRepository.flush();
 	}	
 		
 	public void deleteBulkSearchResultList(String userName, String listName, String kind) {
