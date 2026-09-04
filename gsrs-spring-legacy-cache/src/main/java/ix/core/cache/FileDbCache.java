@@ -25,6 +25,7 @@ import java.util.Optional;
 public class FileDbCache implements GinasFileBasedCacheAdapter {
 
     private Database db;
+    private Environment env;
 
     private final File dir;
     private final String cacheName;
@@ -106,12 +107,14 @@ public class FileDbCache implements GinasFileBasedCacheAdapter {
         
         
         
-        Environment env = new Environment (dir, envconf);
+        env = new Environment (dir, envconf);
         if(cleardb){
 	        try{
 	        	env.removeDatabase(null, cacheName);
-	        }catch(Exception e){
-	        	log.warn("No persist cache to delete", e);
+	        }catch(DatabaseNotFoundException e){
+	        	log.debug("No persist cache {} to delete", cacheName);
+	        }catch(DatabaseException e){
+	        	log.warn("Unable to delete persist cache " + cacheName, e);
 	        }
         }
         DatabaseConfig dbconf = new DatabaseConfig ();
@@ -130,7 +133,17 @@ public class FileDbCache implements GinasFileBasedCacheAdapter {
                 db =null;
             }
             catch (Exception ex) {
-                log.error("Can't close lucene index!", ex);
+                log.error("Can't close persist cache database!", ex);
+            }
+        }
+        if (env != null) {
+            try {
+                env.close();
+                env = null;
+                init = false;
+            }
+            catch (Exception ex) {
+                log.error("Can't close persist cache environment!", ex);
             }
         }
     }

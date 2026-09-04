@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.search.text.IndexableValue;
 import ix.core.search.text.IndexableValueFromRaw;
 import ix.core.search.text.ReflectingIndexerAware;
-import ix.core.util.pojopointer.PojoPointer;
 import ix.utils.PathStack;
 import ix.utils.pojopatch.PojoDiffAware;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Objects;
 import java.util.function.Consumer;
 

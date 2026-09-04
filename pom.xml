@@ -26,25 +26,37 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.18</version>
+        <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <properties>
-        <java.version>1.8</java.version>
-        <gsrs.version>3.2.0</gsrs.version>
-        <spring-boot.version>2.7.18</spring-boot.version>
-        <log4j2.version>2.17.2</log4j2.version>
+        <java.version>17</java.version>
+        <gsrs.version>3.2.6-SNAPSHOT</gsrs.version>
+        <gsrs-services-common.version>1.2-SNAPSHOT</gsrs-services-common.version>
+        <spring-boot.version>4.1.0</spring-boot.version>
+        <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
     </properties>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-spring-boot</artifactId>
-    <version>3.2.0</version>
+    <version>3.2.6-SNAPSHOT</version>
     <name>gsrs-starter</name>
     <description>Spring Starter for GSRS project</description>
     <url>https://github.com/ncats/gsrs-spring-starter</url>
     <scm>
         <url>https://github.com/ncats/gsrs-spring-starter.git</url>
     </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>gov.nih.ncats</groupId>
+                <artifactId>gsrs-basic-service-utilities</artifactId>
+                <version>${gsrs-services-common.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -84,16 +96,6 @@
             <roles>
                 <role>architect</role>
                 <role>developer</role>
-            </roles>
-            <timezone>America/New_York</timezone>
-        </developer>
-        <developer>
-            <id>ChemMitch</id>
-            <name>Mitch Miller</name>
-            <email>mitch.miller@thinkscience.us</email>
-            <roles>
-                <role>developer</role>
-                <role>maintainer</role>
             </roles>
             <timezone>America/New_York</timezone>
         </developer>
@@ -185,9 +187,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                             <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <additionalOptions>-Xdoclint:none</additionalOptions>
-                            <additionalJOption>-Xdoclint:none</additionalJOption>
+                            <doclint>none</doclint>
                         </configuration>
                         <executions>
                             <execution>

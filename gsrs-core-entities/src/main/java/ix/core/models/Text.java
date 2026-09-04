@@ -1,6 +1,6 @@
 package ix.core.models;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @DiscriminatorValue("TXT")

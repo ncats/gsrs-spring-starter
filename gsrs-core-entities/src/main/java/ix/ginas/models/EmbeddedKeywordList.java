@@ -1,10 +1,16 @@
 package ix.ginas.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Keyword;
-import ix.ginas.converters.EntityJsonClobConverter;
+
+import jakarta.persistence.AttributeConverter;
+import org.hibernate.engine.jdbc.proxy.ClobProxy;
 
 import java.io.Serializable;
+import java.sql.Clob;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -155,10 +161,28 @@ public class EmbeddedKeywordList implements List<Keyword>, Serializable{
 	 * Hibernate Converter to turn an EmbeddedKeywordList into a Json Clob in the database.
 	 * This should mimic what GSRS 2.x did with Ebean but for Hibernate.
 	 */
-	@javax.persistence.Converter(autoApply = true)
-	public static class Converter extends EntityJsonClobConverter<EmbeddedKeywordList> {
-		public Converter() {
-			super(EmbeddedKeywordList.class);
+	@jakarta.persistence.Converter(autoApply = true)
+	public static class Converter implements AttributeConverter<EmbeddedKeywordList, Clob> {
+		private final EntityFactory.EntityMapper entityMapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
+
+		@Override
+		public Clob convertToDatabaseColumn(EmbeddedKeywordList value) {
+			if (value == null) {
+				return null;
+			}
+			return ClobProxy.generateProxy(entityMapper.toJson(value));
+		}
+
+		@Override
+		public EmbeddedKeywordList convertToEntityAttribute(Clob clob) {
+			if (clob == null) {
+				return null;
+			}
+			try {
+				return entityMapper.readValue(clob.getSubString(1, (int) clob.length()), EmbeddedKeywordList.class);
+			} catch (SQLException | JsonProcessingException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 	}
 

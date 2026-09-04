@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
 
 import gsrs.security.canIndexData;
 import gsrs.security.canManageUsers;
@@ -38,18 +38,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.DefaultDataSourceConfig;
@@ -223,44 +220,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     	  
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
-//    			.peek(s->System.out.println(s))
     			.filter(q->q.length()>0)
     			.distinct()
     			.collect(Collectors.toList());  
-//    	ReindexStatus stat = new ReindexStatus();
-//    	stat.statusID = UUID.randomUUID();
-//    	stat.done=false;
-//    	stat.status="initializing";
-//    	stat.ids=list;
-//    	stat.start = TimeUtil.getCurrentTimeMillis();
-//    	stat.total=list.size();
-//    	reindexing.put(stat.statusID.toString(), stat);
-//    	
-//    	executor.execute(()->{
-//    		int[] r = new int[] {0};
-//    		stat.ids.forEach(id->{
-//    			r[0]++;
-//    			stat.setStatus("indexing record " + r[0] + " of "  + stat.total);
-//    			//TODO: Should change how this works probably to not use REST endpoint
-//    			try {
-//    				Optional<String> entityID = getEntityService().getEntityIdOnlyBySomeIdentifier(id).map(ii->ii.toString());
-//    				Class eclass = getEntityService().getEntityClass();
-//    				Key k = Key.ofStringId(eclass, entityID.get());
-//    				Object o = EntityFetcher.of(k).call();
-//        			getlegacyGsrsSearchService().reindex(o, true);
-//        			stat.indexed++;  				
-//    				
-//    			}catch(Exception e) {
-//    				log.warn("trouble reindexing id: " + id, e);
-//    				stat.failed++;
-//    			}   
-//    			
-//    		});
-//    		stat.setStatus("finished");
-//    		stat.done=true;
-//    		stat.finished = TimeUtil.getCurrentTimeMillis();
-//    	});    	
-    	
+
         return new ResponseEntity<>(bulkReindexListOfIDs(list, excludeExternal), HttpStatus.OK);
     }
     
@@ -462,7 +425,6 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
         }
         
         String cacheID = getFacetCacheID("", "", so, field.orElse(""));
-//        log.info("cache ID: " + cacheID);
         TextIndexer.TermVectors tv  = (TextIndexer.TermVectors)gsrscache.getRaw(cacheID);
         if(tv == null) {
         	tv = getlegacyGsrsSearchService().getTermVectors(field);                
@@ -656,7 +618,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		}
     }
     
-    
     public ReindexJobStatus syncIndexesWithDatabaseWithStatus() {
 
     	List<Key> keysInDatabase = getKeys();
@@ -694,11 +655,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @PostGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> saveQueryList(@RequestBody String query,
+    public ResponseEntity<ObjectNode> saveQueryList(@RequestBody String query,
     									@RequestParam("top") Optional<Integer> top,
   										@RequestParam("skip") Optional<Integer> skip,
   										HttpServletRequest request){
-    	
     	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
     	if(top.isPresent()) 
     		qTop = top.get();
@@ -710,8 +670,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
     			.filter(q->q.length()>0)
-//    			.distinct()                            No need to be distinct
-    			.collect(Collectors.toList());    	
+    			.collect(Collectors.toList());
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));
     	Long id = textService.saveTextString("bulkSearch", queryStringToSave);
@@ -722,14 +681,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
-    	String returnJsonSrting = createJson(id, qTop, qSkip, list, uri);    	
- 
-        return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
+    	ObjectNode returnJson = createJson(id, qTop, qSkip, list, uri);
+        return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
-    
-    
+
     @PutGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> updateQueryList(@RequestBody String query,
+    public ResponseEntity<ObjectNode> updateQueryList(@RequestBody String query,
     									@RequestParam("id") String queryId,
     									@RequestParam("top") Optional<Integer> top,
   										@RequestParam("skip") Optional<Integer> skip,
@@ -737,7 +694,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	Long id = Long.parseLong(queryId);
     	if(id < 0) {
-    		return new ResponseEntity<>("Invalid ID " + id, HttpStatus.BAD_REQUEST);    		
+            ObjectNode response = JsonNodeFactory.instance.objectNode();
+            response.put("response", "Invalid ID");
+    		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     	}
     	
     	int qTop = BULK_SEARCH_DEFAULT_TOP, qSkip = BULK_SEARCH_DEFAULT_SKIP;
@@ -751,8 +710,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> list = queries.stream()    			
     			.map(q->q.trim())
     			.filter(q->q.length()>0)
-//    			.distinct()                            No need to be distinct
-    			.collect(Collectors.toList());    	
+    			.collect(Collectors.toList());
     	
     	String queryStringToSave = list.stream().collect(Collectors.joining("\n"));    	
     	
@@ -764,14 +722,14 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	    	
-    	String returnJsonSrting = createJson(returnId, qTop, qSkip, list, uri);    	
+    	ObjectNode returnJson = createJson(returnId, qTop, qSkip, list, uri);
  
-        return new ResponseEntity<>(returnJsonSrting, HttpStatus.OK);
+        return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
 
 
     @GetGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> getQueryList(@RequestParam String id,
+    public ResponseEntity<ObjectNode> getQueryList(@RequestParam String id,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip,
     										   HttpServletRequest request){    	
@@ -793,12 +751,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		uri = uri + "?top=" + qTop + "&skip=" + qSkip; 
     	
-    	String returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, uri);
+    	ObjectNode returnJson = createJson(Long.parseLong(id), qTop, qSkip, list, uri);
         return new ResponseEntity<>(returnJson, HttpStatus.OK);
     }
     
     @DeleteGsrsRestApiMapping(value="/@bulkQuery")
-    public ResponseEntity<String> deleteQueryList(@RequestParam String id){    	
+    public ResponseEntity<Object> deleteQueryList(@RequestParam String id){
     	textService.deleteText(id); 	    	
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -851,10 +809,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 			queries = gsrscache.getOrElse("/BulkID/" + queryListID, () -> {
 
 				String queryString = textService.getText(queryListID);
-				if (queryString.isEmpty()) {
+				if (queryString == null || queryString.isEmpty()) {
 					throw new RuntimeException("Cannot find bulk query ID. ");
 				}
-				return Arrays.asList(queryString.split("\n"));
+				return BulkSearchService.parseNormalizedQueries(queryString);
 
 			});
 		} catch (Exception e1) {
@@ -868,6 +826,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 		SearchResultContext resultContext;
 		try {
 			resultContext = getlegacyGsrsSearchService().bulkSearch(sanitizedRequest, searchOptions);
+			if (resultContext.getKey() != null) {
+				BulkQuerySummary runningSummary = bulkSearchService.getSummary(resultContext.getKey());
+				if (runningSummary != null) {
+					resultContext.setSummary(runningSummary);
+				}
+			}
 			updateSearchContextGenerator(resultContext, queryParameters);
 
 			// TODO: need to add support for qText in the "focused" version of
@@ -876,6 +840,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 					searchOptions.getFdim(), "");
 			if(resultContext.getKey() != null)
 				focused.setKey(resultContext.getKey());
+			if (resultContext.getSummary() != null) {
+				focused.setSummary(resultContext.getSummary());
+			}
 			return entityFactoryDetailedSearch(focused, false);
 
 		} catch (Exception e) {
@@ -897,7 +864,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
 	        }		
 	}
     
-    private String createJson(Long id, int top, int skip, List<String> queries, String uri){
+    private ObjectNode createJson(Long id, int top, int skip, List<String> queries, String uri){
     	
     	List<String> sublist = new ArrayList<String>();
     	int endIndex = Math.min(top+skip,queries.size());    		
@@ -915,7 +882,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	sublist.forEach(listNode::add);    	   	
     	baseNode.put("_self", uri);
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
         
     protected abstract Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request);
@@ -991,11 +958,6 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
                 List<T> rlist = new ArrayList<>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
-//                for (T s : rlist) { 
-//                	if(s instanceof BaseModel) {
-//                		((BaseModel)s).setMatchContextProperty(gsrscache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey().toRootKey()));
-//                	}
-//                }
                 return sr;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1042,7 +1004,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userLists/currentUser")
-    public ResponseEntity<String> getCurrentUserSavedLists(
+    public ResponseEntity<Object> getCurrentUserSavedLists(
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1055,13 +1017,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);
     	List<String> list = userSavedListService.getUserSearchResultLists(name, getEntityService().getEntityClass().getName());
     	
-    	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK);   	
-    	
+    	return new ResponseEntity<>(getBulkSearchResultListNames(rTop, rSkip, list), HttpStatus.OK);
     }
     
     @canManageUsers
     @GetGsrsRestApiMapping(value="/@userLists/otherUser")
-    public ResponseEntity<String> getOtherUserSavedLists(@RequestParam("name") Optional<String> name,
+    public ResponseEntity<Object> getOtherUserSavedLists(@RequestParam("name") Optional<String> name,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1073,10 +1034,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	int rTop = top.orElse(BULK_SEARCH_DEFAULT_TOP);   
     	int rSkip = skip.orElse(BULK_SEARCH_DEFAULT_SKIP);    	    	
-    	return new ResponseEntity<>(getBulkSearchResultListNamesString(rTop, rSkip, list), HttpStatus.OK); 		
+    	return new ResponseEntity<>(getBulkSearchResultListNames(rTop, rSkip, list), HttpStatus.OK);
     }
     
-    private String getBulkSearchResultListNamesString(int top, int skip, List<String> list) {
+    private ObjectNode getBulkSearchResultListNames(int top, int skip, List<String> list) {
     	List<String> topList;
     	if(list.size() <= top)
     		topList = list;
@@ -1091,10 +1052,10 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ArrayNode listNode = baseNode.putArray("lists");
     	topList.forEach(listNode::add);   
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
     
-    private String getBulkSearchResultListContentString(int top, int skip, List<String> list) {
+    private ObjectNode getBulkSearchResultListContent(int top, int skip, List<String> list) {
     	List<String> topList;
     	if(list.size() <= top)
     		topList = list;
@@ -1138,12 +1099,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     	}
     	
-    	return baseNode.toPrettyString();
+    	return baseNode;
     }
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/{list}")
-    public ResponseEntity<String> getCurrentUserSavedListContent(@PathVariable String list,
+    public ResponseEntity<Object> getCurrentUserSavedListContent(@PathVariable String list,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1157,13 +1118,13 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, list, rTop, rSkip, 
     			getEntityService().getEntityClass().getName());
     	    	
-    	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
+    	return new ResponseEntity<>(getBulkSearchResultListContent(rTop, rSkip, keys), HttpStatus.OK);
     	
     }
     
     @canManageUsers
     @GetGsrsRestApiMapping(value="/@userList/{user}/{list}")
-    public ResponseEntity<String> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
+    public ResponseEntity<Object> getOtherUserSavedListContent(@PathVariable Map<String, String> pathVarsMap,
     										   @RequestParam("top") Optional<Integer> top,
     										   @RequestParam("skip") Optional<Integer> skip){
     	
@@ -1175,7 +1136,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	List<String> keys = userSavedListService.getUserSavedBulkSearchResultListContent(userName, listName, rTop, rSkip,
     			getEntityService().getEntityClass().getName());
     	   	
-    	return new ResponseEntity<>(getBulkSearchResultListContentString(rTop, rSkip, keys), HttpStatus.OK);  	
+    	return new ResponseEntity<>(getBulkSearchResultListContent(rTop, rSkip, keys), HttpStatus.OK);
     	
     }
     
@@ -1191,7 +1152,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     // if the user list exists, it will fail
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/keys")  
-    public ResponseEntity<String> createUserSavedListWithKeys(  											
+    public ResponseEntity<Object> createUserSavedListWithKeys(
     										   @RequestParam String listName,
     										   @RequestBody String keys){ 
     	
@@ -1228,13 +1189,12 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		reIndexWithKeys(status,list);    		
     	});
     	
-//    	log.warn("testing ");
-    	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);	
+    	return new ResponseEntity<>(generateResultIDJson(status.statusID.toString()), HttpStatus.OK);
     }
-    //api/v1/substance/@userList/7c9f73c931335ca3?listName="myList"
+
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping(value="/@userList/etag/{etagId}")  //change to user list
-    public ResponseEntity<String> createUserSavedListWithEtag(  											
+    public ResponseEntity<Object> createUserSavedListWithEtag(
     										   @RequestParam(value="listName",required=true) String listName,
     										   @PathVariable("etagId") String etagId,
     										   HttpServletRequest request){ //take an etag and get all the keys
@@ -1277,16 +1237,19 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	executor.execute(()->{   
     		userSavedListService.createBulkSearchResultList(userName, listName, keyList, kind);       	
     		reIndexWithKeys(listStatus,keyList);
-    	});    	
-
-    	return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);	
+    	});
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("id", listStatus.statusID.toString());
+        log.trace("ID: {},", listStatus.statusID.toString() );
+        return new ResponseEntity<>(node, HttpStatus.OK);
+    	//return new ResponseEntity<>(generateResultIDJson(listStatus.statusID.toString()), HttpStatus.OK);
     }
         
     
     
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value="/@userList/currentUser")
-    public ResponseEntity<String> deleteCurrentUserSavedList(   											
+    public ResponseEntity<Object> deleteCurrentUserSavedList(
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
     	if(!validStringParamater(listName)) {
@@ -1310,7 +1273,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @canManageUsers
     @DeleteGsrsRestApiMapping(value="/@userList/otherUser")
-    public ResponseEntity<String> deleteOtherUserSavedList(@RequestParam String userName,    											
+    public ResponseEntity<Object> deleteOtherUserSavedList(@RequestParam String userName,
     										   @RequestParam String listName,    										   
     										   HttpServletRequest request){ 
     	if(!validStringParamater(userName) || !validStringParamater(listName)) {
@@ -1385,7 +1348,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @PutGsrsRestApiMapping(value="/@userList/currentUser") 
-    public ResponseEntity<String> updateCurrentUserSavedList(   											
+    public ResponseEntity<Object> updateCurrentUserSavedList(
     										   @RequestParam String listName,
     										   @RequestBody String keys,
     										   @RequestParam String operation,
@@ -1435,7 +1398,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @canManageUsers
     @PutGsrsRestApiMapping(value="/@userList/otherUser")
-    public ResponseEntity<String> updateOtherUserSavedList(   		
+    public ResponseEntity<Object> updateOtherUserSavedList(
     										   @RequestParam String userName, 	
     										   @RequestParam String listName,
     										   @RequestBody String keys,
@@ -1482,7 +1445,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping(value="/@userList/status/{id}")    
-    public ResponseEntity<String> getUserSavedListStatus(@PathVariable("id") String id){
+    public ResponseEntity<Object> getUserSavedListStatus(@PathVariable("id") String id){
     	    	
     	UserListStatus status = (UserListStatus)gsrscache.getRaw("UserSavedList/" + id);
     	if(status ==null){
@@ -1492,7 +1455,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	node.put("status", status.getStatus());    	
-    	return new ResponseEntity<>(node.toPrettyString(), HttpStatus.OK);
+    	return new ResponseEntity<>(node, HttpStatus.OK);
     }
     
     boolean validStringParamater(String param) {
@@ -1546,11 +1509,11 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	
     }
     
-    private String generateResultIDJson(String id) {
+    private ObjectNode generateResultIDJson(String id) {
     	ObjectMapper mapper = new ObjectMapper();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
-    	return node.toPrettyString();    	
+    	return node;
     }
     
     protected String getFacetCacheID(String namespace, String query, SearchOptions so, String field) {

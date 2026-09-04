@@ -8,12 +8,12 @@ import gsrs.services.GroupService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Group;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 
 import java.io.IOException;
 
 
-@JsonComponent
+@JacksonComponent
 public class GroupDeserializer extends JsonDeserializer<Group> {
     @Autowired
     private GroupService groupService;

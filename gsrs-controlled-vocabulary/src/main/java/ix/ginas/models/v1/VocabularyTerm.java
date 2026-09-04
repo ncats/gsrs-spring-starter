@@ -13,7 +13,7 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * Created by sheilstk on 6/29/15.
@@ -26,7 +26,11 @@ import javax.persistence.*;
 @SingleParent
 @Getter
 @Setter
-@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_vocabulary_term_seq", allocationSize = 1)
+@SequenceGenerator(
+		name = "LONG_SEQ_ID",
+		sequenceName = "ix_ginas_vocabulary_term_seq",
+		allocationSize = 1
+)
 public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	/**
 	 * 

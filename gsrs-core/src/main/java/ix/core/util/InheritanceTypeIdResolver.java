@@ -9,7 +9,7 @@ import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import org.reflections.Reflections;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -84,7 +84,7 @@ import java.util.*;
  *
  *
  */
-@JsonComponent
+@JacksonComponent
 public class InheritanceTypeIdResolver implements TypeIdResolver {
 
     /**

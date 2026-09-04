@@ -32,7 +32,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
      * @return the list of UserProfiles that might be admins.
      * @see #findAnAdminUsername()
      */
-    @Query("select up from UserProfile up where up.rolesJSON like '%Admin%'")
+    @Query("select up from UserProfile up where LOCATE('Admin', CAST(up.rolesJSON as string)) > 0")
     List<UserProfile> _findAllCandidateAdmins();
     String adminTask = "Configure System";
     /**
