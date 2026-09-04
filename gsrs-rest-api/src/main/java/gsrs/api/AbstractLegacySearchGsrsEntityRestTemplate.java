@@ -56,13 +56,13 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         }
         ResponseEntity<String> response = doGet(builder.toString(), String.class);
 
-        JsonNode node = getObjectMapper().readTree(response.getBody());
+        JsonNode node = getMapper().readTree(response.getBody());
 
 
         if(response.getStatusCode().is2xxSuccessful()) {
             //stupid hack remove content, parse it by passing to concrete template class, then and add it back
             JsonNode array = ((ObjectNode)node).remove("content");
-            SearchResult<T> result =  getObjectMapper().convertValue(node, getSearchResultClass());
+            SearchResult<T> result =  getMapper().convertValue(node, getSearchResultClass());
             if(array.isArray()) {
                 List<T> content = parseFromJsonList(array);
                 result.setContent(content);

@@ -66,9 +66,14 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.flipkart.zjsonpatch</groupId>
+            <groupId>io.github.vishwakarma</groupId>
             <artifactId>zjsonpatch</artifactId>
-            <version>0.4.11</version>
+            <version>0.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>3.0.0</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

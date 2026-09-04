@@ -1,13 +1,10 @@
 package ix.ginas.exporters;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import ix.core.FieldResourceReference;
 import ix.core.ResourceReference;
-import ix.core.models.Principal;
 import ix.ginas.models.utils.JSONEntity;
 
 
@@ -25,8 +22,7 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
     public String id = UUID.randomUUID().toString();
     
     private long numRecords;
-    public Long totalRecotds=null;
-    
+
     
     public String collectionId;
     public String originalQuery;
@@ -102,7 +98,7 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
     public String getStatus(){
         if(this.isComplete() && this.sha1!=null && !cancelled){
             return "COMPLETE";
-        }else if(this.cancelled==true){
+        }else if(this.cancelled){
             return "CANCELLED";
         }else if(this.isComplete() && this.sha1==null){
             return "ERROR";
@@ -114,7 +110,7 @@ public class ExportMetaData implements Comparable<ExportMetaData>{
     /**
      * This key is meant to be the same if the generating query and output format is
      * the same.  
-     * @return
+     * @return the value of the object key
      */
     public String getKey(){
     	return getKeyFor(this.collectionId,this.extension, this.publicOnly);

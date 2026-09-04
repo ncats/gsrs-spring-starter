@@ -1,14 +1,14 @@
 package gsrs.validator;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.Map;
@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @InheritanceTypeIdResolver.DefaultInstance
 public class DefaultValidatorConfig implements ValidatorConfig {
 
+    @Autowired
+    private GsrsJsonMapper jsonMapper;
 
     private Class validatorClass;
     /**
@@ -59,7 +61,7 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     }
 
     @Override
-    public ValidatorPlugin newValidatorPlugin(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
+    public ValidatorPlugin newValidatorPlugin(GsrsJsonMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
 
         if(parameters !=null && !parameters.isEmpty()){
             return (ValidatorPlugin) mapper.convertValue(parameters, validatorClass);

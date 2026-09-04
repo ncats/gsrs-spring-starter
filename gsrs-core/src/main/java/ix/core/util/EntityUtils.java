@@ -2,14 +2,6 @@ package ix.core.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.SpecialFieldsProperties;
 import gsrs.model.GsrsApiAction;
@@ -19,6 +11,7 @@ import ix.core.*;
 import ix.core.controllers.EntityFactory;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.models.*;
 import ix.core.util.pojopointer.extensions.RegisteredFunction;
 import ix.utils.PathStack;
@@ -57,6 +50,17 @@ import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * A utility class, mostly intended to do the grunt work of reflection.
@@ -74,9 +78,9 @@ public class EntityUtils {
 	public static final String FIELD_KIND = "__kind";
 	public static final String FIELD_ID = "id";
 
-	public static Object convertConfigObject(Object input) throws JsonProcessingException {
+	public static Object convertConfigObject(Object input) throws JacksonException {
 
-		ObjectMapper mapper = new ObjectMapper();
+		GsrsJsonMapper mapper = EntityMapper.FULL_ENTITY_MAPPER();
 		JsonNode node= mapper.readTree((String) input);
 		System.out.println("convertConfigObject node type: "+node.getNodeType().name());
 		if(node.isArray()){
@@ -111,8 +115,7 @@ public class EntityUtils {
 
 				boolean allNums=true;
 				if(jsn.size()>0) {
-					Iterable<String> list = ()->jsn.fieldNames();
-					for(String nm:(list)) {
+					for(String nm: jsn.propertyNames()) {
 						try{
 							int num=Integer.parseInt(nm);
 							alist.add(Tuple.of(num, jsn.get(nm)));
@@ -141,7 +144,7 @@ public class EntityUtils {
 					}
 					return an;
 				}else {
-					jsn.fields().forEachRemaining(es->{
+					jsn.properties().forEach(es->{
 						fixJSONNode(jsn, es.getValue(), es.getKey());
 					});
 					return jsn;
@@ -154,7 +157,7 @@ public class EntityUtils {
 		}
 	}
 	public static <T extends Object> T convertClean(Object o, TypeReference<T> ref) {
-		ObjectMapper om = new ObjectMapper();
+		GsrsJsonMapper om = EntityMapper.FULL_ENTITY_MAPPER();
 		JsonNode jsn;
 		if(o instanceof JsonNode) {
 			jsn=(JsonNode)o;
@@ -323,13 +326,13 @@ public class EntityUtils {
 		 * considered when json-diffing different versions of the entity.
 		 * @return
 		 */
-		public JsonNode toJsonDiffJsonNode() {
+		public tools.jackson.databind.JsonNode toJsonDiffJsonNode() {
 			return EntityMapper.JSON_DIFF_ENTITY_MAPPER().valueToTree(getValue());
 		}
 		public String toInternalJson() {
 			return EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(getValue());
 		}
-		public JsonNode toInternalJsonNode() {
+		public tools.jackson.databind.JsonNode toInternalJsonNode() {
             return EntityMapper.INTERNAL_ENTITY_MAPPER().valueToTree(getValue());
         }
 
@@ -337,17 +340,17 @@ public class EntityUtils {
 			return EntityMapper.FULL_ENTITY_MAPPER().toJson(getValue());
 		}
 
-		public JsonNode toFullJsonNode() {
+		public tools.jackson.databind.JsonNode toFullJsonNode() {
 			return EntityMapper.FULL_ENTITY_MAPPER().valueToTree(getValue());
 		}
 		
-		public T getClone() throws JsonProcessingException{
+		public T getClone() throws JacksonException{
 			return this.ei.fromJsonNode(this.toFullJsonNode());
 		}
 		
 		
 		
-		public T getWrappedClone() throws JsonProcessingException{
+		public T getWrappedClone() throws JacksonException{
 			return this.ei.fromJsonNode(this.toFullJsonNode());
 		}
 
@@ -565,7 +568,7 @@ public class EntityUtils {
 				}
 
 				@Override
-				public <T> JsonSerializer<T> getSerializer() {
+				public <T> ValueSerializer<T> getSerializer() {
 					return null;
 				}
 
@@ -1054,7 +1057,7 @@ public class EntityUtils {
 		/**
 		 * Uses a {@link PojoPointer} to retrieve specific elements within
 		 * the value wrapped by this {@link EntityWrapper}. This can be used
-		 * much like {@link JsonNode#at(com.fasterxml.jackson.core.JsonPointer)}
+		 * much like {@link JsonNode#at(tools.jackson.core.JsonPointer)}
 		 * which retrieves a JsonNode representing the element at that location.
 		 * 
 		 * <b>Experimental</b>
@@ -1945,11 +1948,11 @@ public class EntityUtils {
 			return (T) this.getFinder(datasource).byId(id);
 		}
 		*/
-		public T fromJson(String oldValue) throws JsonParseException, JsonMappingException, IOException {
+		public T fromJson(String oldValue) throws JacksonException, IOException {
 			return EntityMapper.FULL_ENTITY_MAPPER().readValue(oldValue, this.getEntityClass());
 		}
 
-		public T fromJsonNode(JsonNode value) throws JsonProcessingException {
+		public T fromJsonNode(tools.jackson.databind.JsonNode value) throws JacksonException {
 			return EntityMapper.FULL_ENTITY_MAPPER().treeToValue(value, this.getEntityClass());
 		}
 
@@ -2020,11 +2023,11 @@ public class EntityUtils {
 			return (om, o)->{
 				if(this.getSerializer()!=null){
 					try{
-						JsonFactory jsf=om.getFactory();
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						JsonGenerator jg=jsf.createGenerator(baos);
-						SerializerProvider sp=new DefaultSerializerProvider.Impl();
-						this.getSerializer().serialize(o, jg, sp);
+						JsonGenerator jg=om.createGenerator(baos);
+						SerializationContext context = om._serializationContext();
+						ValueSerializer serializer = this.getSerializer();
+						serializer.serialize(o, jg, context);
 						jg.close();
 						return om.readTree(baos.toByteArray());
 					}catch(Exception e){
@@ -2052,7 +2055,7 @@ public class EntityUtils {
 
 		boolean isCallableByApi();
 		public Class<?> deserializeAs();
-		public <T> JsonSerializer<T> getSerializer();
+		public <T> ValueSerializer<T> getSerializer();
 		
 		
 		public int getJsonModifiers();
@@ -2162,7 +2165,7 @@ public class EntityUtils {
 		}
 
 		@Override
-		public <T> JsonSerializer<T> getSerializer() {
+		public <T> ValueSerializer<T> getSerializer() {
 			return null;
 		}
 
@@ -2204,7 +2207,7 @@ public class EntityUtils {
 		private boolean isApiCallable=false;
 		private JsonProperty jsonProperty=null;
 		private JsonSerialize jsonSerialize=null; 
-		private JsonSerializer<?> serializer=null;
+		private ValueSerializer<?> serializer=null;
 		
 		private String serializedName = null;
 		private String correspondingFieldName=null;
@@ -2309,7 +2312,7 @@ public class EntityUtils {
 			
 			jsonSerialize=m.getAnnotation(JsonSerialize.class);
 			if(jsonSerialize!=null){
-				if(jsonSerialize.using()!= JsonSerializer.None.class){
+				if(!ValueSerializer.None.class.equals(jsonSerialize.using())){
 					try {
 						this.serializer=jsonSerialize.using().newInstance();
 					} catch (Exception e) {
@@ -2547,7 +2550,7 @@ public class EntityUtils {
 			}
 		}
 		@Override
-		public JsonSerializer<?> getSerializer() {
+		public ValueSerializer<?> getSerializer() {
 
 			return this.serializer;
 		}
@@ -2670,7 +2673,7 @@ public class EntityUtils {
 		private boolean collapseInCompactView=false;
 		private String compactViewFieldName;
 		private JsonSerialize jsonSerialize=null;
-		private JsonSerializer<?> serializer=null;
+		private ValueSerializer<?> serializer=null;
 
 		private String serializedName;
 
@@ -2780,7 +2783,7 @@ public class EntityUtils {
 			}
 			jsonSerialize=f.getAnnotation(JsonSerialize.class);
 			if(jsonSerialize!=null){
-				if(jsonSerialize.using()!= JsonSerializer.None.class){
+				if(!ValueSerializer.None.class.equals(jsonSerialize.using())){
 					try {
 						this.serializer=jsonSerialize.using().newInstance();
 					} catch (Exception e) {
@@ -2912,7 +2915,7 @@ public class EntityUtils {
 		}
 
 		@Override
-		public JsonSerializer<?> getSerializer() {
+		public ValueSerializer<?> getSerializer() {
 			return this.serializer;
 		}
 

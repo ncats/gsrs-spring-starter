@@ -1,17 +1,19 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.hateoas.DefaultGsrsEntityToControllerMapper;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import ix.core.controllers.EntityFactory;
+import ix.core.interfaces.GsrsJsonMapper;
+import ix.core.interfaces.GsrsJsonMapperResolver;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.util.ReflectionUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Configuration that generates the GSRS Standard Rest API routes
@@ -21,30 +23,32 @@ import org.springframework.util.ReflectionUtils;
 @Configuration
 public class GsrsWebConfig {
 
-    public abstract class ObjectMapperInterceptor implements MethodInterceptor {
+    public abstract class GsrsJsonMapperInterceptor implements MethodInterceptor {
 
         @Override
         public Object invoke(MethodInvocation invocation) throws Throwable {
             return ReflectionUtils.invokeMethod(invocation.getMethod(), getObject(), invocation.getArguments());
         }
 
-        protected abstract ObjectMapper getObject();
+        protected abstract GsrsJsonMapper getObject();
 
     }
+
     @Bean
-    public ObjectMapper objectMapper(ObjectMapperResolver objectMapperResolver) {
+    public GsrsJsonMapper gsrsJsonMapper(GsrsJsonMapperResolver objectMapperResolver) {
         ProxyFactory factory = new ProxyFactory();
+        factory.setInterfaces(GsrsJsonMapper.class);
         factory.setTargetClass(EntityFactory.EntityMapper.class);
-        factory.addAdvice(new ObjectMapperInterceptor() {
+        factory.addAdvice(new GsrsJsonMapperInterceptor() {
 
             @Override
-            protected ObjectMapper getObject() {
-                return objectMapperResolver.getObjectMapper();
+            protected GsrsJsonMapper getObject() {
+                return objectMapperResolver.getMapper();
             }
 
         });
 
-        return (ObjectMapper) factory.getProxy();
+        return (GsrsJsonMapper) factory.getProxy();
     }
 
     @Bean
@@ -52,20 +56,13 @@ public class GsrsWebConfig {
         return new GsrsUnwrappedEntityModelProcessor();
     }
 
-//    @Bean
-//    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(){
-//        return new DynamicMappingJacksonHttpMessageConverter();
-//    }
-
     @Bean
-    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(ObjectMapper objectMapper){
-        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
-
-        jsonConverter.setObjectMapper(objectMapper);
-        return jsonConverter;
+    public tools.jackson.databind.json.JsonMapper jacksonJsonMapper() {
+        return EntityFactory.EntityMapper.COMPACT_ENTITY_MAPPER().getJsonMapper();
     }
+
     @Bean
-    public ObjectMapperResolver objectMapperResolver() {
+    public GsrsJsonMapperResolver  objectMapperResolver() {
         return new RequestMatchingEntityMapperResolver();
     }
 
@@ -84,4 +81,10 @@ public class GsrsWebConfig {
     public DefaultGsrsEntityToControllerMapper gsrsEntityToControllerMapper(){
         return new DefaultGsrsEntityToControllerMapper();
     }
+
+    @Bean
+    public JacksonJsonHttpMessageConverter mappingJacksonHttpMessageConverter(JsonMapper jacksonJsonMapper) {
+        return new JacksonJsonHttpMessageConverter(jacksonJsonMapper);
+    }
+
 }

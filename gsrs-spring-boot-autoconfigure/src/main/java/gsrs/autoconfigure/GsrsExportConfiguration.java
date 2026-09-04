@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import gsrs.services.PrivilegeService;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,6 +24,8 @@ import ix.ginas.exporters.OutputFormat;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
@@ -72,7 +73,8 @@ public class GsrsExportConfiguration {
     }
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
         log.trace("inside initializer");
@@ -81,13 +83,13 @@ public class GsrsExportConfiguration {
             for (Map.Entry<String, Map<String, Map<String, ExporterFactoryConfig>>> entry1 : exporterFactories.entrySet()) {
                 Map<String, Map<String, ExporterFactoryConfig>> c = entry1.getValue();
                 String context = entry1.getKey();
-                Map<String, ExporterFactoryConfig> map = new HashMap<String, ExporterFactoryConfig>();
+                Map<String, ExporterFactoryConfig> map = new HashMap<>();
                 for (Map.Entry<String, ExporterFactoryConfig> entry2 : c.get("list").entrySet()) {
                     entry2.getValue().setParentKey(entry2.getKey());
                     map.put(entry2.getKey(), entry2.getValue());
                 }
                 List<ExporterFactoryConfig> list = map.values().stream().collect(Collectors.toList());
-                List<? extends ExporterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ExporterFactoryConfig>>() { });
+                List<? extends ExporterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<>() { });
                 System.out.println(reportTag + " for [" + context + "] found before filtering: " + configs.size());
                 configs = configs.stream()
                         .filter(p -> !p.isDisabled())

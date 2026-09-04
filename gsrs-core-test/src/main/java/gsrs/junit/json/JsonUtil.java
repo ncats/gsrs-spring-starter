@@ -1,11 +1,9 @@
 package gsrs.junit.json;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flipkart.zjsonpatch.JsonDiff;
-import com.flipkart.zjsonpatch.JsonPatch;
-import com.flipkart.zjsonpatch.JsonPatchApplicationException;
 import ix.core.controllers.EntityFactory;
+import ix.utils.pojopatch.PojoDiff;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,13 +17,14 @@ import java.util.*;
 public class JsonUtil {
 
 	public static String toString(JsonNode jsn){
-		if(jsn.isTextual())return jsn.asText();
+		if(jsn.isString())return jsn.asString();
 		return jsn.toString();
 	}
 
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults().build();
 	 public static JsonNode parseJsonFile(File resource){
 	    	try(InputStream is=new FileInputStream(resource)){
-	        	return new ObjectMapper().readTree(is);
+				return JSON_MAPPER.readTree(is);
 	    	}catch(Throwable t){
 	    		throw new RuntimeException(t);
 	    	}
@@ -37,12 +36,12 @@ public class JsonUtil {
 	// TP: This method takes arbitrary objects, serialized them, and returns the difference
 	// this may be useful if you'd like to see the difference between random seralizable objects
 	public static Changes computeChanges(Object before, Object after, ChangeFilter...filters ){
-		ObjectMapper om = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
-		JsonNode beforeNode=om.valueToTree(before);
-		JsonNode afterNode=om.valueToTree(after);
+		EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
+		JsonNode beforeNode=mapper.valueToTree(before);
+		JsonNode afterNode=mapper.valueToTree(after);
 		try{
-			System.out.println(om.writerWithDefaultPrettyPrinter().writeValueAsString(beforeNode));
-			System.out.println("\n"+om.writerWithDefaultPrettyPrinter().writeValueAsString(afterNode));
+			System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(beforeNode));
+			System.out.println("\n"+mapper.writerWithDefaultPrettyPrinter().writeValueAsString(afterNode));
 		}catch(Throwable t){}
 
 		return computeChanges(beforeNode,afterNode,filters);
@@ -51,19 +50,18 @@ public class JsonUtil {
 
 	
     public static Changes computeChanges(JsonNode before, JsonNode after, ChangeFilter...filters ){
-        JsonNode jp = JsonDiff.asJson(before,after);
-//        System.out.println("THE CHANGES:" + jp);
+        JsonNode jp = PojoDiff.getJsonDiff(before,after);
         Map<String, Change> changes = new HashMap<>();
 
         //label is for short circuiting
         //during filter step
         NODE_LOOP: for(JsonNode jn:jp){
 
-            final String op = jn.get("op").asText();
+            final String op = jn.get("op").asString();
             Change change=null;
             if("remove".equals(op)){
 
-                JsonNode jsbefore=before.at(jn.get("path").textValue());
+                JsonNode jsbefore=before.at(jn.get("path").asString());
                 if(jsbefore.toString().equals("[\"\"]") ||
                    jsbefore.toString().equals("{}") ||
                    jsbefore.toString().equals("") ||
@@ -71,19 +69,19 @@ public class JsonUtil {
                 		){
 
                 }else{
-                    String key = jn.get("path").asText();
+                    String key = jn.get("path").asString();
                     change = new Change(key, toString(jsbefore), null, Change.ChangeType.REMOVED);
                 }
 
-                //System.out.println("Error:" + jn + " was:" + before.at(jn.get("path").textValue()));
+                //System.out.println("Error:" + jn + " was:" + before.at(jn.get("path").asString()));
             }else if("add".equals(op)){
-                String key = jn.get("path").asText();
+                String key = jn.get("path").asString();
                 String normalizedPath = normalizePath(op,key,before);
 				JsonNode jsAfter=after.at(normalizePath(op,key,before));
                 if(key.endsWith("/-") || key.matches(".+/\\d+$")){
                 	//this will make jsAfter an entire object
 					//break this down into its parts
-					Iterator<String> iter = jsAfter.fieldNames();
+					Iterator<String> iter = jsAfter.propertyNames().iterator();
 					while(iter.hasNext()){
 						String fieldName = iter.next();
 						String newKey = normalizedPath + "/" + fieldName;
@@ -96,7 +94,7 @@ public class JsonUtil {
 				}
             }else if("replace".equals(op)){
             	
-                String key = jn.get("path").asText();
+                String key = jn.get("path").asString();
                 String vold=toString(before.at(key));
                 String vnew=toString(after.at(key));
                 if(!(vold.equals(vnew))) {
@@ -249,11 +247,10 @@ public class JsonUtil {
     			}
     		}
     		try {
-//    			JsonPatch jp=JsonPatch.fromJson((new ObjectMapper()).valueToTree(changes));
-				JsonNode patch = (new ObjectMapper()).valueToTree(changes);
+				JsonNode patch = JSON_MAPPER.valueToTree(changes);
     			//System.out.println("THE PATCH:" + jp);
-				return JsonPatch.apply(patch, oldJson);
-			} catch (JsonPatchApplicationException e) {
+				return PojoDiff.applyJsonPatch(patch, oldJson);
+			} catch (RuntimeException e) {
 				e.printStackTrace();
 			}
     		return null;
@@ -262,7 +259,6 @@ public class JsonUtil {
     	
     }
     public static class JsonBuilder{
-        ObjectMapper mapper = new ObjectMapper();
         StringBuilder builder = new StringBuilder("{");
 
         int numFields=0;
@@ -376,15 +372,15 @@ public class JsonUtil {
                 String content = builder.append("}").toString();
                // System.out.println(content);
 
-                return mapper.readTree(content);
-            } catch (IOException e) {
+                return JSON_MAPPER.readTree(content);
+            } catch (Exception e) {
                 throw new IllegalStateException("error building Json", e);
             }
         }
-    }
+	}
 	public static JsonNode parseJsonString(String string) {
         	try {
-				return new ObjectMapper().readTree(string);
+				return JSON_MAPPER.readTree(string);
         	}catch(Throwable t){
 	    		throw new RuntimeException(t);
 	    	}

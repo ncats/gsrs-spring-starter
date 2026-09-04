@@ -2,10 +2,6 @@ package ix.ginas.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import gov.nih.ncats.common.stream.StreamUtil;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.*;
 import ix.ginas.converters.GinasAccessConverter;
@@ -20,6 +16,10 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -175,7 +175,7 @@ public abstract class NoIdGinasCommonData extends BaseModel implements GinasAcce
         EntityFactory.EntityMapper om = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
         JsonNode jsn = om.valueToTree(this);
 
-        Stream<String> fields = StreamUtil.forIterator(jsn.fieldNames())
+        Stream<String> fields = jsn.propertyNames().stream()
                 .sorted();
 
         fields.forEach(new Consumer<String>() {

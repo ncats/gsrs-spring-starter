@@ -1,12 +1,12 @@
 package gsrs.indexer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.CombinedIndexValueMaker;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.ReflectingIndexValueMaker;
 import ix.core.util.EntityUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,12 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory{
-    private ReflectingIndexValueMaker reflectingIndexValueMaker = new ReflectingIndexValueMaker();
+    private final ReflectingIndexValueMaker reflectingIndexValueMaker = new ReflectingIndexValueMaker();
 
     private List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confList;
 
     private CachedSupplier<List<IndexValueMaker>> indexers = CachedSupplier.runOnce(()->{
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         List<IndexValueMaker> ivms = confList.stream()
                 .map(c ->{
                     IndexValueMaker indexer =null;

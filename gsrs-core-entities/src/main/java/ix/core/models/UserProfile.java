@@ -2,7 +2,6 @@ package ix.core.models;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -19,6 +18,8 @@ import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.*;
 
 @Slf4j
@@ -29,7 +30,7 @@ import java.util.*;
 public class UserProfile extends IxModel{
 	private final static String SALT_PREFIX = "G";
 
-	private static ObjectMapper om = new ObjectMapper();
+	private static JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
 
 	//todo: look into autowiring the salter and hasher
 	private static Salter salter = new LegacyTypeSalter(new GsrsPasswordHasher(), SALT_PREFIX);
@@ -138,7 +139,6 @@ public class UserProfile extends IxModel{
 	}
 
 	public void setRoles(Collection<Role> rolekinds) {
-		ObjectMapper om = new ObjectMapper();
 		rolesJSON = om.valueToTree(rolekinds).toString();
 		setIsDirty("rolesJSON");
 	}

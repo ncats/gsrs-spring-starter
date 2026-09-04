@@ -1,8 +1,8 @@
 package ix.ginas.exporters;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 public interface RecordScrubberFactory<T> {
 

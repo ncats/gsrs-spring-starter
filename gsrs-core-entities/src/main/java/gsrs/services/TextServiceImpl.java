@@ -7,11 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gsrs.repository.TextRepository;
 import ix.core.models.Text;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class TextServiceImpl implements TextService {
@@ -24,14 +22,14 @@ public class TextServiceImpl implements TextService {
     public Long saveTextList(String label, List<String> textList) {
     	Text text = new Text();
     	text.label = label;
-    	    	
-    	ObjectMapper mapper = new ObjectMapper();        
+
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         String jsonArray;
         
 		try {
 			jsonArray = mapper.writeValueAsString(textList);
 			text.text = jsonArray.toString();  
-		} catch (JsonProcessingException e) {			
+		} catch (Exception e) {
 			e.printStackTrace();
 			log.error("Error in TextService writing to jsonarray string!");
 		}    	 	

@@ -2,101 +2,72 @@ package ix.core.controllers;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import ix.core.interfaces.GsrsJsonMapper;
 import tools.jackson.core.*;
-import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.*;
-import tools.jackson.databind.cfg.GeneratorSettings;
 import tools.jackson.databind.deser.DeserializationProblemHandler;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
-import gov.nih.ncats.common.functions.ThrowableConsumer;
-import gov.nih.ncats.common.functions.ThrowableFunction;
 import ix.core.models.BeanViews;
 import ix.core.util.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Objects;
 
 
 public class EntityFactory {
     private static final String RESPONSE_TYPE_PARAMETER = "type";
 
     @Slf4j
-    static public class EntityMapper {
-        private boolean keyOnly=false;
-
-        private ObjectMapper objectMapperNew;
-
-        private SerializationConfig _serializationConfig;
-        private DeserializationConfig _deserializationConfig;
-
-        private JsonMapper jsonMapper;
+    static public class EntityMapper implements GsrsJsonMapper, Serializable {
         /**
          * Default value
          */
         private static final long serialVersionUID = 1L;
 
-        public static EntityMapper FULL_ENTITY_MAPPER(){
-            EntityMapper mapper = new EntityMapper(BeanViews.Full.class);
-            mapper.jsonMapper = JsonMapper.builder()
-                    .addHandler(new DeserializationProblemHandler() {
-                        @Override
-                        public boolean handleUnknownProperty(
-                                DeserializationContext context,
-                                JsonParser parser,
-                                ValueDeserializer<?> deserializer,
-                                Object beanOrClass,
-                                String propertyName) {
+        private static final DeserializationProblemHandler UNKNOWN_PROPERTY_HANDLER =
+                new DeserializationProblemHandler() {
+                    @Override
+                    public boolean handleUnknownProperty(
+                            DeserializationContext context,
+                            JsonParser parser,
+                            ValueDeserializer<?> deserializer,
+                            Object beanOrClass,
+                            String propertyName) {
 
-                            return this.handleUnknownProperty(
-                                    context,
-                                    parser,
-                                    deserializer,
-                                    beanOrClass,
-                                    propertyName
-                            );
-                        }
-                    })
-                    //todo: add confi
-                    .build();
-            return mapper;
+                        return skipUnknownProperty(parser, propertyName);
+                    }
+                };
+
+        private static final JsonMapper DEFAULT_JSON_MAPPER = newDefaultJsonMapper();
+        private static final JsonMapper JSON_DIFF_JSON_MAPPER = newJsonDiffJsonMapper();
+
+        private final JsonMapper jsonMapper;
+        private final Class<?> activeView;
+        private final boolean keyOnly;
+
+        public static EntityMapper FULL_ENTITY_MAPPER(){
+            return new EntityMapper(DEFAULT_JSON_MAPPER, BeanViews.Full.class);
         }
 
         public static EntityMapper JSON_DIFF_ENTITY_MAPPER(){
-            EntityMapper mapper= new EntityMapper(BeanViews.JsonDiff.class);
-            mapper.jsonMapper = JsonMapper.builder()
-                    //todo: add confi
-                    .build();
-            return mapper;
+            return new EntityMapper(JSON_DIFF_JSON_MAPPER, BeanViews.JsonDiff.class);
         }
 
         public static EntityMapper INTERNAL_ENTITY_MAPPER(){
-            EntityMapper mapper = new EntityMapper(BeanViews.Internal.class);
-            mapper.jsonMapper = JsonMapper.builder()
-                    //todo: add confi
-                    .build();
-            return mapper;
+            return new EntityMapper(DEFAULT_JSON_MAPPER, BeanViews.Internal.class);
         }
 
         public static EntityMapper COMPACT_ENTITY_MAPPER() {
-            EntityMapper mapper = new EntityMapper(BeanViews.Compact.class);
-            mapper.jsonMapper = JsonMapper.builder()
-                    //todo: add confi
-                    .build();
-            return mapper;
+            return new EntityMapper(DEFAULT_JSON_MAPPER, BeanViews.Compact.class);
         }
 
         public static EntityMapper KEY_ENTITY_MAPPER() {
-            EntityMapper mapper = new EntityMapper(BeanViews.Key.class);
-            mapper.jsonMapper = JsonMapper.builder()
-                    //todo: add confi
-                    .build();
-            return mapper;
+            return new EntityMapper(DEFAULT_JSON_MAPPER, BeanViews.Key.class);
         }
 
         public static EntityMapper getByView(String view){
@@ -119,71 +90,49 @@ public class EntityFactory {
             return COMPACT_ENTITY_MAPPER();
         }
 
-        //@Override
         public EntityMapper copy() {
-            Class<?> view = _serializationConfig.getActiveView();
-            if(view ==null){
-                return new EntityMapper();
-            }
-            return new EntityMapper(view);
+            return new EntityMapper(jsonMapper, activeView, keyOnly);
         }
 
         public EntityMapper (Class<?>... views) {
-            EntityMapper mapper = new EntityMapper();
-            mapper.jsonMapper = JsonMapper.builder()
-                    .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
-                    .changeDefaultPropertyInclusion(inclusion ->
-                            inclusion.withContentInclusion(JsonInclude.Include.NON_NULL)
-                    )
-                    .build();
-
-            //configure (MapperFeature.DEFAULT_VIEW_INCLUSION, true);
-            //configure (SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-            /*this.setSerializationInclusion(JsonInclude.Include.NON_NULL);*/
-            _serializationConfig = mapper.jsonMapper.serializationConfig();
-
-            for (Class<?> v : views) {
-                if(v.equals(BeanViews.Key.class)){
-                    keyOnly=true;
-                }
-                _serializationConfig = _serializationConfig.withView(v);
-            }
-
-            SimpleModule module = new SimpleModule();
-
+            this(DEFAULT_JSON_MAPPER, views);
         }
 
 
         public EntityMapper () {
+            this(DEFAULT_JSON_MAPPER, (Class<?>) null);
+        }
+
+        private EntityMapper(JsonMapper jsonMapper, Class<?>... views) {
+            this(jsonMapper, resolveActiveView(views), hasKeyView(views));
+        }
+
+        private EntityMapper(JsonMapper jsonMapper, Class<?> activeView, boolean keyOnly) {
+            this.jsonMapper = Objects.requireNonNull(jsonMapper);
+            this.activeView = activeView;
+            this.keyOnly = keyOnly;
+        }
+
+        public JsonMapper jsonMapper() {
+            return jsonMapper;
+        }
+
+        public JsonMapper getJsonMapper() {
+            return jsonMapper;
+        }
+
+        public Class<?> getActiveView() {
+            return activeView;
+        }
+
+        public boolean isKeyOnly() {
+            return keyOnly;
         }
 
         public boolean _handleUnknownProperty
                 (DeserializationContext ctx, JsonParser parser,
-                 JsonDeserializer deser, Object bean, String property) {
-            try {
-                /*
-            	Logger.warn("Unknown property \""
-                            +property+"\" (token="
-                            +parser.getCurrentToken()
-                            +") while parsing "
-                            +bean+"; skipping it..");
-                            */
-                parser.skipChildren();
-            }
-            catch (Exception ex) {
-                ex.printStackTrace();
-                log.error
-                        ("Unable to handle unknown property!", ex);
-                return false;
-            }
-            return true;
-        }
-
-        protected ObjectWriter _newWriter(SerializationConfig config) {
-            if(this.keyOnly){
-                return new KeyOnlyObjectWriter(this, config);
-            }
-            return super._newWriter(config);
+                 ValueDeserializer<?> deser, Object bean, String property) {
+            return skipUnknownProperty(parser, property);
         }
 
 
@@ -192,167 +141,318 @@ public class EntityFactory {
         }
 
         public String toJson (Object obj, boolean pretty) {
-            if(this.keyOnly){
-                Optional<EntityUtils.Key> optKey= EntityUtils.EntityWrapper.of(obj).getOptionalKey();
-                if(optKey.isPresent()) {
-                    EntityUtils.Key k = optKey.get();
-                    try {
-                        return pretty
-                                ? writerWithDefaultPrettyPrinter().writeValueAsString(k)
-                                : writeValueAsString(k);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        log.trace("Can't write Json", ex);
-                    }
-                }
-            }
-
-
             try {
-                return pretty
-                        ? writerWithDefaultPrettyPrinter().writeValueAsString(obj)
-                        : writeValueAsString (obj);
+                return writer(pretty).writeValueAsString(obj);
             }
             catch (Exception ex) {
-                ex.printStackTrace();
                 log.trace("Can't write Json", ex);
             }
             return null;
         }
 
         public JsonNode toJsonNode(Object obj) {
-            if(this.keyOnly){
-                Optional<EntityUtils.Key> optKey= EntityUtils.EntityWrapper.of(obj).getOptionalKey();
-                if(optKey.isPresent()) {
-                    EntityUtils.Key k = optKey.get();
-                    try {
-                        return this.jsonMapper.valueToTree(k);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        log.trace("Can't write Json", ex);
-                    }
-                }
-            }
-
-
             try {
-                return this.jsonMapper.valueToTree(obj);
+                return valueToTree(obj);
             }catch (Exception ex) {
-                ex.printStackTrace();
                 log.trace("Can't write Json", ex);
             }
             return null;
 
         }
 
-        private class KeyOnlyObjectWriter {
+        public JsonNode valueToTree(Object value) {
+            return rawWriter(false).valueToTree(valueForSerialization(value));
+        }
 
-            private JsonMapper mapper;
+        public <T> T treeToValue(JsonNode value, Class<T> valueType) {
+            return readerFor(valueType).readValue(value);
+        }
 
-            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
-                mapper = JsonMapper.builder();
-                        .configure(config.gets)
-                super(mapper, config, rootType, pp);
+        public <T> T treeToValue(JsonNode value, TypeReference<T> valueTypeRef) {
+            return readerFor(valueTypeRef).readValue(value);
+        }
+
+        public <T> T readValue(String content, Class<T> valueType) {
+            return readerFor(valueType).readValue(content);
+        }
+
+        public <T> T readValue(String content, TypeReference<T> valueTypeRef) {
+            return readerFor(valueTypeRef).readValue(content);
+        }
+
+        public <T> T readValue(byte[] src, Class<T> valueType) {
+            return readerFor(valueType).readValue(src);
+        }
+
+        public <T> T readValue(byte[] src, TypeReference<T> valueTypeRef) {
+            return readerFor(valueTypeRef).readValue(src);
+        }
+
+        public <T> T readValue(File src, Class<T> valueType) {
+            return readerFor(valueType).readValue(src);
+        }
+
+        public <T> T readValue(File src, TypeReference<T> valueTypeRef) {
+            return readerFor(valueTypeRef).readValue(src);
+        }
+
+        public <T> T readValue(Path src, Class<T> valueType) {
+            return readerFor(valueType).readValue(src);
+        }
+
+        public <T> T readValue(InputStream src, Class<T> valueType) {
+            return readerFor(valueType).readValue(src);
+        }
+
+        public <T> T readValue(Reader src, Class<T> valueType) {
+            return readerFor(valueType).readValue(src);
+        }
+
+        public <T> T convertValue(Object fromValue, Class<T> toValueType) {
+            if (fromValue instanceof JsonNode) {
+                return readerFor(toValueType).readValue((JsonNode) fromValue);
+            }
+            return readerFor(toValueType).readValue(valueToTree(fromValue));
+        }
+
+        public <T> T convertValue(Object fromValue, TypeReference<T> toValueTypeRef) {
+            if (fromValue instanceof JsonNode) {
+                return readerFor(toValueTypeRef).readValue((JsonNode) fromValue);
+            }
+            return readerFor(toValueTypeRef).readValue(valueToTree(fromValue));
+        }
+
+        public void writeValue(File resultFile, Object value) {
+            writer(false).writeValue(resultFile, value);
+        }
+
+        public void writeValue(Path resultFile, Object value) {
+            writer(false).writeValue(resultFile, value);
+        }
+
+        public void writeValue(JsonGenerator generator, Object value) {
+            writer(false).writeValue(generator, value);
+        }
+
+        public void writeValue(OutputStream out, Object value) {
+            writer(false).writeValue(out, value);
+        }
+
+        public void writeValue(Writer out, Object value) {
+            writer(false).writeValue(out, value);
+        }
+
+        public void writeValue(DataOutput out, Object value) {
+            writer(false).writeValue(out, value);
+        }
+
+        public String writeValueAsString(Object value) {
+            return writer(false).writeValueAsString(value);
+        }
+
+        public byte[] writeValueAsBytes(Object value) {
+            return writer(false).writeValueAsBytes(value);
+        }
+
+        public JsonNode readTree(String content) {
+            return reader().readTree(content);
+        }
+
+        public JsonNode readTree(byte[] content) {
+            return reader().readTree(content);
+        }
+
+        public JsonNode readTree(File source) {
+            return jsonMapper.readTree(source);
+        }
+
+        public JsonNode readTree(InputStream source) {
+            return reader().readTree(source);
+        }
+
+        public JavaType constructType(java.lang.reflect.Type type) {
+            return jsonMapper.constructType(type);
+        }
+
+        public JavaType constructType(TypeReference<?> typeReference) {
+            return jsonMapper.constructType(typeReference);
+        }
+
+        public EntityWriter writer() {
+            return new EntityWriter(false);
+        }
+
+        public EntityWriter writerWithDefaultPrettyPrinter() {
+            return new EntityWriter(true);
+        }
+
+        public ObjectWriter jacksonWriter() {
+            return rawWriter(false);
+        }
+
+        public ObjectWriter jacksonWriterWithDefaultPrettyPrinter() {
+            return rawWriter(true);
+        }
+
+        private ObjectReader reader() {
+            ObjectReader reader = jsonMapper.reader();
+            if (activeView != null) {
+                reader = reader.withView(activeView);
+            }
+            return reader;
+        }
+
+        private ObjectReader readerFor(Class<?> valueType) {
+            ObjectReader reader = jsonMapper.readerFor(valueType);
+            if (activeView != null) {
+                reader = reader.withView(activeView);
+            }
+            return reader;
+        }
+
+        private ObjectReader readerFor(TypeReference<?> valueTypeRef) {
+            ObjectReader reader = jsonMapper.readerFor(valueTypeRef);
+            if (activeView != null) {
+                reader = reader.withView(activeView);
+            }
+            return reader;
+        }
+
+        private ObjectWriter rawWriter(boolean pretty) {
+            ObjectWriter writer = activeView == null
+                    ? jsonMapper.writer()
+                    : jsonMapper.writerWithView(activeView);
+            if (pretty) {
+                writer = writer.withDefaultPrettyPrinter();
+            }
+            return writer;
+        }
+
+        private EntityWriter writer(boolean pretty) {
+            return new EntityWriter(pretty);
+        }
+
+        private Object valueForSerialization(Object value) {
+            if (!keyOnly || value == null) {
+                return value;
             }
 
-            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config) {
-                super(mapper, config);
-            }
-
-            public KeyOnlyObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
-                super(mapper, config, s);
-            }
-
-            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config, GeneratorSettings genSettings, Prefetch prefetch) {
-                super(base, config, genSettings, prefetch);
-            }
-
-            public KeyOnlyObjectWriter(ObjectWriter base, SerializationConfig config) {
-                super(base, config);
-            }
-
-            public KeyOnlyObjectWriter(ObjectWriter base, JsonFactory f) {
-                super(base, f);
-            }
-
-            public KeyOnlyObjectWriter() {
-                super(EntityMapper.this, EntityMapper.this._serializationConfig);
-
-            }
-
-            @Override
-            protected ObjectWriter _new(ObjectWriter base, JsonFactory f) {
-                return new KeyOnlyObjectWriter(base, f);
-            }
-
-            @Override
-            protected ObjectWriter _new(ObjectWriter base, SerializationConfig config) {
-                return new KeyOnlyObjectWriter(base, config);
-            }
-
-            @Override
-            protected ObjectWriter _new(GeneratorSettings genSettings, Prefetch prefetch) {
-
-                return new KeyOnlyObjectWriter(this, this._config, genSettings, prefetch);
-            }
-
-            @Override
-            protected SequenceWriter _newSequenceWriter(boolean wrapInArray, JsonGenerator gen, boolean managedInput) throws IOException {
-                return super._newSequenceWriter(wrapInArray, gen, managedInput);
-            }
-
-
-
-            public void writeValue(File resultFile, Object value) throws IOException, JsonGenerationException, JsonMappingException {
-                writeValueConsumer( v->super.writeValue(resultFile, v), value);
-            }
-
-            private <E extends Throwable> void writeValueConsumer(ThrowableConsumer<Object, E> consumer, Object value) throws E{
-                if(EntityMapper.this.keyOnly){
-                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
-                    if(ew.hasIdField() && ew.getEntityInfo().isCollapsibleInKeyView()) {
-                        Optional<EntityUtils.Key> opt = ew.getOptionalKey();
-                        //we could be serializing an entity without an id set because it wasn't saved
-                        //so this checks for that if there isn't a key it will fallback to serializing whole thing
-                        if(opt.isPresent()) {
-                            consumer.accept(opt.get());
-                            return;
-                        }
+            try {
+                EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
+                if (ew.hasIdField() && ew.getEntityInfo().isCollapsibleInKeyView()) {
+                    Optional<EntityUtils.Key> opt = ew.getOptionalKey();
+                    if (opt.isPresent()) {
+                        return opt.get();
                     }
                 }
-               consumer.accept(value);
+            } catch (Exception e) {
+                log.trace("Unable to collapse value for key-only serialization", e);
             }
-            private <T, E extends Throwable> T writeValueFunction(ThrowableFunction<Object, T, E> consumer, Object value) throws E{
-                if(EntityMapper.this.keyOnly){
-                    EntityUtils.EntityWrapper<Object> ew = EntityUtils.EntityWrapper.of(value);
-                    if(ew.hasIdField()) {
-                        return consumer.apply(ew.getKey());
 
+            return value;
+        }
+
+        private static JsonMapper newDefaultJsonMapper() {
+            SimpleModule module = new SimpleModule();
+            //TODO katzelda October 2020: add Amount Serializer back when we do substances
+//            module.setSerializerModifier(new AmountSerializerModifier());
+            return JsonMapper.builderWithJackson2Defaults()
+                    .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+                    .changeDefaultPropertyInclusion(inclusion ->
+                            JsonInclude.Value.construct(
+                                    JsonInclude.Include.NON_NULL,
+                                    JsonInclude.Include.NON_NULL
+                            )
+                    )
+                    .addModule(module)
+                    .addHandler(UNKNOWN_PROPERTY_HANDLER)
+                    .build();
+        }
+
+        private static JsonMapper newJsonDiffJsonMapper() {
+            return newDefaultJsonMapper();
+        }
+
+        private static Class<?> resolveActiveView(Class<?>... views) {
+            Class<?> active = null;
+            if (views != null) {
+                for (Class<?> view : views) {
+                    if (view != null) {
+                        active = view;
                     }
                 }
-                return consumer.apply(value);
             }
-            @Override
-            public void writeValue(JsonGenerator g, Object value) throws IOException {
-                writeValueConsumer( v->super.writeValue(g, v), value);
+            return active;
+        }
 
+        private static boolean hasKeyView(Class<?>... views) {
+            if (views == null) {
+                return false;
+            }
+            for (Class<?> view : views) {
+                if (BeanViews.Key.class.equals(view)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean skipUnknownProperty(JsonParser parser, String propertyName) {
+            try {
+                /*
+                Logger.warn("Unknown property \""
+                            +propertyName+"\" (token="
+                            +parser.getCurrentToken()
+                            +") while parsing; skipping it..");
+                            */
+                parser.skipChildren();
+            }
+            catch (Exception ex) {
+                log.error("Unable to handle unknown property: " + propertyName, ex);
+                return false;
+            }
+            return true;
+        }
+
+        public class EntityWriter implements Serializable {
+            private static final long serialVersionUID = 1L;
+
+            private final boolean pretty;
+
+            private EntityWriter(boolean pretty) {
+                this.pretty = pretty;
             }
 
-            public void writeValue(OutputStream out, Object value) throws IOException, JsonGenerationException, JsonMappingException {
-                writeValueConsumer( v->super.writeValue(out, v), value);
+            public void writeValue(File resultFile, Object value) {
+                rawWriter(pretty).writeValue(resultFile, valueForSerialization(value));
             }
 
-            public void writeValue(Writer w, Object value) throws IOException, JsonGenerationException, JsonMappingException {
-                writeValueConsumer( v->super.writeValue(w, v), value);
+            public void writeValue(Path resultFile, Object value) {
+                rawWriter(pretty).writeValue(resultFile, valueForSerialization(value));
             }
 
-            public void writeValue(DataOutput out, Object value) throws IOException {
-                writeValueConsumer( v->super.writeValue(out, v), value);
+            public void writeValue(JsonGenerator generator, Object value) {
+                rawWriter(pretty).writeValue(generator, valueForSerialization(value));
             }
 
-            public String writeValueAsString(Object value) throws JsonProcessingException {
-                return writeValueFunction( v-> super.writeValueAsString(v), value);
+            public void writeValue(OutputStream out, Object value) {
+                rawWriter(pretty).writeValue(out, valueForSerialization(value));
+            }
 
+            public void writeValue(Writer out, Object value) {
+                rawWriter(pretty).writeValue(out, valueForSerialization(value));
+            }
+
+            public void writeValue(DataOutput out, Object value) {
+                rawWriter(pretty).writeValue(out, valueForSerialization(value));
+            }
+
+            public String writeValueAsString(Object value) {
+                return rawWriter(pretty).writeValueAsString(valueForSerialization(value));
+            }
+
+            public byte[] writeValueAsBytes(Object value) {
+                return rawWriter(pretty).writeValueAsBytes(valueForSerialization(value));
             }
         }
     }

@@ -1,10 +1,8 @@
 package ix.ginas.exporters;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -98,7 +96,7 @@ public interface ExporterFactory<T> {
         outputNode.put("type", "object");
 
         ObjectNode propertiesNode = JsonNodeFactory.instance.objectNode();
-        schemaNode.fieldNames().forEachRemaining(fn->{
+        schemaNode.propertyNames().forEach(fn->{
             propertiesNode.set(fn, schemaNode.get(fn));
         });
         outputNode.set("properties", propertiesNode);

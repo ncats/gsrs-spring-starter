@@ -1,24 +1,22 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JacksonComponent;
-import org.springframework.security.core.parameters.P;
 
-import java.io.IOException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
 
 @JacksonComponent
 @Slf4j
-public class PrincipalDeserializer extends JsonDeserializer<Principal> {
+public class PrincipalDeserializer extends ValueDeserializer<Principal> {
 
     @Autowired
     private PrincipalService principalService;
@@ -45,16 +43,16 @@ public class PrincipalDeserializer extends JsonDeserializer<Principal> {
     }
 
     @Override
-    public Principal deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public Principal deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws JacksonException {
         initIfNeeded();
-        JsonToken token = jsonParser.getCurrentToken();
+        JsonToken token = jsonParser.currentToken();
         if (JsonToken.START_OBJECT == token) {
-            JsonNode tree = jsonParser.getCodec().readTree(jsonParser);
+            JsonNode tree = deserializationContext.readTree(jsonParser);
             /* this is really inconsistent with below in that we don't
              * register this principal if it's not already in the
              * persistence store..
              */
-            return jsonParser.getCodec().treeToValue(tree, Principal.class);
+            return deserializationContext.readTreeAsValue(tree, Principal.class);
         }
         else { // JsonToken.VALUE_STRING:
             String username = jsonParser.getValueAsString();

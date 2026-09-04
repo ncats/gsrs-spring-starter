@@ -1,11 +1,10 @@
 package gsrs.junit.json;
 
 
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flipkart.zjsonpatch.JsonDiff;
-import com.flipkart.zjsonpatch.JsonPatch;
+import ix.utils.pojopatch.PojoDiff;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -15,6 +14,8 @@ import java.util.regex.Pattern;
  * Created by katzelda on 2/26/16.
  */
 public class Changes {
+
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults().build();
 
     private final Map<String, Change> changes;
 
@@ -99,10 +100,10 @@ public class Changes {
 
     public void assertMatches(JsonNode old, JsonNode newVersion){
 
-        JsonNode patch = JsonDiff.asJson(old, newVersion);
+        JsonNode patch = PojoDiff.getJsonDiff(old, newVersion);
 
-        JsonNode ourVersion = JsonPatch.apply(this.asJsonPatch(), old);
-        JsonNode actualVersion = JsonPatch.apply(patch, old);
+        JsonNode ourVersion = PojoDiff.applyJsonPatch(this.asJsonPatch(), old);
+        JsonNode actualVersion = PojoDiff.applyJsonPatch(patch, old);
         //actual may have additional changes we don't care about so don't want to do exact equals check
         //only check the changes we care about
         for(Change c : changes.values()){
@@ -111,7 +112,7 @@ public class Changes {
             if(c.getType() == Change.ChangeType.ADDED || c.getType() == Change.ChangeType.REPLACED) {
 
                 JsonNode expected = ourVersion.at(key);
-                if(expected.equals(actualNode)){
+                if(!expected.equals(actualNode)){
                     throw new AssertionError(c +" expected = " + expected + " but was " + actualNode);
                 }
             }else if(c.getType()== Change.ChangeType.REMOVED){
@@ -125,8 +126,7 @@ public class Changes {
     }
 
     public JsonNode asJsonPatch(){
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode n= mapper.valueToTree(changes.values());
+        JsonNode n= JSON_MAPPER.valueToTree(changes.values());
 
         return n;
     }

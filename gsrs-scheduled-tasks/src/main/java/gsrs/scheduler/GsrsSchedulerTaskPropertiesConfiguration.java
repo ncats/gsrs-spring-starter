@@ -2,8 +2,6 @@ package gsrs.scheduler;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -13,6 +11,8 @@ import gsrs.util.ExtensionConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +63,7 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
         String reportTag = "ScheduledTaskConfig";
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         for (String k: list.keySet()) {
             ScheduledTaskConfig config =  list.get(k);
             config.setParentKey(k);

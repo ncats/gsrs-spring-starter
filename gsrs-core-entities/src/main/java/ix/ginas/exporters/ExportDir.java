@@ -1,7 +1,7 @@
 package ix.ginas.exporters;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.io.IOUtil;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.*;
 import java.util.Objects;
@@ -13,7 +13,7 @@ public class ExportDir<T> {
 
     private final File metaDir;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     private final Class<? extends T> defaultType;
 
     public ExportDir(File dir, Class<? extends T> type) {
@@ -75,11 +75,11 @@ public class ExportDir<T> {
         private final File file, metaDataFile;
         private T metaData;
 
-        private final ObjectMapper mapper;
+        private final JsonMapper mapper;
 
         private final Class<? extends T> type;
 
-        private ExportFile(File file, File metaDataFile, T metaData, ObjectMapper mapper, Class<? extends T> type) {
+        private ExportFile(File file, File metaDataFile, T metaData, JsonMapper mapper, Class<? extends T> type) {
             this.file = Objects.requireNonNull(file);
             this.metaData = metaData;
             this.mapper = mapper;

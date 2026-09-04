@@ -1,8 +1,6 @@
 package gsrs;
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.entityProcessor.EntityProcessorConfig;
 import gsrs.imports.ImportAdapterFactoryConfig;
 import gsrs.imports.MatchableCalculationConfig;
@@ -12,6 +10,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,7 +23,7 @@ import static java.util.Comparator.nullsFirst;
 @ConfigurationProperties("gsrs")
 @Data
 @Slf4j
-public class GsrsFactoryConfiguration {
+Spublic public class GsrsFactoryConfiguration {
     //          validators->context->list->parentKey = { }
     private Map<String, Map<String, Map<String, Map<String, Object>>>> validators;
 
@@ -83,7 +83,7 @@ public class GsrsFactoryConfiguration {
         if (validators == null) {
             return Collections.emptyList();
         }
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             Map<String, Map<String, Object>> map = (Map<String, Map<String, Object>>) validators.get(context).get("list");
             if (map == null || map.isEmpty()) {

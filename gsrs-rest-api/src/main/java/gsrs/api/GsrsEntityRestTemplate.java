@@ -1,35 +1,29 @@
 package gsrs.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import gsrs.api.internal.WithoutContentPagedResult;
-import gsrs.controller.GsrsEntityController;
-import ix.core.validator.ValidationResponse;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.boot.restclient.RestTemplateBuilder;
-import org.springframework.hateoas.Link;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 
 public abstract class GsrsEntityRestTemplate<T, I> {
 
     private final RestTemplate restTemplate;
 
-    private ObjectMapper mapper;
+    private JsonMapper mapper;
     private String prefix;
 
-    public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, ObjectMapper mapper) {
+    public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, JsonMapper mapper) {
         this.mapper = Objects.requireNonNull(mapper);
 
         StringBuilder builder = new StringBuilder(baseUrl);
@@ -44,10 +38,10 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                 .build();
     }
     public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context) {
-        this(restTemplateBuilder, baseUrl, context, new ObjectMapper());
+        this(restTemplateBuilder, baseUrl, context, JsonMapper.builderWithJackson2Defaults().build());
     }
 
-    protected ObjectMapper getObjectMapper(){
+    protected JsonMapper getMapper(){
         return mapper;
     }
 

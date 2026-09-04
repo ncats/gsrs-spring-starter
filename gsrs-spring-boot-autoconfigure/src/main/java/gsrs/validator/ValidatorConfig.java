@@ -2,9 +2,9 @@ package gsrs.validator;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import gsrs.util.ExtensionConfig;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
 
@@ -18,7 +18,7 @@ public interface ValidatorConfig extends ExtensionConfig {
 
     void setParameters(Map<String, Object> parameters);
 
-    ValidatorPlugin newValidatorPlugin(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
+    ValidatorPlugin newValidatorPlugin(GsrsJsonMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
 
     <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType);
 

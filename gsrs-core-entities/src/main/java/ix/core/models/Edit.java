@@ -1,24 +1,25 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import ix.core.FieldResourceReference;
 import ix.core.History;
 import ix.core.ResourceReference;
+import ix.core.controllers.EntityFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
+import ix.utils.pojopatch.PojoDiff;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedBy;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.Date;
 import java.util.UUID;
 
@@ -45,6 +46,7 @@ public class Edit extends BaseModel {
     }
     
     
+
     @JsonIgnore
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
@@ -152,10 +154,10 @@ public class Edit extends BaseModel {
     @JsonIgnore
     public JsonNode getDiff(){
     	try{
-	    	ObjectMapper om = new ObjectMapper();
-	    	JsonNode js1=om.readTree(oldValue);
-	    	JsonNode js2=om.readTree(newValue);
-	    	return JsonDiff.asJson(js1, js2);
+            EntityFactory.EntityMapper om = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
+            JsonNode js1=om.readTree(oldValue);
+            JsonNode js2=om.readTree(newValue);
+            return PojoDiff.getJsonDiff(js1, js2);
     	}catch(Exception e){
     		return null;
     	}

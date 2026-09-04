@@ -1,7 +1,6 @@
 package ix.ginas.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Keyword;
 
@@ -180,7 +179,7 @@ public class EmbeddedKeywordList implements List<Keyword>, Serializable{
 			}
 			try {
 				return entityMapper.readValue(clob.getSubString(1, (int) clob.length()), EmbeddedKeywordList.class);
-			} catch (SQLException | JsonProcessingException e) {
+			} catch ( Exception e) {
 				throw new IllegalStateException(e);
 			}
 		}

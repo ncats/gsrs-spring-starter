@@ -1,7 +1,5 @@
 package ix.core.util.pojopointer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.RegisteredFunctionProperties;
 import gsrs.springUtils.AutowireHelper;
@@ -15,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.*;
 import java.util.function.Function;
@@ -127,7 +127,7 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
 		String reportTag = "RegisteredFunctionConfig";
-		ObjectMapper mapper = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		try {
 			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredFunctions().getList();
 			if (map == null || map.isEmpty()) {

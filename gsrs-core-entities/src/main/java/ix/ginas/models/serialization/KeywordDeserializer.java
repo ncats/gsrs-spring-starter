@@ -1,16 +1,14 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import ix.core.models.Keyword;
 import ix.ginas.models.GinasCommonData;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
-
-public class KeywordDeserializer extends JsonDeserializer<Keyword> {
+public class KeywordDeserializer extends ValueDeserializer<Keyword> {
 	
     private final String label;
     public KeywordDeserializer (String label) {
@@ -24,9 +22,9 @@ public class KeywordDeserializer extends JsonDeserializer<Keyword> {
 
     public Keyword deserialize
         (JsonParser parser, DeserializationContext ctx)
-        throws IOException, JsonProcessingException {
+        throws JacksonException {
         Keyword kw=null;
-        JsonToken token = parser.getCurrentToken();
+        JsonToken token = parser.currentToken();
         if (token == JsonToken.VALUE_STRING) {
         	kw= new Keyword(label, parser.getValueAsString());
         }

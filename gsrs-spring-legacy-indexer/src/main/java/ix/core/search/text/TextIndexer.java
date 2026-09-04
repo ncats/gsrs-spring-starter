@@ -28,12 +28,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -127,10 +125,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.Striped;
 
 import gov.nih.ncats.common.Tuple;
@@ -174,6 +168,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -187,18 +185,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String TERM_VEC_PREFIX = "F";
 
     public static final String IX_BASE_PACKAGE = "ix";
-  
-
-//	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
-//	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
-//    private static final CachedSupplier<Boolean> SHOULD_LOG_INDEXING =    CachedSupplier.of(new Supplier<Boolean>() {
-//        @Override
-//        public Boolean get() {
-//            boolean value= Play.application().configuration().getBoolean("ix.textindex.shouldLog", false);
-//            return value;
-//        }
-//    });
-
     private static final String ANALYZER_FIELD = "M_FIELD";
 	private static final String ANALYZER_MARKER_FIELD = "ANALYZER_MARKER";
 	private static final String ANALYZER_VAL_PREFIX = "ANALYZER_";
@@ -207,8 +193,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final String FULL_DOC_FIELD ="FULL_INDEX";
 	
 	private static final int DEFAULT_ANALYZER_MATCH_FIELD_LIMIT = 25; // number of narrowing fields to show
-	
-	
+
 	private static final char SORT_DESCENDING_CHAR = '$';
 	private static final char SORT_ASCENDING_CHAR = '^';
 	private static final int EXTRA_PADDING = 2;
@@ -2937,7 +2922,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return null;
 		}
 		List<IndexableField> _fields = _doc.getFields();
-		ObjectMapper mapper = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		ArrayNode fields = mapper.createArrayNode();
 		for (IndexableField f : _fields) {
 			ObjectNode node = mapper.createObjectNode();
@@ -2970,7 +2955,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 		ObjectNode doc = mapper.createObjectNode();
 		doc.put("num_fields", _fields.size());
-		doc.put("fields", fields);
+		doc.set("fields", fields);
 		return doc;
 	}
 
@@ -4030,7 +4015,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	static FacetsConfig getFacetsConfig(JsonNode node) throws java.text.ParseException {
-		if (!node.isContainerNode())
+		if (!node.isContainer())
 			throw new IllegalArgumentException("Not a valid json node for FacetsConfig!");
 
 		String text = node.get("version").asText();
@@ -4058,7 +4043,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static JsonNode setFacetsConfig(FacetsConfig config) {
-		ObjectMapper mapper = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		ObjectNode node = mapper.createObjectNode();
 		node.put("created", TimeUtil.getCurrentTimeMillis());
 		node.put("version", LUCENE_VERSION.toString());
@@ -4089,7 +4074,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	static void saveFacetsConfig(File file, FacetsConfig facetsConfig) {
 		JsonNode node = setFacetsConfig(facetsConfig);
-		ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(out, node);
@@ -4103,7 +4088,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	static FacetsConfig loadFacetsConfig(File file) {
 		FacetsConfig config = null;
 		if (file.exists()) {
-			ObjectMapper mapper = new ObjectMapper();
+			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 			try {
 				JsonNode conf = mapper.readTree(file);
 				config = getFacetsConfig(conf);
@@ -4119,7 +4104,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	static ConcurrentMap<String, SortField.Type> loadSorters(File file) {
 		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<String, SortField.Type>();
 		if (file.exists()) {
-			ObjectMapper mapper = new ObjectMapper();
+			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 			try {
 				JsonNode conf = mapper.readTree(new BufferedInputStream(new FileInputStream(file)));
 				ArrayNode array = (ArrayNode) conf.get("sorters");
@@ -4139,7 +4124,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static void saveSorters(File file, Map<String, SortField.Type> sorters) {
-		ObjectMapper mapper = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 		ObjectNode conf = mapper.createObjectNode();
 		conf.put("created", TimeUtil.getCurrentTimeMillis());
@@ -4150,7 +4135,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			obj.put("type", me.getValue().toString());
 			node.add(obj);
 		}
-		conf.put("sorters", node);
+		conf.set("sorters", node);
 
 		try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
 

@@ -15,7 +15,7 @@ public class ControlledVocabularyRestApi extends GsrsEntityRestTemplate<Abstract
 
     @Override
     protected AbstractGsrsControlledVocabularyDTO parseFromJson(JsonNode node) {
-        return getObjectMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
+        return getMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
     }
 
     @Override

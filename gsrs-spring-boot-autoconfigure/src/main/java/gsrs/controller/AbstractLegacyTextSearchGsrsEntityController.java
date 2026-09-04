@@ -186,7 +186,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
      * Force a reindex of all entities of this entity type.
      * @param wipeIndex should the whole index be deleted before re-index begins;
      *                  defaults to {@code false}.
-     * @return
+     * @return just a return code
      */    
     @canIndexData
     @PostGsrsRestApiMapping(value="/@reindex", apiVersions = 1)

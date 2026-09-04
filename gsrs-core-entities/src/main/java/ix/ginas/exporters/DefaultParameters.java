@@ -1,11 +1,8 @@
 package ix.ginas.exporters;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import ix.core.models.Group;
+import tools.jackson.databind.JsonNode;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class DefaultParameters implements ExporterFactory.Parameters {
 	private final OutputFormat format;

@@ -1,10 +1,6 @@
 package ix.core.util;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import gsrs.JsonTypeIdResolverConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import org.reflections.Reflections;
@@ -17,6 +13,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.jsontype.TypeIdResolver;
+import tools.jackson.databind.type.TypeFactory;
 
 /**
  *An automatic concrete type resolver for Jackson that will be able to find
@@ -143,7 +143,7 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
         subtypes.forEach(type -> {
             String key = computeNameFor(type);
 
-            JavaType value = TypeFactory.defaultInstance().constructSpecializedType(baseType, type);
+            JavaType value = TypeFactory.createDefaultInstance().constructSpecializedType(baseType, type);
             if (typeMap.put(key, value) !=null) {
                 throw new IllegalStateException("Type name \"" + key + "\" already exists.");
             }
@@ -156,13 +156,13 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
     }
 
     @Override
-    public String idFromValue(Object o) {
-        return idFromValueAndType(o, o.getClass());
+    public String idFromValue(DatabindContext context, Object o) {
+        return idFromValueAndType(context, o, o.getClass());
     }
 
     @Override
-    public String idFromBaseType() {
-        return idFromValueAndType(null, baseType.getRawClass());
+    public String idFromBaseType(DatabindContext context) {
+        return idFromValueAndType(context, null, baseType.getRawClass());
     }
 
     //katzelda 2018-11-10
@@ -196,7 +196,7 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
         return cls.getSimpleName();
     }
     @Override
-    public String idFromValueAndType(Object o, Class<?> aClass) {
+    public String idFromValueAndType(DatabindContext context, Object o, Class<?> aClass) {
         String name = computeNameFor(aClass);
         JavaType javaType = typeMap.get(name);
         if(javaType ==null){
@@ -208,9 +208,24 @@ public class InheritanceTypeIdResolver implements TypeIdResolver {
         return computeNameFor(javaType.getRawClass());
 
     }
+
+    public String idFromValue(Object o) {
+        return idFromValue(null, o);
+    }
+
+    public String idFromBaseType() {
+        return idFromBaseType(null);
+    }
+
+    public String idFromValueAndType(Object o, Class<?> aClass) {
+        return idFromValueAndType(null, o, aClass);
+    }
+
     public JavaType typeFromId(String s) {
         return typeFromId(null, s);
     }
+
+    @Override
     public JavaType typeFromId(DatabindContext databindContext, String s) {
         JavaType type = typeMap.get(s);
 

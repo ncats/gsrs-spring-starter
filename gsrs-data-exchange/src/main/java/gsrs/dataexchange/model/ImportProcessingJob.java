@@ -1,18 +1,17 @@
 package gsrs.dataexchange.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.model.GeneralPurposeJob;
 import ix.core.models.Indexable;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
+
 import java.util.Date;
 import java.util.UUID;
 
@@ -119,14 +118,14 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     }
 
     public ArrayNode getResults(){
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode();
         if(results==null || results.length()==0) {
             return arrayNode;
         }
         try {
             arrayNode = (ArrayNode) mapper.readTree(this.results);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error converting to ArrayNode", e);
             throw new RuntimeException(e);
         }
@@ -135,11 +134,11 @@ public class ImportProcessingJob implements GeneralPurposeJob {
 
     public void setResults(ArrayNode results){
         log.trace("starting in setResults");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             this.results =mapper.writeValueAsString(results);
             log.trace("set results to {}", mapper.writeValueAsString(results));
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error serializing results", e);
             throw new RuntimeException(e);
         }
@@ -187,13 +186,13 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         node.put("totalRecords", this.totalRecords);
         node.put("completedRecordCount", this.completedRecordCount);
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         if(includeJobData) {
             JsonNode jobDataNode = null;
             try {
                 jobDataNode = mapper.readTree(this.getJobData());
                 node.set("jobInputData", jobDataNode);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error converting jobdata: ", e);
                 log.trace(this.getJobData());
                 //throw new RuntimeException(e);
