@@ -4,6 +4,7 @@ package gsrs;
 import gsrs.repository.ControlledVocabularyRepository;
 import ix.ginas.models.v1.ControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -27,8 +28,8 @@ public class LoadCvOnStartup implements ApplicationRunner {
     @Autowired
     private ControlledVocabularyRepository repository;
 
-
     @Autowired
+    @Qualifier("legacyJsonMapper")
     private JsonMapper jsonMapper;
 
     @Value("${gsrs.cv.jsonFile}")

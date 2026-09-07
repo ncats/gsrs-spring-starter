@@ -1,5 +1,6 @@
 package gsrs.startertests.controller;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
@@ -22,6 +23,7 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     public static final String CONTEXT = "myEntity";
 
     @Autowired
+    @Qualifier("legacyJsonMapper")
     private JsonMapper mapper;
 
     @Autowired

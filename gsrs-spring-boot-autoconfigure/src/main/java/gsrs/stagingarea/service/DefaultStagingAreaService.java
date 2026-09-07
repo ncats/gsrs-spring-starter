@@ -96,7 +96,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public DefaultStagingAreaService(@Qualifier("legacyMapper") JsonMapper jsonMapper) {
+    public DefaultStagingAreaService(@Qualifier("legacyJsonMapper") JsonMapper jsonMapper) {
         this.mapper = jsonMapper;
     }
 

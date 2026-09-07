@@ -73,7 +73,7 @@
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>3.0.0</version>
+            <version>${jackson.databind.version}</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -89,11 +89,6 @@
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.databind.version}</version>
         </dependency>
         <!-- todo: verify and delete  -->
         <!--dependency>

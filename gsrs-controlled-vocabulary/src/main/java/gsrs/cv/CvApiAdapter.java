@@ -27,7 +27,7 @@ public class CvApiAdapter implements ControlledVocabularyApi {
     private final ControlledVocabularyEntityService service;
 
     @Autowired
-    public CvApiAdapter(ControlledVocabularyEntityService service, @Qualifier("legacyMapper") JsonMapper jsonMapper) {
+    public CvApiAdapter(ControlledVocabularyEntityService service, @Qualifier("legacyJsonMapper") JsonMapper jsonMapper) {
         this.service = service;
         this.mapper=jsonMapper;
     }

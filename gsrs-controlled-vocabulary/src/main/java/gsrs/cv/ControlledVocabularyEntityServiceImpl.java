@@ -1,5 +1,6 @@
 package gsrs.cv;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import gsrs.CvUtils;
 import gsrs.controller.IdHelpers;
@@ -42,8 +43,8 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     private ControlledVocabularyRepository repository;
 
     @Autowired
+    @Qualifier("legacyJsonMapper")
     private JsonMapper jsonMapper;
-
 
     @Override
     public Class<ControlledVocabulary> getEntityClass() {

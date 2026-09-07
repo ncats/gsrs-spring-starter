@@ -23,7 +23,7 @@ public class ControlledVocabConfiguration {
     @ConditionalOnMissingBean(ControlledVocabularyApi.class)
     @Order()
     public ControlledVocabularyApi controlledVocabularyApi(@Autowired  ControlledVocabularyEntityService service,
-                                                           @Qualifier("legacyMapper") JsonMapper jsonMapper){
+                                                           @Qualifier("legacyJsonMapper") JsonMapper jsonMapper){
         return new CvApiAdapter(service, jsonMapper);
     }
 }

@@ -23,10 +23,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration
 public class GsrsWebConfig {
 
-    public abstract class GsrsJsonMapperInterceptor implements MethodInterceptor {
+    public abstract static class GsrsJsonMapperInterceptor implements MethodInterceptor {
 
         @Override
-        public Object invoke(MethodInvocation invocation) throws Throwable {
+        public Object invoke(MethodInvocation invocation) {
             return ReflectionUtils.invokeMethod(invocation.getMethod(), getObject(), invocation.getArguments());
         }
 
@@ -61,7 +61,7 @@ public class GsrsWebConfig {
         return new GsrsUnwrappedEntityModelProcessor();
     }
 
-    @Bean
+    @Bean("defaultMapper")
     public tools.jackson.databind.json.JsonMapper jacksonJsonMapper() {
         return EntityFactory.EntityMapper.COMPACT_ENTITY_MAPPER().getJsonMapper();
     }

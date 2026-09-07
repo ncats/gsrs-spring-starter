@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -25,7 +26,9 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     private EditRepository editRepository;
 
     @Autowired
+    @Qualifier("legacyJsonMapper")
     private JsonMapper mapper;
+
     public EditEntityService() {
         super("edits", IdHelpers.UUID, null,null,null);
     }
