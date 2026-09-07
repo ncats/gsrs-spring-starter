@@ -8,6 +8,7 @@ import ix.core.interfaces.GsrsJsonMapperResolver;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -88,7 +89,7 @@ public class GsrsWebConfig {
     }
 
     @Bean
-    public JacksonJsonHttpMessageConverter mappingJacksonHttpMessageConverter(JsonMapper jacksonJsonMapper) {
+    public JacksonJsonHttpMessageConverter mappingJacksonHttpMessageConverter( @Qualifier("defaultMapper") JsonMapper jacksonJsonMapper) {
         return new JacksonJsonHttpMessageConverter(jacksonJsonMapper);
     }
 
