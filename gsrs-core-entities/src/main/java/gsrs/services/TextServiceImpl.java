@@ -16,19 +16,22 @@ public class TextServiceImpl implements TextService {
 		
     @Autowired
     private TextRepository textRepository;
+
     private static Logger log = LoggerFactory.getLogger(TextServiceImpl.class);
-    
-    @Override
+
+	@Autowired
+	private  JsonMapper mapper;
+
+	@Override
     public Long saveTextList(String label, List<String> textList) {
     	Text text = new Text();
     	text.label = label;
 
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         String jsonArray;
         
 		try {
 			jsonArray = mapper.writeValueAsString(textList);
-			text.text = jsonArray.toString();  
+			text.text = jsonArray;
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error("Error in TextService writing to jsonarray string!");

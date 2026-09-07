@@ -4,11 +4,8 @@ import com.fasterxml.jackson.annotation.*;
 import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.Map;
@@ -16,12 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @InheritanceTypeIdResolver.DefaultInstance
 public class DefaultValidatorConfig implements ValidatorConfig {
-
-    @Autowired
-    private GsrsJsonMapper jsonMapper;
 
     private Class validatorClass;
     /**
@@ -75,26 +68,17 @@ public class DefaultValidatorConfig implements ValidatorConfig {
 
     }
     @Override
-    public final  <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType){
+    public final <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType){
         if(!newObjClass.isAssignableFrom(obj.getClass())){
             return false;
         }
-//            if(obj instanceof Substance){
-//                Substance s = (Substance) obj;
-//                if(substanceClass !=null && substanceClass != s.substanceClass){
-//                    return false;
-//                }
-//                if(type !=null && type != s.definitionType){
-//                    return false;
-//                }
-//
-//            }
-        if(methodType !=null && methodType != methodType){
+        if(this.methodType !=null && this.methodType != methodType){
             return false;
         }
 
         return meetsFilterCriteria(obj);
     }
+
     protected <T> boolean meetsFilterCriteria(T obj){
         return true;
     }

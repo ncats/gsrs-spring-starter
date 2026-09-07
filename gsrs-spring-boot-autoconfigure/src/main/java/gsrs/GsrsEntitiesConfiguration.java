@@ -28,7 +28,6 @@ import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 @Configuration(proxyBeanMethods = false)
 

@@ -18,9 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
-import jakarta.persistence.metamodel.Metamodel;
 import jakarta.servlet.http.HttpServletRequest;
 
 import gsrs.security.canRunBackup;
@@ -40,8 +38,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -59,9 +58,6 @@ import ix.core.util.EntityUtils.Key;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
-//import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
-//import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
-//import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
 import lombok.extern.slf4j.Slf4j;
 
 

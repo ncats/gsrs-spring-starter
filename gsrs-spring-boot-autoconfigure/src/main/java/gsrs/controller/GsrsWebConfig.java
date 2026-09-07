@@ -51,6 +51,11 @@ public class GsrsWebConfig {
         return (GsrsJsonMapper) factory.getProxy();
     }
 
+    @Bean("legacyJsonMapper")
+    public JsonMapper standardJsonMapper() {
+        return JsonMapper.builderWithJackson2Defaults().build();
+    }
+
     @Bean
     public GsrsUnwrappedEntityModelProcessor gsrsUnwrappedEntityModelProcessor(){
         return new GsrsUnwrappedEntityModelProcessor();

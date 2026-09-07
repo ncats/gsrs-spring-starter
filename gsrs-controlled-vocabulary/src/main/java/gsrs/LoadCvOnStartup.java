@@ -1,13 +1,7 @@
 package gsrs;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.repository.ControlledVocabularyRepository;
-import gsrs.repository.UserProfileRepository;
-import ix.core.models.Principal;
-import ix.core.models.Role;
-import ix.core.models.UserProfile;
 import ix.ginas.models.v1.ControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,12 +10,11 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
-import jakarta.persistence.EntityManagerFactory;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 
 @Profile("!test")
@@ -36,7 +29,7 @@ public class LoadCvOnStartup implements ApplicationRunner {
 
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @Value("${gsrs.cv.jsonFile}")
     private String jsonPath;
@@ -51,13 +44,13 @@ public class LoadCvOnStartup implements ApplicationRunner {
 //        System.out.println("reading property file at path '"+jsonPath + "'");
         JsonNode json;
         try(InputStream in = new ClassPathResource(jsonPath).getInputStream()){
-            json = objectMapper.readValue(in, JsonNode.class);
+            json = jsonMapper.readValue(in, JsonNode.class);
 
         }
 
 //        System.out.println(json);
 
-        List<ControlledVocabulary> cv = CvUtils.adaptList(json, objectMapper, true);
+        List<ControlledVocabulary> cv = CvUtils.adaptList(json, jsonMapper, true);
         cv.forEach(v-> v.setVersion(null));
         repository.saveAll(cv);
         repository.flush();

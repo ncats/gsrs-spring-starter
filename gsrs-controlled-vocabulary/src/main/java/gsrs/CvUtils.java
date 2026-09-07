@@ -1,8 +1,8 @@
 package gsrs;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import ix.ginas.models.v1.CodeSystemControlledVocabulary;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.FragmentControlledVocabulary;
@@ -33,7 +33,7 @@ public final class CvUtils {
     private CvUtils(){
         //can not instantiate
     }
-    public static List<ControlledVocabulary> adaptList(JsonNode cvList, ObjectMapper objectMapper, boolean stripIds) throws IOException {
+    public static List<ControlledVocabulary> adaptList(JsonNode cvList, JsonMapper objectMapper, boolean stripIds) throws IOException {
         List<ControlledVocabulary> adaptedCvs = new ArrayList<>(cvList.size());
         for(JsonNode cvValue: cvList){
 
@@ -46,9 +46,9 @@ public final class CvUtils {
         }
         return adaptedCvs;
     }
-        public static ControlledVocabulary adaptSingleRecord(JsonNode cvValue, ObjectMapper objectMapper, boolean stripIds) throws IOException {
+        public static ControlledVocabulary adaptSingleRecord(JsonNode cvValue, JsonMapper objectMapper, boolean stripIds) throws IOException {
         try {
-            String domain = cvValue.at("/domain").asText();
+            String domain = cvValue.at("/domain").asString();
             JsonNode vtype = cvValue.at("/vocabularyTermType");
             String termType = null;
 //            System.out.println("cvValue = " + cvValue);
@@ -59,7 +59,7 @@ public final class CvUtils {
                 objn.set("vocabularyTermType", cvValue.at("/vocabularyTermType/value"));
             }
 
-            termType = cvValue.at("/vocabularyTermType").asText();
+            termType = cvValue.at("/vocabularyTermType").asString();
 
             ControlledVocabulary cv = (ControlledVocabulary) objectMapper.treeToValue(cvValue, objectMapper.getClass().getClassLoader().loadClass(termType));
             if(stripIds) {

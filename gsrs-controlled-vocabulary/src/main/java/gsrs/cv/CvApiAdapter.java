@@ -1,16 +1,15 @@
 package gsrs.cv;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
+
 import gsrs.controller.GsrsControllerUtil;
 import gsrs.cv.api.*;
-import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.service.GsrsEntityService;
-import ix.ginas.models.v1.CodeSystemControlledVocabulary;
 import ix.ginas.models.v1.ControlledVocabulary;
-import ix.ginas.models.v1.FragmentControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -26,12 +25,14 @@ import java.util.Optional;
 public class CvApiAdapter implements ControlledVocabularyApi {
 
     private final ControlledVocabularyEntityService service;
+
     @Autowired
-    public CvApiAdapter(ControlledVocabularyEntityService service) {
+    public CvApiAdapter(ControlledVocabularyEntityService service, @Qualifier("legacyMapper") JsonMapper jsonMapper) {
         this.service = service;
+        this.mapper=jsonMapper;
     }
 
-    private ObjectMapper mapper=  new ObjectMapper();
+    private final JsonMapper mapper;
 
     private AbstractGsrsControlledVocabularyDTO toDto(ControlledVocabulary cv){
         //for now rather than do instance of checks and call setters we do the lazy
@@ -45,7 +46,7 @@ public class CvApiAdapter implements ControlledVocabularyApi {
 
     @Override
     @Transactional(readOnly = true)
-    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
+    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain)  {
         Optional<ControlledVocabulary> opt= service.getEntityBySomeIdentifier(domain);
         return (Optional<T>) opt.map(this::toDto);
     }
@@ -57,13 +58,13 @@ public class CvApiAdapter implements ControlledVocabularyApi {
 
     @Override
     @Transactional(readOnly = true)
-    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) throws IOException {
+    public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) {
         return (Optional<T>) service.getEntityBySomeIdentifier(anyKindOfId).map(this::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<AbstractGsrsControlledVocabularyDTO> findById(Long id) throws IOException {
+    public Optional<AbstractGsrsControlledVocabularyDTO> findById(Long id) {
         return service.get(id).map(this::toDto);
     }
 

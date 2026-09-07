@@ -196,7 +196,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	private static final char SORT_DESCENDING_CHAR = '$';
 	private static final char SORT_ASCENDING_CHAR = '^';
-	private static final int EXTRA_PADDING = 2;
+
+    private static final int EXTRA_PADDING = 2;
 	private static final String FULL_TEXT_FIELD = "text";
 	public static final String FULL_IDENTIFIER_FIELD = "identifiers";
 	private static final String SORT_PREFIX = "SORT_";
@@ -205,7 +206,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_STOP_WORD = "$";
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
-	static final String ENTITY_PREFIX = "entity";	
+
+	static final String ENTITY_PREFIX = "entity";
+
 	private static final String SPACE_WORD = "_XSPCX_";
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
@@ -213,8 +216,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-		
-	@Autowired
+
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
+    @Autowired
 	GsrsCache gsrscache;
 	
 	private TextIndexerConfig textIndexerConfig;
@@ -2922,7 +2927,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return null;
 		}
 		List<IndexableField> _fields = _doc.getFields();
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		ArrayNode fields = mapper.createArrayNode();
 		for (IndexableField f : _fields) {
 			ObjectNode node = mapper.createObjectNode();
@@ -2936,20 +2940,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ObjectNode n = mapper.createObjectNode();
 			IndexableFieldType type = f.fieldType();
 			
-			/*
-			if (type.docValuesType() != null)
-				n.put("docValueType", type.docValuesType().toString());
-//			n.put("indexed", type.indexed());
-			n.put("indexOptions", type.indexOptions().toString());
-			n.put("omitNorms", type.omitNorms());
-			n.put("stored", type.stored());
-			n.put("storeTermVectorOffsets", type.storeTermVectorOffsets());
-			n.put("storeTermVectorPayloads", type.storeTermVectorPayloads());
-			n.put("storeTermVectorPositions", type.storeTermVectorPositions());
-			n.put("storeTermVectors", type.storeTermVectors());
-			n.put("tokenized", type.tokenized());
-
-			node.put("options", n);*/
 			fields.add(node);
 		}
 
@@ -4043,7 +4033,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static JsonNode setFacetsConfig(FacetsConfig config) {
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		ObjectNode node = mapper.createObjectNode();
 		node.put("created", TimeUtil.getCurrentTimeMillis());
 		node.put("version", LUCENE_VERSION.toString());
@@ -4102,7 +4091,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	static ConcurrentMap<String, SortField.Type> loadSorters(File file) {
-		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<String, SortField.Type>();
+		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<>();
 		if (file.exists()) {
 			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 			try {
@@ -4111,8 +4100,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 				if (array != null) {
 					for (int i = 0; i < array.size(); ++i) {
 						ObjectNode node = (ObjectNode) array.get(i);
-						String field = node.get("field").asText();
-						String type = node.get("type").asText();
+						String field = node.get("field").asString();
+						String type = node.get("type").asString();
 						sorters.put(field, SortField.Type.valueOf(SortField.Type.class, type));
 					}
 				}
@@ -4124,7 +4113,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static void saveSorters(File file, Map<String, SortField.Type> sorters) {
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 		ObjectNode conf = mapper.createObjectNode();
 		conf.put("created", TimeUtil.getCurrentTimeMillis());

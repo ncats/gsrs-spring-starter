@@ -1,10 +1,10 @@
 package gsrs.stagingarea.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
@@ -48,6 +48,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     public static String IMPORT_FAILURE = "ERROR";
 
     public static String STAGING_AREA_LOCATION = "Staging Area";
+
+    private final JsonMapper mapper;
 
     @Autowired
     ImportMetadataRepository metadataRepository;
@@ -93,6 +95,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    public DefaultStagingAreaService(@Qualifier("legacyMapper") JsonMapper jsonMapper) {
+        this.mapper = jsonMapper;
+    }
 
     @PostConstruct
     public void setupIndexer() {
@@ -172,7 +178,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         try {
             log.trace("going deserialize object of class {}", parameters.getEntityClassName());
             domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing imported object.", e);
             return IMPORT_FAILURE;
         }
@@ -213,7 +219,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 try {
                     importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
                     log.trace("updating record after validation");
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     log.error("Error serializing validated substance", e);
                 }
             }
@@ -283,7 +289,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             //deserializing and re-serializing will allow us to reset the '_name' field of substances
             Object data = deserializeObject(importMetadata.getEntityClassName(), jsonData);
             cleanJson= serializeObject(data);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing JSON", e);
             throw new RuntimeException(e);
         }
@@ -313,7 +319,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                  //       updatedImportMetadata.getInstanceId(), latestInstanceId, saved.getInstanceId());
                 ImportMetadata reretrievedIM = metadataRepository.retrieveByRecordID(updatedImportMetadata.getRecordId());
                 log.trace("from reretrievedIM: {}", reretrievedIM.getInstanceId());
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error updating import metadata!", e);
                 throw new RuntimeException(e);
             }
@@ -523,7 +529,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException {
+    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException {
         log.trace("starting findMatches of ImportMetadata. Instance ID: {}", importMetadata.getInstanceId());
         //first, retrieve the latest Object JSON
         List<ImportData> importDataList = importDataRepository.retrieveDataForRecord(importMetadata.getRecordId());
@@ -532,7 +538,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         String jsonData= latestExisting.getData();
         log.trace("Got JSON for metadata with {}", importMetadata.getRecordId());
         //deserialize
-        T domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
+        T domainObject = null;
+        try {
+            domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
+        } catch (Exception e) {
+            log.error("Error deserializing domain object: {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
         log.trace("deserialized");
         List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
         log.trace("calculated latest matchables");
@@ -588,7 +600,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.trace("going deserialize object of class {}", qualifiedEntityType);
             log.trace(entityJson);
             domainObject = deserializeObject(qualifiedEntityType, entityJson);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing imported object.", e);
             return new MatchedRecordSummary();
         }
@@ -734,8 +746,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public Object deserializeObject(String entityClassName, String json) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
+    public Object deserializeObject(String entityClassName, String json) {
         JsonNode node = mapper.readTree(json);
         if (_entityServiceRegistry.containsKey(entityClassName)) {
             return _entityServiceRegistry.get(entityClassName).parse(node);
@@ -763,8 +774,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         log.trace("result of synchronizeEntity: {}", builder);
     }
 
-    private String serializeObject(Object object) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
+    private String serializeObject(Object object) throws Exception {
         return mapper.writeValueAsString(object);
     }
 
@@ -772,7 +782,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     After a domain entity within the staging area is updated, we rerun validation and matching and store the results
     call this method inside a transaction
      */
-    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
+    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId)  {
         log.trace("starting in propagateUpdate");
         //step 1: deserialize domain object
         Object domainObject = deserializeObject(entityType, entityJson);

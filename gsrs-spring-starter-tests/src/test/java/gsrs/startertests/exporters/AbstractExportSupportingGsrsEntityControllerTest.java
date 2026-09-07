@@ -15,14 +15,11 @@ import gsrs.startertests.GsrsJpaTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
 import gsrs.legacy.LegacyGsrsSearchService;
@@ -37,6 +34,7 @@ import ix.ginas.exporters.GeneralExportSettings;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @ActiveProfiles("test")
@@ -48,7 +46,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
 	// we've used in the past, but we may have to implement these later.
 	@Disabled
     @Test
-    public void testdoesExporterKeyExist() throws JsonProcessingException {
+    public void testdoesExporterKeyExist()  {
         AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
             @Override
             protected LegacyGsrsSearchService getlegacyGsrsSearchService() {
@@ -63,7 +61,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
             @SneakyThrows
             @Override
             protected GsrsEntityService getEntityService() {
-               GsrsEntityService entityService = (GsrsEntityService) mock(GsrsEntityService.class);
+               GsrsEntityService entityService = mock(GsrsEntityService.class);
                 when(entityService.getEntityClass()).thenReturn(ix.core.models.Text.class);
                 return entityService;
             }
@@ -78,7 +76,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
     }
 
     private String createBogusConfig(String expConfKey){
-        ObjectMapper objectMapper = new ObjectMapper();
+        JsonMapper objectMapper = JsonMapper.builderWithJackson2Defaults().build();
 
         ExporterSpecificExportSettings exporterSpecificExportSettings = ExporterSpecificExportSettings.builder()
                 .columnNames(Arrays.asList("molfile", "UNII", "PT", "CAS"))
@@ -99,7 +97,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 .build();
         try {
             return objectMapper.writeValueAsString(config);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error creating test config", e);
         }
         return "";

@@ -48,9 +48,6 @@ public final class GsrsControllerUtil {
 
     public static String getRootUrlPath(){
         String url = WebMvcLinkBuilder.linkTo(RelativePathDummyObject.class).toUri().getRawPath();
-//        LinkBuilder linkBuilder = StaticContextAccessor.getBean(EntityLinks.class).linkFor(RelativePathDummyObject.class);
-//        URI uri = linkBuilder.toUri();
-//        String url= uri.getRawPath();
         String replaced = url.replace(RelativePathDummyObject.ROUTE_PATH,"");
         return replaced;
     }

@@ -23,7 +23,7 @@ import static java.util.Comparator.nullsFirst;
 @ConfigurationProperties("gsrs")
 @Data
 @Slf4j
-Spublic public class GsrsFactoryConfiguration {
+public class GsrsFactoryConfiguration {
     //          validators->context->list->parentKey = { }
     private Map<String, Map<String, Map<String, Map<String, Object>>>> validators;
 

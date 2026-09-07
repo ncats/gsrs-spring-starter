@@ -33,6 +33,8 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 	private List<RegisteredFunction> registeredFunctions = new ArrayList<>();
 	private static LambdaParseRegistry instance;
 
+	@Autowired
+	JsonMapper mapper;
 
 	public static LambdaParseRegistry getInstance(){
 		return instance;
@@ -127,7 +129,6 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 
 	private List<? extends RegisteredFunctionConfig>  loadRegisteredFunctionsFromConfiguration() {
 		String reportTag = "RegisteredFunctionConfig";
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		try {
 			Map<String, Map<String, Object>> map = registeredFunctionProperties.getRegisteredFunctions().getList();
 			if (map == null || map.isEmpty()) {

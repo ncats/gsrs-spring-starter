@@ -1,7 +1,6 @@
 package gsrs.cv;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import gsrs.CvUtils;
 import gsrs.controller.IdHelpers;
 import gsrs.cv.events.CvCreatedEvent;
@@ -21,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,7 +42,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     private ControlledVocabularyRepository repository;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
 
     @Override
@@ -58,7 +58,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     @canManageCVs
     @Override
     protected ControlledVocabulary fromNewJson(JsonNode json) throws IOException {
-        return CvUtils.adaptSingleRecord(json, objectMapper, true);
+        return CvUtils.adaptSingleRecord(json, jsonMapper, true);
 
     }
 
@@ -100,23 +100,23 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
 
     @Override
     protected List<ControlledVocabulary> fromNewJsonList(JsonNode list) throws IOException {
-        return CvUtils.adaptList(list, objectMapper, true);
+        return CvUtils.adaptList(list, jsonMapper, true);
     }
 
     @Override
     protected ControlledVocabulary fromUpdatedJson(JsonNode json) throws IOException {
-        return CvUtils.adaptSingleRecord(json, objectMapper, false);
+        return CvUtils.adaptSingleRecord(json, jsonMapper, false);
     }
 
     @Override
     protected List<ControlledVocabulary> fromUpdatedJsonList(JsonNode list) throws IOException {
-        return CvUtils.adaptList(list, objectMapper, false);
+        return CvUtils.adaptList(list, jsonMapper, false);
     }
 
 
     @Override
     protected JsonNode toJson(ControlledVocabulary controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+        return jsonMapper.valueToTree(controlledVocabulary);
     }
 
     @Override

@@ -21,6 +21,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     private final RestTemplate restTemplate;
 
     private JsonMapper mapper;
+
     private String prefix;
 
     public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, JsonMapper mapper) {

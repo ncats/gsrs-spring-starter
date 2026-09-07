@@ -12,6 +12,7 @@ import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -29,15 +30,18 @@ public class CvApiTest {
 
     @Autowired
     RestTemplateBuilder restTemplateBuilder;
+
     @Autowired
     private ControlledVocabularyRestApi api;
+
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @TestConfiguration
     static class Testconfig{
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(RestTemplateBuilder restTemplateBuilder){
 
-            return new ControlledVocabularyRestApi(restTemplateBuilder, "http://example.com", new ObjectMapper());
+            return new ControlledVocabularyRestApi(restTemplateBuilder, "http://example.com", mapper);
         }
     }
     @BeforeEach

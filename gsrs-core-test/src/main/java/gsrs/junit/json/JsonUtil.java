@@ -7,7 +7,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -30,9 +29,7 @@ public class JsonUtil {
 	    	}
 	 }
 	
-	//public static JsonNode
-	
-	
+
 	// TP: This method takes arbitrary objects, serialized them, and returns the difference
 	// this may be useful if you'd like to see the difference between random seralizable objects
 	public static Changes computeChanges(Object before, Object after, ChangeFilter...filters ){
@@ -42,7 +39,7 @@ public class JsonUtil {
 		try{
 			System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(beforeNode));
 			System.out.println("\n"+mapper.writerWithDefaultPrettyPrinter().writeValueAsString(afterNode));
-		}catch(Throwable t){}
+		}catch(Throwable ignore){}
 
 		return computeChanges(beforeNode,afterNode,filters);
 	}
@@ -73,7 +70,6 @@ public class JsonUtil {
                     change = new Change(key, toString(jsbefore), null, Change.ChangeType.REMOVED);
                 }
 
-                //System.out.println("Error:" + jn + " was:" + before.at(jn.get("path").asString()));
             }else if("add".equals(op)){
                 String key = jn.get("path").asString();
                 String normalizedPath = normalizePath(op,key,before);

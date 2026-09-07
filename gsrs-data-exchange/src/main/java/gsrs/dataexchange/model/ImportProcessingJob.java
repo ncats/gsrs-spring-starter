@@ -51,6 +51,8 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     @Indexable
     private int completedRecordCount=0;
 
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     @Override
     public UUID getId() {
         return id;
@@ -118,7 +120,6 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     }
 
     public ArrayNode getResults(){
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode();
         if(results==null || results.length()==0) {
             return arrayNode;

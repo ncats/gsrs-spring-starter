@@ -3,7 +3,6 @@ package gsrs.controller;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.autoconfigure.ExpanderFactoryConfig;
@@ -28,7 +26,6 @@ import gsrs.autoconfigure.ScrubberFactoryConfig;
 import gsrs.repository.TextRepository;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Text;
-import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.DefaultRecordExpanderFactory;
 import ix.ginas.exporters.NoOpRecordScrubberFactory;
 import ix.ginas.exporters.RecordExpanderFactory;
@@ -36,7 +33,6 @@ import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 
-import static java.util.Comparator.naturalOrder;
 
 @Slf4j
 public abstract class AbstractExportSupportingGsrsEntityController<C extends AbstractExportSupportingGsrsEntityController, T, I>
@@ -51,7 +47,8 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @Autowired
     protected PlatformTransactionManager transactionManager; 
     
-    
+    @Autowired
+    private JsonMapper mapper;
     
     CachedSupplier<List<Text>> exportSettingsPresets = CachedSupplier.of(()->{
 
@@ -65,7 +62,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @PreAuthorize("isAuthenticated()")
     @GetGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigFetch(@PathVariable("id") Long id,
-                                                          @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+                                                          @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigFetch");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
         //todo: refactor to use new method
@@ -90,7 +87,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
         return configurationHolder.map(t->{
             try {
                 return SpecificExporterSettings.fromText(t);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
@@ -108,14 +105,14 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             log.trace("found {} configs", configs.size());
             try {
                 configs.addAll(getHardcodedConfigs());
-            } catch (JsonProcessingException ex) {
+            } catch (Exception ex) {
                 log.error("Error creating hard-coded exporter settings", ex);
             }
 
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(configs.stream().map(t -> {
                         try {
                             return SpecificExporterSettings.fromText(t);
-                        } catch (JsonProcessingException e) {
+                        } catch (Exception e) {
                             log.error("Error converting configuration value", e);
                         }
                         return null;
@@ -145,9 +142,8 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @PreAuthorize("isAuthenticated()")
     @PostGsrsRestApiMapping("/export/config")
     public ResponseEntity<Object> handleExportConfigSave(@RequestBody String exportConfigJson,
-                                                         @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+                                                         @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigSave");
-        ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings conf = mapper.readValue(exportConfigJson, SpecificExporterSettings.class);
         if(doesExporterKeyExist(conf.getExporterKey())) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
@@ -210,7 +206,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     @PutGsrsRestApiMapping({"/export/config({id})", "/export/config/{id}"})
     public ResponseEntity<Object> handleExportConfigUpdate(@PathVariable("id") Long id,
                                                            @RequestBody String exportConfigJson,
-                                                           @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+                                                           @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleExportConfigUpdate");
         Objects.requireNonNull(id, "Must supply the ID of an existing export configuration");
 
@@ -291,7 +287,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
             SpecificExporterSettings config = null;
             try {
                 config = SpecificExporterSettings.fromText(c);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error");
             }
             return config.getExporterKey()!= null && config.getExporterKey().equalsIgnoreCase(exporterKey);
@@ -331,7 +327,7 @@ public abstract class AbstractExportSupportingGsrsEntityController<C extends Abs
     /*
     Items that will be of general usage
      */
-    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
+    public List<Text> getHardcodedConfigs() {
         return exportSettingsPresets.get();
     }
 }

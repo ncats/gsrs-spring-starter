@@ -1,6 +1,5 @@
 package gsrs.imports;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.springUtils.AutowireHelper;
@@ -9,6 +8,7 @@ import gsrs.stagingarea.service.StagingAreaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -31,7 +31,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
         log.trace("newFactory.  clazz: " + clazz.getName());
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         return configs.stream().map(c ->
                 {
                     try {
@@ -77,7 +77,7 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Override
     public <T> List<ClientFriendlyImportAdapterConfig> getConfiguredAdapters(String context, Class <T> clazz) {
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         return configs.stream().map(c ->
                 {
                     try {

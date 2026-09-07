@@ -1,9 +1,9 @@
 package gsrs.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.util.SanitizerUtil;
 import lombok.*;
 import org.springframework.boot.restclient.RestTemplateBuilder;
@@ -14,7 +14,7 @@ import java.util.*;
 
 public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends GsrsEntityRestTemplate<T, I>{
 
-    public AbstractLegacySearchGsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, ObjectMapper mapper) {
+    public AbstractLegacySearchGsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, JsonMapper mapper) {
         super(restTemplateBuilder, baseUrl, context, mapper);
     }
 

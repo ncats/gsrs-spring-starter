@@ -1,18 +1,15 @@
 package gsrs.startertests.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.controller.GsrsRestApiController;
+import tools.jackson.databind.JsonNode;
 import gsrs.controller.IdHelpers;
-import gsrs.controller.OffsetBasedPageRequest;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.service.AbstractGsrsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,8 +21,9 @@ import java.util.UUID;
 public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
     public static final String CONTEXT = "myEntity";
 
+    @Autowired
+    private JsonMapper mapper;
 
-    private ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private MyEntityRepository repository;
 
@@ -35,27 +33,27 @@ public class MyEntityService extends AbstractGsrsEntityService<MyEntity, UUID> {
 
 
     @Override
-    protected MyEntity fromNewJson(JsonNode json) throws IOException {
+    protected MyEntity fromNewJson(JsonNode json) {
         return mapper.convertValue(json, MyEntity.class);
     }
 
     @Override
-    protected List<MyEntity> fromNewJsonList(JsonNode list) throws IOException {
+    protected List<MyEntity> fromNewJsonList(JsonNode list) {
         return null;
     }
 
     @Override
-    protected MyEntity fromUpdatedJson(JsonNode json) throws IOException {
+    protected MyEntity fromUpdatedJson(JsonNode json) {
         return mapper.convertValue(json, MyEntity.class);
     }
 
     @Override
-    protected List<MyEntity> fromUpdatedJsonList(JsonNode list) throws IOException {
+    protected List<MyEntity> fromUpdatedJsonList(JsonNode list){
         return null;
     }
 
     @Override
-    protected JsonNode toJson(MyEntity myEntity) throws IOException {
+    protected JsonNode toJson(MyEntity myEntity){
         return mapper.valueToTree(myEntity);
     }
 

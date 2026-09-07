@@ -40,13 +40,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -89,6 +82,11 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Extension to AbstractGsrsEntityController that adds support for the legacy TextIndexer
@@ -112,7 +110,10 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @Autowired
     private BulkSearchService bulkSearchService;
 
-    private final static ExecutorService executor = Executors.newFixedThreadPool(4);    
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
+    @Autowired
+    private static ExecutorService executor;
     
     @Data
     private class ReindexStatus{
@@ -576,7 +577,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     
 
     @GetGsrsRestApiMapping(value = "/@databaseIndexDiff", apiVersions = 1)
-    public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() throws JsonMappingException, JsonProcessingException{
+    public ResponseEntity<Object>  getDifferenceBetweenDatabaseAndIndexes() {
 
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
@@ -603,7 +604,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     @PostGsrsRestApiMapping(value = "/@databaseIndexSync", apiVersions = 1)
-    public ResponseEntity<Object>  syncIndexesWithDatabase() throws JsonMappingException, JsonProcessingException{
+    public ResponseEntity<Object>  syncIndexesWithDatabase() {
 
     	List<Key> keysInDatabase = getKeys();
     	List<Key> keysInIndex = searchEntityInIndex();
@@ -871,8 +872,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	int endIndex = Math.min(top+skip,queries.size());    		
     	if(skip < queries.size())
     		sublist = queries.subList(skip, endIndex);
-    	ObjectMapper mapper = new ObjectMapper();
-    	ObjectNode baseNode = mapper.createObjectNode();   	   	
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    	ObjectNode baseNode = mapper.createObjectNode();
     	
     	baseNode.put("id", id);
     	baseNode.put("total", queries.size());
@@ -1044,9 +1045,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		topList = list;
     	else
     		topList = list.subList(0, top);
-    	
-    	ObjectMapper mapper = new ObjectMapper();
-    	ObjectNode baseNode = mapper.createObjectNode();   	   	
+
+        ObjectNode baseNode = mapper.createObjectNode();
     	    	
     	baseNode.put("top", top);
     	baseNode.put("skip", skip);    	
@@ -1062,8 +1062,8 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     		topList = list;
     	else
     		topList = list.subList(0, top);
-    	    	
-    	ObjectMapper mapper = new ObjectMapper();
+
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     	ObjectNode baseNode = mapper.createObjectNode();   	   	
     	    	
     	baseNode.put("top", top);
@@ -1452,7 +1452,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(status ==null){
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
-    	ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	node.put("status", status.getStatus());    	
@@ -1511,7 +1511,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     private ObjectNode generateResultIDJson(String id) {
-    	ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	return node;

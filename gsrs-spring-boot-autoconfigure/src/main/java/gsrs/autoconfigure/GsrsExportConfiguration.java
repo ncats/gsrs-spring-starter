@@ -13,8 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
@@ -130,7 +128,7 @@ public class GsrsExportConfiguration {
             }
         }
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
         if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");
@@ -185,7 +183,7 @@ public class GsrsExportConfiguration {
 						allItems = new Text("settings", mapper.writeValueAsString(setting));
 	                    allItems.id=id[0]--;
 	                    items.add(allItems);
-					} catch (JsonProcessingException e) {
+					} catch (Exception e) {
 						log.warn("Trouble creating export settings preset", e);
 					}
         		});

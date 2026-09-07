@@ -1,13 +1,12 @@
 package gsrs.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.controller.hateoas.IxContext;
 import gsrs.imports.*;
@@ -84,6 +83,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private JsonMapper mapper;
 
     private final CachedSupplier<List<ImportAdapterFactory<T>>> importAdapterFactories
             = CachedSupplier.of(() -> gsrsImportAdapterFactoryFactory.newFactory(getEntityService().getContext(),
@@ -208,10 +210,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         //TODO: add _self link
 
 
-        public static ImportTaskMetaData fromText(Text text) throws JsonProcessingException {
+        public static ImportTaskMetaData fromText(Text text) {
             log.trace("starting in fromText");
-            ObjectMapper mapper = new ObjectMapper();
-            ImportTaskMetaData task = mapper.readValue(text.getValue(), ImportTaskMetaData.class);
+            JsonMapper localMapper = JsonMapper.builderWithJackson2Defaults().build();
+            ImportTaskMetaData task = localMapper.readValue(text.getValue(), ImportTaskMetaData.class);
             if (task == null) {
                 log.error("Error creating ImportTaskMetaData from input {}", text.getValue());
                 return null;
@@ -278,7 +280,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
                 log.trace("adaptFac.getEntityServiceClass(): {}", adaptFac.getEntityServiceClass());
                 if (adaptFac.getEntityServiceClass() != null) {
-                    Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
+                    Constructor<StagingAreaEntityService> entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
                     StagingAreaEntityService<T> entityService = (StagingAreaEntityService) entityServiceConstructor.newInstance();
                     entityService = AutowireHelper.getInstance().autowireAndProxy(entityService);
                     service.registerEntityService(entityService);
@@ -302,7 +304,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         StagingAreaService service = AutowireHelper.getInstance().autowireAndProxy((StagingAreaService) o);
         log.trace("adaptFac.getEntityServiceClass(): {}", adaptFac.getEntityServiceClass());
         if (adaptFac.getEntityServiceClass() != null) {
-            Constructor entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
+            Constructor<StagingAreaEntityService> entityServiceConstructor = adaptFac.getEntityServiceClass().getConstructor();
             StagingAreaEntityService<T> entityService = (StagingAreaEntityService) entityServiceConstructor.newInstance();
             entityService = AutowireHelper.getInstance().autowireAndProxy(entityService);
             service.registerEntityService(entityService);
@@ -322,7 +324,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         adaptFac.setInputParameters(task.inputSettings);
         log.trace("got back adaptFac with name: {}", adaptFac.getAdapterName());
         Optional<InputStream> iStream = payloadService.getPayloadAsInputStream(task.payloadID);
-        ObjectMapper mapper = new ObjectMapper();
         ObjectNode parameters = mapper.convertValue(inputParameters, ObjectNode.class);
         ImportAdapterStatistics predictedSettings = iStream.isPresent() ? adaptFac.predictSettings(iStream.get(), parameters):null;
 
@@ -357,10 +358,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     }
 
     private Optional<ImportTaskMetaData<T>> getImportTask(JsonNode node) {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return Optional.of( mapper.treeToValue(node, ImportTaskMetaData.class));
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error converting JsonNode to ImportTaskMetaData");
             return Optional.empty();
         }
@@ -467,7 +467,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             Objects.requireNonNull(entityType, "Must supply entityType (class of object to create)");
 
             //pass the rest of the queryParameters to the task so they can be used by the adapter
-            ObjectMapper mapper = new ObjectMapper();
             JsonNode queryParameterNode = mapper.valueToTree(queryParameters);
 
             TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
@@ -606,7 +605,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             log.trace(" found data ");
             //log.trace(requestedDataItem.getData());
             matchingMetadata = service.getImportMetaData(requestedDataItem.getRecordId().toString(), 0);
-            ObjectMapper mapper = new ObjectMapper();
             JsonNode realData = mapper.readTree(requestedDataItem.getData());
             log.trace("converted to JsonNode");
             if (segment != null && segment.trim().length() > 0) {
@@ -661,8 +659,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
     public ResponseEntity<Object> updateImport(@RequestBody JsonNode updatedJson,
                                                @RequestParam Map<String, String> queryParameters) throws Exception {
         log.trace("in updateImport");
-        ObjectMapper om = new ObjectMapper();
-        ImportTaskMetaData itmd = om.treeToValue(updatedJson, ImportTaskMetaData.class);
+        ImportTaskMetaData itmd = mapper.treeToValue(updatedJson, ImportTaskMetaData.class);
 
         if (itmd.getAdapter() != null && itmd.getAdapterSettings() == null) {
             itmd = predictSettings(itmd, queryParameters);
@@ -873,8 +870,10 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .build();
+
             T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
         } else {
@@ -901,16 +900,18 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
+
+            JsonMapper localMapper = JsonMapper.builder()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .build();
+            T object= localMapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
         } else {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), returnStatus);
         }
     }
 
-   @canImportData
+    @canImportData
     @PutGsrsRestApiMapping(value = { "/stagingArea/@bulkactasync", "/stagingArea/@bulkAct"})
     public ResponseEntity<Object> executeActBulkAsync(
             @RequestBody String processingJson,
@@ -927,7 +928,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(job, HttpStatus.OK);
     }
 
-   @canImportData
+    @canImportData
     @GetGsrsRestApiMapping(value = { "/stagingArea/processingstatus({processingJobId})", "/stagingArea/processingstatus/{processingJobId}"})
     public ResponseEntity<Object> getProcessingStatus(
             @PathVariable("processingJobId") String processingJobId,
@@ -958,7 +959,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(jobNode, queryParameters), returnStatus);
     }
 
-   @canImportData
+    @canImportData
     @GetGsrsRestApiMapping(value = {"/stagingArea/search"}, apiVersions = 1)
     public ResponseEntity<Object> searchImportData(@RequestParam("q") Optional<String> query,
                                                    @RequestParam("top") Optional<Integer> top,
@@ -988,7 +989,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         SearchResult fresult = result;
 
-        ObjectMapper mapper = new ObjectMapper();
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);
         List results = (List) transactionTemplate.execute(stats -> {
@@ -1025,7 +1025,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                                 log.trace("retrieved domain object JSON directly and turned it into a JsonNode");
                                 selectableObject.setName(realData.get("_name").asText());
                                 log.trace("gong name");
-                            } catch (JsonProcessingException e) {
+                            } catch (Exception e) {
                                 log.error("Error processing selectable search result", e);
                                 throw new RuntimeException(e);
                             }
@@ -1053,7 +1053,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     log.trace("retrieved domain object JSON directly and turned it into a JsonNode");
                     ImportUtilities.enhanceWithMetadata((ObjectNode) realData, currentResult, service);
                     transformedResults.add(realData);
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     log.error("Error processing search result", e);
                     throw new RuntimeException(e);
                 }
@@ -1112,11 +1112,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
    @canImportData
     @PostGsrsRestApiMapping("/import/config")
     public ResponseEntity<Object> handleImportConfigSave(@RequestBody String importConfigJson,
-                                                         @RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+                                                         @RequestParam Map<String, String> queryParameters) {
         log.trace("starting in handleImportConfigSave");
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectMapper om = new ObjectMapper();
-        ImportTaskMetaData itmd = om.readValue(importConfigJson, ImportTaskMetaData.class);
+        ImportTaskMetaData itmd = mapper.readValue(importConfigJson, ImportTaskMetaData.class);
 
         if (itmd.getId() != null && ImportUtilities.doesImporterKeyExist(itmd.getId(), getEntityService().getEntityClass(), textRepository)) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
@@ -1152,7 +1150,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
    @canImportData
     @GetGsrsRestApiMapping("/import/configs")
-    public ResponseEntity<Object> handleGetImportConfigs(@RequestParam Map<String, String> queryParameters) throws JsonProcessingException {
+    public ResponseEntity<Object> handleGetImportConfigs(@RequestParam Map<String, String> queryParameters)  {
         List<ImportTaskMetaData> importConfigs = ImportUtilities.getAllImportTasks(getEntityService().getEntityClass(), textRepository);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(importConfigs, queryParameters), HttpStatus.OK);
     }
@@ -1160,7 +1158,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
    @canImportData
     @GetGsrsRestApiMapping( value = {"/import/config({id})", "/import/config/{id}"} )
     public ResponseEntity<Object> handleGetImportConfig(@RequestParam Map<String, String> queryParameters,
-                                                        @PathVariable("id") Long textId) throws JsonProcessingException {
+                                                        @PathVariable("id") Long textId)  {
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if( textId==null || textId<=0) {
             messageNode.put("message", "invalid input");
@@ -1225,8 +1223,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
             StagingAreaService service;
             ImportTaskMetaData<T> usableTask;
             if (updatedJson != null && updatedJson.size() > 0) {
-                ObjectMapper om = new ObjectMapper();
-                ImportTaskMetaData<T> taskFromInput = om.treeToValue(updatedJson, ImportTaskMetaData.class);
+                ImportTaskMetaData<T> taskFromInput = mapper.treeToValue(updatedJson, ImportTaskMetaData.class);
                 if (taskFromInput.getAdapter() != null && taskFromInput.getAdapterSettings() == null) {
                     taskFromInput = predictSettings(taskFromInput, queryParameters);
                 }
@@ -1251,7 +1248,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
             ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
 
-            ObjectMapper mapper = new ObjectMapper();
             objectStream.limit(limit).forEach(object -> {
                 try {
                     ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
@@ -1262,7 +1258,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                     JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
                     singleRecord.set("matches", matchesAsNode);
                     previewNode.add(singleRecord);
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     log.error("Error serializing imported GSRS object", e);
                     throw new RuntimeException(e);
                 }
