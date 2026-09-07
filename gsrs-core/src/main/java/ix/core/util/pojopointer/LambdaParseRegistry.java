@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ public class LambdaParseRegistry implements ApplicationListener<ContextRefreshed
 	private static LambdaParseRegistry instance;
 
 	@Autowired
+	@Qualifier("legacyJsonMapper")
 	JsonMapper mapper;
 
 	public static LambdaParseRegistry getInstance(){
