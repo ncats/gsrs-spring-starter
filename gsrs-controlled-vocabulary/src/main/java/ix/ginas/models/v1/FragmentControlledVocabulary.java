@@ -1,11 +1,12 @@
 package ix.ginas.models.v1;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import ix.ginas.models.serialization.FragmentVocabularyTermListDeserializer;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Inheritance;
+import tools.jackson.databind.annotation.JsonDeserialize;
+
 import java.util.ArrayList;
 import java.util.List;
 

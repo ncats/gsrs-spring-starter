@@ -376,20 +376,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                     return new ResponseEntity<>(jsn, HttpStatus.OK);
                 }
             }
-//            boolean isPrimitiveOrWrapped = (value!=null)?
-//                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
-//            
-//            if(isPrimitiveOrWrapped){
-//                //just a plain String - no links?
-//                //if we pass it to the enhance view below it will error out
-//                Map<String,Object> wrapMap = new HashMap<>();
-//                wrapMap.put("value",value);
-//                JsonNode json;
-//                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
-//                json = jsonwrap.get("value");
-//                return new ResponseEntity<>(json, HttpStatus.OK);
-//                //return new ResponseEntity<>(value, HttpStatus.OK);
-//            }
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ewv.getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
     }
@@ -406,8 +392,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @GetGsrsRestApiMapping("/@keys")
     public List<Key> getKeys(){    	
     	List<I> IDs = getEntityService().getIDs();
-//    	System.out.println("GET IDS!");
-//    	IDs.forEach(id -> System.out.println("ID " + id.toString()));
     	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
         return keys;
     }

@@ -36,7 +36,7 @@ public class GsrsWebConfig {
     }
 
     @Bean
-    public GsrsJsonMapper gsrsJsonMapper(GsrsJsonMapperResolver objectMapperResolver) {
+    public GsrsJsonMapper gsrsJsonMapper(GsrsJsonMapperResolver gsrsMapperResolver) {
         ProxyFactory factory = new ProxyFactory();
         factory.setInterfaces(GsrsJsonMapper.class);
         factory.setTargetClass(EntityFactory.EntityMapper.class);
@@ -44,7 +44,7 @@ public class GsrsWebConfig {
 
             @Override
             protected GsrsJsonMapper getObject() {
-                return objectMapperResolver.getMapper();
+                return gsrsMapperResolver.getMapper();
             }
 
         });
@@ -68,7 +68,7 @@ public class GsrsWebConfig {
     }
 
     @Bean
-    public GsrsJsonMapperResolver  objectMapperResolver() {
+    public GsrsJsonMapperResolver gsrsMapperResolver() {
         return new RequestMatchingEntityMapperResolver();
     }
 

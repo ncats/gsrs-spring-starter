@@ -1,23 +1,25 @@
 package gsrs.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.model.GsrsUrlLink;
 import gsrs.springUtils.AutowireHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 
-import java.io.IOException;
 import java.util.Optional;
 
 @JacksonComponent
-public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
-    @Autowired
+public class GsrsUrlLinkSerializer extends ValueSerializer<GsrsUrlLink> {
     private EntityLinks entityLinks;
+
+    public GsrsUrlLinkSerializer(EntityLinks entityLinks) {
+        this.entityLinks = entityLinks;
+    }
 
 
     private synchronized void initIfNeeded(){
@@ -27,7 +29,7 @@ public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
     }
 
     @Override
-    public void serialize(GsrsUrlLink gsrsUrlLink, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(GsrsUrlLink gsrsUrlLink, JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
         if(gsrsUrlLink ==null){
             return;
         }
@@ -41,7 +43,7 @@ public class GsrsUrlLinkSerializer extends JsonSerializer<GsrsUrlLink> {
                 linkBuilder.slash(gsrsUrlLink.getFieldPath());
             }
             String uri = GsrsLinkUtil.fieldLink(gsrsUrlLink.getId(), gsrsUrlLink.getFieldPath(), linkBuilder.withSelfRel()).toUri().toString(); // this is a hack to fake the url we fix it downstream in the GsrsLinkUtil class
-            provider.defaultSerializeValue(uri, jgen);
+            jgen.writeString(uri);
         }
     }
 }

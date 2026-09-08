@@ -1,6 +1,5 @@
 package gsrs.cv.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.GsrsEntityRestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
