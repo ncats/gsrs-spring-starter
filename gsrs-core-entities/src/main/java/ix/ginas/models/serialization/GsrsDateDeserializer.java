@@ -10,7 +10,7 @@ import tools.jackson.databind.deser.std.StdDeserializer;
 
 public class GsrsDateDeserializer extends StdDeserializer<Date> {
     public GsrsDateDeserializer(){
-        super((Class) null);
+        super(Date.class);
     }
     public GsrsDateDeserializer(Class<?> vc) {
         super(vc);
