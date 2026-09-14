@@ -1,5 +1,6 @@
 package gsrs.json;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
@@ -15,12 +16,11 @@ import java.util.Optional;
 
 @JacksonComponent
 public class GsrsUrlLinkSerializer extends ValueSerializer<GsrsUrlLink> {
+    @Autowired
     private EntityLinks entityLinks;
 
-    public GsrsUrlLinkSerializer(EntityLinks entityLinks) {
-        this.entityLinks = entityLinks;
+    public GsrsUrlLinkSerializer() {
     }
-
 
     private synchronized void initIfNeeded(){
         if(entityLinks==null){

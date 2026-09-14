@@ -51,8 +51,8 @@ public final class CvUtils {
             String domain = cvValue.at("/domain").asString();
             JsonNode vtype = cvValue.at("/vocabularyTermType");
             String termType = null;
-//            System.out.println("cvValue = " + cvValue);
-//            System.out.println("vType =  " + vtype);
+            System.out.println("cvValue = " + cvValue);
+            System.out.println("vType =  " + vtype);
             if (!vtype.isTextual()) {
                 ObjectNode objn = (ObjectNode) cvValue;
                 //Sometimes stored as an object, instead of a text value
@@ -60,7 +60,10 @@ public final class CvUtils {
             }
 
             termType = cvValue.at("/vocabularyTermType").asString();
+            System.out.printf("termType: %s%n", termType);
 
+            Class t= objectMapper.getClass().getClassLoader().loadClass(termType);
+            System.out.printf("result of class loader: " + t + "%n%n");
             ControlledVocabulary cv = (ControlledVocabulary) objectMapper.treeToValue(cvValue, objectMapper.getClass().getClassLoader().loadClass(termType));
             if(stripIds) {
                 //if there was an ID with this object, get rid of it
