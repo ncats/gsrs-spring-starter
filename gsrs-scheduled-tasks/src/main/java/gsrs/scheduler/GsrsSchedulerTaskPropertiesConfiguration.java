@@ -11,6 +11,7 @@ import gsrs.util.ExtensionConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -63,7 +64,9 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
         String reportTag = "ScheduledTaskConfig";
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         for (String k: list.keySet()) {
             ScheduledTaskConfig config =  list.get(k);
             config.setParentKey(k);

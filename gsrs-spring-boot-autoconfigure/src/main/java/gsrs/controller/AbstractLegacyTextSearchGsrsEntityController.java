@@ -82,6 +82,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -872,7 +873,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	int endIndex = Math.min(top+skip,queries.size());    		
     	if(skip < queries.size())
     		sublist = queries.subList(skip, endIndex);
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	ObjectNode baseNode = mapper.createObjectNode();
     	
     	baseNode.put("id", id);
@@ -1063,7 +1066,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		topList = list.subList(0, top);
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	ObjectNode baseNode = mapper.createObjectNode();   	   	
     	    	
     	baseNode.put("top", top);
@@ -1452,7 +1457,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(status ==null){
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	node.put("status", status.getStatus());    	
@@ -1511,7 +1518,9 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     private ObjectNode generateResultIDJson(String id) {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	ObjectNode node = mapper.createObjectNode();   	
     	node.put("id", id);
     	return node;

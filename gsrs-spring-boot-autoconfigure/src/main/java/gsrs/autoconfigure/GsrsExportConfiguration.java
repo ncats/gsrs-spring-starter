@@ -23,6 +23,7 @@ import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import static java.util.Comparator.naturalOrder;
@@ -71,7 +72,9 @@ public class GsrsExportConfiguration {
     }
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
@@ -128,7 +131,9 @@ public class GsrsExportConfiguration {
             }
         }
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
 
         if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");

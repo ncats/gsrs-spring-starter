@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -43,11 +44,13 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     private static final Pattern removeSkipPattern = Pattern.compile("(&skip=\\d+)");
     private static final Pattern removeViewPattern = Pattern.compile("(&view=\\s+)");
 
-    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private EntityManager entityManager;
 
-    private PlatformTransactionManager transactionManager;
+    private final PlatformTransactionManager transactionManager;
     
     private HttpRequestHolder initiatingRequest;
 

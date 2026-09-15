@@ -1,5 +1,6 @@
 package gsrs.imports;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -91,6 +92,10 @@ public class ImportUtilities<T> {
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(1);
 
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     StagingAreaService stagingAreaService;
 
     public ImportUtilities(String contextName, Class<T> entityClass, StagingAreaService service) {
@@ -110,7 +115,9 @@ public class ImportUtilities<T> {
             entityClass));
 
     public static void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         if (metadata != null) {
             String metadataAsString;
             try {
@@ -164,7 +171,6 @@ public class ImportUtilities<T> {
     }
 
     public static String removeMetadataFromDomainObjectJson(String domainObjectJson) {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             JsonNode objectAsNode = mapper.readTree(domainObjectJson);
             if (objectAsNode.hasNonNull("_metadata") && objectAsNode.isObject()) {
@@ -216,7 +222,6 @@ public class ImportUtilities<T> {
     public ObjectNode handleAction(StagingAreaService stagingAreaService, String matchedEntityId, String stagingRecordId,
                                         int version, String persist, String processingJson, String contextName ) throws Exception {
         assert stagingAreaService != null;
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions());
     }
@@ -224,7 +229,6 @@ public class ImportUtilities<T> {
     public List<ObjectNode> handleActions(StagingAreaService stagingAreaService,
                                    int version, String persist, String processingJson) throws Exception {
         assert stagingAreaService != null;
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         List<ObjectNode> returnNodes = new ArrayList<>();
         for(int r =0; r<configSet.getStagingAreaRecords().size();r++) {
@@ -242,7 +246,6 @@ public class ImportUtilities<T> {
                                                   int version, String persist, String processingJson) throws Exception {
 
         assert stagingAreaService != null;
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         ImportProcessingJob job = new ImportProcessingJob();
         job.setId(UUID.randomUUID());
@@ -485,7 +488,6 @@ public class ImportUtilities<T> {
 
         if( currentObject!=null) {
             log.trace("currentObject not null");
-            //messageNode.put("object", mapper.writeValueAsString(currentObject));
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
             messageNode.put("status", "OK");
@@ -548,7 +550,6 @@ public class ImportUtilities<T> {
     public Stream<T> generateObjects(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task, Map<String, String> settingsMap) throws Exception {
         log.trace("starting in generateObjects. task: " + task.toString());
         log.trace("using encoding {}, looking for payload with ID {}", task.getFileEncoding(), task.getPayloadID());
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         ObjectNode settingsNode = mapper.convertValue(settingsMap, ObjectNode.class);
         if (!settingsNode.hasNonNull("Encoding")) {
             settingsNode.put("Encoding", task.getFileEncoding());
@@ -567,7 +568,6 @@ public class ImportUtilities<T> {
                                        Map<String, String> queryParameters) throws Exception {
         Stream<T> objectStream = generateObjects(task, queryParameters);
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
         List<Integer> errorRecords = new ArrayList<>();
@@ -584,21 +584,6 @@ public class ImportUtilities<T> {
             try {
                 String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
                 importDataRecordIds.add(newRecordId);
-                    /*if (recordCount.get() < limit) {
-                        if (object instanceof Supplier) {
-                            log.trace("going to invoke supplier on object");
-                            object = (T) ((Supplier) object).get();
-                        }
-                        //previewNode.add(mapper.writeValueAsString(object));
-                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
-                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
-                        singleRecord.set("data", dataAsNode);
-                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
-                                newRecordId);
-                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
-                        singleRecord.set("matches", matchesAsNode);
-                        previewNode.add(singleRecord);
-                    }*/
             } catch (Exception e) {
                 objectProcessingOK.set(false);
                 errorRecords.add(recordCount.get());
@@ -628,7 +613,6 @@ public class ImportUtilities<T> {
 
         log.trace("starting in handleObjectCreationAsync");
         log.trace("task: {}", task.toString());
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
         List<Integer> errorRecords = new ArrayList<>();

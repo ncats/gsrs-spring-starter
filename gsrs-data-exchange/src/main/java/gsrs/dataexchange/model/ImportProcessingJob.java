@@ -6,6 +6,7 @@ import ix.core.models.Indexable;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -51,7 +52,8 @@ public class ImportProcessingJob implements GeneralPurposeJob {
     @Indexable
     private int completedRecordCount=0;
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    @Transient
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
     @Override
     public UUID getId() {
@@ -135,7 +137,6 @@ public class ImportProcessingJob implements GeneralPurposeJob {
 
     public void setResults(ArrayNode results){
         log.trace("starting in setResults");
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             this.results =mapper.writeValueAsString(results);
             log.trace("set results to {}", mapper.writeValueAsString(results));
@@ -187,7 +188,9 @@ public class ImportProcessingJob implements GeneralPurposeJob {
         node.put("totalRecords", this.totalRecords);
         node.put("completedRecordCount", this.completedRecordCount);
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         if(includeJobData) {
             JsonNode jobDataNode = null;
             try {

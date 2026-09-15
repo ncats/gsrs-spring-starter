@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.util.ReflectionUtils;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -54,7 +55,9 @@ public class GsrsWebConfig {
 
     @Bean("legacyJsonMapper")
     public JsonMapper standardJsonMapper() {
-        return JsonMapper.builderWithJackson2Defaults().build();
+        return JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
     @Bean

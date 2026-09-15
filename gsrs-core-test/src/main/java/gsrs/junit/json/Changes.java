@@ -3,6 +3,7 @@ package gsrs.junit.json;
 
 import ix.utils.pojopatch.PojoDiff;
 import tools.jackson.core.JsonPointer;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -15,7 +16,9 @@ import java.util.regex.Pattern;
  */
 public class Changes {
 
-    private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults().build();
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private final Map<String, Change> changes;
 

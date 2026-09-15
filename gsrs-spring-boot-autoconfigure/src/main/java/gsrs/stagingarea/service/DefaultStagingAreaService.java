@@ -1,6 +1,7 @@
 package gsrs.stagingarea.service;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
@@ -49,8 +50,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     public static String STAGING_AREA_LOCATION = "Staging Area";
 
-    private final JsonMapper mapper;
-
     @Autowired
     ImportMetadataRepository metadataRepository;
 
@@ -87,7 +86,6 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
 
-    //private ValidatorFactory validatorFactory;
 
     private TextIndexer indexer;
 
@@ -96,9 +94,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public DefaultStagingAreaService(@Qualifier("legacyJsonMapper") JsonMapper jsonMapper) {
-        this.mapper = jsonMapper;
-    }
+    JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @PostConstruct
     public void setupIndexer() {
@@ -747,7 +745,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
     @Override
     public Object deserializeObject(String entityClassName, String json) {
-        JsonNode node = mapper.readTree(json);
+        JsonNode node = jsonMapper.readTree(json);
         if (_entityServiceRegistry.containsKey(entityClassName)) {
             return _entityServiceRegistry.get(entityClassName).parse(node);
         } else {
@@ -775,7 +773,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     private String serializeObject(Object object) throws Exception {
-        return mapper.writeValueAsString(object);
+        return jsonMapper.writeValueAsString(object);
     }
 
     /*

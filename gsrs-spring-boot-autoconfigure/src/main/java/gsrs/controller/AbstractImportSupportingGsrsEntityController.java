@@ -214,7 +214,9 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
         public static ImportTaskMetaData fromText(Text text) {
             log.trace("starting in fromText");
-            JsonMapper localMapper = JsonMapper.builderWithJackson2Defaults().build();
+            JsonMapper localMapper = JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
             ImportTaskMetaData task = localMapper.readValue(text.getValue(), ImportTaskMetaData.class);
             if (task == null) {
                 log.error("Error creating ImportTaskMetaData from input {}", text.getValue());

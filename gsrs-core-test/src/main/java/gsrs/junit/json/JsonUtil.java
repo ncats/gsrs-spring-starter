@@ -2,6 +2,7 @@ package gsrs.junit.json;
 
 import ix.core.controllers.EntityFactory;
 import ix.utils.pojopatch.PojoDiff;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -20,7 +21,9 @@ public class JsonUtil {
 		return jsn.toString();
 	}
 
-	private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults().build();
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 	 public static JsonNode parseJsonFile(File resource){
 	    	try(InputStream is=new FileInputStream(resource)){
 				return JSON_MAPPER.readTree(is);

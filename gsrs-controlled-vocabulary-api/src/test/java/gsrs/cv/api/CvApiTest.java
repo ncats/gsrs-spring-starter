@@ -11,6 +11,7 @@ import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -33,7 +34,9 @@ public class CvApiTest {
     @Autowired
     private ControlledVocabularyRestApi api;
 
-    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @TestConfiguration
     static class Testconfig{

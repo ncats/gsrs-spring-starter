@@ -1,5 +1,6 @@
 package gsrs.dataexchange.controller;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
@@ -63,7 +64,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         return new MyEntityService();
     }
 
-    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
     @InjectMocks
     AbstractImportSupportingGsrsEntityController controller = new AbstractImportSupportingGsrsEntityController() {

@@ -1,6 +1,7 @@
 package gsrs.cv.api;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ParseJsonTest {
 
-    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
     @Test
     public void parseSingleDTOWithDefaultCVTerm() {
         String json = "{\"id\":1795,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"domain\":\"ACCESS_GROUP\",\"vocabularyTermType\":\"ix.ginas.models.v1.ControlledVocabulary\",\"fields\":[\"ACCESS\"],\"editable\":false,\"filterable\":false,\"terms\":[{\"id\":43473,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"protected\",\"display\":\"PROTECTED\",\"filters\":[],\"hidden\":false,\"selected\":false},{\"id\":43474,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"admin\",\"display\":\"admin\",\"filters\":[],\"hidden\":false,\"selected\":false}]}";

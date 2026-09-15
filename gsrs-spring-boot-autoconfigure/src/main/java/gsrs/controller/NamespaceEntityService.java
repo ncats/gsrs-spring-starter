@@ -1,5 +1,6 @@
 package gsrs.controller;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -22,7 +23,9 @@ public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace,
     @Autowired
     private NamespaceRepository namespaceRepository;
 
-    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public NamespaceEntityService() {
         super(CONTEXT, IdHelpers.NUMBER, null, null, null);

@@ -9,6 +9,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -39,7 +40,7 @@ public abstract class GsrsEntityRestTemplate<T, I> {
                 .build();
     }
     public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context) {
-        this(restTemplateBuilder, baseUrl, context, JsonMapper.builderWithJackson2Defaults().build());
+        this(restTemplateBuilder, baseUrl, context, JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build());
     }
 
     protected JsonMapper getMapper(){
