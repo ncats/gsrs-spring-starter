@@ -1,18 +1,18 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.EditRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.models.Edit;
 
-import org.aspectj.apache.bcel.Repository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,10 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     @Autowired
     private EditRepository editRepository;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
+
     public EditEntityService() {
         super("edits", IdHelpers.UUID, null,null,null);
     }
@@ -48,12 +51,12 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     }
 
     @Override
-    protected Edit fromUpdatedJson(JsonNode json) throws IOException {
+    protected Edit fromUpdatedJson(JsonNode json)  {
         return mapper.treeToValue(json, Edit.class);
     }
 
     @Override
-    protected List<Edit> fromUpdatedJsonList(JsonNode list) throws IOException {
+    protected List<Edit> fromUpdatedJsonList(JsonNode list)  {
         List<Edit> entityList = new ArrayList<>(list.size());
         for(JsonNode editValue: list){
             entityList.add(fromUpdatedJson(editValue));
@@ -62,7 +65,7 @@ public class EditEntityService extends AbstractGsrsEntityService<Edit, UUID> {
     }
 
     @Override
-    protected JsonNode toJson(Edit edit) throws IOException {
+    protected JsonNode toJson(Edit edit) {
         return mapper.valueToTree(edit);
     }
 

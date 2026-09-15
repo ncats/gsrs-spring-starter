@@ -212,6 +212,7 @@ public class EntityPersistAdapter {
 
             return saved;
         } catch (Exception ex) {
+            log.error("Error during persistance: ", ex);
             throw new IllegalStateException(ex);
         } finally {
 //            if (lock.getTransaction() == null) {

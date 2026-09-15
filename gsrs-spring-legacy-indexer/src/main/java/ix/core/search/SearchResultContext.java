@@ -23,7 +23,6 @@ import org.springframework.hateoas.server.EntityLinks;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.IxContext;
@@ -33,6 +32,7 @@ import ix.core.models.FieldedQueryFacet;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
 import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.utils.Util;
+import tools.jackson.databind.json.JsonMapper;
 
 @CacheStrategy(evictable=false)
 public class SearchResultContext {
@@ -362,7 +362,7 @@ public class SearchResultContext {
     }
     
     public String toJson(){
-    	ObjectMapper om = new ObjectMapper();
+    	JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
     	return om.valueToTree(this).toString();
     }
     

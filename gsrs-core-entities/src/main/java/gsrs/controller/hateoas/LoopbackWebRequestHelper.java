@@ -20,10 +20,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.Holder;
+import ix.core.controllers.EntityFactory;
 
 
 @Slf4j
@@ -41,7 +40,7 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
     public void onApplicationEvent(ContextRefreshedEvent event) {
         if(httpLoopBackConfig!=null) {
             Holder<RequestAdapter> defaultHolder = Holder.hold(null);
-            ObjectMapper mapper = new ObjectMapper();
+            EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
             adapterMapByContext = httpLoopBackConfig.getRequests().stream()
                     .map(m-> mapper.convertValue(m, WebRequestConfig.class))
                     .filter(m->{
@@ -119,7 +118,7 @@ public class LoopbackWebRequestHelper implements ApplicationListener<ContextRefr
     }
 
 
-    private RequestAdapter getRequestAdapter(ObjectMapper mapper, WebRequestConfig c) {
+    private RequestAdapter getRequestAdapter(EntityFactory.EntityMapper mapper, WebRequestConfig c) {
         Map<String, Object> map;
         if(c.getParameters() ==null){
            map = Collections.emptyMap();

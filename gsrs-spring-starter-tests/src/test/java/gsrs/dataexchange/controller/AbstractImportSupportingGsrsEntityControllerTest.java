@@ -1,10 +1,10 @@
 package gsrs.dataexchange.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -28,12 +28,10 @@ import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.models.GinasCommonData;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -49,6 +47,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Stream;
+
 @Slf4j
 @ActiveProfiles("test")
 @GsrsJpaTest(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class,
@@ -64,6 +63,8 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
     GsrsEntityService getTopLevelEntityService() {
         return new MyEntityService();
     }
+
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
     @InjectMocks
     AbstractImportSupportingGsrsEntityController controller = new AbstractImportSupportingGsrsEntityController() {
@@ -606,7 +607,7 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
     }
 
     @Test
-    public void testFromText() throws JsonProcessingException {
+    public void testFromText() {
         Text text = new Text();
         text.setValue(createSimpleConfig());
         AbstractImportSupportingGsrsEntityController.ImportTaskMetaData recreatedMetadata = AbstractImportSupportingGsrsEntityController.ImportTaskMetaData.fromText(text);
@@ -673,10 +674,9 @@ class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEn
         adapterSettings.set("actions", actions);
         metaData.setAdapterSettings(adapterSettings);
         metaData.setAdapterSchema(JsonNodeFactory.instance.objectNode());
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(metaData);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error serializing ImportTaskMetaData", e);
             throw new RuntimeException(e);
         }
