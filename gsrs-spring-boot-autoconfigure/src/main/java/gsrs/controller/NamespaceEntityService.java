@@ -1,7 +1,7 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.NamespaceRepository;
@@ -11,9 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 @Service
@@ -22,7 +22,10 @@ public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace,
     public static final String CONTEXT = "namespace";
     @Autowired
     private NamespaceRepository namespaceRepository;
-    private ObjectMapper mapper = new ObjectMapper();
+
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public NamespaceEntityService() {
         super(CONTEXT, IdHelpers.NUMBER, null, null, null);
@@ -37,12 +40,12 @@ public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace,
 
 
     @Override
-    protected Namespace fromUpdatedJson(JsonNode json) throws IOException {
+    protected Namespace fromUpdatedJson(JsonNode json) {
         return mapper.convertValue(json, Namespace.class);
     }
 
     @Override
-    protected JsonNode toJson(Namespace namespace) throws IOException {
+    protected JsonNode toJson(Namespace namespace) {
         return mapper.valueToTree(namespace);
     }
 

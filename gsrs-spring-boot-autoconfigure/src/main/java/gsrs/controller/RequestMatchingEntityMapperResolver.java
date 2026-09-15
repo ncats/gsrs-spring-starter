@@ -1,11 +1,11 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.core.controllers.EntityFactory;
+import ix.core.interfaces.GsrsJsonMapper;
+import ix.core.interfaces.GsrsJsonMapperResolver;
 import ix.core.models.BeanViews;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -13,23 +13,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Slf4j
-public class RequestMatchingEntityMapperResolver implements ObjectMapperResolver {
+public class RequestMatchingEntityMapperResolver implements GsrsJsonMapperResolver {
 
 
-
-
-    private final CachedSupplier<ObjectMapper> defaultMapper;
+    private final CachedSupplier<GsrsJsonMapper> defaultMapper;
 
     public RequestMatchingEntityMapperResolver(){
         this.defaultMapper = CachedSupplier.runOnce(()-> EntityFactory.EntityMapper.COMPACT_ENTITY_MAPPER());
     }
-    public RequestMatchingEntityMapperResolver(ObjectMapper defaultMapper) {
+    public RequestMatchingEntityMapperResolver(GsrsJsonMapper defaultMapper) {
         Objects.requireNonNull(defaultMapper);
         this.defaultMapper = CachedSupplier.ofConstant(defaultMapper);
     }
 
     @Override
-    public ObjectMapper getObjectMapper() {
+    public GsrsJsonMapper getMapper() {
         ServletRequestAttributes sra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if(sra ==null){
             return defaultMapper.get();
@@ -39,7 +37,7 @@ public class RequestMatchingEntityMapperResolver implements ObjectMapperResolver
 
     }
 
-    private ObjectMapper getMapperForView(String... view){
+    private GsrsJsonMapper getMapperForView(String... view){
         List<Class> views= new ArrayList<>();
         if (view != null) {
 

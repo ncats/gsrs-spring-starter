@@ -1,21 +1,21 @@
 package gsrs.cv.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import gsrs.api.GsrsEntityRestTemplate;
 import org.springframework.boot.restclient.RestTemplateBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Optional;
 
 public class ControlledVocabularyRestApi extends GsrsEntityRestTemplate<AbstractGsrsControlledVocabularyDTO, Long> implements ControlledVocabularyApi {
-    public ControlledVocabularyRestApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, ObjectMapper mapper) {
+    public ControlledVocabularyRestApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, JsonMapper mapper) {
         super(restTemplateBuilder, baseUrl, "vocabularies", mapper);
     }
 
     @Override
     protected AbstractGsrsControlledVocabularyDTO parseFromJson(JsonNode node) {
-        return getObjectMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
+        return getMapper().convertValue(node, AbstractGsrsControlledVocabularyDTO.class);
     }
 
     @Override
@@ -27,9 +27,6 @@ public class ControlledVocabularyRestApi extends GsrsEntityRestTemplate<Abstract
     @Override
     public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) throws IOException {
         Optional<AbstractGsrsControlledVocabularyDTO> opt= findByResolvedId(domain);
-        if(opt.isPresent()){
-            return Optional.of((T) opt.get());
-        }
-        return Optional.empty();
+        return opt.map(abstractGsrsControlledVocabularyDTO -> (T) abstractGsrsControlledVocabularyDTO);
     }
 }

@@ -1,15 +1,7 @@
 package ix.ginas.models.v1;
 
-//import com.example.demo.GsrsAnalyzers;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import ix.core.EntityMapperOptions;
 import ix.core.models.*;
-import ix.ginas.models.serialization.KeywordDeserializer;
-import ix.ginas.models.serialization.KeywordListSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,15 +32,9 @@ public class ControlledVocabulary extends IxModel implements ForceUpdatableModel
     //The above is true, however, updates are broken without this,
     //as the JSON is used in the forms. Now that the ID is explicitly
     //ignored in the load, we should be fine. 
-    
-//    @JsonIgnore
-//    public Long getId() {
-//        return this.id;
-//    }
-	
+
     @Column(unique = true)
     @Indexable(name = "Domain", facet = true)
-//    @KeywordField(name = "Domain", searchable = Searchable.YES)
     public String domain;
 
 

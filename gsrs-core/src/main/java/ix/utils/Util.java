@@ -1,12 +1,11 @@
 package ix.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -836,9 +835,9 @@ public class Util {
     }
 
     public static List<String> toList(JsonNode an){
-    	return StreamUtil.forIterable(an)
-    			  .map(j->j.asText())
-		      	  .collect(Collectors.toList());    	
+        return StreamUtil.forIterable(an)
+                .map(j->j.asString())
+                .collect(Collectors.toList());
    	}
     
     

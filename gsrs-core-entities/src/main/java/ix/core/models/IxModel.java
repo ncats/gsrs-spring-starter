@@ -3,8 +3,6 @@ package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
 import ix.ginas.models.serialization.GsrsDateDeserializer;
 import ix.ginas.models.serialization.GsrsDateSerializer;
@@ -12,6 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Date;
 

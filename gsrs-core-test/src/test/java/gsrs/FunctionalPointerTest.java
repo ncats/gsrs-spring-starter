@@ -1,11 +1,8 @@
 package gsrs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.CachedSupplier;
+import ix.core.controllers.EntityFactory;
 import gsrs.junit.TestJsonUtil;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.pojopointer.LambdaParseRegistry;
@@ -25,6 +22,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 import static org.junit.Assert.assertEquals;
 
@@ -113,7 +112,7 @@ public class FunctionalPointerTest{
 	}
 
 	private static final JsonNode missingJson = CachedSupplier
-			.ofCallable(()->(new ObjectMapper())
+			.ofCallable(()-> EntityFactory.EntityMapper.FULL_ENTITY_MAPPER()
 							.readTree("{}")
 							.at("/missing"))
 			.get();
@@ -281,14 +280,14 @@ public class FunctionalPointerTest{
 	}
 
 	@Test
-	public void evaluateFunctionPointer() throws JsonProcessingException, IOException{
+	public void evaluateFunctionPointer() throws JacksonException, IOException{
 		evaluateEquals(this.currentLambdaTest.getObject(),
 				this.currentLambdaTest.getPointer(),
 				this.currentLambdaTest.getExpected());
 	}
 
 	@Test
-	public void evaluateFunctionPointerAfterRewrite() throws JsonProcessingException, IOException{
+	public void evaluateFunctionPointerAfterRewrite() throws JacksonException, IOException{
 		final String oldURI = this.currentLambdaTest.getPointer().toURIpath();
 
 		assertEquals(oldURI, PojoPointer.fromURIPath(oldURI).toURIpath());

@@ -1,8 +1,6 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.models.IxModel;
@@ -14,6 +12,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Created by sheilstk on 6/29/15.
@@ -79,8 +79,7 @@ public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	public boolean hidden=false;
 	public boolean selected=false;
 
-	public VocabularyTerm(){};
-
+	public VocabularyTerm(){}
 
 	@Override
 	protected void preUpdate(){
