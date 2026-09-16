@@ -13,6 +13,8 @@ import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.utils.pojopatch.PojoDiff;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 
 import jakarta.persistence.*;
@@ -73,14 +75,14 @@ public class Edit extends BaseModel {
     @Column(length=1024)
     public String path;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String comments;
     
     public String version=null;
 
     @Basic(fetch= FetchType.LAZY)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonIgnore
@@ -89,7 +91,7 @@ public class Edit extends BaseModel {
     public String oldValue; // value as Json
 
     @Basic(fetch= FetchType.LAZY)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonIgnore

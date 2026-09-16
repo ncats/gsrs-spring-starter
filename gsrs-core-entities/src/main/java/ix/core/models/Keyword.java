@@ -6,6 +6,8 @@ import ix.core.search.text.IndexableValueFromRaw;
 import ix.core.search.text.ReflectingIndexerAware;
 import ix.utils.PathStack;
 import ix.utils.pojopatch.PojoDiffAware;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import java.util.Objects;
@@ -19,7 +21,7 @@ public class Keyword extends Value implements ReflectingIndexerAware, PojoDiffAw
     @Column(length=255)
 
     public String term;
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     public String href;
 
