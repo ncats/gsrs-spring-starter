@@ -16,6 +16,8 @@ import gsrs.util.LegacyTypeSalter;
 import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import tools.jackson.databind.DeserializationFeature;
@@ -64,7 +66,7 @@ public class UserProfile extends IxModel{
 	private String salt;
 	public boolean systemAuth; // FDA, NIH employee
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	@Column(name="ROLES_JSON") //match GSRS 2.x schema
 	private String rolesJSON = null; // this is a silly, but quick way to

@@ -2,6 +2,9 @@ package ix.core.models;
 
 import java.util.Objects;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -31,7 +34,7 @@ public class UserSavedList {
 	
 	private String kind;
 	
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@Basic(fetch= FetchType.EAGER)
 	public String list;	
 	
