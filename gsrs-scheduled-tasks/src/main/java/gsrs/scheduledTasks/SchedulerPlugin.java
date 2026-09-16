@@ -22,8 +22,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 
 import gsrs.security.AdminService;
 import gsrs.springUtils.StaticContextAccessor;

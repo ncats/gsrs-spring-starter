@@ -1,10 +1,7 @@
 package ix.ginas.exporters;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Text;
 import ix.core.util.EntityUtils;
 import lombok.AllArgsConstructor;
@@ -12,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 @Builder
 @NoArgsConstructor
@@ -39,9 +38,9 @@ public class SpecificExporterSettings {
         return txt;
     }
 
-    public static SpecificExporterSettings fromText(Text text) throws JsonProcessingException {
+    public static SpecificExporterSettings fromText(Text text) throws JacksonException {
         log.trace("starting in fromText");
-        ObjectMapper mapper = new ObjectMapper();
+        EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
         SpecificExporterSettings conf = mapper.readValue(text.getValue(), SpecificExporterSettings.class);
         if(conf == null) {
             log.error("Error creating config from input {}", text.getValue());

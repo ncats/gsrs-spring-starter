@@ -5,17 +5,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
 import java.util.*;
-//import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.Pattern;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Pattern;
 
 import gsrs.GsrsFactoryConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +26,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.DefaultDataSourceConfig;
@@ -59,17 +58,12 @@ import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
+
 @Slf4j
 @Validated
 public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearchEntityController,  T,I> extends AbstractImportSupportingGsrsEntityController<C, T,I> {
 
-
-//    public EtagLegacySearchEntityController(String context, Pattern pattern) {
-//        super(context, pattern);
-//    }
-//    public EtagLegacySearchEntityController(String context, IdHelper idHelper) {
-//        super(context, idHelper);
-//    }
 
     @Autowired
     protected GsrsCache gsrscache;
@@ -98,6 +92,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Autowired
     private GsrsFactoryConfiguration factoryConfiguration;
 
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper mapper;
+
 //    public EtagLegacySearchEntityController() {super();}
 //    
 //    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
@@ -123,7 +121,7 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
 
      */
     @GetGsrsRestApiMapping("/export") //inventory -- lists what's available.  Eventually, provide more info...
-    public Object exportFormats(@RequestParam Map<String, String> parameters) throws Exception {
+    public Object exportFormats(@RequestParam Map<String, String> parameters) {
         return gsrsExportConfiguration.getAllSupportedFormats(getEntityService().getContext());
     }
 
@@ -212,7 +210,6 @@ GET     /$context<[a-z0-9_]+>/export/:etagId/:format               ix.core.contr
                         .collect(Collectors.toSet());
 
                 if(formats.isEmpty()) {
-                    ObjectMapper mapper= new ObjectMapper();
                     SpecificExporterSettings config = mapper.readValue(exportConfigId, SpecificExporterSettings.class);
                     if( config !=null) {
                         exportConfig=Optional.of(config);

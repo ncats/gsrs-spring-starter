@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -212,6 +212,7 @@ public class EntityPersistAdapter {
 
             return saved;
         } catch (Exception ex) {
+            log.error("Error during persistance: ", ex);
             throw new IllegalStateException(ex);
         } finally {
 //            if (lock.getTransaction() == null) {

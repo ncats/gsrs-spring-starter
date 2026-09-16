@@ -2,10 +2,6 @@ package gsrs.controller.hateoas;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.BeanViews;
 import lombok.AllArgsConstructor;
@@ -14,9 +10,9 @@ import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**

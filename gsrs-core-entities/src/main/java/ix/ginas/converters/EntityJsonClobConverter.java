@@ -1,6 +1,5 @@
 package ix.ginas.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import ix.core.controllers.EntityFactory;
 import ix.core.controllers.EntityFactory.EntityMapper;
 
@@ -24,7 +23,7 @@ public abstract class EntityJsonClobConverter<K> extends EntityClobConverter<K> 
 		}
 		try {
 			return em.readValue(bytes, cls);
-		} catch (JsonProcessingException e) {
+		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
 	}

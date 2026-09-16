@@ -2,13 +2,12 @@ package gsrs.imports;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.models.GinasCommonData;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Collections;
 import java.util.List;
@@ -145,7 +144,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     }
 
     @Override
-    public ImportAdapterFactory<GinasCommonData> newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader)  {
+    public ImportAdapterFactory<GinasCommonData> newImportAdapterFactory(JsonMapper mapper, ClassLoader classLoader)  {
 
         if(parameters !=null && !parameters.isEmpty()){
             return (ImportAdapterFactory<GinasCommonData>) mapper.convertValue(parameters, importAdapterFactoryClass);
@@ -161,7 +160,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     @Override
     public Class getStagingAreaServiceClass() {
         try {
-            return (Class<T>) Class.forName(this.stagingAreaServiceClass);
+            return Class.forName(this.stagingAreaServiceClass);
         } catch (ClassNotFoundException e) {
             log.error("Class {} not found", this.stagingAreaServiceClass);
             throw new RuntimeException(e);
@@ -186,7 +185,7 @@ public class DefaultImportAdapterFactoryConfig implements ImportAdapterFactoryCo
     @Override
     public Class getEntityServiceClass() {
         try {
-            return (Class<T>) Class.forName(this.entityServiceClass);
+            return Class.forName(this.entityServiceClass);
         } catch (ClassNotFoundException e) {
             log.error("Class {} not found", this.entityServiceClass);
             throw new RuntimeException(e);

@@ -4,11 +4,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCategory;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ public class ValidatorFactory {
     private final Map<ValidatorPlugin, ValidatorConfig> plugins = new LinkedHashMap<>();
 
 
-    public ValidatorFactory(List<? extends ValidatorConfig> configs, ObjectMapper mapper){
+    public ValidatorFactory(List<? extends ValidatorConfig> configs, GsrsJsonMapper mapper){
        for(ValidatorConfig conf : configs){
            try {
 
