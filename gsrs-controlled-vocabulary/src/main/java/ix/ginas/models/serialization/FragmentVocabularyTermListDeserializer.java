@@ -13,6 +13,10 @@ import java.util.List;
 
 public class FragmentVocabularyTermListDeserializer extends StdDeserializer<List<VocabularyTerm>> {
 
+    public FragmentVocabularyTermListDeserializer() {
+        this(List.class);
+    }
+
     protected FragmentVocabularyTermListDeserializer(Class<?> vc) {
         super(vc);
     }
