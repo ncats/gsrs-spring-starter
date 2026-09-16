@@ -13,6 +13,9 @@ import java.util.List;
 
 public class CodeSystemVocabularyTermListDeserializer extends StdDeserializer<List<VocabularyTerm>> {
 
+    public CodeSystemVocabularyTermListDeserializer() {
+        this(List.class);
+    }
 
     protected CodeSystemVocabularyTermListDeserializer(Class<?> vc) {
         super(vc);
