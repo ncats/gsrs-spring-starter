@@ -411,19 +411,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
 
     protected StagingAreaService getDefaultStagingAreaService() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-/*
-        if(_stagingAreaService == null) {
-            lock.lock();
-            try {
-                if(_stagingAreaService==null) {
-                    _stagingAreaService = gsrsImportAdapterFactoryFactory.getStagingAreaService(getEntityService().getContext());
-                }
-            }finally {
-                lock.unlock();
-            }
-        }
-        return _stagingAreaService;
-*/
     }
 
     //STEP 0: list adapter classes

@@ -21,7 +21,7 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     public final static String IMPORT_METADATA_VALIDATION_TYPE_FACET="Validation Type";
     public final static String IMPORT_METADATA_VALIDATION_MESSAGE_FACET="Validation Message";
 
-    //@Autowired
+    @Autowired
     StagingAreaService stagingAreaService;
 
     @Autowired
