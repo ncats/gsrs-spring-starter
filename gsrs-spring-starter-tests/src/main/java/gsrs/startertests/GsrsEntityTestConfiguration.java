@@ -10,9 +10,6 @@ import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.indexer.IndexerEventFactoryFactory;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.services.PrivilegeService;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.stagingarea.service.DefaultStagingAreaService;
-import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.Lucene4IndexServiceFactory;
@@ -78,13 +75,5 @@ public class GsrsEntityTestConfiguration {
     @Order
     @ConditionalOnMissingBean
     public UserSavedListService userSavedListService() {return new UserSavedListService();}
-
-    @Bean
-    @ConditionalOnMissingBean
-    public StagingAreaService getStagingAreaService() {
-        StagingAreaService serviceForTests = new DefaultStagingAreaService<>();
-        serviceForTests= AutowireHelper.getInstance().autowireAndProxy(serviceForTests);
-        return serviceForTests;
-    }
 }
 
