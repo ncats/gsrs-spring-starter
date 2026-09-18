@@ -73,7 +73,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
-    @Autowired
+    @Autowired(required = false)
     private ImportMetadataLegacySearchService importMetadataLegacySearchService;
 
     @Autowired
@@ -474,10 +474,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
             try {
-                log.trace("going to instantiate importMetadataLegacySearchService");
-                importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
-                AutowireHelper.getInstance().autowire(importMetadataLegacySearchService);
-                SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
+                ImportMetadataLegacySearchService searchService = importMetadataLegacySearchService;
+                if (searchService == null) {
+                    searchService = new ImportMetadataLegacySearchService(metadataRepository);
+                    AutowireHelper.getInstance().autowire(searchService);
+                }
+                SearchResult searchResult = searchService.search(searchRequest.getQuery(), searchRequest.getOptions());
                 return searchResult;
             } catch (Exception e) {
                 log.error("Error running search", e);
