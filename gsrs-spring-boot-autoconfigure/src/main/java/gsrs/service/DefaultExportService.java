@@ -2,8 +2,8 @@ package gsrs.service;
 
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.controllers.EntityFactory;
-import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -28,9 +28,9 @@ public class DefaultExportService implements ExportService{
 
     private File rootDir;
 
-    private ConcurrentHashMap<String,ExportMetaData> inProgress = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,ExportMetaData> inProgress = new ConcurrentHashMap<>();
     
-    private static Logger log = LoggerFactory.getLogger(DefaultExportService.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultExportService.class);
 
     //in GSRS 2.x we never cleared our inProgress map !!
     //maybe use spring schedule
@@ -124,8 +124,7 @@ public class DefaultExportService implements ExportService{
         //might be a better way to do this as a one-liner using paths
         //but I don't think Path's path can contain null
         String username = metadata.username;
-        ExportDir.ExportFile<ExportMetaData> exportFile =  createExportFileFor(metadata, username);
-
+        ExportDir.ExportFile<ExportMetaData> exportFile = createExportFileFor(metadata, username);
 
         inProgress.put(metadata.id, metadata);
         return new ExportProcess<T>(exportFile, substanceSupplier);
@@ -134,7 +133,10 @@ public class DefaultExportService implements ExportService{
     private ExportDir.ExportFile<ExportMetaData> createExportFileFor(ExportMetaData metadata, String username){
         File exportDir = new File(rootDir,username);
         try {
-            return new ExportDir<>(exportDir, ExportMetaData.class).createFile(metadata.getFilename(), metadata);
+            ExportDir dirObject = new ExportDir<>(exportDir, ExportMetaData.class);
+            AutowireHelper.getInstance().autowireAndProxy(dirObject);
+            ExportDir.ExportFile exportFile = dirObject.createFile(metadata.getFilename(), metadata);
+            return exportFile;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
