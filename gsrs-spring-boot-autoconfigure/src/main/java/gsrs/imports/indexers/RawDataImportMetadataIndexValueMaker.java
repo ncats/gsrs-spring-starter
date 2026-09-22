@@ -22,7 +22,8 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     @Autowired
     IndexValueMakerFactory realFactory;
 
-    StagingAreaService stagingAreaService = null;
+    @Autowired
+    StagingAreaService stagingAreaService;
 
     @Autowired
     ImportDataRepository importDataRepository;
