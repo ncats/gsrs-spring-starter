@@ -1,6 +1,5 @@
 package gsrs.controller;
 
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Principal;
@@ -96,18 +95,10 @@ public abstract class EtagLegacySearchEntityController<C extends EtagLegacySearc
     @Qualifier("legacyJsonMapper")
     JsonMapper mapper;
 
-//    public EtagLegacySearchEntityController() {super();}
-//    
-//    public EtagLegacySearchEntityController(ResultListRecordGenerator resultListRecordGenerator) {
-//    	super(resultListRecordGenerator);
-//    }
-
     @Override
     protected Object createSearchResponse(List<Object> results, SearchResult result, HttpServletRequest request) {
         return saveAsEtag(results, result, request);
     }
-
-//    private final static Pattern ALPHANUMERIC = Pattern.compile("^[a-zA-Z0-9-]*$");
 
     protected abstract Stream<T> filterStream(Stream<T> stream, boolean publicOnly, Map<String, String> parameters);
 

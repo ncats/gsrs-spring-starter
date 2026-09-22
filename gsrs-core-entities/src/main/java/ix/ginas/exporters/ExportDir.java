@@ -1,6 +1,8 @@
 package ix.ginas.exporters;
 
 import gov.nih.ncats.common.io.IOUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -14,9 +16,10 @@ public class ExportDir<T> {
 
     private final File metaDir;
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .build();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
+
     private final Class<? extends T> defaultType;
 
     public ExportDir(File dir, Class<? extends T> type) {
