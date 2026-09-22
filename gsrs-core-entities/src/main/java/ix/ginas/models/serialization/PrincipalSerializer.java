@@ -1,18 +1,20 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import ix.core.models.Principal;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
-
-public class PrincipalSerializer extends JsonSerializer<Principal> {
+public class PrincipalSerializer extends ValueSerializer<Principal> {
     public PrincipalSerializer () {}
     public void serialize (Principal p, JsonGenerator jgen,
-                           SerializerProvider provider)
-        throws IOException, JsonProcessingException {
-        provider.defaultSerializeValue(p.username, jgen);
+                           SerializationContext context)
+        throws JacksonException {
+        if (p == null || p.username == null) {
+            jgen.writeNull();
+        } else {
+            jgen.writeString(p.username);
+        }
     }
 }

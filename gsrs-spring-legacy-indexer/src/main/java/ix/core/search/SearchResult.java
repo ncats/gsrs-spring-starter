@@ -28,6 +28,8 @@ import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.controller.GsrsControllerUtil;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.cache.GsrsCache;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.cache.CacheStrategy;
 import ix.core.models.BaseModel;
 import ix.core.models.Facet;
@@ -815,12 +817,47 @@ public class SearchResult {
      * @return
      */
     public static SearchResult fromContext(SearchResultContext ctx, SearchOptions options){
-        @SuppressWarnings("unchecked")
-        LazyList<Key,Object> ll = (LazyList<Key,Object>)LazyList
-                            .of(ctx.getResults(),o-> EntityWrapper.of(o).getKey());
+        LazyList<Key,Object> ll = new LazyList<>(o -> {
+            if (o instanceof Key) {
+                return (Key) o;
+            }
+            return EntityWrapper.of(o).getKey();
+        });
+
+        for (Object item : ctx.getResults()) {
+            if (item instanceof Key) {
+                final Key key = (Key) item;
+                ll.addCallable(new LazyList.NamedCallable<Key, Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        return key.fetchReadOnlyFull()
+                                .map(EntityWrapper::getValue)
+                                .orElse(null);
+                    }
+
+                    @Override
+                    public Key getName() {
+                        return key;
+                    }
+                });
+            } else {
+                final Object value = item;
+                final Key key = EntityWrapper.of(item).getKey();
+                ll.addCallable(new LazyList.NamedCallable<Key, Object>() {
+                    @Override
+                    public Object call() {
+                        return value;
+                    }
+
+                    @Override
+                    public Key getName() {
+                        return key;
+                    }
+                });
+            }
+        }
         
-        
-        return createBuilder()
+        SearchResult result = createBuilder()
                     .options(options)
                     .stop(TimeUtil.getCurrentTimeMillis())
                     .matches(ll)
@@ -828,6 +865,25 @@ public class SearchResult {
                     .key(ctx.getKey() + "/result")
                     .count(ll.size())
                     .build();
+        result.setSummary(ctx.getSummary() != null ? ctx.getSummary() : resolveBulkSummary(ctx));
+        return result;
+    }
+
+    private static BulkQuerySummary resolveBulkSummary(SearchResultContext ctx) {
+        if (ctx == null || ctx.getKey() == null) {
+            return null;
+        }
+
+        GsrsCache cache = StaticContextAccessor.getBean(GsrsCache.class);
+        if (cache == null) {
+            return null;
+        }
+
+        Object cachedSummary = cache.getRaw("BulkSearchSummary/" + ctx.getKey());
+        if (cachedSummary instanceof BulkQuerySummary) {
+            return (BulkQuerySummary) cachedSummary;
+        }
+        return null;
     }
 
 

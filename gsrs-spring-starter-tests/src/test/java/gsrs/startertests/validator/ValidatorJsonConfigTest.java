@@ -1,18 +1,16 @@
 package gsrs.startertests.validator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.startertests.GsrsSpringApplication;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.validator.ValidatorConfig;
+import ix.core.controllers.EntityFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Parsing from JSON requires a whole spring boot app
@@ -32,13 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @ContextConfiguration(classes = GsrsSpringApplication.class)
 public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
 
-
-    private ObjectMapper mapper = new ObjectMapper();
-
+    private final EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
     //This test fails when run along with the others but passes when run by itself
     @Test
-    public void jsonCreateConfigUsingParameters() throws ClassNotFoundException, JsonProcessingException {
+    public void jsonCreateConfigUsingParameters() throws ClassNotFoundException {
 
         String json = "{\n" +
                 "    \"validatorClass\" : \""+ MyValidator.class.getName() +"\",\n" +
@@ -54,7 +50,7 @@ public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
 
     }
     @Test
-    public void jsonCreateConfigUsingUnknownField() throws ClassNotFoundException, JsonProcessingException {
+    public void jsonCreateConfigUsingUnknownField() throws ClassNotFoundException {
 
         String json = "{\n" +
                 "    \"validatorClass\" : \""+ MyValidator.class.getName() +"\",\n" +
@@ -70,7 +66,7 @@ public class ValidatorJsonConfigTest extends AbstractGsrsJpaEntityJunit5Test {
 
     }
     @Test
-    public void jsonCreateConfigUsingParametersTrumpsUnknownField() throws ClassNotFoundException, JsonProcessingException {
+    public void jsonCreateConfigUsingParametersTrumpsUnknownField() throws ClassNotFoundException {
 
         String json = "{\n" +
                 "    \"validatorClass\" : \""+ MyValidator.class.getName() +"\",\n" +

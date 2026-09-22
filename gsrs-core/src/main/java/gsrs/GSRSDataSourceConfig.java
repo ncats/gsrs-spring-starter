@@ -63,11 +63,13 @@ public abstract class GSRSDataSourceConfig {
         Optional<String> newIDGen = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.hibernate.use-new-id-generator-mappings", "spring.jpa.hibernate.use-new-id-generator-mappings", "true");
         Optional<String> dirtiness = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.entity_dirtiness_strategy", "spring.jpa.properties.hibernate.entity_dirtiness_strategy", "gsrs.GsrsEntityDirtinessStrategy");
         Optional<String> formatSQL = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.format_sql", "hibernate.format_sql");
+        // Avoid deep eager to-one outer-join trees that exceed MariaDB's 61-table join limit.
+        Optional<String> maxFetchDepth = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.hibernate.max_fetch_depth", "spring.jpa.properties.hibernate.max_fetch_depth", "0");
 
         // Allows schema generation for both default and non-default datasources; perviously worked only for default
-        Optional<String> schemaGenerationCreateSource = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.create-source", "spring.jpa.properties.javax.persistence.schema-generation.create-source");
-        Optional<String> schemaGenerationScriptsAction = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.scripts.action", "spring.jpa.properties.javax.persistence.schema-generation.scripts.action");
-        Optional<String> schemaGenerationScriptsCreateTarget = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.javax.persistence.schema-generation.scripts.create-target", "spring.jpa.properties.javax.persistence.schema-generation.scripts.create-target");
+        Optional<String> schemaGenerationCreateSource = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.create-source", "spring.jpa.properties.jakarta.persistence.schema-generation.create-source");
+        Optional<String> schemaGenerationScriptsAction = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.scripts.action", "spring.jpa.properties.jakarta.persistence.schema-generation.scripts.action");
+        Optional<String> schemaGenerationScriptsCreateTarget = getProperty(DATASOURCE_PROPERTY_PATH_PREFIX + ".jpa.properties.jakarta.persistence.schema-generation.scripts.create-target", "spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target");
 
         log.debug("dialect:" + dialect.orElse(null));
         log.debug("Show SQL:" + showSQL.orElse(null));
@@ -75,6 +77,7 @@ public abstract class GSRSDataSourceConfig {
         log.debug("use-new-id-generator-mappings:" + newIDGen.orElse(null));
         
         log.debug("dirtiness Strat:" + dirtiness.orElse(null));
+        log.debug("max fetch depth:" + maxFetchDepth.orElse(null));
 
         ddlSetting.ifPresent(d->map.put("hibernate.hbm2ddl.auto", d));
         showSQL.ifPresent(d->map.put("hibernate.show_sql", d));
@@ -83,12 +86,13 @@ public abstract class GSRSDataSourceConfig {
         newIDGen.ifPresent(d->map.put("hibernate.use-new-id-generator-mappings", d));
         newIDGen.ifPresent(d->map.put("hibernate.id.new_generator_mappings", d));
         formatSQL.ifPresent(d->map.put("hibernate.format_sql", d));
+        maxFetchDepth.ifPresent(d->map.put("hibernate.max_fetch_depth", d));
 
         dirtiness.ifPresent(d->map.put("hibernate.entity_dirtiness_strategy", d));
 
-        schemaGenerationCreateSource.ifPresent(d->map.put("javax.persistence.schema-generation.create-source", d));
-        schemaGenerationScriptsAction.ifPresent(d->map.put("javax.persistence.schema-generation.scripts.action", d));
-        schemaGenerationScriptsCreateTarget.ifPresent(d->map.put("javax.persistence.schema-generation.scripts.create-target", d));
+        schemaGenerationCreateSource.ifPresent(d->map.put("jakarta.persistence.schema-generation.create-source", d));
+        schemaGenerationScriptsAction.ifPresent(d->map.put("jakarta.persistence.schema-generation.scripts.action", d));
+        schemaGenerationScriptsCreateTarget.ifPresent(d->map.put("jakarta.persistence.schema-generation.scripts.create-target", d));
 
         //This doesn't seem ideal ... but it may be the only way
         map.put("hibernate.physical_naming_strategy", PhysicalNamingStrategyStandardImpl.class.getName());

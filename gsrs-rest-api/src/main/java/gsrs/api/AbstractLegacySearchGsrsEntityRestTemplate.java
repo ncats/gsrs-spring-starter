@@ -1,12 +1,12 @@
 package gsrs.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.util.SanitizerUtil;
 import lombok.*;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.util.*;
 
 public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends GsrsEntityRestTemplate<T, I>{
 
-    public AbstractLegacySearchGsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, ObjectMapper mapper) {
+    public AbstractLegacySearchGsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, JsonMapper mapper) {
         super(restTemplateBuilder, baseUrl, context, mapper);
     }
 
@@ -56,13 +56,13 @@ public abstract class AbstractLegacySearchGsrsEntityRestTemplate<T,I> extends Gs
         }
         ResponseEntity<String> response = doGet(builder.toString(), String.class);
 
-        JsonNode node = getObjectMapper().readTree(response.getBody());
+        JsonNode node = getMapper().readTree(response.getBody());
 
 
         if(response.getStatusCode().is2xxSuccessful()) {
             //stupid hack remove content, parse it by passing to concrete template class, then and add it back
             JsonNode array = ((ObjectNode)node).remove("content");
-            SearchResult<T> result =  getObjectMapper().convertValue(node, getSearchResultClass());
+            SearchResult<T> result =  getMapper().convertValue(node, getSearchResultClass());
             if(array.isArray()) {
                 List<T> content = parseFromJsonList(array);
                 result.setContent(content);

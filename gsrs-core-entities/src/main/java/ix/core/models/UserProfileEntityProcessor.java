@@ -5,8 +5,8 @@ import gsrs.springUtils.AutowireHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.PostPersist;
-import javax.persistence.PostUpdate;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostUpdate;
 
 @Component
 public class UserProfileEntityProcessor {

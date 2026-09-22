@@ -1,11 +1,14 @@
 package ix.core.models;
 
-import javax.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.*;
 
 @Entity
 @DiscriminatorValue("TXT")
 public class Text extends Value {
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String text;
 

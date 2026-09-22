@@ -1,22 +1,20 @@
 package ix.core;
 
 import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.boot.model.naming.ImplicitBasicColumnNameSource;
-import org.hibernate.boot.model.naming.ImplicitJoinColumnNameSource;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
 import org.hibernate.boot.spi.MetadataBuildingContext;
-import org.hibernate.cfg.ImprovedNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl;
 
 public class EbeanLikeImplicitNamingStategy extends ImplicitNamingStrategyLegacyJpaImpl {
     private static final long serialVersionUID = 1L;
-    private static final ImprovedNamingStrategy STRATEGY_INSTANCE = new ImprovedNamingStrategy();
+    private static final PhysicalNamingStrategySnakeCaseImpl STRATEGY_INSTANCE = new PhysicalNamingStrategySnakeCaseImpl();
 
 //
 //    
     @Override
     protected Identifier toIdentifier(String stringForm,
             MetadataBuildingContext buildingContext) {
-        Identifier id = super.toIdentifier(STRATEGY_INSTANCE.columnName(stringForm), buildingContext);
+        Identifier id = super.toIdentifier(STRATEGY_INSTANCE.toPhysicalColumnName(Identifier.toIdentifier(stringForm), buildingContext.getMetadataCollector().getDatabase().getJdbcEnvironment()).getText(), buildingContext);
 //        System.out.println("ID from:" + stringForm + " is " + id.toString());
         return id;
     }

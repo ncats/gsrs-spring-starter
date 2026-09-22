@@ -1,17 +1,18 @@
 package gsrs.cv.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.GsrsEntityRestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -28,19 +29,21 @@ public class CvApiTest {
     private MockRestServiceServer mockRestServiceServer;
 
     @Autowired
-    private ObjectMapper mapper;
+    RestTemplateBuilder restTemplateBuilder;
 
     @Autowired
-    RestTemplateBuilder restTemplateBuilder;
-    @Autowired
     private ControlledVocabularyRestApi api;
+
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @TestConfiguration
     static class Testconfig{
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(RestTemplateBuilder restTemplateBuilder){
 
-            return new ControlledVocabularyRestApi(restTemplateBuilder, "http://example.com", new ObjectMapper());
+            return new ControlledVocabularyRestApi(restTemplateBuilder, "http://example.com", mapper);
         }
     }
     @BeforeEach

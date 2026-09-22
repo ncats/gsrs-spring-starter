@@ -1,7 +1,7 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.security.MessageDigest;
 
 @Entity

@@ -1,10 +1,9 @@
 package gsrs.cv.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -13,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ParseJsonTest {
 
-    ObjectMapper mapper = new ObjectMapper();
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
     @Test
-    public void parseSingleDTOWithDefaultCVTerm() throws JsonProcessingException {
+    public void parseSingleDTOWithDefaultCVTerm() {
         String json = "{\"id\":1795,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"domain\":\"ACCESS_GROUP\",\"vocabularyTermType\":\"ix.ginas.models.v1.ControlledVocabulary\",\"fields\":[\"ACCESS\"],\"editable\":false,\"filterable\":false,\"terms\":[{\"id\":43473,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"protected\",\"display\":\"PROTECTED\",\"filters\":[],\"hidden\":false,\"selected\":false},{\"id\":43474,\"version\":1,\"created\":1473443705000,\"modified\":1612668776000,\"deprecated\":false,\"value\":\"admin\",\"display\":\"admin\",\"filters\":[],\"hidden\":false,\"selected\":false}]}";
 
         AbstractGsrsControlledVocabularyDTO sut = mapper.readValue(json, AbstractGsrsControlledVocabularyDTO.class);
@@ -52,7 +51,7 @@ public class ParseJsonTest {
     }
 
     @Test
-    public void parseSingleDTOWithCodeSystemCVTerm() throws JsonProcessingException {
+    public void parseSingleDTOWithCodeSystemCVTerm() {
         String json ="{\"id\":1803,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"domain\":\"CODE_SYSTEM\",\"vocabularyTermType\":\"ix.ginas.models.v1.CodeSystemControlledVocabulary\",\"fields\":[\"codes.codeSystem\"],\"editable\":true,\"filterable\":false,\"terms\":[{\"id\":43669,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"WHO-ATC\",\"display\":\"WHO-ATC\",\"description\":\"\",\"filters\":[],\"hidden\":false,\"selected\":false,\"systemCategory\":\"PHARMCLASS\"},{\"id\":43670,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"ITIS\",\"display\":\"ITIS\",\"description\":\"\",\"filters\":[],\"hidden\":false,\"selected\":false,\"systemCategory\":\"ORGANISM\"}]}";
 
         AbstractGsrsControlledVocabularyDTO sut = mapper.readValue(json, AbstractGsrsControlledVocabularyDTO.class);
@@ -96,7 +95,7 @@ public class ParseJsonTest {
     }
 
     @Test
-    public void parseSingleDTOWithFragmentCvTerm() throws IOException {
+    public void parseSingleDTOWithFragmentCvTerm()  {
         String json = "{\"id\":1799,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"domain\":\"AMINO_ACID_RESIDUE\",\"vocabularyTermType\":\"ix.ginas.models.v1.FragmentControlledVocabulary\",\"fields\":[],\"editable\":true,\"filterable\":false,\"terms\":[{\"id\":43623,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"A\",\"display\":\"Alanine\",\"description\":\"Ala\",\"origin\":\"OF5P57N2ZX\",\"filters\":[],\"hidden\":false,\"selected\":false,\"fragmentStructure\":\"C[C@H](N[*])C([*])=O |$;;;_R1;;_R2;$|\",\"simplifiedStructure\":\"C[C@H](N)C(O)=O\"},{\"id\":43624,\"version\":1,\"created\":1473443705000,\"modified\":1612668777000,\"deprecated\":false,\"value\":\"C\",\"display\":\"Cysteine\",\"description\":\"Cys\",\"origin\":\"K848JZ4886\",\"filters\":[],\"hidden\":false,\"selected\":false,\"fragmentStructure\":\"[*]N[C@@H](CS[*])C([*])=O |$_R1;;;;;_R3;;_R2;$|\",\"simplifiedStructure\":\"N[C@@H](CS)C(O)=O\"}]}";
 
         AbstractGsrsControlledVocabularyDTO sut = mapper.readValue(json, AbstractGsrsControlledVocabularyDTO.class);

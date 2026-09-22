@@ -1,8 +1,6 @@
 package ix.ginas.exporters;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gov.nih.ncats.common.io.IOUtil;
 
 import java.io.Closeable;

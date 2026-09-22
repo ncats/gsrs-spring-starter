@@ -1,7 +1,7 @@
 package gsrs.model;
 
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
