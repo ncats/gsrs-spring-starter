@@ -2,7 +2,6 @@ package gsrs.service;
 
 import gov.nih.ncats.common.io.IOUtil;
 import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.springUtils.AutowireHelper;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
@@ -11,8 +10,10 @@ import ix.ginas.exporters.ExportProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.*;
 import java.util.*;
@@ -32,6 +33,14 @@ public class DefaultExportService implements ExportService{
     
     private static final Logger log = LoggerFactory.getLogger(DefaultExportService.class);
 
+    private JsonMapper mapper;
+
+    private ExportDir<ExportMetaData> exportDir(String username) {
+        return new ExportDir<>(
+            new File(rootDir, username),
+                ExportMetaData.class,
+                mapper);
+    }
     //in GSRS 2.x we never cleared our inProgress map !!
     //maybe use spring schedule
 //    @Scheduled(fixedDelay = 1000* 60 * 60 ) // every hour?
@@ -50,9 +59,10 @@ public class DefaultExportService implements ExportService{
         }
     }
     @Autowired
-    public DefaultExportService(GsrsExportConfiguration config){
+    public DefaultExportService(GsrsExportConfiguration config, @Qualifier("legacyJsonMapper") JsonMapper mapper){
         this.config = config;
         rootDir = config.getPath();
+        this.mapper = Objects.requireNonNull(mapper);
     }
     
     // TODO: this probably isn't ideal. It's used for cases where we want an alternative
@@ -65,8 +75,9 @@ public class DefaultExportService implements ExportService{
     }
     @Override
     public Optional<ExportDir.ExportFile<ExportMetaData>> getFile(String username, String filename) throws IOException {
-            return new ExportDir<>(new File(rootDir, username), ExportMetaData.class).getFile(filename);
-        }
+        ExportDir exportDir = new ExportDir<>(new File(rootDir, username), ExportMetaData.class, mapper);
+        return exportDir.getFile(filename);
+    }
 
     private static File getExportMetaDirFor(File parentDir){
         File metaDirectory = new File(parentDir, "meta");
@@ -133,8 +144,7 @@ public class DefaultExportService implements ExportService{
     private ExportDir.ExportFile<ExportMetaData> createExportFileFor(ExportMetaData metadata, String username){
         File exportDir = new File(rootDir,username);
         try {
-            ExportDir dirObject = new ExportDir<>(exportDir, ExportMetaData.class);
-            AutowireHelper.getInstance().autowireAndProxy(dirObject);
+            ExportDir dirObject = new ExportDir<>(exportDir, ExportMetaData.class, mapper);
             ExportDir.ExportFile exportFile = dirObject.createFile(metadata.getFilename(), metadata);
             return exportFile;
         } catch (IOException e) {
@@ -173,7 +183,7 @@ public class DefaultExportService implements ExportService{
 
         Optional<ExportDir.ExportFile<ExportMetaData>> downloadFile = null;
         try {
-            downloadFile = new ExportDir<>(new File(rootDir, meta.username), ExportMetaData.class).getFile(meta.getFilename());
+            downloadFile = new ExportDir<>(new File(rootDir, meta.username), ExportMetaData.class, mapper).getFile(meta.getFilename());
         } catch (IOException e) {
             e.printStackTrace();
         }
