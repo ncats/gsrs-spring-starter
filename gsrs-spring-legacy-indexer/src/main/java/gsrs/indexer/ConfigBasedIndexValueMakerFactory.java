@@ -20,15 +20,16 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
 
     private List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confList;
 
-    private JsonMapper jsonMapper;
+    private final JsonMapper jsonMapper;
 
-    private CachedSupplier<List<IndexValueMaker>> indexers = CachedSupplier.runOnce(()->{
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final CachedSupplier<List<IndexValueMaker>> indexers;
+
+    private List<IndexValueMaker> createIndexers() {
         List<IndexValueMaker> ivms = confList.stream()
                 .map(c ->{
                     IndexValueMaker indexer =null;
                     if(c.getParameters() !=null){
-                        indexer= (IndexValueMaker) mapper.convertValue(c.getParameters(), c.getIndexer());
+                        indexer= (IndexValueMaker) jsonMapper.convertValue(c.getParameters(), c.getIndexer());
                     }else{
                         try {
                             indexer= (IndexValueMaker) c.getIndexer().newInstance();
@@ -44,7 +45,7 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return ivms;
-    });
+    }
 
     private CachedSupplier<Map<Class, List<IndexValueMaker>>> map;
     public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers,
@@ -55,7 +56,9 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
 
     public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry,
                                              JsonMapper jsonMapper) {
+        this.jsonMapper = Objects.requireNonNull(jsonMapper);
         this.confList = new ArrayList<>(confs);
+        this.indexers = CachedSupplier.runOnce(this::createIndexers);
         map = CachedSupplier.of( ()->{
             Map<Class, List<IndexValueMaker>> valueMakersMap = new ConcurrentHashMap<>();
 
@@ -70,8 +73,6 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
             }
             return valueMakersMap;
         });
-
-        this.jsonMapper = Objects.requireNonNull(jsonMapper);
     }
     @Override
     public IndexValueMaker createIndexValueMakerFor(EntityUtils.EntityWrapper<?> ew) {
