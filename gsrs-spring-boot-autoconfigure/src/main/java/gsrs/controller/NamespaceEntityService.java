@@ -1,6 +1,6 @@
 package gsrs.controller;
 
-import tools.jackson.databind.DeserializationFeature;
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+
 @Service
 public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace, Long> {
 
@@ -23,9 +24,9 @@ public class NamespaceEntityService extends AbstractGsrsEntityService<Namespace,
     @Autowired
     private NamespaceRepository namespaceRepository;
 
-    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .build();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper mapper;
 
     public NamespaceEntityService() {
         super(CONTEXT, IdHelpers.NUMBER, null, null, null);

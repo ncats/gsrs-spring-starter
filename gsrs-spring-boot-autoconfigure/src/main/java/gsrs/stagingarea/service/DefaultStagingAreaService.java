@@ -1,5 +1,6 @@
 package gsrs.stagingarea.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -93,9 +94,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .build();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper jsonMapper;
 
     @PostConstruct
     public void setupIndexer() {

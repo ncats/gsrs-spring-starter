@@ -115,9 +115,6 @@ public class ImportUtilities<T> {
             entityClass));
 
     public static void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
         if (metadata != null) {
             String metadataAsString;
             try {

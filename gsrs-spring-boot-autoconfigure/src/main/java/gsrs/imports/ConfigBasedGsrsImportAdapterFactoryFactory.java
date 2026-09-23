@@ -8,6 +8,7 @@ import gsrs.stagingarea.service.StagingAreaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -22,6 +23,10 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper mapper;
+
     private final static Map<String, Class<T>> serviceMap = new HashMap<>();
 
     private final static Map<String, StagingAreaService> serviceInstanceMap = new HashMap<>();
@@ -32,9 +37,6 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     public <T> List<ImportAdapterFactory<T>> newFactory(String context, Class <T> clazz) {
         log.trace("newFactory.  clazz: " + clazz.getName());
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
         return configs.stream().map(c ->
                 {
                     try {
@@ -80,8 +82,6 @@ public class ConfigBasedGsrsImportAdapterFactoryFactory implements GsrsImportAda
     @Override
     public <T> List<ClientFriendlyImportAdapterConfig> getConfiguredAdapters(String context, Class <T> clazz) {
         List<? extends ImportAdapterFactoryConfig> configs = gsrsFactoryConfiguration.getImportAdapterFactories(context);
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
         return configs.stream().map(c ->
                 {
                     try {

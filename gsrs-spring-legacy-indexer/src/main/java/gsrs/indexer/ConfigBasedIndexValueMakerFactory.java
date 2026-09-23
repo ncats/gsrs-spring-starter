@@ -20,6 +20,8 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
 
     private List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confList;
 
+    private JsonMapper jsonMapper;
+
     private CachedSupplier<List<IndexValueMaker>> indexers = CachedSupplier.runOnce(()->{
         JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         List<IndexValueMaker> ivms = confList.stream()
@@ -45,12 +47,14 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
     });
 
     private CachedSupplier<Map<Class, List<IndexValueMaker>>> map;
-    public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers ) {
-        this(indexers, null);
+    public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers,
+                                              JsonMapper jsonMapper ) {
+        this(indexers, null, jsonMapper);
     }
     public List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> getConfList() { return this.confList;}
 
-    public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry){
+    public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry,
+                                             JsonMapper jsonMapper) {
         this.confList = new ArrayList<>(confs);
         map = CachedSupplier.of( ()->{
             Map<Class, List<IndexValueMaker>> valueMakersMap = new ConcurrentHashMap<>();
@@ -67,7 +71,7 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
             return valueMakersMap;
         });
 
-
+        this.jsonMapper = Objects.requireNonNull(jsonMapper);
     }
     @Override
     public IndexValueMaker createIndexValueMakerFor(EntityUtils.EntityWrapper<?> ew) {
