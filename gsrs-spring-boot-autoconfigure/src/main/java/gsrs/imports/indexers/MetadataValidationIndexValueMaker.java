@@ -22,9 +22,6 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     public final static String IMPORT_METADATA_VALIDATION_MESSAGE_FACET="Validation Message";
 
     @Autowired
-    StagingAreaService stagingAreaService;
-
-    @Autowired
     private GsrsImportAdapterFactoryFactory gsrsImportAdapterFactoryFactory;
 
     @Override
@@ -35,16 +32,16 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
     @Override
     public void createIndexableValues(ImportMetadata importMetadata, Consumer<IndexableValue> consumer) {
         log.trace("In createIndexableValues");
-        if(stagingAreaService ==null) {
-            try {
-                String contextName = EntityContextLookup.getContextFromEntityClass( importMetadata.getEntityClassName());
-                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
-            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                log.error("Error creating staging area service!");
-                throw new RuntimeException(e);
-            }
-        }
-        if( importMetadata.getInstanceId()==null) {
+        StagingAreaService stagingAreaService;
+
+        try {
+             String contextName = EntityContextLookup.getContextFromEntityClass( importMetadata.getEntityClassName());
+             stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
+         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+             log.error("Error creating staging area service!");
+             throw new RuntimeException(e);
+         }
+         if( importMetadata.getInstanceId()==null) {
             log.warn("importMetadata.getInstanceId() null! ");
             return;
         }
@@ -53,6 +50,10 @@ public class MetadataValidationIndexValueMaker implements IndexValueMaker<Import
         if(validations == null || validations.isEmpty()) {
             log.info("No validations found; going to validate before computing facets");
             ValidationResponse validationResponse = stagingAreaService.validateInstance(importMetadata.getInstanceId().toString());
+            if (validationResponse == null) {
+                log.error("Validation returned null for instance {}", importMetadata.getInstanceId());
+                return;
+            }
             validationResponse.getValidationMessages().forEach(vm -> {
                 consumer.accept(IndexableValue.simpleFacetStringValue(IMPORT_METADATA_VALIDATION_TYPE_FACET,
                         String.valueOf(((ValidationMessage) vm).getMessageType())));

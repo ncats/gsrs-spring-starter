@@ -23,9 +23,6 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     IndexValueMakerFactory realFactory;
 
     @Autowired
-    StagingAreaService stagingAreaService;
-
-    @Autowired
     ImportDataRepository importDataRepository;
 
     @Autowired
@@ -46,17 +43,15 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
             //todo: consider removing the substance from the list of things indexed for the staging area
             return;
         }
-        if( stagingAreaService == null) {
-            try {
-                String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
-                log.trace("looking for a staging area service for context {}", contextName);
-                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
-                        //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
-                log.trace("got service {}", stagingAreaService);
-            } catch (Exception e) {
-                log.error("Error obtaining staging area service", e);
-                throw new RuntimeException(e);
-            }
+        StagingAreaService stagingAreaService;
+        try {
+            String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
+            log.trace("looking for a staging area service for context {}", contextName);
+            stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
+            log.trace("got service {}", stagingAreaService);
+        } catch (Exception e) {
+             log.error("Error obtaining staging area service", e);
+             throw new RuntimeException(e);
         }
         try {
             String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
