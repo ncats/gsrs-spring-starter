@@ -101,8 +101,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     public void setupIndexer() {
         log.trace("starting setupIndexer");
         if (tif != null) {
-            indexer =tif.getInstance(new File("imports"));
-            log.trace("got indexer from tif.getDefaultInstance()");
+            indexer =tif.getInstance(new File(textIndexerFactorDefaultDir, "imports"));
+            log.trace("got indexer from tif.getInstance()");
         } else {
             log.error("tif is null!!!");
         }

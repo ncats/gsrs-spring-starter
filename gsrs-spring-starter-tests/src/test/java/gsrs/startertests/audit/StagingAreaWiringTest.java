@@ -1,44 +1,47 @@
 package gsrs.startertests.audit;
 
+import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
+import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
+import gsrs.startertests.GsrsSpringApplication;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.text.IndexerServiceFactory;
-import ix.core.search.text.TextIndexer;
 import ix.core.search.text.TextIndexerFactory;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-class StagingAreaWiringTest {
+@GsrsJpaTest(
+    classes = {
+       GsrsSpringApplication.class,
+        GsrsControllerConfiguration.class,
+        GsrsEntityTestConfiguration.class
+    },
+    dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+class StagingAreaWiringTest extends AbstractGsrsJpaEntityJunit5Test {
 
     @Autowired
     ApplicationContext context;
 
-    @TempDir
-    static Path tempDir;
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("ix.home",
-                () -> tempDir.resolve("ginas.ix").toString());
-        }
+    @MockitoSpyBean
+    IndexerServiceFactory indexerServiceFactory;
 
     @MockitoSpyBean
-    private IndexerServiceFactory indexerServiceFactory;
+    TextIndexerFactory textIndexerFactory;
+
     @Test
     void hasOnlyOneTextIndexerFactoryBean() {
         assertEquals(
@@ -48,22 +51,46 @@ class StagingAreaWiringTest {
     }
 
     @Test
+    void createsOnlyOneWriterForEachIndexDirectory() throws Exception {
+        Path ixHome = canonical(tempDir.toPath());
+        Path imports = canonical(ixHome.resolve("imports"));
+
+        verify(indexerServiceFactory, times(1))
+                .createForDir(argThat(file ->
+                        canonical(file.toPath()).equals(ixHome)));
+
+        verify(indexerServiceFactory, times(1))
+                .createForDir(argThat(file ->
+                        canonical(file.toPath()).equals(imports)));
+    }
+
+    @Test
     void stagingServiceUsesInjectedFactoryForImports() {
-        TextIndexerFactory factory = mock(TextIndexerFactory.class);
-        TextIndexer importsIndexer = mock(TextIndexer.class);
+        clearInvocations(textIndexerFactory);
 
-        Path ixHome = tempDir.resolve("ginas.ix");
-        File importsDir = ixHome.resolve("imports").toFile();
-
-        when(factory.getInstance(importsDir))
-                .thenReturn(importsIndexer);
+        AutowireCapableBeanFactory beanFactory =
+                context.getAutowireCapableBeanFactory();
 
         DefaultStagingAreaService<?> service =
-                new DefaultStagingAreaService<>();
+                beanFactory.createBean(DefaultStagingAreaService.class);
 
-        service.setupIndexer();
+        File expected =
+                new File(tempDir, "imports").getAbsoluteFile();
 
-        verify(factory).getInstance(importsDir);
-        verifyNoMoreInteractions(factory);
+        verify(textIndexerFactory).getInstance(
+                argThat(file ->
+                        canonical(file.toPath())
+                                .equals(canonical(expected.toPath())))
+        );
+
+        beanFactory.destroyBean(service);
+    }
+
+    private static Path canonical(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            return path.toAbsolutePath().normalize();
+        }
     }
 }
