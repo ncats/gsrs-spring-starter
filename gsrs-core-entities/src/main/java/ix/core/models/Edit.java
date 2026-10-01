@@ -1,28 +1,27 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.flipkart.zjsonpatch.JsonDiff;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
-import ix.core.EntityMapperOptions;
 import ix.core.FieldResourceReference;
 import ix.core.History;
 import ix.core.ResourceReference;
+import ix.core.controllers.EntityFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 import ix.ginas.models.serialization.PrincipalSerializer;
+import ix.utils.pojopatch.PojoDiff;
 
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.Date;
 import java.util.UUID;
 
@@ -49,19 +48,12 @@ public class Edit extends BaseModel {
     }
     
     
+
     @JsonIgnore
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false)    
-    
-//    @JsonIgnore
-//    @Id
-//    @GeneratedValue
     public UUID id; // internal random id
-    
 
     //don't use @CreateDate annotation here just set it on creation time and mark it final
     public final Long created = TimeUtil.getCurrentTimeMillis();
@@ -83,14 +75,14 @@ public class Edit extends BaseModel {
     @Column(length=1024)
     public String path;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String comments;
     
     public String version=null;
 
     @Basic(fetch= FetchType.LAZY)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonIgnore
@@ -99,7 +91,7 @@ public class Edit extends BaseModel {
     public String oldValue; // value as Json
 
     @Basic(fetch= FetchType.LAZY)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @JsonDeserialize(as= JsonNode.class)
     @Indexable(indexed=false)
     @JsonIgnore
@@ -164,10 +156,10 @@ public class Edit extends BaseModel {
     @JsonIgnore
     public JsonNode getDiff(){
     	try{
-	    	ObjectMapper om = new ObjectMapper();
-	    	JsonNode js1=om.readTree(oldValue);
-	    	JsonNode js2=om.readTree(newValue);
-	    	return JsonDiff.asJson(js1, js2);
+            EntityFactory.EntityMapper om = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
+            JsonNode js1=om.readTree(oldValue);
+            JsonNode js2=om.readTree(newValue);
+            return PojoDiff.getJsonDiff(js1, js2);
     	}catch(Exception e){
     		return null;
     	}

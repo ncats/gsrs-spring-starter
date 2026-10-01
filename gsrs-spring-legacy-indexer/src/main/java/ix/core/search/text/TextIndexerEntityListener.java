@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import gsrs.events.MaintenanceModeEvent;
@@ -31,11 +30,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-@Transactional(readOnly = true)
+//@Transactional(readOnly = true)
 public class TextIndexerEntityListener {
-	   
+
     private HashSet<Key> working =new LinkedHashSet<>();
-    
+
     // TP 08-27-2021: In general this shouldn't be necessary,
     // but if a new transactional operation inside a preUpdate
     // hook gets called, this sometimes tries to re-run all preUpdate
@@ -44,12 +43,12 @@ public class TextIndexerEntityListener {
     // At the time of this comment it's not necessary in any known code
     // to have this on. But it may turn out to be necessary.
     private static boolean PREVENT_RECURSION=true;
-    
-    
+
+
     @Autowired
     private TextIndexerFactory textIndexerFactory;
 
-//    
+//
 //    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
 //    private EntityManager em;
 
@@ -62,10 +61,20 @@ public class TextIndexerEntityListener {
     @TransactionalEventListener
     public void created(IndexCreateEntityEvent event) throws Exception{
         autowireIfNeeded();
+        Key k = event.getSource();
+        if(PREVENT_RECURSION) {
+            synchronized (working) {
+                if (working.contains(k)) {
+                    log.warn("Create TextIndexer called, but already indexing record for:" + k);
+                    return;
+                }
+                working.add(k);
+            }
+        }
         try {
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
-                
+
                 //refetch from db
                 Optional<EntityUtils.EntityWrapper> opt = EntityFetcher.of(event.getSource()).getIfPossible().map(m->EntityWrapper.of(m));
                 if(opt.isPresent()) {
@@ -78,8 +87,13 @@ public class TextIndexerEntityListener {
                 }
             }
         } catch (Throwable e) {
-            
             throw new Exception(e);
+        } finally {
+            if(PREVENT_RECURSION) {
+                synchronized (working) {
+                    working.remove(k);
+                }
+            }
         }
     }
     @EventListener
@@ -87,22 +101,39 @@ public class TextIndexerEntityListener {
         log.trace("in reindexEntity");
         autowireIfNeeded();
         Optional<EntityUtils.EntityWrapper<?>> opt = event.getOptionalFetchedEntityToReindex();
-        
-        if(opt.isPresent()){
-        	if(event.isRequiresDelete()) {
+        if(!opt.isPresent()) {
+            return;
+        }
+        Key k = opt.get().getKey();
+        if(PREVENT_RECURSION) {
+            synchronized (working) {
+                if (working.contains(k)) {
+                    log.warn("Reindex TextIndexer called, but already indexing record for:" + k);
+                    return;
+                }
+                working.add(k);
+            }
+        }
+        try {
+            if(event.isRequiresDelete()) {
                 log.trace("updating");
                 if(event.isExcludeExternal()) {
-                	log.trace("updating excluding external"); 
-                	textIndexerFactory.getDefaultInstance().update(opt.get(), RestrictedType.EXCLUDE_EXTERNAL);
+                    log.trace("updating excluding external");
+                    textIndexerFactory.getDefaultInstance().update(opt.get(), RestrictedType.EXCLUDE_EXTERNAL);
                 }else {
-                	log.trace("updating including external");
-                	textIndexerFactory.getDefaultInstance().update(opt.get());
+                    log.trace("updating including external");
+                    textIndexerFactory.getDefaultInstance().update(opt.get());
                 }
-        	}else {
+            }else {
                 log.trace("adding");
-        		textIndexerFactory.getDefaultInstance().add(opt.get());	
-        	}
-            
+                textIndexerFactory.getDefaultInstance().add(opt.get());
+            }
+        } finally {
+            if(PREVENT_RECURSION) {
+                synchronized (working) {
+                    working.remove(k);
+                }
+            }
         }
     }
     @EventListener
@@ -133,31 +164,33 @@ public class TextIndexerEntityListener {
     public void updateEntity(IndexUpdateEntityEvent event) {
         autowireIfNeeded();
         Key k = event.getSource();
-        
+
         if(PREVENT_RECURSION) {
-            if(working.contains(k)) {
-                log.warn("Update TextIndexer called, but already updating record for:" + k);
-                return;
-            }
-        }
-        
-        try {
-            if(PREVENT_RECURSION) {
+            synchronized (working) {
+                if(working.contains(k)) {
+                    log.warn("Update TextIndexer called, but already updating record for:" + k);
+                    return;
+                }
                 working.add(k);
             }
+        }
+
+        try {
             TextIndexer indexer = textIndexerFactory.getDefaultInstance();
             if(indexer !=null) {
 //            	log.warn("In update Entity IndexUpdateEntityEvent");
                 try {
                     EntityUtils.EntityWrapper ew = event.getOptionalFetchedEntity().orElse(null);
-                    indexer.update(ew, RestrictedType.EXCLUDE_EXTERNAL); // exclude external 
+                    indexer.update(ew, RestrictedType.EXCLUDE_EXTERNAL); // exclude external
                 }catch(Throwable t){
                     log.warn("trouble updating index for:" + event.getSource().toString(), t);
                 }
             }
         } finally {
             if(PREVENT_RECURSION) {
-                working.remove(k);
+                synchronized (working) {
+                    working.remove(k);
+                }
             }
         }
     }

@@ -1,7 +1,6 @@
 package gsrs;
 
 
-import com.fasterxml.jackson.databind.node.BooleanNode;
 import static gsrs.assertions.GsrsMatchers.*;
 import ix.ginas.models.utils.JSONEntity;
 import ix.utils.pojopatch.Change;
@@ -15,6 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
+import tools.jackson.databind.node.BooleanNode;
 
 public class PojoDiffReflectionTests {
     @Test

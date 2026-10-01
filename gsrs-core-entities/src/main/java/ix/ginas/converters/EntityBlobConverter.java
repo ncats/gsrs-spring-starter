@@ -2,9 +2,9 @@ package ix.ginas.converters;
 
 
 
-import org.hibernate.engine.jdbc.BlobProxy;
+import org.hibernate.engine.jdbc.proxy.BlobProxy;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 import java.sql.Blob;
 import java.sql.SQLException;
 

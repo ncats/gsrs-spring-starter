@@ -1,15 +1,14 @@
 package ix.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -499,7 +498,7 @@ public class Util {
 	
 	public static Object getAsNativeID(String idv){
     	if(idv.chars().allMatch( Character::isDigit )){
-    		return new Long(Long.parseLong(idv));
+    		return Long.valueOf(Long.parseLong(idv));
     	}else{
     		return idv;
     	}
@@ -836,9 +835,9 @@ public class Util {
     }
 
     public static List<String> toList(JsonNode an){
-    	return StreamUtil.forIterable(an)
-    			  .map(j->j.asText())
-		      	  .collect(Collectors.toList());    	
+        return StreamUtil.forIterable(an)
+                .map(j->j.asString())
+                .collect(Collectors.toList());
    	}
     
     

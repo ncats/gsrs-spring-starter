@@ -2,16 +2,7 @@ package ix.core.models;
 
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ix_core_key_user_list", 
@@ -21,7 +12,15 @@ public class KeyUserList {
 	
 	@Id
 	@Column(unique = true)
-	@GeneratedValue(strategy = GenerationType.AUTO, generator = "LONG_SEQ_ID")
+	@SequenceGenerator(
+			name = "KEY_USER_LIST_SEQ_GENERATOR",
+			sequenceName = "ix_core_key_user_list_seq",
+			allocationSize = 1
+	)
+	@GeneratedValue(
+			strategy = GenerationType.SEQUENCE,
+			generator = "KEY_USER_LIST_SEQ_GENERATOR"
+	)
 	public Long id;
 	
 	@Column(name = "entity_key")

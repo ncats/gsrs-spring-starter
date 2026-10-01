@@ -1,10 +1,11 @@
 package gsrs.dataexchange.imports;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import ix.ginas.models.GinasCommonData;
@@ -16,7 +17,6 @@ import org.springframework.core.io.Resource;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -85,11 +85,9 @@ public class BasicTextImportTest {
         basicImportFactory.setInputParameters(parameters);
 
         JsonNode echoedSettings = basicImportFactory.getOriginalParameters();
-        Iterator<String> keys =parameters.fieldNames();
-        while( keys.hasNext()) {
-            String field = keys.next();
-            System.out.printf("field: %s; input: %s; echo: %s\n", field, parameters.get(field).asText(), echoedSettings.get(field).asText());
-            Assertions.assertEquals(parameters.get(field).asText(), echoedSettings.get(field).asText());
+        for (String field : parameters.propertyNames()) {
+            System.out.printf("field: %s; input: %s; echo: %s\n", field, parameters.get(field).asString(), echoedSettings.get(field).asString());
+            Assertions.assertEquals(parameters.get(field), echoedSettings.get(field));
         }
     }
 
@@ -97,8 +95,8 @@ public class BasicTextImportTest {
         ObjectNode settings = JsonNodeFactory.instance.objectNode();
         ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
 
-        TextNode textNode = JsonNodeFactory.instance.textNode("import text");
-        actionNode.set("actionName", textNode);
+        StringNode StringNode = JsonNodeFactory.instance.stringNode("import text");
+        actionNode.set("actionName", StringNode);
 
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
         parameters.put("parameterName1", "value1");
@@ -116,10 +114,10 @@ public class BasicTextImportTest {
 
         ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
 
-        TextNode textNode = JsonNodeFactory.instance.textNode("import text 1");
-        actionNode.set("actionName", textNode);
-        TextNode textNode2 = JsonNodeFactory.instance.textNode("gsrs.dataexchange.imports.Item2MappingAction");
-        actionNode.set("actionClassName", textNode2);
+        StringNode StringNode = JsonNodeFactory.instance.stringNode("import text 1");
+        actionNode.set("actionName", StringNode);
+        StringNode StringNode2 = JsonNodeFactory.instance.stringNode("gsrs.dataexchange.imports.Item2MappingAction");
+        actionNode.set("actionClassName", StringNode2);
 
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
         parameters.put("parameterName1", "value1");
@@ -131,10 +129,10 @@ public class BasicTextImportTest {
 
         ObjectNode actionNode2 = JsonNodeFactory.instance.objectNode();
 
-        textNode = JsonNodeFactory.instance.textNode("import text 2");
-        actionNode2.set("actionName", textNode);
-        TextNode textNode3 = JsonNodeFactory.instance.textNode("gsrs.dataexchange.imports.Item1MappingAction");
-        actionNode2.set("actionClassName", textNode3);
+        StringNode = JsonNodeFactory.instance.stringNode("import text 2");
+        actionNode2.set("actionName", StringNode);
+        StringNode StringNode3 = JsonNodeFactory.instance.stringNode("gsrs.dataexchange.imports.Item1MappingAction");
+        actionNode2.set("actionClassName", StringNode3);
 
         ObjectNode parameters2 = JsonNodeFactory.instance.objectNode();
         parameters2.put("parameterName1", "value1");

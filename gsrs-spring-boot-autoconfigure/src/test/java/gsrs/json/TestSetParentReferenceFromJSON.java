@@ -9,9 +9,8 @@ import lombok.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.json.JacksonTester;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -84,23 +83,22 @@ public class TestSetParentReferenceFromJSON {
     }
 
 
-    private JacksonTester<Foo> jacksonTester;
+    private ObjectMapper objectMapper;
     @BeforeEach
     public void setup() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        JacksonTester.initFields(this, objectMapper);
+        objectMapper = new ObjectMapper();
     }
     @Test
     public void serializeEmptyFoo() throws IOException {
         Foo foo = new Foo();
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{}", json);
     }
 
     @Test
     public void serializeJustSetNameFoo() throws IOException {
         Foo foo = Foo.builder().fooName("name").build();
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"fooName\":\"name\"}", json);
     }
     @Test
@@ -108,10 +106,10 @@ public class TestSetParentReferenceFromJSON {
         Foo foo = Foo.builder().baz(
                 Baz.builder()
                         .bazName("myBaz").build()).build();
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"baz\":{\"bazName\":\"myBaz\"}}", json);
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBaz().getOwner());
     }
 
@@ -120,11 +118,11 @@ public class TestSetParentReferenceFromJSON {
         Foo foo = Foo.builder().baz(
                 Baz.builder()
                         .bazName("myBaz").build()).build();
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"baz\":{\"bazName\":\"myBaz\"}}", json);
 
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBaz().getOwner());
         Foo fixed = JsonEntityUtil.fixOwners(fromJson);
         assertEquals(fixed, fixed.getBaz().getOwner());
@@ -136,11 +134,11 @@ public class TestSetParentReferenceFromJSON {
                 Arrays.asList(Bar.builder().barName("myBar").build()))
                 .build();
 
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"bars\":[{\"barName\":\"myBar\"}]}", json);
 
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBars().get(0).getOwner());
         Foo fixed = JsonEntityUtil.fixOwners(fromJson);
         assertEquals(fixed, fixed.getBars().get(0).getOwner());
@@ -155,12 +153,12 @@ public class TestSetParentReferenceFromJSON {
                         ))
                 .build();
 
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}]}", json);
 
 
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBars().get(0).getOwner());
         assertNull(fromJson.getBars().get(1).getOwner());
         Foo fixed = JsonEntityUtil.fixOwners(fromJson);
@@ -179,11 +177,11 @@ public class TestSetParentReferenceFromJSON {
                         .bazName("myBaz").build())
                 .build();
 
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}],\"baz\":{\"bazName\":\"myBaz\"}}", json);
 
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBars().get(0).getOwner());
         assertNull(fromJson.getBars().get(1).getOwner());
         Foo fixed = JsonEntityUtil.fixOwners(fromJson);
@@ -203,11 +201,11 @@ public class TestSetParentReferenceFromJSON {
                                 Bar.builder().barName("bar2").build()
                         ))
                         .build()).build();
-        String json = jacksonTester.write(foo).getJson();
+        String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"baz\":{\"bazName\":\"myBaz\",\"bars\":[{\"barName\":\"myBar\"},{\"barName\":\"bar2\"}]}}", json);
 
 
-        Foo fromJson = jacksonTester.parse(json).getObject();
+        Foo fromJson = objectMapper.readValue(json, Foo.class);
         assertNull(fromJson.getBaz().getOwner());
         assertNull(fromJson.getBaz().getBars().get(0).getOwner());
         assertNull(fromJson.getBaz().getBars().get(1).getOwner());

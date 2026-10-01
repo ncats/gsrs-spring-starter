@@ -5,7 +5,6 @@ import gsrs.GsrsFactoryConfiguration;
 import ix.core.EntityProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,8 +24,6 @@ public class ConfigBasedEntityProcessorFactory extends AbstractEntityProcessorFa
             for(EntityProcessorConfig config: eps){
                 try {
                     EntityProcessor newEntityProcessorInstance = config.createNewEntityProcessorInstance();
-                    //can't autowire here because the depenendencies might not be set yet!!
-//                    AutowireHelper.getInstance().autowire(newEntityProcessorInstance);
                     registar.accept(newEntityProcessorInstance);
                 } catch (Exception e) {
                    log.error("could not create new entity Processor instance " + config, e);
