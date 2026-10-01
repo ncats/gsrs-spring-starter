@@ -861,9 +861,6 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
-            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .build();
 
             T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
@@ -892,10 +889,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
 
-            JsonMapper localMapper = JsonMapper.builder()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .build();
-            T object= localMapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
+            T object= mapper.readValue(resultNode.get("object").asText(), getEntityService().getEntityClass());
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(object, queryParameters), returnStatus);
         } else {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), returnStatus);

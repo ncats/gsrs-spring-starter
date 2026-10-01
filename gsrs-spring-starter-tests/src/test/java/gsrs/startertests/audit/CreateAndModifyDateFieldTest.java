@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-public class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Test {
+class CreateAndModifyDateFieldTest extends AbstractGsrsJpaEntityJunit5Test {
     @Entity
     @Data
     @EqualsAndHashCode(callSuper=false)

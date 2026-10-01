@@ -20,13 +20,16 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
 
     private List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confList;
 
-    private CachedSupplier<List<IndexValueMaker>> indexers = CachedSupplier.runOnce(()->{
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper jsonMapper;
+
+    private final CachedSupplier<List<IndexValueMaker>> indexers;
+
+    private List<IndexValueMaker> createIndexers() {
         List<IndexValueMaker> ivms = confList.stream()
                 .map(c ->{
                     IndexValueMaker indexer =null;
                     if(c.getParameters() !=null){
-                        indexer= (IndexValueMaker) mapper.convertValue(c.getParameters(), c.getIndexer());
+                        indexer= (IndexValueMaker) jsonMapper.convertValue(c.getParameters(), c.getIndexer());
                     }else{
                         try {
                             indexer= (IndexValueMaker) c.getIndexer().newInstance();
@@ -42,16 +45,20 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return ivms;
-    });
+    }
 
     private CachedSupplier<Map<Class, List<IndexValueMaker>>> map;
-    public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers ) {
-        this(indexers, null);
+    public ConfigBasedIndexValueMakerFactory( List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> indexers,
+                                              JsonMapper jsonMapper ) {
+        this(indexers, null, jsonMapper);
     }
     public List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> getConfList() { return this.confList;}
 
-    public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry){
+    public ConfigBasedIndexValueMakerFactory(List<ConfigBasedIndexValueMakerConfiguration.IndexValueMakerConf> confs, DefaultIndexValueMakerRegistry defaultIndexValueMakerRegistry,
+                                             JsonMapper jsonMapper) {
+        this.jsonMapper = Objects.requireNonNull(jsonMapper);
         this.confList = new ArrayList<>(confs);
+        this.indexers = CachedSupplier.runOnce(this::createIndexers);
         map = CachedSupplier.of( ()->{
             Map<Class, List<IndexValueMaker>> valueMakersMap = new ConcurrentHashMap<>();
 
@@ -66,8 +73,6 @@ public class ConfigBasedIndexValueMakerFactory implements IndexValueMakerFactory
             }
             return valueMakersMap;
         });
-
-
     }
     @Override
     public IndexValueMaker createIndexValueMakerFor(EntityUtils.EntityWrapper<?> ew) {

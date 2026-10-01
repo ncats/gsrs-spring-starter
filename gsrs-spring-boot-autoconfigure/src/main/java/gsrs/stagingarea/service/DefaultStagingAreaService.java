@@ -1,6 +1,6 @@
 package gsrs.stagingarea.service;
 
-import tools.jackson.databind.DeserializationFeature;
+import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
@@ -61,7 +61,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     KeyValueMappingRepository keyValueMappingRepository;
 
-    //@Autowired
+    @Autowired
     private TextIndexerFactory tif;
 
     @Autowired
@@ -93,30 +93,18 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .build();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper jsonMapper;
 
     @PostConstruct
     public void setupIndexer() {
         log.trace("starting setupIndexer");
         if (tif != null) {
-            //indexer = tif.getDefaultInstance();
-            indexer =tif.getInstance(new File("imports"));
-            log.trace("got indexer from tif.getDefaultInstance()");
+            indexer =tif.getInstance(new File(textIndexerFactorDefaultDir, "imports"));
+            log.trace("got indexer from tif.getInstance()");
         } else {
-            try {
-                log.trace("going to create indexerFactory");
-                TextIndexerFactory indexerFactory = new TextIndexerFactory();
-
-                AutowireHelper.getInstance().autowireAndProxy(indexerFactory);
-                //indexer = indexerFactory.getDefaultInstance();
-                log.trace("textIndexerFactorDefaultDir: {}", textIndexerFactorDefaultDir);
-                indexer =indexerFactory.getInstance(new File(textIndexerFactorDefaultDir +"/imports"));
-                log.trace("got indexer from indexerFactory.getDefaultInstance(): " + indexer);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            log.error("tif is null!!!");
         }
     }
 

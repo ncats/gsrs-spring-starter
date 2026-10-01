@@ -131,10 +131,6 @@ public class GsrsExportConfiguration {
             }
         }
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
-
         if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");
             for (Map.Entry<String, List<? extends ExporterFactoryConfig>> entryFull : exporterFactoriesMapList.entrySet()) {

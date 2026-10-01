@@ -14,7 +14,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -28,6 +27,7 @@ import gsrs.security.canIndexData;
 import gsrs.security.canManageUsers;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -82,7 +82,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -111,7 +110,9 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     @Autowired
     private BulkSearchService bulkSearchService;
 
-    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     @Autowired
     private static ExecutorService executor;
@@ -873,10 +874,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	int endIndex = Math.min(top+skip,queries.size());    		
     	if(skip < queries.size())
     		sublist = queries.subList(skip, endIndex);
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
-    	ObjectNode baseNode = mapper.createObjectNode();
+        ObjectNode baseNode = mapper.createObjectNode();
     	
     	baseNode.put("id", id);
     	baseNode.put("total", queries.size());
@@ -1066,10 +1064,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	else
     		topList = list.subList(0, top);
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
-    	ObjectNode baseNode = mapper.createObjectNode();   	   	
+        ObjectNode baseNode = mapper.createObjectNode();
     	    	
     	baseNode.put("top", top);
     	baseNode.put("skip", skip);    	
@@ -1457,10 +1452,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     	if(status ==null){
     		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     	}
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
-    	ObjectNode node = mapper.createObjectNode();   	
+    	ObjectNode node = mapper.createObjectNode();
     	node.put("id", id);
     	node.put("status", status.getStatus());    	
     	return new ResponseEntity<>(node, HttpStatus.OK);
@@ -1518,10 +1510,7 @@ GET     /suggest       ix.core.controllers.search.SearchFactory.suggest(q: Strin
     }
     
     private ObjectNode generateResultIDJson(String id) {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
-    	ObjectNode node = mapper.createObjectNode();   	
+    	ObjectNode node = mapper.createObjectNode();
     	node.put("id", id);
     	return node;
     }

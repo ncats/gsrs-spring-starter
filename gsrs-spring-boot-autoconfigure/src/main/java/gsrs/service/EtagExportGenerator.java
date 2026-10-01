@@ -44,6 +44,7 @@ public class EtagExportGenerator<T> implements ExportGenerator<ETag,T>  {
     private static final Pattern removeSkipPattern = Pattern.compile("(&skip=\\d+)");
     private static final Pattern removeViewPattern = Pattern.compile("(&view=\\s+)");
 
+
     private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
