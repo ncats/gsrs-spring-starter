@@ -563,46 +563,47 @@ public class ImportUtilities<T> {
 
     public JsonNode handleObjectCreation(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
                                        Map<String, String> queryParameters) throws Exception {
-        Stream<T> objectStream = generateObjects(task, queryParameters);
+        try( Stream<T> objectStream = generateObjects(task, queryParameters) ) {
 
-        AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
-        AtomicInteger recordCount = new AtomicInteger(0);
-        List<Integer> errorRecords = new ArrayList<>();
-        List<String> importDataRecordIds = new ArrayList<>();
-        ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
-        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
-                ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
-                : null;
+            AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
+            AtomicInteger recordCount = new AtomicInteger(0);
+            List<Integer> errorRecords = new ArrayList<>();
+            List<String> importDataRecordIds = new ArrayList<>();
+            ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+            Principal importingUser = (GsrsSecurityUtils.getCurrentUsername() != null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+                    ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+                    : null;
 
-        objectStream.forEach(object -> {
-            recordCount.incrementAndGet();
-            log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
-            log.trace(object.toString());
-            try {
-                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
-                importDataRecordIds.add(newRecordId);
-            } catch (Exception e) {
-                objectProcessingOK.set(false);
-                errorRecords.add(recordCount.get());
-                log.error("Error processing staging area record", e);
-            }
-        });
+            objectStream.forEach(object -> {
+                recordCount.incrementAndGet();
+                log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+                log.trace(object.toString());
+                try {
+                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
+                    importDataRecordIds.add(newRecordId);
+                } catch (Exception e) {
+                    objectProcessingOK.set(false);
+                    errorRecords.add(recordCount.get());
+                    log.error("Error processing staging area record", e);
+                }
+            });
 
-        ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
-        returnNode.put("completeSuccess", objectProcessingOK.get());
-        ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
-        importDataRecordIds.forEach(recordIdListNode::add);
-        returnNode.set("stagingAreaRecordIds", recordIdListNode);
-        ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
-        errorRecords.forEach(problemRecords::add);
-        returnNode.set("recordsWithProcessingErrors", problemRecords);
-        returnNode.put("fileName", task.getFilename());
-        returnNode.put("adapter", task.getAdapter());
-        long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
-        returnNode.put("limit", limit);
-        log.trace("Attached limit to returnNode");
-        returnNode.set("dataPreview", previewNode);
-        return returnNode;
+            ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
+            returnNode.put("completeSuccess", objectProcessingOK.get());
+            ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
+            importDataRecordIds.forEach(recordIdListNode::add);
+            returnNode.set("stagingAreaRecordIds", recordIdListNode);
+            ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
+            errorRecords.forEach(problemRecords::add);
+            returnNode.set("recordsWithProcessingErrors", problemRecords);
+            returnNode.put("fileName", task.getFilename());
+            returnNode.put("adapter", task.getAdapter());
+            long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            returnNode.put("limit", limit);
+            log.trace("Attached limit to returnNode");
+            returnNode.set("dataPreview", previewNode);
+            return returnNode;
+        }
     }
 
     public JsonNode handleObjectCreationAsync(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
@@ -655,30 +656,28 @@ public class ImportUtilities<T> {
             ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
             : null;
         executor.execute(()-> {
-            log.trace("starting in handleObjectCreationAsync execute lambda");
-            ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
-            Stream<T> objectStream;
-            try {
-                objectStream = generateObjects(task, queryParameters);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            objectStream.forEach(object -> {
-                recordCount.incrementAndGet();
-                log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
-                log.trace(object.toString());
-                try {
-                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
-                    importDataRecordIds.add(newRecordId);
-                } catch (Exception e) {
-                    objectProcessingOK.set(false);
-                    errorRecords.add(recordCount.get());
-                    log.error("Error processing staging area record", e);
-                }
-                TransactionTemplate transactionTemplateUpDateCount = new TransactionTemplate(transactionManager);
-                transactionTemplateUpDateCount.executeWithoutResult(j->jobRepository.updateCompletedRecordCount(job.getId(), recordCount.get()));
-            });
-
+                    log.trace("starting in handleObjectCreationAsync execute lambda");
+                    ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+                    try (Stream<T> objectStream =generateObjects(task,queryParameters)){
+                        objectStream.forEach(object -> {
+                            recordCount.incrementAndGet();
+                            log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+                            log.trace(object.toString());
+                            try {
+                                String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
+                                importDataRecordIds.add(newRecordId);
+                            } catch (Exception e) {
+                                    objectProcessingOK.set(false);
+                                errorRecords.add(recordCount.get());
+                                log.error("Error processing staging area record", e);
+                            }
+                            TransactionTemplate transactionTemplateUpDateCount = new TransactionTemplate(transactionManager);
+                            transactionTemplateUpDateCount.executeWithoutResult(j -> jobRepository.updateCompletedRecordCount(job.getId(), recordCount.get()));
+                        });
+                    } catch(Exception e){
+                        log.error("Error handling object stream: ", e);
+                        throw new RuntimeException(e);
+                    }
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
             returnNode.put("completeSuccess", objectProcessingOK.get());
             ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
