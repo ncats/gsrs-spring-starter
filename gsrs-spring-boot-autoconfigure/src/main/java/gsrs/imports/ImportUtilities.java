@@ -675,7 +675,7 @@ public class ImportUtilities<T> {
                                 errorRecords.add(recordCount.get());
                                 log.error("Error processing staging area record", e);
                             }
-                            if (processedCount % this.progressUpdateInterval == 0) {
+                            if (progressUpdateInterval >0 && processedCount % progressUpdateInterval == 0) {
                                 TransactionTemplate progressTransaction =
                                         new TransactionTemplate(transactionManager);
 
@@ -716,11 +716,12 @@ public class ImportUtilities<T> {
                 updatedJob.setResults(overallResult);
                 updatedJob.setFinishDate(DateUtil.getCurrentDate());
                 updatedJob.setTotalRecords(recordCount.get());
+                updatedJob.setCompletedRecordCount(recordCount.get());
                 jobRepository.save(updatedJob);
                 log.trace("completed last save of job ({}) in handleObjectCreationAsync", job.getId());
             });
-
         });
+
         return job.toNode();
     }
 

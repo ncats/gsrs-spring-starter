@@ -149,7 +149,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.warn("Unable to retrieve current user!");
         }
 
-        metadataRepository.save(metadata);
+        metadata = metadataRepository.save(metadata);
 
         //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
@@ -204,7 +204,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 persistValidationInfo(response, 1, instanceId);
                 overallStatus = getOverallValidationStatus(response);
                 try {
-                    importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
+                    saved.setData(serializeObject(domainObject));
                     log.trace("updating record after validation");
                 } catch (Exception e) {
                     log.error("Error serializing validated substance", e);
@@ -212,11 +212,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
 
             log.trace("overallStatus: " + overallStatus);
-            updateImportValidationStatus(recordId, overallStatus);
+            metadata.setValidationStatus(overallStatus);
         }
         //step 5: matchables
 
-        updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
+        //updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
 
         if(performMatching){
             log.trace("going to match");
