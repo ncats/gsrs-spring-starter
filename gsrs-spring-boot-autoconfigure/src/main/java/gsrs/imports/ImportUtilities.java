@@ -56,6 +56,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 public class ImportUtilities<T> {
@@ -97,6 +98,9 @@ public class ImportUtilities<T> {
             .build();
 
     StagingAreaService stagingAreaService;
+
+    @Value("${gsrs.import.progress-update-interval:100}")
+    private int progressUpdateInterval = 100;
 
     public ImportUtilities(String contextName, Class<T> entityClass, StagingAreaService service) {
         this.contextName=contextName;
@@ -655,12 +659,12 @@ public class ImportUtilities<T> {
         Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
             ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
             : null;
-        executor.execute(()-> {
+            executor.execute(()-> {
                     log.trace("starting in handleObjectCreationAsync execute lambda");
                     ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
                     try (Stream<T> objectStream =generateObjects(task,queryParameters)){
                         objectStream.forEach(object -> {
-                            recordCount.incrementAndGet();
+                            int processedCount = recordCount.incrementAndGet();
                             log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
                             log.trace(object.toString());
                             try {
@@ -671,8 +675,16 @@ public class ImportUtilities<T> {
                                 errorRecords.add(recordCount.get());
                                 log.error("Error processing staging area record", e);
                             }
-                            TransactionTemplate transactionTemplateUpDateCount = new TransactionTemplate(transactionManager);
-                            transactionTemplateUpDateCount.executeWithoutResult(j -> jobRepository.updateCompletedRecordCount(job.getId(), recordCount.get()));
+                            if (processedCount % this.progressUpdateInterval == 0) {
+                                TransactionTemplate progressTransaction =
+                                        new TransactionTemplate(transactionManager);
+
+                                progressTransaction.executeWithoutResult(status ->
+                                        jobRepository.updateCompletedRecordCount(
+                                                job.getId(),
+                                                processedCount));
+                            }
+
                         });
                     } catch(Exception e){
                         log.error("Error handling object stream: ", e);
@@ -713,7 +725,7 @@ public class ImportUtilities<T> {
     }
 
     public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
-        log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
+        log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter: {}",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
          ImportRecordParameters.builder()

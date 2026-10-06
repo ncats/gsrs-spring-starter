@@ -1,5 +1,6 @@
 package gsrs.stagingarea.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -110,6 +111,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
 
     @Override
+    @Transactional
     public String createRecord(ImportRecordParameters parameters) {
         if( indexer==null) setupIndexer();
         Objects.requireNonNull(indexer, "need a text indexer!");
@@ -124,7 +126,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         data.setSaveDate(TimeUtil.getCurrentDate());
         data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository, "importDataRepository is required");
-        ImportData saved = importDataRepository.saveAndFlush(data);
+        ImportData saved = importDataRepository.save(data);
 
         //step 2 - save metadata
         ImportMetadata metadata = new ImportMetadata();
@@ -147,7 +149,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.warn("Unable to retrieve current user!");
         }
 
-        metadataRepository.saveAndFlush(metadata);
+        metadataRepository.save(metadata);
 
         //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
@@ -195,7 +197,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
         }
         if( performValidation) {
-            log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
+            log.trace("going to validate. ");
             ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
             if (response != null) {
                 domainObject = response.getNewObject();
@@ -219,7 +221,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         if(performMatching){
             log.trace("going to match");
             List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-            definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+            //definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
             persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
 
             //event driven: each step in process sends an event (pub/sub) look in ... indexing
@@ -632,6 +634,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId,
                                            String matchedEntityClass) {
 
+        List<KeyValueMapping> mappings = new ArrayList<>();
         definitionalValues.forEach(kv -> {
 
             KeyValueMapping mapping = new KeyValueMapping();
@@ -645,20 +648,23 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             mapping.setRecordId(recordId);
             mapping.setEntityClass(matchedEntityClass);
             mapping.setDataLocation(STAGING_AREA_LOCATION);
-            keyValueMappingRepository.saveAndFlush(mapping);
+            mappings.add(mapping);
             //index for searching
-            EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
-            /*try {
+            /*EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
+            try {
                 indexer.add(wrapper);
             } catch (IOException e) {
                 log.error("Error indexing import metadata to index", e);
             }*/
         });
+        keyValueMappingRepository.saveAll(mappings);
+
     }
 
 
     private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
         List<UUID> validationIds = new ArrayList<>();
+        List<ImportValidation> importValidations = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
             ImportValidation.ImportValidationType type = ImportValidation.ImportValidationType.info;
             if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR) {
@@ -677,9 +683,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                     .instanceId(instanceId)
                     .build();
 
-            importValidationRepository.saveAndFlush(validation);
+            importValidations.add(validation);
             validationIds.add(validationId);
         });
+        importValidationRepository.saveAll(importValidations);
         return validationIds;
     }
 
