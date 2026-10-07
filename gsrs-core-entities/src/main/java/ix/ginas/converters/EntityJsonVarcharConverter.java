@@ -1,8 +1,8 @@
 package ix.ginas.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import ix.core.controllers.EntityFactory;
 import ix.core.controllers.EntityFactory.EntityMapper;
+import tools.jackson.core.JacksonException;
 
 public abstract class EntityJsonVarcharConverter<K> extends EntityVarcharConverter<K> {
 	public EntityMapper em =  EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
@@ -22,7 +22,7 @@ public abstract class EntityJsonVarcharConverter<K> extends EntityVarcharConvert
 		if(bytes==null)return null;
 		try {
 			return em.readValue(bytes, cls);
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			throw new IllegalStateException(e);
 		}
 	}

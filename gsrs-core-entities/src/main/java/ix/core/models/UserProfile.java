@@ -2,12 +2,13 @@ package ix.core.models;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.UserProfileAuthenticationResult;
 import gsrs.security.TokenConfiguration;
+import gsrs.security.UserRoleConfiguration;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.StaticContextAccessor;
 import gsrs.util.GsrsPasswordHasher;
 import gsrs.util.Hasher;
@@ -15,8 +16,13 @@ import gsrs.util.LegacyTypeSalter;
 import gsrs.util.Salter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.*;
 
 @Slf4j
@@ -27,7 +33,9 @@ import java.util.*;
 public class UserProfile extends IxModel{
 	private final static String SALT_PREFIX = "G";
 
-	private static ObjectMapper om = new ObjectMapper();
+	private static JsonMapper om = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	//todo: look into autowiring the salter and hasher
 	private static Salter salter = new LegacyTypeSalter(new GsrsPasswordHasher(), SALT_PREFIX);
@@ -36,7 +44,7 @@ public class UserProfile extends IxModel{
 
     private static CachedSupplier<UserProfile> GUEST_PROF= CachedSupplier.of(()->{
         UserProfile up = new UserProfile(new Principal("GUEST"));
-        up.addRole(Role.Query);
+        up.addRole(Role.of("Query"));
 
         return up;
     });
@@ -58,7 +66,7 @@ public class UserProfile extends IxModel{
 	private String salt;
 	public boolean systemAuth; // FDA, NIH employee
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	@Column(name="ROLES_JSON") //match GSRS 2.x schema
 	private String rolesJSON = null; // this is a silly, but quick way to
@@ -118,7 +126,11 @@ public class UserProfile extends IxModel{
 				if(l !=null) {
 					for (Object o : l) {
 						try {
-							rolekinds.add(Role.valueOf(o.toString()));
+							String roleRaw =o.toString();
+							if( o instanceof Map) {
+								roleRaw = (String) ((Map)o).get("role");
+							}
+							rolekinds.add(new Role(roleRaw));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -132,7 +144,6 @@ public class UserProfile extends IxModel{
 	}
 
 	public void setRoles(Collection<Role> rolekinds) {
-		ObjectMapper om = new ObjectMapper();
 		rolesJSON = om.valueToTree(rolekinds).toString();
 		setIsDirty("rolesJSON");
 	}
@@ -146,6 +157,11 @@ public class UserProfile extends IxModel{
 	public boolean hasRole(Role role) {
 		return this.getRoles().contains(role);
 	}
+
+	public boolean canDo(String thingToDo) {
+		return PrivilegeService.instance().canUserPerform(thingToDo) == UserRoleConfiguration.PermissionResult.MayPerform;
+	}
+
 	@JsonIgnore
 	@Indexable(indexed = false)
 	public String getComputedToken(){
@@ -237,7 +253,7 @@ public class UserProfile extends IxModel{
 
 	public boolean isRoleQueryOnly(){
 
-		if(this.hasRole(Role.Query) && this.getRoles().size()==1){
+		if(this.hasRole(new Role("Query")) && this.getRoles().size()==1){
 			return true;
 
 		}

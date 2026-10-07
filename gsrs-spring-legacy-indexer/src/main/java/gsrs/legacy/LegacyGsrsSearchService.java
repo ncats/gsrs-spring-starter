@@ -1,7 +1,6 @@
 package gsrs.legacy;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import gsrs.security.canIndexData;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
@@ -18,11 +18,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
-import gsrs.security.hasAdminRole;
 import ix.core.EntityFetcher;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
@@ -35,7 +32,6 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -147,7 +143,7 @@ public abstract class LegacyGsrsSearchService<T> implements GsrsSearchService<T>
         }
     }
 
-    @hasAdminRole
+    @canIndexData
     @Transactional( readOnly= true)
     public void reindexAndWait(boolean wipeIndexFirst){
         //only run if we are not reindexing

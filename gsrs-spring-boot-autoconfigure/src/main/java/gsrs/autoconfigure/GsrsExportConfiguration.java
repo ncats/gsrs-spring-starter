@@ -4,18 +4,15 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
-import gsrs.validator.ValidatorConfig;
+import gsrs.services.PrivilegeService;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
@@ -25,6 +22,9 @@ import ix.ginas.exporters.OutputFormat;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
@@ -70,25 +70,31 @@ public class GsrsExportConfiguration {
     public Map<String, List<? extends ExporterFactoryConfig>> reportConfigs() {
         return exporterFactoriesMapList;
     }
-ObjectMapper mapper = new ObjectMapper();
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     CachedSupplier initializer = CachedSupplier.ofInitializer( ()->{
         String reportTag = "ExporterFactoryConfig";
         log.trace("inside initializer");
-
 
         if(exporterFactories != null) {
             for (Map.Entry<String, Map<String, Map<String, ExporterFactoryConfig>>> entry1 : exporterFactories.entrySet()) {
                 Map<String, Map<String, ExporterFactoryConfig>> c = entry1.getValue();
                 String context = entry1.getKey();
-                Map<String, ExporterFactoryConfig> map = new HashMap<String, ExporterFactoryConfig>();
+                Map<String, ExporterFactoryConfig> map = new HashMap<>();
                 for (Map.Entry<String, ExporterFactoryConfig> entry2 : c.get("list").entrySet()) {
                     entry2.getValue().setParentKey(entry2.getKey());
                     map.put(entry2.getKey(), entry2.getValue());
                 }
                 List<ExporterFactoryConfig> list = map.values().stream().collect(Collectors.toList());
-                List<? extends ExporterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<List<? extends ExporterFactoryConfig>>() { });
+                List<? extends ExporterFactoryConfig> configs = mapper.convertValue(list, new TypeReference<>() { });
                 System.out.println(reportTag + " for [" + context + "] found before filtering: " + configs.size());
-                configs = configs.stream().filter(p -> !p.isDisabled()).sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
+                configs = configs.stream()
+                        .filter(p -> !p.isDisabled())
+                        .sorted(Comparator.comparing(i -> i.getOrder(), nullsFirst(naturalOrder()))).collect(Collectors.toList());
                 System.out.println(reportTag + " for [" + context + "] found after filtering: " + configs.size());
                 exporterFactoriesMapList.put(context, configs);
                 System.out.printf("%s|%s|%s|%s|%s|%s\n", reportTag, "context", "class", "parentKey", "order", "isDisabled");
@@ -125,10 +131,6 @@ ObjectMapper mapper = new ObjectMapper();
             }
         }
 
-
-
-        ObjectMapper mapper = new ObjectMapper();
-
         if (!exporterFactoriesMapList.isEmpty()) {
             log.trace("handling exporterFactories");
             for (Map.Entry<String, List<? extends ExporterFactoryConfig>> entryFull : exporterFactoriesMapList.entrySet()) {
@@ -152,7 +154,6 @@ ObjectMapper mapper = new ObjectMapper();
                         }
                     }
                     if (exporterFac != null) {
-
                         log.trace("exporter factory instantiated fine");
                         exporterFac = AutowireHelper.getInstance().autowireAndProxy(exporterFac);
                         expList.add(exporterFac);
@@ -183,7 +184,7 @@ ObjectMapper mapper = new ObjectMapper();
 						allItems = new Text("settings", mapper.writeValueAsString(setting));
 	                    allItems.id=id[0]--;
 	                    items.add(allItems);
-					} catch (JsonProcessingException e) {
+					} catch (Exception e) {
 						log.warn("Trouble creating export settings preset", e);
 					}
         		});
@@ -193,7 +194,6 @@ ObjectMapper mapper = new ObjectMapper();
         } else {
             log.trace("settingsPresets null");
         }
-        
     });
 
 
@@ -220,7 +220,13 @@ ObjectMapper mapper = new ObjectMapper();
         //the final display order matches the input list order.
 
 
-        List<OutputFormat> list = getAllOutputsAsList(exporters.get(context));
+        List<ExporterFactory> factoriesToUse = new ArrayList<>();
+        for(ExporterFactory item : exporters.get(context)) {
+            if( canUserAccess(item.getClass().getName())) {
+                factoriesToUse.add(item);
+            }
+        }
+        List<OutputFormat> list = getAllOutputsAsList(factoriesToUse);
         //go in reverse order to prefer the factories listed first
         ListIterator<OutputFormat> iterator = list.listIterator(list.size());
         Set<OutputFormat> set = new LinkedHashSet<>();
@@ -235,7 +241,6 @@ ObjectMapper mapper = new ObjectMapper();
         }
         Collections.reverse(resortList);
 
-
         return new LinkedHashSet<>(resortList);
     }
 
@@ -244,10 +249,12 @@ ObjectMapper mapper = new ObjectMapper();
         List<OutputFormat> list = new ArrayList<>();
         if(exporters !=null) {
             for (ExporterFactory factory : exporters) {
-                Set<OutputFormat> supportedFormats= factory.getSupportedFormats();
-                //log.trace("enhancing output formats");
-                supportedFormats.forEach(f->f.setParameterSchema(factory.getSchema()));
-                list.addAll(supportedFormats);
+                if( canUserAccess(factory.getClass().getName())) {
+                    Set<OutputFormat> supportedFormats = factory.getSupportedFormats();
+                    //log.trace("enhancing output formats");
+                    supportedFormats.forEach(f -> f.setParameterSchema(factory.getSchema()));
+                    list.addAll(supportedFormats);
+                }
             }
         }
         return list;
@@ -282,5 +289,18 @@ ObjectMapper mapper = new ObjectMapper();
     	return settingsPresetsAsText.get(context);
     }
 
-
+    private boolean canUserAccess(String exporterClassName) {
+        boolean userCan = true;
+        for (Map.Entry<String, Map<String, Map<String, ExporterFactoryConfig>>> entry : exporterFactories.entrySet()) {
+            if( entry.getValue().values().stream()
+                    .anyMatch(s1->s1.values().stream()
+                            .anyMatch(ex->ex.getExporterFactoryClass().getName().equals(exporterClassName) &&
+                                    ex.getEnablingPrivileges() != null && !ex.getEnablingPrivileges().isEmpty()
+                            && ex.getEnablingPrivileges().stream().noneMatch(p-> PrivilegeService.instance().canDo(p))))){
+                log.info("user has no access to exporter {}", exporterClassName);
+                userCan = false;
+            }
+        }
+        return userCan;
+    }
 }

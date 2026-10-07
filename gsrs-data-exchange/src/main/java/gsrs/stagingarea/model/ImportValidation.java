@@ -7,9 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+
 import java.util.Date;
 import java.util.UUID;
 
@@ -39,13 +39,11 @@ public class ImportValidation {
         error
     }
 
+    public static int MAX_VALIDATION_MESSAGE_LENGTH = 2048;
 
     /**
      * foreign key to ImportData object
      */
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = false)
     @Indexable
     private UUID instanceId;
 
@@ -59,11 +57,8 @@ public class ImportValidation {
      * Unique, primary key
      */
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false, unique = true)
     @Indexable
     private UUID ValidationId;
 

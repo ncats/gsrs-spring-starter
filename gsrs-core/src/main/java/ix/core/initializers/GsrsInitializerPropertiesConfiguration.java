@@ -8,10 +8,9 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.controllers.EntityFactory;
 import lombok.Data;
 
 @Configuration
@@ -36,14 +35,14 @@ public class GsrsInitializerPropertiesConfiguration {
 
     private CachedSupplier<List<Initializer>> tasks = CachedSupplier.of(()->{
         List<Initializer> l = new ArrayList<>(list.size());
-        ObjectMapper mapper = new ObjectMapper();
+        EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
         for(InitializerConfig config : list){
 
             Map<String, Object> params = config.parameters ==null? Collections.emptyMap() : config.parameters;
 
             Initializer task = null;
             try {
-                task = (Initializer) mapper.convertValue(params, Class.forName(config.initializerClass));
+                task = mapper.convertValue(params, Class.forName(config.initializerClass).asSubclass(Initializer.class));
                 
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();

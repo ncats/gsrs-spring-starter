@@ -1,21 +1,15 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
-import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import gsrs.springUtils.StaticContextAccessor;
-import ix.core.controllers.EntityFactory;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
-import javax.servlet.http.HttpServletRequest;
-import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -54,9 +48,6 @@ public final class GsrsControllerUtil {
 
     public static String getRootUrlPath(){
         String url = WebMvcLinkBuilder.linkTo(RelativePathDummyObject.class).toUri().getRawPath();
-//        LinkBuilder linkBuilder = StaticContextAccessor.getBean(EntityLinks.class).linkFor(RelativePathDummyObject.class);
-//        URI uri = linkBuilder.toUri();
-//        String url= uri.getRawPath();
         String replaced = url.replace(RelativePathDummyObject.ROUTE_PATH,"");
         return replaced;
     }

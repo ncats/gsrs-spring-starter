@@ -4,6 +4,7 @@ import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.repository.EditRepository;
+import gsrs.security.canManageCVs;
 import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.ControlledVocabulary;
 //import org.hibernate.search.backend.lucene.LuceneExtension;
@@ -16,8 +17,8 @@ import ix.ginas.models.v1.ControlledVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -38,6 +39,7 @@ public class CvController extends EtagLegacySearchEntityController<CvController,
     @Autowired
     private ControlledVocabularyEntityService entityService;
 
+    @canManageCVs
     @Override
     protected CvLegacySearchService getlegacyGsrsSearchService() {
         return cvLegacySearchService;

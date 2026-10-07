@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import gsrs.services.BackupService;
+import gsrs.services.PrivilegeService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,7 +53,7 @@ import ix.core.cache.IxCache;
         ResetAllCacheSupplierBeforeEachExtension.class, ResetAllCacheSupplierBeforeAllExtension.class,
         ResetAllEntityProcessorBeforeEachExtension.class, ResetAllEntityProcessorBeforeAllExtension.class,
         ResetAllEntityServicesBeforeEachExtension.class, ResetAllEntityServicesBeforeEachExtension.class,
-        ClearDeserializerCachesBeforeEachExtension.class,
+        ClearDeserializerCachesBeforeEachExtension.class, BackupService.class
 
 })
 

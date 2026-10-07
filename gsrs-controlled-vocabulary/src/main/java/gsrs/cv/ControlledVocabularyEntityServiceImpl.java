@@ -1,7 +1,7 @@
 package gsrs.cv;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
 import gsrs.CvUtils;
 import gsrs.controller.IdHelpers;
 import gsrs.cv.events.CvCreatedEvent;
@@ -9,6 +9,7 @@ import gsrs.cv.events.CvUpdatedEvent;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.ControlledVocabularyRepository;
+import gsrs.security.canManageCVs;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.models.v1.ControlledVocabulary;
@@ -20,12 +21,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
 public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntityService<ControlledVocabulary, Long> implements ControlledVocabularyEntityService {
@@ -41,8 +43,8 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
     private ControlledVocabularyRepository repository;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper jsonMapper;
 
     @Override
     public Class<ControlledVocabulary> getEntityClass() {
@@ -54,9 +56,10 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return Long.parseLong(idAsString);
     }
 
+    @canManageCVs
     @Override
     protected ControlledVocabulary fromNewJson(JsonNode json) throws IOException {
-        return CvUtils.adaptSingleRecord(json, objectMapper, true);
+        return CvUtils.adaptSingleRecord(json, jsonMapper, true);
 
     }
 
@@ -66,12 +69,14 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return repository.findAll(pageable);
     }
 
+    @canManageCVs
     @Override
     @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
+    @canManageCVs
     @Override
     @Transactional
     protected ControlledVocabulary update(ControlledVocabulary controlledVocabulary) {
@@ -83,6 +88,7 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
         return new CvUpdatedEvent(updatedEntity);
     }
 
+    @canManageCVs
     @Override
     protected AbstractEntityCreatedEvent<ControlledVocabulary> newCreationEvent(ControlledVocabulary createdEntity) {
         return new CvCreatedEvent(createdEntity);
@@ -95,23 +101,23 @@ public class ControlledVocabularyEntityServiceImpl extends AbstractGsrsEntitySer
 
     @Override
     protected List<ControlledVocabulary> fromNewJsonList(JsonNode list) throws IOException {
-        return CvUtils.adaptList(list, objectMapper, true);
+        return CvUtils.adaptList(list, jsonMapper, true);
     }
 
     @Override
     protected ControlledVocabulary fromUpdatedJson(JsonNode json) throws IOException {
-        return CvUtils.adaptSingleRecord(json, objectMapper, false);
+        return CvUtils.adaptSingleRecord(json, jsonMapper, false);
     }
 
     @Override
     protected List<ControlledVocabulary> fromUpdatedJsonList(JsonNode list) throws IOException {
-        return CvUtils.adaptList(list, objectMapper, false);
+        return CvUtils.adaptList(list, jsonMapper, false);
     }
 
 
     @Override
     protected JsonNode toJson(ControlledVocabulary controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+        return jsonMapper.valueToTree(controlledVocabulary);
     }
 
     @Override

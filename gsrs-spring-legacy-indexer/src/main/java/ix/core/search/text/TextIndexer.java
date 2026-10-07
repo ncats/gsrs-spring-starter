@@ -28,18 +28,15 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,13 +80,7 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -129,16 +120,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.Striped;
 
 import gov.nih.ncats.common.Tuple;
@@ -152,8 +138,6 @@ import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.legacy.GsrsSuggestResult;
 import gsrs.repository.GsrsRepository;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.services.TextService;
-import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityFetcher;
 import ix.core.FieldNameDecorator;
 import ix.core.models.FV;
@@ -180,11 +164,14 @@ import ix.utils.Util;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -198,18 +185,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String TERM_VEC_PREFIX = "F";
 
     public static final String IX_BASE_PACKAGE = "ix";
-  
-
-//	public static final boolean INDEXING_ENABLED = ConfigHelper.getBoolean("ix.textindex.enabled",true);
-//	private static final boolean USE_ANALYSIS =    ConfigHelper.getBoolean("ix.textindex.fieldsuggest",true);
-//    private static final CachedSupplier<Boolean> SHOULD_LOG_INDEXING =    CachedSupplier.of(new Supplier<Boolean>() {
-//        @Override
-//        public Boolean get() {
-//            boolean value= Play.application().configuration().getBoolean("ix.textindex.shouldLog", false);
-//            return value;
-//        }
-//    });
-
     private static final String ANALYZER_FIELD = "M_FIELD";
 	private static final String ANALYZER_MARKER_FIELD = "ANALYZER_MARKER";
 	private static final String ANALYZER_VAL_PREFIX = "ANALYZER_";
@@ -218,11 +193,11 @@ public class TextIndexer implements Closeable, ProcessListener {
 	private static final String FULL_DOC_FIELD ="FULL_INDEX";
 	
 	private static final int DEFAULT_ANALYZER_MATCH_FIELD_LIMIT = 25; // number of narrowing fields to show
-	
-	
+
 	private static final char SORT_DESCENDING_CHAR = '$';
 	private static final char SORT_ASCENDING_CHAR = '^';
-	private static final int EXTRA_PADDING = 2;
+
+    private static final int EXTRA_PADDING = 2;
 	private static final String FULL_TEXT_FIELD = "text";
 	public static final String FULL_IDENTIFIER_FIELD = "identifiers";
 	private static final String SORT_PREFIX = "SORT_";
@@ -231,7 +206,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 	public static final String GIVEN_STOP_WORD = "$";
 	public static final String GIVEN_START_WORD = "^";
 	static final String ROOT = "root";
-	static final String ENTITY_PREFIX = "entity";	
+
+	static final String ENTITY_PREFIX = "entity";
+
 	private static final String SPACE_WORD = "_XSPCX_";
 
     private static final Pattern COMPLEX_QUERY_REGEX = Pattern.compile("_.*:");
@@ -239,8 +216,10 @@ public class TextIndexer implements Closeable, ProcessListener {
     private List<IndexListener> listeners = new ArrayList<>();
 
 	private Set<String> alreadySeenDuringReindexingMode;
-		
-	@Autowired
+
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
+    @Autowired
 	GsrsCache gsrscache;
 	
 	private TextIndexerConfig textIndexerConfig;
@@ -664,8 +643,6 @@ public class TextIndexer implements Closeable, ProcessListener {
                           .collect(Collectors.toList());
 
                     tvec.docs.add(TermList.of(idstring, terms));
-                }else {
-                    //log.debug("No term vector for field \""+field+"\"!");
                 }
                 ++tvec.numDocs;
             }catch (Exception ex) {
@@ -985,9 +962,8 @@ public class TextIndexer implements Closeable, ProcessListener {
 			} else if (!dir.isDirectory())
 				throw new IllegalArgumentException("Not a directory: " + dir);
 
-
-			AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
-					new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
+            AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(
+                    new NIOFSDirectory(dir.toPath(), NoLockFactory.INSTANCE), indexerService.getIndexAnalyzer());
 
 
 			ExactMatchSuggesterDecorator lookupt = new ExactMatchSuggesterDecorator(suggester);
@@ -1078,7 +1054,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					refresh();
 				} catch (IOException ex) {
 					ex.printStackTrace();
-					log.trace("Can't refresh suggest index!", ex);
+					log.warn("Can't refresh suggest index!", ex);
 				}
 			}
 		}
@@ -1102,7 +1078,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 				additionIterator.remove();
 			}
-
 			long start = TimeUtil.getCurrentTimeMillis();
 			emd.refresh();
 			lastRefresh = System.currentTimeMillis();
@@ -1135,6 +1110,9 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		List<SuggestResult> suggest(CharSequence key, int max) throws IOException {
+            if( key == null || key.length() == 0) {
+                return Collections.emptyList();
+            }
 			refreshIfDirty();
 			return lookup.get().get().lookup(key, null, false, max).stream()
 					.map(r -> new SuggestResult(r.payload.utf8ToString(), r.key, r.value))
@@ -1158,7 +1136,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		public void run() {
-
 			if(!latch.tryLock()){
 				//someone else has the lock
 				//we won't wait the schedule deamon
@@ -1192,7 +1169,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 		}
 
 		private void flush() {
-			File configFile = getFacetsConfigFile();
+            File configFile = getFacetsConfigFile();
 			if (TextIndexer.this.hasBeenModifiedSince(configFile.lastModified())) {
 				log.debug(
 						Thread.currentThread() + ": " + getClass().getName() + " writing FacetsConfig " + new Date());
@@ -1326,6 +1303,12 @@ public class TextIndexer implements Closeable, ProcessListener {
         facetFileDir = new File(baseDir, "facet");
         Files.createDirectories(facetFileDir.toPath());
         taxonDir = new NIOFSDirectory(facetFileDir.toPath(), NoLockFactory.INSTANCE);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
         taxonWriter = new DirectoryTaxonomyWriter(taxonDir);
         facetsConfig = loadFacetsConfig(new File(baseDir, FACETS_CONFIG_FILE));
         if (facetsConfig == null) {
@@ -1496,9 +1479,14 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	protected TextIndexer config(TextIndexer indexer) throws IOException {
 
-
 		indexer.searchManager = indexer.indexerService.createSearchManager();
 		indexer.taxonWriter = new DirectoryTaxonomyWriter(indexer.taxonDir);
+        try {
+            CheckIndex checker = new CheckIndex(taxonDir);
+        }
+        catch (Exception ex){
+            log.debug("Error checking index");
+        }
 		indexer.facetsConfig = new FacetsConfig();
 
 		//This should also be reset by the re-indexing trigger
@@ -2000,20 +1988,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 				UserListIndexedValue dataItem = UserSavedListService.getUserNameAndListNameFromIndexedValue(lv.label);
 				String userName = dataItem.getUserName();
 				String listName = dataItem.getListName();
-//				log.info("before adding facet: username: " + userName + "  listName: " + listName );
-				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) && 
+				if(!userName.isEmpty() && !listName.isEmpty() && userName.equalsIgnoreCase(sr.getUserName()) &&
 						userLists.size() > 0 && userLists.contains(listName)) {
 					userListInResult.add(lv);					
-//					log.info("adding facet: username: " + userName + "  listName: " + listName );
-				}									
+				}
 			}	
 		}
-		
-		
-//		if (DEBUG(1)) {
-//			log.info("## Drilled " + (sr.getOptions().isSideway() ? "sideway" : "down") + " " + facetResults.size()+ " facets");
-//		}
-
 		
 		//Convert FacetResult -> Facet, and add to
 		//search result
@@ -2210,15 +2190,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		try (TaxonomyReader taxon = new DirectoryTaxonomyReader(taxonWriter)) {
 		    hits=firstPassLuceneSearch(searcher,taxon,searchResult,filter, query, gsrsRepository);
 		}
-
-//		if (DEBUG(1)) {
-//			log.debug(
-//					"## Query executes in "
-//							+ String.format("%1$.3fs", (TimeUtil.getCurrentTimeMillis() - start) * 1e-3)
-//							+ "..."
-//							+ hits.totalHits
-//							+ " hit(s) found!");
-//		}
 
 		try {
 			LuceneSearchResultPopulator payload = new LuceneSearchResultPopulator(gsrsRepository, searchResult, hits, searcher);
@@ -2846,10 +2817,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			FacetImpl f = new FacetImpl(result.dim, searchResult);
 
 			f.enhanced=false;
-//			if (DEBUG(1)) {
-//				log.info(" + [" + result.dim + "]");
-//			}
-
 			Arrays.stream(result.labelValues)
 				.forEach(lv->f.add(lv.label, lv.value.intValue()));
 
@@ -2960,7 +2927,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 			return null;
 		}
 		List<IndexableField> _fields = _doc.getFields();
-		ObjectMapper mapper = new ObjectMapper();
 		ArrayNode fields = mapper.createArrayNode();
 		for (IndexableField f : _fields) {
 			ObjectNode node = mapper.createObjectNode();
@@ -2974,26 +2940,12 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ObjectNode n = mapper.createObjectNode();
 			IndexableFieldType type = f.fieldType();
 			
-			/*
-			if (type.docValuesType() != null)
-				n.put("docValueType", type.docValuesType().toString());
-//			n.put("indexed", type.indexed());
-			n.put("indexOptions", type.indexOptions().toString());
-			n.put("omitNorms", type.omitNorms());
-			n.put("stored", type.stored());
-			n.put("storeTermVectorOffsets", type.storeTermVectorOffsets());
-			n.put("storeTermVectorPayloads", type.storeTermVectorPayloads());
-			n.put("storeTermVectorPositions", type.storeTermVectorPositions());
-			n.put("storeTermVectors", type.storeTermVectors());
-			n.put("tokenized", type.tokenized());
-
-			node.put("options", n);*/
 			fields.add(node);
 		}
 
 		ObjectNode doc = mapper.createObjectNode();
 		doc.put("num_fields", _fields.size());
-		doc.put("fields", fields);
+		doc.set("fields", fields);
 		return doc;
 	}
 
@@ -3229,8 +3181,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker = indexValueMakerFactory.createIndexValueMakerFor(ew).restrictedForm(ivmSpecs.getTags(), ivmSpecs.isInclude());
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
-						 
+
 			Set<String> filterFields = valueMaker.getFieldNames();				
 			if(ivmSpecs.isInclude()) {
 				ix.facets=ix.facets.stream().filter(iff->!filterFields.contains(iff.getFacetName())).collect(Collectors.toList());
@@ -3238,7 +3189,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->!filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 	    		
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3249,7 +3199,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	    		ix.suggest=ix.suggest.stream().filter(iff->filterFields.contains(iff.getSuggestName())).collect(Collectors.toList());
 				
 				valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 					this.instrumentIndexableValue(ix, iv, ie->{
 						return !filterFields.contains(ie.getIndexFieldName());
 					});
@@ -3345,10 +3294,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3771,9 +3716,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 			ix.deepAnalyzed=textIndexerConfig.isFieldsuggest() && deepKindFunction.apply(ew) && ew.hasKey();
 			//flag the kind of document
 			IndexValueMaker<Object> valueMaker= indexValueMakerFactory.createIndexValueMakerFor(ew);
-//			log.error("ew.getValue(): " + ew.getValue() + " ew.getValue().getClass(): " + ew.getValue().getClass());
 			valueMaker.createIndexableValues(ew.getValue(), iv->{
-//				log.error("KK: " + kk + " iv name: " + iv.name() + " iv value: " + iv.value());
 				this.instrumentIndexableValue(ix, iv);
 			});
 			ix.fields.add(IndexedField.builder()
@@ -3863,10 +3806,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 				}
 			}
 
-
-//			if (DEBUG(2)) {
-//                log.debug("<<< " + ew.getValue());
-//            }
 		}catch(Exception e){
 			log.error("Error indexing record [" + ew.toString() + "] This may cause consistency problems", e);
 		}finally{
@@ -3883,8 +3822,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	public void addDoc(Document doc) throws IOException {
 		doc = facetsConfig.build(taxonWriter, doc);
-//		if (DEBUG(2))
-//			log.debug("++ adding document " + doc);
 		indexerService.addDocument(doc);
         notifyListenersAddDocument(doc);
 		markChange();
@@ -3930,10 +3867,6 @@ public class TextIndexer implements Closeable, ProcessListener {
         try {
         	
             Tuple<String, String> docKey = key.asLuceneIdTuple();
-            //if (DEBUG(2)){
-//            log.error("Deleting document " + docKey.k() + "=" + docKey.v() + "..." + key.getKind());
-            //}
-
             Query q = getUniqueEntityQuery(key);
 
             indexerService.deleteDocuments(q);
@@ -3952,7 +3885,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 					});
 				}
 			} catch (Exception e1) {
-                                log.warn("trouble removing autosugget index elements",e1);
+                log.warn("trouble removing autosugget index elements",e1);
 			}
 
             try {
@@ -4072,7 +4005,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	static FacetsConfig getFacetsConfig(JsonNode node) throws java.text.ParseException {
-		if (!node.isContainerNode())
+		if (!node.isContainer())
 			throw new IllegalArgumentException("Not a valid json node for FacetsConfig!");
 
 		String text = node.get("version").asText();
@@ -4100,7 +4033,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static JsonNode setFacetsConfig(FacetsConfig config) {
-		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode node = mapper.createObjectNode();
 		node.put("created", TimeUtil.getCurrentTimeMillis());
 		node.put("version", LUCENE_VERSION.toString());
@@ -4131,7 +4063,7 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 	static void saveFacetsConfig(File file, FacetsConfig facetsConfig) {
 		JsonNode node = setFacetsConfig(facetsConfig);
-		ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(out, node);
@@ -4145,13 +4077,13 @@ public class TextIndexer implements Closeable, ProcessListener {
 	static FacetsConfig loadFacetsConfig(File file) {
 		FacetsConfig config = null;
 		if (file.exists()) {
-			ObjectMapper mapper = new ObjectMapper();
+			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 			try {
 				JsonNode conf = mapper.readTree(file);
 				config = getFacetsConfig(conf);
 				log.info("## FacetsConfig loaded with " + config.getDimConfigs().size() + " dimensions!");
 			} catch (Exception ex) {
-				log.trace("Can't read file " + file, ex);
+				log.warn("Can't read file " + file, ex);
 			}
 		}
 		return config;
@@ -4159,17 +4091,17 @@ public class TextIndexer implements Closeable, ProcessListener {
 
 
 	static ConcurrentMap<String, SortField.Type> loadSorters(File file) {
-		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<String, SortField.Type>();
+		ConcurrentMap<String, SortField.Type> sorters = new ConcurrentHashMap<>();
 		if (file.exists()) {
-			ObjectMapper mapper = new ObjectMapper();
+			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 			try {
 				JsonNode conf = mapper.readTree(new BufferedInputStream(new FileInputStream(file)));
 				ArrayNode array = (ArrayNode) conf.get("sorters");
 				if (array != null) {
 					for (int i = 0; i < array.size(); ++i) {
 						ObjectNode node = (ObjectNode) array.get(i);
-						String field = node.get("field").asText();
-						String type = node.get("type").asText();
+						String field = node.get("field").asString();
+						String type = node.get("type").asString();
 						sorters.put(field, SortField.Type.valueOf(SortField.Type.class, type));
 					}
 				}
@@ -4181,7 +4113,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 	}
 
 	static void saveSorters(File file, Map<String, SortField.Type> sorters) {
-		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode conf = mapper.createObjectNode();
 		conf.put("created", TimeUtil.getCurrentTimeMillis());
@@ -4192,16 +4123,16 @@ public class TextIndexer implements Closeable, ProcessListener {
 			obj.put("type", me.getValue().toString());
 			node.add(obj);
 		}
-		conf.put("sorters", node);
+		conf.set("sorters", node);
 
 		try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(fos, conf);
 		} catch (Exception ex) {
-			log.trace("Can't persist sorter config!", ex);
+			log.error("Can't persist sorter config!", ex);
 			ex.printStackTrace();
 		}
-	}
+    }
 
 	/**
 	 * Closing this indexer will shut it down. This is the same as calling
@@ -4333,7 +4264,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 					flushDaemon.execute();
 				} catch (Throwable e) {
 				    log.warn("problem shutting down textindexer", e);
-//					throw new RuntimeException(e);
 				}
 			}
 
@@ -4477,7 +4407,6 @@ public class TextIndexer implements Closeable, ProcessListener {
 		//TODO: may need to change
 		
 		if(indexableValue.isDirectIndexField()){
-//			log.warn("Using direct indexed field which is discouraged");
 			IndexableField ifx=(IndexableField) indexableValue.getDirectIndexableField();
 			if(ifx instanceof TextField || ifx instanceof StringField) {
 				IndexedFieldType type=null;

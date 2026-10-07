@@ -1,12 +1,18 @@
 package gsrs.services;
 
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -46,13 +52,14 @@ public class PrincipalServiceImpl implements PrincipalService {
     @Override
     public Principal registerIfAbsent(String username){
         Boolean[] created = new Boolean[]{Boolean.FALSE};
+
         Principal p= cache.computeIfAbsent(username.toUpperCase(), name-> {
-            log.debug("currently there are " + principalRepository.count() + " principals in db");
+            // __aw__ should we not update the cache from database?
             Principal alreadyInDb = principalRepository.findDistinctByUsernameIgnoreCase(name);
             if (alreadyInDb != null) {
                 return alreadyInDb;
             }
-            log.debug("creating principal " + username);
+            log.info("creating principal " + username);
             created[0] = Boolean.TRUE;
             return new Principal(username, null);
         });
@@ -67,11 +74,21 @@ public class PrincipalServiceImpl implements PrincipalService {
                 // unless there's something that's going to be written. Trying and potentially failing
                 // to merge during a read-only will often result in an unnecessary rollback,
                 // on transaction completion, even if everything else is working.
-                
+
+
                 if(!TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-                    if(!entityManager.contains(p)){
+                    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+                    CriteriaQuery<Principal> cq = cb.createQuery(Principal.class);
+                    Root<Principal> principal = cq.from(Principal.class);
+                    Predicate nameCriteria = cb.equal(cb.upper(principal.get("username")), username.toUpperCase());
+                    cq.where(nameCriteria);
+                    TypedQuery<Principal> query = entityManager.createQuery(cq);
+                    List<Principal> pl = query.getResultList();
+                    if (pl.isEmpty()) {
                         return entityManager.merge(p);
-                    }    
+                    } else {
+                        return  pl.get(0);
+                    }
                 }
             }catch(Exception e) {
                 log.error("Trouble merging principal from cache, is cache for principal stale?", e);
@@ -79,7 +96,6 @@ public class PrincipalServiceImpl implements PrincipalService {
                 //TODO: this detach mechanism isn't proven to do anything
                 // we need at this time.
                 entityManager.detach(p);
-//                
             }
         }
         return p;

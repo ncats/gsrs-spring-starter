@@ -4,28 +4,24 @@ import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.security.hasAdminRole;
+import gsrs.security.canManageUsers;
 import gsrs.services.GroupService;
 import gsrs.services.UserProfileService;
 import ix.core.models.Group;
-import ix.core.models.Principal;
-import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.Option;
 import java.util.*;
-import java.util.stream.Collectors;
 
-@hasAdminRole
+@canManageUsers
 @RestController
+@Slf4j
 public class UserController {
 
     @Autowired
@@ -44,7 +40,6 @@ public class UserController {
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
-
 
     @GetMapping("api/v1/admin/groups/@names")
     @Transactional(readOnly = true)
@@ -83,6 +78,7 @@ public class UserController {
      */
     @Transactional
     @DeleteMapping({"api/v1/users({ID})", "api/v1/users/{ID}"})
+    @canManageUsers
     public ResponseEntity<Object> deactivateUser(@PathVariable("ID") String idOrName, @RequestParam Map<String, String> queryParameters) {
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (opt.isPresent()) {
@@ -112,6 +108,7 @@ public class UserController {
 
     @Transactional
     @PostMapping({"api/v1/users({ID})/password", "api/v1/users/{ID}/password"})
+    @canManageUsers
     public ResponseEntity<Object> changePassword(@PathVariable("ID") String idOrName,
                                                  @RequestBody PasswordChangeRequest passwordChangeRequest,
                                                  @RequestParam Map<String, String> queryParameters) {
@@ -142,6 +139,7 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
 
     @Transactional
     @PostMapping({"api/v1/users"})
+    @canManageUsers
     public ResponseEntity<Object> createNewUserProfile(
             @RequestBody UserProfileService.NewUserRequest newUserRequest,
             @RequestParam Map<String, String> queryParameters) {
@@ -152,15 +150,18 @@ PUT     /users($username<[0-9]+>)        ix.core.controllers.v1.UserController.u
     }
     @Transactional
     @PutMapping({"api/v1/users({ID})", "api/v1/users/{ID}"})
+    @canManageUsers
     public ResponseEntity<Object> updateUserProfile(
             @PathVariable("ID") String idOrName,
             @RequestBody UserProfileService.NewUserRequest newUserRequest,
             @RequestParam Map<String, String> queryParameters) {
 
+        log.trace("starting updateUserProfile");
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (!opt.isPresent()) {
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }
+        log.trace("updateUserProfile retrieved UP");
         UserProfileService.ValidatedNewUserRequest validatedNewUserRequest = newUserRequest.createValidatedNewUserRequest();
         String requestedUsername = validatedNewUserRequest.getUsername();
         //make sure it matches

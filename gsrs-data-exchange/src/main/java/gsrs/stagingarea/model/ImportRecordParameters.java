@@ -1,6 +1,6 @@
 package gsrs.stagingarea.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import ix.core.models.Principal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

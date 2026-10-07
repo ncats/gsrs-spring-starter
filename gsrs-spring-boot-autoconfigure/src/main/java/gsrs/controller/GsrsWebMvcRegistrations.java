@@ -2,7 +2,7 @@ package gsrs.controller;
 
 import gsrs.controller.hateoas.DefaultGsrsEntityToControllerMapper;
 import gsrs.springUtils.AutowireHelper;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -161,7 +161,7 @@ class GsrsWebMvcRegistrations implements WebMvcRegistrations {
                     mapping = new RequestMappingInfo(mapping.getName(), apiPattern,
                             mapping.getMethodsCondition(), mapping.getParamsCondition(),
                             mapping.getHeadersCondition(), mapping.getConsumesCondition(),
-                            mapping.getProducesCondition(), mapping.getCustomCondition());
+                            mapping.getProducesCondition(), mapping.getVersionCondition(), mapping.getCustomCondition());
 
                 }
 

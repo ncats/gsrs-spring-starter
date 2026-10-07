@@ -9412,6 +9412,42 @@
 				"hidden": false,
 				"selected": false,
 				"filters": []
+			},
+			{
+				"version": 1,
+				"deprecated": false,
+				"value": "ur",
+				"display": "Urdu",
+				"hidden": false,
+				"selected": false,
+				"filters": []
+			},
+			{
+				"version": 1,
+				"deprecated": false,
+				"value": "he",
+				"display": "Hebrew",
+				"hidden": false,
+				"selected": false,
+				"filters": []
+			},
+			{
+				"version": 1,
+				"deprecated": false,
+				"value": "yi",
+				"display": "Yiddish",
+				"hidden": false,
+				"selected": false,
+				"filters": []
+			},
+			{
+				"version": 1,
+				"deprecated": false,
+				"value": "lad",
+				"display": "Ladino",
+				"hidden": false,
+				"selected": false,
+				"filters": []
 			}
 		],
 		"fields": [

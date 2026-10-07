@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 import gsrs.junit.TimeTraveller;
 import gsrs.junit.vintage.TimeTravellerRule;
@@ -272,7 +272,7 @@ public class IxCacheTest {
 
     @Test
     public void cacheAfterDirtyMarkRawShouldWork() throws Exception {
-        MyEntityClass s = new MyEntityClass();
+		MyEntityClass s = new MyEntityClass();
         MyEntityClass sOther = new MyEntityClass();
         
         MyEntityClass actualFound1=IxCache.getOrElseRawIfDirty("Test", ()->{
@@ -286,16 +286,19 @@ public class IxCacheTest {
         MyEntityClass got=IxCache.getOrElseRawIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as initial model if not dirty" , s==got);
-        IxCache.markChange();
+		assertSame("Cached model should be the same as initial model if not dirty" , s, got);
+		timeTraveller.freezeTime();
+		timeTraveller.jumpAhead(1, TimeUnit.HOURS);
+		IxCache.markChange();
+		timeTraveller.jumpAhead(1, TimeUnit.HOURS);
         got=IxCache.getOrElseRawIfDirty("Test", ()->{
             return sOther;
         });
-        assertTrue("Cached model should be the same as new model if IS dirty" , sOther==got);
+		assertSame("Cached model should be the same as new model if IS dirty" , sOther, got);
         got=IxCache.getOrElseRawIfDirty("Test", ()->{
             return s;
         });
-        assertTrue("Cached model should be updated after dirty" , sOther==got);
+		assertEquals("Cached model should be updated after dirty" , sOther.uuid, got.uuid);
     }
 
     @Test
