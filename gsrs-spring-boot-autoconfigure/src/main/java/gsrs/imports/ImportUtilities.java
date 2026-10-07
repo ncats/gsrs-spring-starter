@@ -36,6 +36,7 @@ import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
@@ -52,11 +53,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 public class ImportUtilities<T> {
@@ -659,6 +660,7 @@ public class ImportUtilities<T> {
         Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
             ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
             : null;
+        ImportTimings timings = new ImportTimings();
             executor.execute(()-> {
                     log.trace("starting in handleObjectCreationAsync execute lambda");
                     ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
@@ -666,15 +668,33 @@ public class ImportUtilities<T> {
                         objectStream.forEach(object -> {
                             int processedCount = recordCount.incrementAndGet();
                             log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
-                            log.trace(object.toString());
                             try {
-                                String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
-                                importDataRecordIds.add(newRecordId);
+                                String json;
+                                long serializationStart = System.nanoTime();
+                                try {
+                                    json = mapper.writeValueAsString(object);
+                                } finally {
+                                    timings.recordSerialization(
+                                            System.nanoTime() - serializationStart);
+                                }
+
+                                long createRecordStart = System.nanoTime();
+                                try {
+                                    String newRecordId =
+                                        saveStagingAreaRecord(json, task, importingUser);
+
+                                    importDataRecordIds.add(newRecordId);
+                                } finally {
+                                    timings.recordCreateRecord(
+                                        System.nanoTime() - createRecordStart);
+                                }
                             } catch (Exception e) {
-                                    objectProcessingOK.set(false);
-                                errorRecords.add(recordCount.get());
-                                log.error("Error processing staging area record", e);
+                                objectProcessingOK.set(false);
+                                errorRecords.add(processedCount);
+                                log.error("Error processing staging area record {}", processedCount, e);
                             }
+
+                            timings.logIfNeeded(processedCount, progressUpdateInterval);
                             if (progressUpdateInterval >0 && processedCount % progressUpdateInterval == 0) {
                                 TransactionTemplate progressTransaction =
                                         new TransactionTemplate(transactionManager);
@@ -686,6 +706,7 @@ public class ImportUtilities<T> {
                             }
 
                         });
+                        timings.logFinalIfNeeded(recordCount.get(), progressUpdateInterval);
                     } catch(Exception e){
                         log.error("Error handling object stream: ", e);
                         throw new RuntimeException(e);
@@ -807,4 +828,57 @@ public class ImportUtilities<T> {
             log.warn("Error retrieving ImportMetadata with ID {}", metadataId);
         }
     }
+
+    private static final class ImportTimings {
+        private final LongAdder serialization = new LongAdder();
+        private final LongAdder serializationSamples = new LongAdder();
+        private final LongAdder createRecordTotal = new LongAdder();
+        private final LongAdder createRecordSamples = new LongAdder();
+
+        void recordSerialization(long nanos) {
+            serialization.add(nanos);
+            serializationSamples.increment();
+        }
+
+        void recordCreateRecord(long nanos) {
+            createRecordTotal.add(nanos);
+            createRecordSamples.increment();
+        }
+
+        void logIfNeeded(int processedCount, int interval) {
+            if (interval <= 0 || processedCount <= 0 || processedCount % interval != 0) {
+                return;
+            }
+
+            log(processedCount);
+        }
+
+        void logFinalIfNeeded(int processedCount, int interval) {
+            if (processedCount > 0 && (interval <= 0 || processedCount % interval != 0)) {
+                log(processedCount);
+            }
+        }
+
+        private void log(int processedCount) {
+            long serializationCount = serializationSamples.sum();
+            long createRecordCount = createRecordSamples.sum();
+            log.info(
+                    "Import timing: processedRecords={}, serializationSamples={}, "
+                            + "serialization avg={} ms, createRecordSamples={}, "
+                            + "createRecord+commit avg={} ms",
+                    processedCount,
+                    serializationCount,
+                    nanosToAverageMillis(serialization.sum(), serializationCount),
+                    createRecordCount,
+                    nanosToAverageMillis(createRecordTotal.sum(), createRecordCount));
+        }
+
+        private static double nanosToAverageMillis(
+                long nanos,
+                long count) {
+
+            return count == 0 ? 0.0 : nanos / 1_000_000.0 / count;
+        }
+    }
+
 }
