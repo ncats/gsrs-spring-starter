@@ -8,9 +8,9 @@ import org.springframework.boot.webmvc.actuate.endpoint.web.WebMvcEndpointHandle
 import org.springframework.boot.actuate.endpoint.web.annotation.*;
 import org.springframework.boot.actuate.endpoint.web.*;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.util.StringUtils;
 import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
@@ -29,6 +29,14 @@ public class GsrsApiDocsConfiguration {
     }
 
     @Bean
+    @ConditionalOnBean({
+            WebEndpointsSupplier.class,
+            ServletEndpointsSupplier.class,
+            ControllerEndpointsSupplier.class,
+            EndpointMediaTypes.class,
+            CorsEndpointProperties.class,
+            WebEndpointProperties.class
+    })
     public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(
             WebEndpointsSupplier webEndpointsSupplier,
             ServletEndpointsSupplier servletEndpointsSupplier,

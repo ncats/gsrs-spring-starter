@@ -99,6 +99,20 @@ public class GsrsWebConfig {
         return new JacksonJsonHttpMessageConverter(jacksonJsonMapper);
     }
 
+    /*
+    This was done for springDoc, but could potentially affect other code behavior.
+
+    If we want to limit it to spring-doc codex said to do this:
+    Yes. Best way is to replace the global “put `ByteArrayHttpMessageConverter` first for everything” with a small converter that only
+    claims `byte[]` responses for springdoc URLs.
+     ```
+     converterList.add(0, new SpringdocByteArrayHttpMessageConverter());
+     ```
+    and that converter would only return `true` when:
+    - response body type is `byte[]`
+    - current request path is `/v3/api-docs` or under `/v3/api-docs/**`
+    For all other GSRS endpoints, it would say “not mine,” and Spring would continue using the normal converter order.
+     */
     @Bean
     public WebMvcConfigurer gsrsByteArrayMessageConverterConfigurer() {
         return new WebMvcConfigurer() {
@@ -111,5 +125,4 @@ public class GsrsWebConfig {
             }
         };
     }
-
 }
