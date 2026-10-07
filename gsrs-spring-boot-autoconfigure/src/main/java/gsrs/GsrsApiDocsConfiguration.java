@@ -4,7 +4,7 @@ import org.springframework.boot.actuate.autoconfigure.endpoint.web.CorsEndpointP
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementPortType;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
-import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandlerMapping;
+import org.springframework.boot.webmvc.actuate.endpoint.web.WebMvcEndpointHandlerMapping;
 import org.springframework.boot.actuate.endpoint.web.annotation.*;
 import org.springframework.boot.actuate.endpoint.web.*;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -49,7 +49,7 @@ public class GsrsApiDocsConfiguration {
         return new WebMvcEndpointHandlerMapping(endpointMapping, webEndpoints,
             endpointMediaTypes, corsProperties.toCorsConfiguration(),
             new EndpointLinksResolver(allEndpoints, basePath),
-            shouldRegisterLinksMapping, null);
+            shouldRegisterLinksMapping);
     }
 
     private boolean shouldRegisterLinksMapping(WebEndpointProperties webEndpointProperties,

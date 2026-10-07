@@ -12,8 +12,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -94,6 +97,19 @@ public class GsrsWebConfig {
     @Bean
     public JacksonJsonHttpMessageConverter mappingJacksonHttpMessageConverter( @Qualifier("defaultMapper") JsonMapper jacksonJsonMapper) {
         return new JacksonJsonHttpMessageConverter(jacksonJsonMapper);
+    }
+
+    @Bean
+    public WebMvcConfigurer gsrsByteArrayMessageConverterConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void configureMessageConverters(HttpMessageConverters.ServerBuilder converters) {
+                converters.configureMessageConvertersList(converterList -> {
+                    converterList.removeIf(ByteArrayHttpMessageConverter.class::isInstance);
+                    converterList.add(0, new ByteArrayHttpMessageConverter());
+                });
+            }
+        };
     }
 
 }

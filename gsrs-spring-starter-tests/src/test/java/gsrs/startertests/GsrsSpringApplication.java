@@ -1,6 +1,7 @@
 package gsrs.startertests;
 
 import gsrs.EnableGsrsApi;
+import gsrs.EnableGsrsApiDocs;
 import gsrs.EnableGsrsBackup;
 import gsrs.EnableGsrsJpaEntities;
 //import gsrs.repository.UserProfileRepository;
@@ -19,6 +20,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
         indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CUSTOM)
 @EnableGsrsJpaEntities
 @SpringBootApplication
+@EnableGsrsApiDocs
+
 //@EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 //@Import(DefaultDataSourceConfig.class)
 //@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
