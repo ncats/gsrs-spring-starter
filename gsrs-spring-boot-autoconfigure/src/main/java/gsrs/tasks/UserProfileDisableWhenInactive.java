@@ -7,8 +7,6 @@ import gsrs.repository.UserProfileRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.services.UserProfileService;
-import ix.core.models.Group;
-import ix.core.models.Role;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +19,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     int inactiveDayLimit = 60;
+
+    int getInactiveDaysToNotify = 50;
 
     private final static String USER_TO_KEEP = "ADMIN";
 
@@ -45,6 +43,8 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     @Autowired
     private GroupRepository groupRepository;
+
+    private String gsrsUrl = "https://gsrs.ncats.nih.gov/ginas/app/ui/";
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -68,7 +68,9 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
                         Instant.ofEpochMilli(now)
                 ).toDays();
                 log.trace("{} days since last access", days);
-                if( days > inactiveDayLimit) {
+                if(days >= getInactiveDaysToNotify && days >= inactiveDayLimit){
+                    notifyUserOfExpiration(up.user.email, days, (inactiveDayLimit-days-1), gsrsUrl);
+                } else if( days > inactiveDayLimit) {
                     log.info("to make inactive!");
                     toMakeInactive.add(up);
                 } else {
@@ -89,24 +91,27 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     private void makeUserProfileInactive(UserProfile profile) {
         try {
-            UserProfile managed = userRepository.findById(profile.id).orElseThrow();
-            managed.active = false;
-            managed.setIsAllDirty();
-            List<Group> groups =groupRepository.findGroupsByMembers(profile.user);
-            Set<String> groupNames = groups.stream()
-                    .map(g->g.name)
-                    .collect(Collectors.toSet());
-            Set<String> roleNames = profile.getRoles().stream().map(Role::getRole).collect(Collectors.toSet());
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
-
-            UserProfileService.NewUserRequest request = new UserProfileService.NewUserRequest(profile.user.username, null,
-                    profile.user.email, profile.user.isAdmin(), false, groupNames, roleNames);
-            UserProfileService.ValidatedNewUserRequest validatedRequest= request.createValidatedNewUserRequest();
-            tx.executeWithoutResult(a -> service.updateUserProfile(validatedRequest));
-            log.trace("profile saved");
-        } catch (Throwable t){
-            log.error("Error saving UP: ", t);
+            tx.executeWithoutResult(status -> {
+                UserProfile managed = userRepository.findById(profile.id).orElseThrow();
+                managed.active = false;
+                managed.setIsAllDirty();
+                userRepository.saveAndFlush(managed);
+            });
+            log.trace("Profile {} made inactive", profile.user.username);
+        } catch (Exception e) {
+            log.error("Error making profile {} inactive",
+                    profile.user.username, e);
         }
+
+    }
+
+    private boolean notifyUserOfExpiration(String email, long daysSinceLastAccess, long expiration, String url) {
+        String message =
+                String.format("Dear User, it has been %d days since you logged into GSRS. If you do not log in within the next %d days, your account will be disabled. Please use URL %s",
+                daysSinceLastAccess, expiration, url);
+        log.info("We will send this message {}", message);
+        return true;
     }
 
 }
