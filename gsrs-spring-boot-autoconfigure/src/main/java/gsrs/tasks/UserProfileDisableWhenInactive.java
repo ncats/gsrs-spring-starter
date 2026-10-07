@@ -1,10 +1,14 @@
 package gsrs.tasks;
 
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.services.UserProfileService;
+import ix.core.models.Group;
+import ix.core.models.Role;
 import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +21,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
@@ -33,6 +39,12 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private UserProfileService service;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -80,10 +92,17 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
             UserProfile managed = userRepository.findById(profile.id).orElseThrow();
             managed.active = false;
             managed.setIsAllDirty();
+            List<Group> groups =groupRepository.findGroupsByMembers(profile.user);
+            Set<String> groupNames = groups.stream()
+                    .map(g->g.name)
+                    .collect(Collectors.toSet());
+            Set<String> roleNames = profile.getRoles().stream().map(Role::getRole).collect(Collectors.toSet());
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
-            tx.executeWithoutResult(a -> {
-                userRepository.saveAndFlush(managed);
-            });
+
+            UserProfileService.NewUserRequest request = new UserProfileService.NewUserRequest(profile.user.username, null,
+                    profile.user.email, profile.user.isAdmin(), false, groupNames, roleNames);
+            UserProfileService.ValidatedNewUserRequest validatedRequest= request.createValidatedNewUserRequest();
+            tx.executeWithoutResult(a -> service.updateUserProfile(validatedRequest));
             log.trace("profile saved");
         } catch (Throwable t){
             log.error("Error saving UP: ", t);
