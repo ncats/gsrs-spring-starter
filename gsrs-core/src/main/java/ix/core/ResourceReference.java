@@ -1,20 +1,18 @@
 package ix.core;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import ix.core.controllers.EntityFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Slf4j
 @JsonSerialize(using = ResourceReference.ResourceReferenceSerializer.class)
@@ -68,9 +66,8 @@ public class ResourceReference <T>{
 	public static ResourceReference<JsonNode> ofSerializedJson(String uri, Supplier<String> rawSupplier){
 		Objects.requireNonNull(rawSupplier);
 		return new ResourceReference<>(uri, ()->{
-			ObjectMapper om = new ObjectMapper();
 			try {
-				return om.readTree(rawSupplier.get());
+				return EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().readTree(rawSupplier.get());
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
@@ -80,9 +77,8 @@ public class ResourceReference <T>{
 	public static ResourceReference<JsonNode> ofSerializedJson(String uri, String raw){
 		
 		return new ResourceReference<>(uri, ()->{
-			ObjectMapper om = new ObjectMapper();
 			try {
-				return om.readTree(raw);
+				return EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().readTree(raw);
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
@@ -95,15 +91,19 @@ public class ResourceReference <T>{
 	 * @author peryeata
 	 *
 	 */
-	public static class ResourceReferenceSerializer extends JsonSerializer<ResourceReference> {
+	public static class ResourceReferenceSerializer extends ValueSerializer<ResourceReference> {
 	    public ResourceReferenceSerializer () {}
 
 	    @Override
 	    public void serialize (ResourceReference res, JsonGenerator jgen,
-                               SerializerProvider provider)
-	        throws IOException, JsonProcessingException {
-	        
-	        provider.defaultSerializeValue(res.computedResourceLink(), jgen);
+                               SerializationContext context)
+	        throws JacksonException {
+	        String resourceLink = res.computedResourceLink();
+	        if (resourceLink == null) {
+	            jgen.writeNull();
+	        } else {
+	            jgen.writeString(resourceLink);
+	        }
 	    }    
 	}
 		

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;

@@ -1,17 +1,24 @@
 package gsrs.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.hateoas.DefaultGsrsEntityToControllerMapper;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModelProcessor;
 import ix.core.controllers.EntityFactory;
+import ix.core.interfaces.GsrsJsonMapper;
+import ix.core.interfaces.GsrsJsonMapperResolver;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Configuration that generates the GSRS Standard Rest API routes
@@ -21,30 +28,39 @@ import org.springframework.util.ReflectionUtils;
 @Configuration
 public class GsrsWebConfig {
 
-    public abstract class ObjectMapperInterceptor implements MethodInterceptor {
+    public abstract static class GsrsJsonMapperInterceptor implements MethodInterceptor {
 
         @Override
-        public Object invoke(MethodInvocation invocation) throws Throwable {
+        public Object invoke(MethodInvocation invocation) {
             return ReflectionUtils.invokeMethod(invocation.getMethod(), getObject(), invocation.getArguments());
         }
 
-        protected abstract ObjectMapper getObject();
+        protected abstract GsrsJsonMapper getObject();
 
     }
+
     @Bean
-    public ObjectMapper objectMapper(ObjectMapperResolver objectMapperResolver) {
+    public GsrsJsonMapper gsrsJsonMapper(GsrsJsonMapperResolver gsrsMapperResolver) {
         ProxyFactory factory = new ProxyFactory();
+        factory.setInterfaces(GsrsJsonMapper.class);
         factory.setTargetClass(EntityFactory.EntityMapper.class);
-        factory.addAdvice(new ObjectMapperInterceptor() {
+        factory.addAdvice(new GsrsJsonMapperInterceptor() {
 
             @Override
-            protected ObjectMapper getObject() {
-                return objectMapperResolver.getObjectMapper();
+            protected GsrsJsonMapper getObject() {
+                return gsrsMapperResolver.getMapper();
             }
 
         });
 
-        return (ObjectMapper) factory.getProxy();
+        return (GsrsJsonMapper) factory.getProxy();
+    }
+
+    @Bean("legacyJsonMapper")
+    public JsonMapper standardJsonMapper() {
+        return JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
     @Bean
@@ -52,20 +68,13 @@ public class GsrsWebConfig {
         return new GsrsUnwrappedEntityModelProcessor();
     }
 
-//    @Bean
-//    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(){
-//        return new DynamicMappingJacksonHttpMessageConverter();
-//    }
-
-    @Bean
-    public MappingJackson2HttpMessageConverter MappingJackson2HttpMessageConverter(ObjectMapper objectMapper){
-        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
-
-        jsonConverter.setObjectMapper(objectMapper);
-        return jsonConverter;
+    @Bean("defaultMapper")
+    public tools.jackson.databind.json.JsonMapper jacksonJsonMapper() {
+        return EntityFactory.EntityMapper.COMPACT_ENTITY_MAPPER().getJsonMapper();
     }
+
     @Bean
-    public ObjectMapperResolver objectMapperResolver() {
+    public GsrsJsonMapperResolver gsrsMapperResolver() {
         return new RequestMatchingEntityMapperResolver();
     }
 
@@ -83,5 +92,37 @@ public class GsrsWebConfig {
     @Bean
     public DefaultGsrsEntityToControllerMapper gsrsEntityToControllerMapper(){
         return new DefaultGsrsEntityToControllerMapper();
+    }
+
+    @Bean
+    public JacksonJsonHttpMessageConverter mappingJacksonHttpMessageConverter( @Qualifier("defaultMapper") JsonMapper jacksonJsonMapper) {
+        return new JacksonJsonHttpMessageConverter(jacksonJsonMapper);
+    }
+
+    /*
+    This was done for springDoc, but could potentially affect other code behavior.
+
+    If we want to limit it to spring-doc codex said to do this:
+    Yes. Best way is to replace the global “put `ByteArrayHttpMessageConverter` first for everything” with a small converter that only
+    claims `byte[]` responses for springdoc URLs.
+     ```
+     converterList.add(0, new SpringdocByteArrayHttpMessageConverter());
+     ```
+    and that converter would only return `true` when:
+    - response body type is `byte[]`
+    - current request path is `/v3/api-docs` or under `/v3/api-docs/**`
+    For all other GSRS endpoints, it would say “not mine,” and Spring would continue using the normal converter order.
+     */
+    @Bean
+    public WebMvcConfigurer gsrsByteArrayMessageConverterConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void configureMessageConverters(HttpMessageConverters.ServerBuilder converters) {
+                converters.configureMessageConvertersList(converterList -> {
+                    converterList.removeIf(ByteArrayHttpMessageConverter.class::isInstance);
+                    converterList.add(0, new ByteArrayHttpMessageConverter());
+                });
+            }
+        };
     }
 }

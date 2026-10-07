@@ -1,9 +1,8 @@
 package ix.core.util.pojopointer;
 
-import com.fasterxml.jackson.core.JsonPointer;
-
 import java.io.IOException;
 import java.io.Serializable;
+import tools.jackson.core.JsonPointer;
 
 /**
  * Path to a JSON serializable sub-element of an object. This is used

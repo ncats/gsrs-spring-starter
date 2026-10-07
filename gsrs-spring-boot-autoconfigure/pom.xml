@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.2.0</version>
+        <version>3.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -64,6 +64,16 @@
                 </excludes>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>
@@ -144,7 +154,11 @@
             <version>5.7.11</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+            <version>2.1.2</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -202,10 +216,10 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>1.28</version>
+            <version>3.3.1</version>
         </dependency>
         <dependency>
-            <groupId>gov.nih.ncats</groupId>
+           <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-data-exchange</artifactId>
             <version>${gsrs.version}</version>
             <!--scope>compile</scope-->
@@ -215,7 +229,11 @@
             <artifactId>gsrs-service-utilities</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.1</version>
+        </dependency>
     </dependencies>
 
 </project>
