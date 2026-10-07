@@ -76,11 +76,18 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
     }
 
     private void makeUserProfileInactive(UserProfile profile) {
-        UserProfile managed = userRepository.findById(profile.id).orElseThrow();
-        managed.active = false;
-        managed.setIsAllDirty();
-        userRepository.saveAndFlush(managed);
-        log.trace("profile saved");
+        try {
+            UserProfile managed = userRepository.findById(profile.id).orElseThrow();
+            managed.active = false;
+            managed.setIsAllDirty();
+            TransactionTemplate tx = new TransactionTemplate(transactionManager);
+            tx.executeWithoutResult(a -> {
+                userRepository.saveAndFlush(managed);
+            });
+            log.trace("profile saved");
+        } catch (Throwable t){
+            log.error("Error saving UP: ", t);
+        }
     }
 
 }
