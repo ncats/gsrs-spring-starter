@@ -1,12 +1,10 @@
 package gsrs.tasks;
 
 import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.services.UserProfileService;
 import ix.core.models.Session;
 import ix.core.models.UserMessage;
 import ix.core.models.UserNotificationService;
