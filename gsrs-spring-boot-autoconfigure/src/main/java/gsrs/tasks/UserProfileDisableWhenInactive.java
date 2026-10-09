@@ -39,14 +39,13 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
     @Autowired
     private UserExpirationNotificationProperties properties;
 
-    int inactiveDayLimit = properties.getInactiveAfterDays();
-
-    int getInactiveDaysToNotify = properties.getInactiveAfterDays();
-
     private final static String USER_TO_KEEP = "ADMIN";
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
+        int inactiveDayLimit = properties.getInactiveAfterDays();
+        int getInactiveDaysToNotify = properties.getInactiveAfterDays();
+
         List<UserProfile> toMakeInactive = new ArrayList<>();
         userRepository.findAll().forEach(up ->{
             log.trace("retrieved UP {}", up.user.username);
