@@ -57,6 +57,7 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
                 if( sessions.isEmpty()) {
                     log.trace("no sessions found for this one will get last accessed from {}",
                             up.modified);
+                    // when the user has not logged in, see when the user account was set up
                     lastAccessed = up.modified.getTime();
                 } else {
                     sessions.sort(
@@ -88,7 +89,7 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     @Override
     public String getDescription() {
-        return String.format("Make all users that have not logged in within the last %d days inactive", inactiveDayLimit);
+        return String.format("Make all users that have not logged in within the last %d days inactive", properties.getInactiveAfterDays());
     }
 
     private void makeUserProfileInactive(UserProfile profile) {
