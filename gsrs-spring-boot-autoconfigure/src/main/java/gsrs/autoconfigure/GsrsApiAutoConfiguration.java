@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import gsrs.GsrsFactoryConfiguration;
@@ -39,6 +40,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
 
 @AutoConfiguration
+@EnableConfigurationProperties(UserExpirationNotificationProperties.class)
 //can't do component scan in autoconfiguration so manually import our components
 @Import(value = {AutowireHelper.class, 
         GsrsControllerConfiguration.class,
@@ -60,8 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
         UserRoleConfiguration.class,
         PrivilegeService.class,
         RolesConfig.class,
-        EmailUserNotificationService.class,
-        UserExpirationNotificationProperties.class
+        EmailUserNotificationService.class
 })
 public class GsrsApiAutoConfiguration {
 
