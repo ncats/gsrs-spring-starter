@@ -45,12 +45,41 @@ public class ValidatorFactory {
                 .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType))
                 .filter( e-> e.getKey().supports(newValue, oldValue, methodType))
                 .filter( e-> e.getKey().supportsCategory(newValue, oldValue, category))
-                .map(e -> (Validator<T>) e.getKey())
-//                .peek(v -> System.out.println("running validator : " + v))
+                //temporarily comment out the next line so we can use the 'timed' alternative while investigating the system.
+                //TODO: revert!
+                //.map(e -> (Validator<T>) e.getKey())
+                .map(e -> timed(
+                        (Validator<T>) e.getKey(),
+                        e.getValue()))
                 .reduce(Validator.emptyValid(), Validator::combine);
     }
 
 
+    private <T> Validator<T> timed(
+            Validator<T> validator,
+            ValidatorConfig config) {
+
+        String validatorName =
+                config.getValidatorClass() == null
+                        ? validator.getClass().getName()
+                        : config.getValidatorClass().getName();
+
+        return (newValue, oldValue, callback) -> {
+            long start = System.nanoTime();
+
+            try {
+                validator.validate(newValue, oldValue, callback);
+            } finally {
+                double elapsedMillis =
+                        (System.nanoTime() - start) / 1_000_000.0;
+
+                log.info(
+                        "Validator timing: validator={}, elapsedMs={}",
+                        validatorName,
+                        String.format("%.3f", elapsedMillis));
+            }
+        };
+    }
 
 
 }
