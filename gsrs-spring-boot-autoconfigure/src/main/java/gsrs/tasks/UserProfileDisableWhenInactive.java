@@ -8,6 +8,8 @@ import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.services.UserProfileService;
 import ix.core.models.Session;
+import ix.core.models.UserMessage;
+import ix.core.models.UserNotificationService;
 import ix.core.models.UserProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +25,6 @@ import java.util.List;
 @Slf4j
 public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
-    int inactiveDayLimit = 60;
-
-    int getInactiveDaysToNotify = 50;
-
-    private final static String USER_TO_KEEP = "ADMIN";
 
     @Autowired
     UserProfileRepository userRepository;
@@ -39,12 +36,16 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
     protected PlatformTransactionManager transactionManager;
 
     @Autowired
-    private UserProfileService service;
+    private UserNotificationService notificationService;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private UserExpirationNotificationProperties properties;
 
-    private String gsrsUrl = "https://gsrs.ncats.nih.gov/ginas/app/ui/";
+    int inactiveDayLimit = properties.getInactiveAfterDays();
+
+    int getInactiveDaysToNotify = properties.getInactiveAfterDays();
+
+    private final static String USER_TO_KEEP = "ADMIN";
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -55,21 +56,25 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
                 //only examine active; no point in testing those that are already inactive
                 long now = TimeUtil.getCurrentTimeMillis();
                 List<Session> sessions = sessionRepository.getAllSessionsFor(up);
+                long lastAccessed;
                 if( sessions.isEmpty()) {
-                    log.trace("no sessions found for this one");
-                    return;
+                    log.trace("no sessions found for this one will get last accessed from {}",
+                            up.modified);
+                    lastAccessed = up.modified.getTime();
+                } else {
+                    sessions.sort(
+                            Comparator.comparingLong((Session s)->s.accessed).reversed()
+                    );
+                    lastAccessed = sessions.get(0).accessed;
                 }
-                sessions.sort(
-                        Comparator.comparingLong((Session s)->s.accessed).reversed()
-                );
-                long lastAccessed = sessions.get(0).accessed;
+
                 long days = Duration.between(
                         Instant.ofEpochMilli(lastAccessed),
                         Instant.ofEpochMilli(now)
                 ).toDays();
                 log.trace("{} days since last access", days);
-                if(days >= getInactiveDaysToNotify && days >= inactiveDayLimit){
-                    notifyUserOfExpiration(up.user.email, days, (inactiveDayLimit-days-1), gsrsUrl);
+                if(days >= getInactiveDaysToNotify && days <= inactiveDayLimit && up.user.email != null){
+                    notifyUserOfExpiration(up.user.username, up.user.email, days, (inactiveDayLimit-days));
                 } else if( days > inactiveDayLimit) {
                     log.info("to make inactive!");
                     toMakeInactive.add(up);
@@ -106,12 +111,34 @@ public class UserProfileDisableWhenInactive extends ScheduledTaskInitializer {
 
     }
 
-    private boolean notifyUserOfExpiration(String email, long daysSinceLastAccess, long expiration, String url) {
+    private boolean notifyUserOfExpiration(String username, String email, long daysSinceLastAccess,
+                                           long daysRemaining) {
         String message =
-                String.format("Dear User, it has been %d days since you logged into GSRS. If you do not log in within the next %d days, your account will be disabled. Please use URL %s",
-                daysSinceLastAccess, expiration, url);
+                """
+                        Dear %s,
+        
+                        It has been %d days since you last logged into GSRS.
+                        Your account will be disabled in %d days unless you log in.
+        
+                        Log in at: %s
+                        """.formatted(
+                        username,
+                        daysSinceLastAccess,
+                        daysRemaining,
+                        properties.getGsrsUrl());
         log.info("We will send this message {}", message);
-        return true;
+        try {
+            notificationService.sendUserMessage(
+                    new UserMessage(
+                            username,
+                            email,
+                            properties.getSubject(),
+                            message));
+            return true;
+        } catch (Exception e) {
+            //allow processing of other records to contineu
+            log.error("Error sending message to {}", username, e);
+        }
+        return false;
     }
-
 }

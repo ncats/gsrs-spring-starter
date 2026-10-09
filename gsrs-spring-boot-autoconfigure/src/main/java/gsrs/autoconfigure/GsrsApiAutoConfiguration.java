@@ -5,12 +5,14 @@ import gsrs.indexer.DefaultIndexerEventFactory;
 import gsrs.indexer.DefaultIndexerEventFactoryFactory;
 import gsrs.security.AdminService;
 import gsrs.security.UserRoleConfiguration;
+import gsrs.service.EmailUserNotificationService;
 import gsrs.services.PrivilegeService;
 import gsrs.services.RolesConfig;
 import gsrs.stagingarea.repository.ImportMetadataRepository;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
 import gsrs.stagingarea.service.StagingAreaService;
+import gsrs.tasks.UserExpirationNotificationProperties;
 import ix.core.search.bulk.BulkSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -57,7 +59,9 @@ import org.springframework.transaction.annotation.Transactional;
         DefaultIndexerEventFactory.class,
         UserRoleConfiguration.class,
         PrivilegeService.class,
-        RolesConfig.class
+        RolesConfig.class,
+        EmailUserNotificationService.class,
+        UserExpirationNotificationProperties.class
 })
 public class GsrsApiAutoConfiguration {
 
