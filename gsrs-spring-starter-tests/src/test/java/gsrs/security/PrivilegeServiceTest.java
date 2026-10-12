@@ -68,15 +68,24 @@ public class PrivilegeServiceTest extends AbstractGsrsJpaEntityJunit5Test {
                 Arguments.of("View Service Info", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayNotPerform),
                 Arguments.of("View Service Info", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
                 Arguments.of("View Service Info", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
-                Arguments.of("View Service Info", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform)
+                Arguments.of("View Service Info", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Change Display Name", Role.of("Query"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Change Display Name", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Change Display Name", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Change Display Name", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Edit Approved Records", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Edit Approved Records", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Edit Approved Records", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Change Display Name for Approved", Role.of("DataEntry"),UserRoleConfiguration.PermissionResult.MayNotPerform),
+                Arguments.of("Change Display Name for Approved", Role.of("Approver"),UserRoleConfiguration.PermissionResult.MayPerform),
+                Arguments.of("Change Display Name for Approved", Role.of("Admin"),UserRoleConfiguration.PermissionResult.MayPerform)
         );
     }
 
     @Test
     void getPrivilegesForConfiguredRoleTest() {
         String startingRole = "DataEntry";
-        String[] expectedPrivileges = {"Create", "Edit", "Search", "Browse", "Export Data", "Export Relationships",
-                "Save Record JSON","Modify Relationships" };
+        String[] expectedPrivileges = {"Change Display Name", "Create", "Edit", "Search", "Browse", "Export Data" };
         PrivilegeService service = new PrivilegeService();
         List<String> actualPrivs = service.getPrivilegesForConfiguredRole(startingRole);
         String[] actualPrivileges = actualPrivs.toArray(new String[actualPrivs.size()]);
@@ -91,23 +100,28 @@ public class PrivilegeServiceTest extends AbstractGsrsJpaEntityJunit5Test {
         String[] expectedPrivileges = {
                 "Approve Records",
                 "Browse",
+                "Change Display Name",
+                "Change Display Name for Approved",
                 "Configure System",
                 "Create",
                 "Delete Lower Level Items",
                 "Edit",
+                "Edit Approval IDs",
                 "Edit Approved Records",
                 "Edit Public Data",
                 "Export Data",
-                "Export Relationships",
                 "Import Data",
+                "Index Data",
                 "Make Records Public",
                 "Manage CVs",
                 "Manage Others Lists",
                 "Manage Users",
+                "Merge Subconcepts",
                 "Modify Relationships",
+                "Override Duplicate Checks",
                 "Restore Previous Versions",
+                "Run Backup",
                 "Run Tasks",
-                "Save Record JSON",
                 "Search",
                 "View Files",
                 "View Service Info"};
