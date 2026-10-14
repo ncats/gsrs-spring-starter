@@ -20,8 +20,16 @@ public class TokenConfiguration {
     }
 
     public String getComputedToken(String username, String key) {
+        return getComputedToken(username, key, getCanonicalCacheTimeStamp());
+    }
+
+    public String getComputedToken(String username, String key, long canonicalCacheTimeStamp) {
         if(key==null)return null;
-        String date = "" + getCanonicalCacheTimeStamp();
+        String date = "" + canonicalCacheTimeStamp;
         return Util.sha1(date + username + key);
+    }
+
+    public String getPreviousComputedToken(String username, String key) {
+        return getComputedToken(username, key, getCanonicalCacheTimeStamp() - 1);
     }
 }
