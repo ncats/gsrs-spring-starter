@@ -9,6 +9,7 @@ public class GsrsLegacyAuthenticationSelector implements ImportSelector {
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         return new String[]{
                 LegacyGsrsAuthenticationProvider.class.getName(),
+                GsrsAuthenticationValidator.class.getName(),
                 LoginController.class.getName(),
 
                 GsrsSecurityEventConfiguration.class.getName(),

@@ -57,6 +57,9 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private PrivilegeService privilegeService;
 
+    @Autowired
+    private GsrsAuthenticationValidator gsrsAuthenticationValidator;
+
     private void logHeaders(HttpServletRequest req){
         if(log.isDebugEnabled()) {
             log.debug("HEADERS ON REQUEST ===================");
@@ -251,6 +254,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 auth.setAuthenticated(true);
             }
             SecurityContextHolder.getContext().setAuthentication(auth);
+            gsrsAuthenticationValidator.markAuthenticated();
         }
         filterChain.doFilter(request, response);
 

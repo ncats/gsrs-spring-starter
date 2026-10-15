@@ -10,6 +10,7 @@ import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.GsrsAuthenticationValidator;
 import gsrs.security.SessionConfiguration;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.security.UserTokenCache;
@@ -56,6 +57,9 @@ public class LoginController {
     @Autowired
     private PrivilegeService privilegeService;
 
+    @Autowired
+    private GsrsAuthenticationValidator gsrsAuthenticationValidator;
+
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
     //so we can customize it. but that didn't work as the Session info assumes authentication
     //has already run and registered your session
@@ -64,7 +68,7 @@ public class LoginController {
     // after credentials are checked.
     // when a cookie session key is checked successfully.
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@gsrsAuthenticationValidator.isCurrentlyAuthenticated()")
     @GetMapping("api/v1/whoami")
 //    @Transactional(readOnly = true)
     @Transactional
