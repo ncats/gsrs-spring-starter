@@ -124,9 +124,37 @@ public class UserController {
         Optional<UserProfile> opt = getUserProfile(idOrName);
         if (opt.isPresent()) {
             UserProfile up = opt.get();
+            if (userTokenCache != null) {
+                userTokenCache.evictUser(up);
+            }
             up.regenerateKey();
             userProfileRepository.saveAndFlush(up);
             return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @GetMapping({"api/v1/users({ID})/@tokenStatus", "api/v1/users/{ID}/@tokenStatus"})
+    @canManageUsers
+    public ResponseEntity<Object> tokenStatus(@PathVariable("ID") String idOrName,
+                                              @RequestParam Map<String, String> queryParameters) {
+        Optional<UserProfile> opt = getUserProfile(idOrName);
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            List<String> tokenFingerprints = userTokenCache == null
+                    ? Collections.emptyList()
+                    : userTokenCache.getTokenFingerprints(up);
+            List<Session> sessions = sessionRepository.findByProfile(up);
+            long expiredSessionCount = sessions.stream().filter(session -> session.expired).count();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("username", up.user.username);
+            response.put("cachedTokenCount", tokenFingerprints.size());
+            response.put("tokenFingerprints", tokenFingerprints);
+            response.put("sessionCount", sessions.size());
+            response.put("expiredSessionCount", expiredSessionCount);
+            response.put("unexpiredSessionCount", sessions.size() - expiredSessionCount);
+            response.put("activeSessionCount", sessions.size() - expiredSessionCount);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         }
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }

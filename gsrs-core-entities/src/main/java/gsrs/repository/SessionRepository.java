@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface SessionRepository extends JpaRepository<Session, UUID> {
     @Query("select s from Session s where s.profile=?1 and s.expired=false")
     List<Session> getActiveSessionsFor(UserProfile up);
+
+    List<Session> findByProfile(UserProfile up);
     @Query("select s.profile from Session s where s.id=?1 and s.expired=false")
     UserProfile findUserProfileByUnexpiredSessionId(UUID sessionId);
 }
