@@ -10,8 +10,10 @@ import gsrs.repository.GroupRepository;
 import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.GsrsAuthenticationValidator;
 import gsrs.security.SessionConfiguration;
 import gsrs.security.UserRoleConfiguration;
+import gsrs.security.UserTokenCache;
 import gsrs.security.canManageUsers;
 import gsrs.services.PrivilegeService;
 import ix.core.models.Group;
@@ -43,6 +45,9 @@ public class LoginController {
     @Autowired
     private SessionConfiguration sessionConfiguration;
 
+    @Autowired(required = false)
+    private UserTokenCache userTokenCache;
+
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
@@ -52,6 +57,9 @@ public class LoginController {
     @Autowired
     private PrivilegeService privilegeService;
 
+    @Autowired
+    private GsrsAuthenticationValidator gsrsAuthenticationValidator;
+
     //dkatzel: we turned off "isAuthenticated()" so we can catch the access is denied error
     //so we can customize it. but that didn't work as the Session info assumes authentication
     //has already run and registered your session
@@ -60,7 +68,7 @@ public class LoginController {
     // after credentials are checked.
     // when a cookie session key is checked successfully.
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@gsrsAuthenticationValidator.isCurrentlyAuthenticated()")
     @GetMapping("api/v1/whoami")
 //    @Transactional(readOnly = true)
     @Transactional
@@ -159,6 +167,9 @@ public class LoginController {
         Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
+            if (userTokenCache != null) {
+                userTokenCache.evictUser(up);
+            }
             up.regenerateKey();
             repository.saveAndFlush(up);
             return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
@@ -174,6 +185,9 @@ public class LoginController {
         Optional<UserProfile> opt = Optional.ofNullable(repository.findByUser_UsernameIgnoreCase(principal.getName()));
         if (opt.isPresent()) {
             UserProfile up = opt.get();
+            if (userTokenCache != null) {
+                userTokenCache.evictUser(up);
+            }
             up.regenerateKey();
             repository.saveAndFlush(up);
             return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);

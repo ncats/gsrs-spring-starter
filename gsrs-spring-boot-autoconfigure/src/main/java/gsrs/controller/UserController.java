@@ -3,11 +3,14 @@ package gsrs.controller;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.PrincipalRepository;
+import gsrs.repository.SessionRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.security.UserTokenCache;
 import gsrs.security.canManageUsers;
 import gsrs.services.GroupService;
 import gsrs.services.UserProfileService;
 import ix.core.models.Group;
+import ix.core.models.Session;
 import ix.core.models.UserProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +33,12 @@ public class UserController {
     @Autowired
     private PrincipalRepository principalRepository;
     @Autowired
+    private SessionRepository sessionRepository;
+    @Autowired
     private GroupRepository groupRepository;
+
+    @Autowired(required = false)
+    private UserTokenCache userTokenCache;
 
     @Autowired
     private GroupService groupService;
@@ -104,6 +112,87 @@ public class UserController {
             opt = Optional.ofNullable(userProfileRepository.findByUser_UsernameIgnoreCase(idOrName)).map(up->up.standardize());
         }
         return opt;
+    }
+
+    @Transactional
+    @PostMapping({"api/v1/users({ID})/@keygen", "api/v1/users/{ID}/@keygen"})
+    @canManageUsers
+    public ResponseEntity<Object> regenerateKey(@PathVariable("ID") String idOrName,
+                                                @RequestParam Map<String, String> queryParameters) {
+        // See also profile endpoint that allows logged-in user to @keygen their own key.
+        // Since computed tokens depend on the API key, any existing computed tokens will be affected.
+        Optional<UserProfile> opt = getUserProfile(idOrName);
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            if (userTokenCache != null) {
+                userTokenCache.evictUser(up);
+            }
+            up.regenerateKey();
+            userProfileRepository.saveAndFlush(up);
+            return new ResponseEntity<>(enhanceUserProfile(up, queryParameters), HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @GetMapping({"api/v1/users({ID})/@tokenStatus", "api/v1/users/{ID}/@tokenStatus"})
+    @canManageUsers
+    public ResponseEntity<Object> tokenStatus(@PathVariable("ID") String idOrName,
+                                              @RequestParam Map<String, String> queryParameters) {
+        Optional<UserProfile> opt = getUserProfile(idOrName);
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            List<String> tokenFingerprints = userTokenCache == null
+                    ? Collections.emptyList()
+                    : userTokenCache.getTokenFingerprints(up);
+            List<Session> sessions = sessionRepository.findByProfile(up);
+            long expiredSessionCount = sessions.stream().filter(session -> session.expired).count();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("username", up.user.username);
+            response.put("cachedTokenCount", tokenFingerprints.size());
+            response.put("tokenFingerprints", tokenFingerprints);
+            response.put("sessionCount", sessions.size());
+            response.put("expiredSessionCount", expiredSessionCount);
+            response.put("unexpiredSessionCount", sessions.size() - expiredSessionCount);
+            response.put("activeSessionCount", sessions.size() - expiredSessionCount);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+    }
+
+    @Transactional
+    @PostMapping({"api/v1/users({ID})/@expireSessions", "api/v1/users/{ID}/@expireSessions"})
+    @canManageUsers
+    public ResponseEntity<Object> expireSessions(@PathVariable("ID") String idOrName,
+                                                 @RequestParam(name = "revokeTokens", defaultValue = "false") boolean revokeTokens,
+                                                 @RequestParam Map<String, String> queryParameters) {
+        // This method does what it says, but the idea needs more work in practice.
+        Optional<UserProfile> opt = getUserProfile(idOrName);
+        if (opt.isPresent()) {
+            UserProfile up = opt.get();
+            List<Session> sessions = sessionRepository.getActiveSessionsFor(up);
+            for (Session session : sessions) {
+                session.expired = true;
+                session.setIsDirty("expired");
+            }
+            sessionRepository.saveAll(sessions);
+            sessionRepository.flush();
+
+            if (revokeTokens) {
+                if (userTokenCache != null) {
+                    userTokenCache.evictUser(up);
+                }
+                up.regenerateKey();
+                userProfileRepository.saveAndFlush(up);
+            }
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("username", up.user.username);
+            response.put("expiredSessionCount", sessions.size());
+            response.put("tokensRevoked", revokeTokens);
+            response.put("apiKeyRegenerated", revokeTokens);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+        return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
 
     @Transactional

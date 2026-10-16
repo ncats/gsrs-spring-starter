@@ -183,8 +183,7 @@ public class UserProfile extends IxModel{
 	private String getPreviousComputedToken() {
 		if(getKey()==null)return null;
 		try {
-			String date = "" + (TOKEN_CONFIG.get().getCanonicalCacheTimeStamp() - 1);
-			return Util.sha1(date + this.user.computeStandardizedName() + this.getKey());
+			return TOKEN_CONFIG.get().getPreviousComputedToken(this.user.computeStandardizedName(), this.getKey());
 		}catch(Exception e) {
 			return null;
 		}
