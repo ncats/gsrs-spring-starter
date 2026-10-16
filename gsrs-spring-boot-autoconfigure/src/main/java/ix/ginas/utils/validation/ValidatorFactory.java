@@ -45,12 +45,9 @@ public class ValidatorFactory {
                 .filter( e-> e.getValue().meetsFilterCriteria(newValue, methodType))
                 .filter( e-> e.getKey().supports(newValue, oldValue, methodType))
                 .filter( e-> e.getKey().supportsCategory(newValue, oldValue, category))
-                .map(e -> (Validator<T>) e.getKey())
-//                .peek(v -> System.out.println("running validator : " + v))
+                 .map(e -> (Validator<T>) e.getKey())
                 .reduce(Validator.emptyValid(), Validator::combine);
     }
-
-
 
 
 }
