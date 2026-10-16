@@ -92,9 +92,9 @@ public class ImportUtilities<T> {
 
     private static final Pattern regExGuid= Pattern.compile("^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$");
 
-    private final static ExecutorService executor = Executors.newFixedThreadPool(1);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
@@ -849,12 +849,13 @@ public class ImportUtilities<T> {
             if (interval <= 0 || processedCount <= 0 || processedCount % interval != 0) {
                 return;
             }
-
-            log(processedCount);
+            if(log.isTraceEnabled()) {
+                log(processedCount);
+            }
         }
 
         void logFinalIfNeeded(int processedCount, int interval) {
-            if (processedCount > 0 && (interval <= 0 || processedCount % interval != 0)) {
+            if (log.isTraceEnabled() && processedCount > 0 && (interval <= 0 || processedCount % interval != 0))  {
                 log(processedCount);
             }
         }
@@ -862,7 +863,7 @@ public class ImportUtilities<T> {
         private void log(int processedCount) {
             long serializationCount = serializationSamples.sum();
             long createRecordCount = createRecordSamples.sum();
-            log.info(
+            log.trace(
                     "Import timing: processedRecords={}, serializationSamples={}, "
                             + "serialization avg={} ms, createRecordSamples={}, "
                             + "createRecord+commit avg={} ms",

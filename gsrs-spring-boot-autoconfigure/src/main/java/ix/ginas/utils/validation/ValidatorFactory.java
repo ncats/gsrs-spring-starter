@@ -70,13 +70,15 @@ public class ValidatorFactory {
             try {
                 validator.validate(newValue, oldValue, callback);
             } finally {
-                double elapsedMillis =
-                        (System.nanoTime() - start) / 1_000_000.0;
+                if (log.isTraceEnabled()) {
+                    double elapsedMillis =
+                            (System.nanoTime() - start) / 1_000_000.0;
 
-                log.info(
-                        "Validator timing: validator={}, elapsedMs={}",
-                        validatorName,
-                        String.format("%.3f", elapsedMillis));
+                    log.trace(
+                            "Validator timing: validator={}, elapsedMs={}",
+                            validatorName,
+                            String.format("%.3f", elapsedMillis));
+                }
             }
         };
     }

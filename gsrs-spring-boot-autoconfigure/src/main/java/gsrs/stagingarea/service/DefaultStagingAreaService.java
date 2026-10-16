@@ -315,7 +315,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return;
         }
 
-        log.info(
+        log.trace(
                 "Staging timing after {} records: saveData={} ms/record, "
                         + "saveMetadata={} ms/record, deserialize={} ms/record, "
                         + "validation={} ms/record, validationPersistence={} ms/record, "
