@@ -12,7 +12,7 @@ public class VersionFileBuildInfoFetcher implements BuildInfoFetcher{
     @Autowired
     private VersionFileBuildInfoFetcherConfiguation config;
 
-    private CachedSupplier<BuildInfo> buildInfoCachedSupplier = CachedSupplier.of(()-> config.getBuildInfo());
+    private CachedSupplier<BuildInfo> buildInfoCachedSupplier = CachedSupplier.of(()-> config.createBuildInfo());
     @Override
     public BuildInfo getBuildInfo() {
         return buildInfoCachedSupplier.get();

@@ -2,8 +2,6 @@ package gsrs.scheduler;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -11,8 +9,13 @@ import gsrs.scheduledTasks.SchedulerPlugin.ScheduledTask;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.util.ExtensionConfig;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,9 +26,10 @@ import static java.util.Comparator.nullsFirst;
 
 @Configuration
 @ConfigurationProperties("gsrs.scheduled-tasks")
+@Slf4j
 public class GsrsSchedulerTaskPropertiesConfiguration {
 
-    private Map<String, ScheduledTaskConfig> list = new HashMap<String, ScheduledTaskConfig>();
+    private Map<String, ScheduledTaskConfig> list = new HashMap<>();
 
     public Map<String, ScheduledTaskConfig> getList() {
         return list;
@@ -35,7 +39,9 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
         this.list = list;
     }
 
-    // public void setList(List<ScheduledTaskConfig> list) { this.list = list; }
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     @Data
     public static class ScheduledTaskConfig implements ExtensionConfig {
@@ -63,13 +69,12 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
     private CachedSupplier<List<SchedulerPlugin.ScheduledTask>> tasks = CachedSupplier.of(()->{
         String reportTag = "ScheduledTaskConfig";
         List<SchedulerPlugin.ScheduledTask> l = new ArrayList<>(list.size());
-        ObjectMapper mapper = new ObjectMapper();
         for (String k: list.keySet()) {
             ScheduledTaskConfig config =  list.get(k);
             config.setParentKey(k);
         }
         // This variable has class scope, is there any problem with that?
-        configs = list.values().stream().collect(Collectors.toList());
+        configs = new ArrayList<>(list.values());
         System.out.println(reportTag + " found before filtering: " + configs.size());
         configs = configs.stream().filter(p->!p.isDisabled()).sorted(Comparator.comparing(i->i.getOrder(),nullsFirst(naturalOrder()))).collect(Collectors.toList());
         System.out.println(reportTag + " active after filtering: " + configs.size());
@@ -89,11 +94,11 @@ public class GsrsSchedulerTaskPropertiesConfiguration {
 
             ScheduledTaskInitializer task = null;
             try {
-            	System.out.println("Doing:" + config.scheduledTaskClass);
+                log.info("Doing: {}", config.scheduledTaskClass);
                 task = (ScheduledTaskInitializer) mapper.convertValue(params, Class.forName(config.scheduledTaskClass));
             } catch (Exception e) {
             	JsonNode jsn= mapper.convertValue(params, JsonNode.class);
-            	System.out.println(jsn.toPrettyString());
+            	log.info(jsn.toPrettyString());
                 e.printStackTrace();
                 throw new IllegalStateException(e);
             }

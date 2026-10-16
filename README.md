@@ -225,7 +225,7 @@ You will also need to add an additional dependency to your maven pom:
 #### TextIndexer @Indexable annotations
 The legacy TextIndexer can use reflection to automatically index entities using the `@Indexable` annotation on an entity's
 fields and/or public getters. By default, if a field is public it will be indexed.  If a field
-is not public, then the field must be annotated with either `@Indexable` or `@javax.persistance.Id`
+is not public, then the field must be annotated with either `@Indexable` or `@jakarta.persistance.Id`
 for it to be indexed.  If the entity has any superclasses, any inherited fields that meet
 these indexing criteria are also indexed.
 

@@ -1,10 +1,11 @@
 package gsrs.stagingarea.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.events.ReindexEntityEvent;
@@ -33,11 +34,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 import static gsrs.stagingarea.model.ImportValidation.MAX_VALIDATION_MESSAGE_LENGTH;
@@ -61,7 +63,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     KeyValueMappingRepository keyValueMappingRepository;
 
-    //@Autowired
+    @Autowired
     private TextIndexerFactory tif;
 
     @Autowired
@@ -73,7 +75,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
-    @Autowired
+    @Autowired(required = false)
     private ImportMetadataLegacySearchService importMetadataLegacySearchService;
 
     @Autowired
@@ -85,7 +87,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Value("${ix.home:ginas.ix}")
     private String textIndexerFactorDefaultDir;
 
-    //private ValidatorFactory validatorFactory;
+    @Value("${gsrs.import.timing-log-interval:200}")
+    private int timingLogInterval = 200;
+
 
     private TextIndexer indexer;
 
@@ -94,31 +98,34 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    JsonMapper jsonMapper;
+
+    private final LongAdder deserializeNanos = new LongAdder();
+    private final LongAdder validationNanos = new LongAdder();
+    private final LongAdder validationPersistenceNanos = new LongAdder();
+    private final LongAdder matchingCalculationNanos = new LongAdder();
+    private final LongAdder matchingPersistenceNanos = new LongAdder();
+    private final LongAdder indexingNanos = new LongAdder();
+    private final LongAdder saveDataNanos = new LongAdder();
+    private final LongAdder saveMetadataNanos = new LongAdder();
+    private final LongAdder timingRecordCount = new LongAdder();
+
     @PostConstruct
     public void setupIndexer() {
         log.trace("starting setupIndexer");
         if (tif != null) {
-            //indexer = tif.getDefaultInstance();
-            indexer =tif.getInstance(new File("imports"));
-            log.trace("got indexer from tif.getDefaultInstance()");
+            indexer =tif.getInstance(new File(textIndexerFactorDefaultDir, "imports"));
+            log.trace("got indexer from tif.getInstance()");
         } else {
-            try {
-                log.trace("going to create indexerFactory");
-                TextIndexerFactory indexerFactory = new TextIndexerFactory();
-
-                AutowireHelper.getInstance().autowireAndProxy(indexerFactory);
-                //indexer = indexerFactory.getDefaultInstance();
-                log.trace("textIndexerFactorDefaultDir: {}", textIndexerFactorDefaultDir);
-                indexer =indexerFactory.getInstance(new File(textIndexerFactorDefaultDir +"/imports"));
-                log.trace("got indexer from indexerFactory.getDefaultInstance(): " + indexer);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            log.error("tif is null!!!");
         }
     }
 
 
     @Override
+    @Transactional
     public String createRecord(ImportRecordParameters parameters) {
         if( indexer==null) setupIndexer();
         Objects.requireNonNull(indexer, "need a text indexer!");
@@ -133,7 +140,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         data.setSaveDate(TimeUtil.getCurrentDate());
         data.setEntityClassName(parameters.getEntityClassName());
         Objects.requireNonNull(importDataRepository, "importDataRepository is required");
-        ImportData saved = importDataRepository.saveAndFlush(data);
+        long beforeSaveNanos = System.nanoTime();
+        ImportData saved;
+        try {
+            saved = importDataRepository.save(data);
+        } finally {
+            saveDataNanos.add(System.nanoTime() - beforeSaveNanos);
+        }
 
         //step 2 - save metadata
         ImportMetadata metadata = new ImportMetadata();
@@ -156,7 +169,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.warn("Unable to retrieve current user!");
         }
 
-        metadataRepository.saveAndFlush(metadata);
+        long startMetadataSaveNanos = System.nanoTime();
+        try {
+            metadata = metadataRepository.save(metadata);
+        }finally {
+            saveMetadataNanos.add(System.nanoTime() - startMetadataSaveNanos);
+        }
 
         //step 3: save raw data, when available
         if (parameters.getRawDataSource() != null) {
@@ -169,18 +187,22 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
         //deserialize
         Object domainObject;
+        long start = System.nanoTime();
         try {
             log.trace("going deserialize object of class {}", parameters.getEntityClassName());
             domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing imported object.", e);
             return IMPORT_FAILURE;
+        } finally {
+            deserializeNanos.add(System.nanoTime() - start);
         }
         if (domainObject == null) {
             log.warn("null domainObject!");
             return recordId.toString();
         }
-        log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}", parameters.getEntityClassName(), domainObject.getClass().getName());
+        log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}",
+                parameters.getEntityClassName(), domainObject.getClass().getName());
 
         //step 4: validate
         ImportMetadata.RecordValidationStatus overallStatus = ImportMetadata.RecordValidationStatus.unparseable;
@@ -204,32 +226,56 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             }
         }
         if( performValidation) {
-            log.trace("going to validate. registry has item? {}", _entityServiceRegistry.containsKey(parameters.getEntityClassName()));
-            ValidationResponse response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
+            log.trace("going to validate. ");
+            long startValidate = System.nanoTime();
+            ValidationResponse response;
+            try {
+                 response = _entityServiceRegistry.get(parameters.getEntityClassName()).validate(domainObject);
+            } finally {
+                validationNanos.add(System.nanoTime() - startValidate);
+            }
             if (response != null) {
                 domainObject = response.getNewObject();
-                persistValidationInfo(response, 1, instanceId);
+                long startValidationPersistence = System.nanoTime();
+                try {
+                    persistValidationInfo(response, 1, instanceId);
+                } finally {
+                    validationPersistenceNanos.add(System.nanoTime() - startValidationPersistence);
+                }
+
                 overallStatus = getOverallValidationStatus(response);
                 try {
-                    importDataRepository.updateDataByRecordIdAndVersion(recordId, 1, serializeObject(domainObject));
+                    saved.setData(serializeObject(domainObject));
                     log.trace("updating record after validation");
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     log.error("Error serializing validated substance", e);
                 }
             }
 
             log.trace("overallStatus: " + overallStatus);
-            updateImportValidationStatus(recordId, overallStatus);
+            metadata.setValidationStatus(overallStatus);
         }
         //step 5: matchables
 
-        updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
+        //updateRecordImportStatus(recordId, ImportMetadata.RecordImportStatus.staged);
 
         if(performMatching){
             log.trace("going to match");
-            List<MatchableKeyValueTuple> definitionalValueTuples = getMatchables(domainObject);
-            definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
-            persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
+            List<MatchableKeyValueTuple> definitionalValueTuples;
+            long startMatch = System.nanoTime();
+            try {
+                definitionalValueTuples = getMatchables(domainObject);
+            } finally {
+                matchingCalculationNanos.add(System.nanoTime() - startMatch);
+            }
+            //definitionalValueTuples.forEach(t -> log.trace("key: {}, value: {}", t.getKey(), t.getValue()));
+            long startMatchPersistence = System.nanoTime();
+            try {
+                persistDefinitionalValues(definitionalValueTuples, instanceId, recordId, parameters.getEntityClassName());
+            }finally {
+                matchingPersistenceNanos.add(System.nanoTime() - startMatchPersistence);
+            }
+
 
             //event driven: each step in process sends an event (pub/sub) look in ... indexing
             //  validation, when done would trigger the next event via
@@ -249,10 +295,45 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         }
         if( performIndexing ) {
             log.trace("going to index");
+            long beforeIndexing = System.nanoTime();
             handleIndexing(metadata);
+            indexingNanos.add(System.nanoTime() - beforeIndexing);
         }
 
+        timingRecordCount.increment();
+        logImportTimingsIfNeeded();
         return saved.getRecordId().toString();
+    }
+
+    private void logImportTimingsIfNeeded() {
+        if (timingLogInterval <= 0) {
+            return;
+        }
+
+        long recordCount = timingRecordCount.sum();
+        if (recordCount == 0 || recordCount % timingLogInterval != 0) {
+            return;
+        }
+
+        log.trace(
+                "Staging timing after {} records: saveData={} ms/record, "
+                        + "saveMetadata={} ms/record, deserialize={} ms/record, "
+                        + "validation={} ms/record, validationPersistence={} ms/record, "
+                        + "matchingCalculation={} ms/record, matchingPersistence={} ms/record, "
+                        + "indexing={} ms/record",
+                recordCount,
+                averageMillis(saveDataNanos, recordCount),
+                averageMillis(saveMetadataNanos, recordCount),
+                averageMillis(deserializeNanos, recordCount),
+                averageMillis(validationNanos, recordCount),
+                averageMillis(validationPersistenceNanos, recordCount),
+                averageMillis(matchingCalculationNanos, recordCount),
+                averageMillis(matchingPersistenceNanos, recordCount),
+                averageMillis(indexingNanos, recordCount));
+    }
+
+    private static double averageMillis(LongAdder nanos, long recordCount) {
+        return recordCount == 0 ? 0.0 : nanos.sum() / 1_000_000.0 / recordCount;
     }
 
     private void handleIndexing(ImportMetadata importMetadata){
@@ -283,7 +364,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             //deserializing and re-serializing will allow us to reset the '_name' field of substances
             Object data = deserializeObject(importMetadata.getEntityClassName(), jsonData);
             cleanJson= serializeObject(data);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing JSON", e);
             throw new RuntimeException(e);
         }
@@ -313,7 +394,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                  //       updatedImportMetadata.getInstanceId(), latestInstanceId, saved.getInstanceId());
                 ImportMetadata reretrievedIM = metadataRepository.retrieveByRecordID(updatedImportMetadata.getRecordId());
                 log.trace("from reretrievedIM: {}", reretrievedIM.getInstanceId());
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error updating import metadata!", e);
                 throw new RuntimeException(e);
             }
@@ -471,10 +552,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
             try {
-                log.trace("going to instantiate importMetadataLegacySearchService");
-                importMetadataLegacySearchService = new ImportMetadataLegacySearchService(metadataRepository);
-                AutowireHelper.getInstance().autowire(importMetadataLegacySearchService);
-                SearchResult searchResult = importMetadataLegacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions());
+                ImportMetadataLegacySearchService searchService = importMetadataLegacySearchService;
+                if (searchService == null) {
+                    searchService = new ImportMetadataLegacySearchService(metadataRepository);
+                    AutowireHelper.getInstance().autowire(searchService);
+                }
+                SearchResult searchResult = searchService.search(searchRequest.getQuery(), searchRequest.getOptions());
                 return searchResult;
             } catch (Exception e) {
                 log.error("Error running search", e);
@@ -523,7 +606,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException {
+    public MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException {
         log.trace("starting findMatches of ImportMetadata. Instance ID: {}", importMetadata.getInstanceId());
         //first, retrieve the latest Object JSON
         List<ImportData> importDataList = importDataRepository.retrieveDataForRecord(importMetadata.getRecordId());
@@ -532,7 +615,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         String jsonData= latestExisting.getData();
         log.trace("Got JSON for metadata with {}", importMetadata.getRecordId());
         //deserialize
-        T domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
+        T domainObject = null;
+        try {
+            domainObject = (T) deserializeObject(importMetadata.getEntityClassName(), jsonData);
+        } catch (Exception e) {
+            log.error("Error deserializing domain object: {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
         log.trace("deserialized");
         List<MatchableKeyValueTuple> matchableKeyValueTuples =calculateMatchables(domainObject);
         log.trace("calculated latest matchables");
@@ -588,7 +677,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             log.trace("going deserialize object of class {}", qualifiedEntityType);
             log.trace(entityJson);
             domainObject = deserializeObject(qualifiedEntityType, entityJson);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing imported object.", e);
             return new MatchedRecordSummary();
         }
@@ -633,6 +722,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     private void persistDefinitionalValues(List<MatchableKeyValueTuple> definitionalValues, UUID instanceId, UUID recordId,
                                            String matchedEntityClass) {
 
+        List<KeyValueMapping> mappings = new ArrayList<>();
         definitionalValues.forEach(kv -> {
 
             KeyValueMapping mapping = new KeyValueMapping();
@@ -646,20 +736,23 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             mapping.setRecordId(recordId);
             mapping.setEntityClass(matchedEntityClass);
             mapping.setDataLocation(STAGING_AREA_LOCATION);
-            keyValueMappingRepository.saveAndFlush(mapping);
+            mappings.add(mapping);
             //index for searching
-            EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
-            /*try {
+            /*EntityUtils.EntityWrapper<KeyValueMapping> wrapper = EntityUtils.EntityWrapper.of(mapping);
+            try {
                 indexer.add(wrapper);
             } catch (IOException e) {
                 log.error("Error indexing import metadata to index", e);
             }*/
         });
+        keyValueMappingRepository.saveAll(mappings);
+
     }
 
 
     private <T> List<UUID> persistValidationInfo(ValidationResponse<T> validationResponse, int version, UUID instanceId) {
         List<UUID> validationIds = new ArrayList<>();
+        List<ImportValidation> importValidations = new ArrayList<>();
         validationResponse.getValidationMessages().forEach(m -> {
             ImportValidation.ImportValidationType type = ImportValidation.ImportValidationType.info;
             if (m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR) {
@@ -678,9 +771,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                     .instanceId(instanceId)
                     .build();
 
-            importValidationRepository.saveAndFlush(validation);
+            importValidations.add(validation);
             validationIds.add(validationId);
         });
+        importValidationRepository.saveAll(importValidations);
         return validationIds;
     }
 
@@ -734,9 +828,8 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     @Override
-    public Object deserializeObject(String entityClassName, String json) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(json);
+    public Object deserializeObject(String entityClassName, String json) {
+        JsonNode node = jsonMapper.readTree(json);
         if (_entityServiceRegistry.containsKey(entityClassName)) {
             return _entityServiceRegistry.get(entityClassName).parse(node);
         } else {
@@ -763,16 +856,15 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         log.trace("result of synchronizeEntity: {}", builder);
     }
 
-    private String serializeObject(Object object) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(object);
+    private String serializeObject(Object object) throws Exception {
+        return jsonMapper.writeValueAsString(object);
     }
 
     /*
     After a domain entity within the staging area is updated, we rerun validation and matching and store the results
     call this method inside a transaction
      */
-    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId) throws JsonProcessingException {
+    public void propagateUpdate(ImportMetadata importMetadata, String entityJson, String entityType, UUID newInstanceId)  {
         log.trace("starting in propagateUpdate");
         //step 1: deserialize domain object
         Object domainObject = deserializeObject(entityType, entityJson);

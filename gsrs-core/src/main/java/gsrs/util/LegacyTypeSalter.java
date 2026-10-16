@@ -3,8 +3,6 @@ package gsrs.util;
 import gov.nih.ncats.common.util.TimeUtil;
 import lombok.Data;
 
-import static java.lang.String.valueOf;
-
 @Data
 public class LegacyTypeSalter implements Salter {
 

@@ -3,16 +3,12 @@ package ix.utils.pojopatch;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.flipkart.zjsonpatch.DiffFlags;
-import com.flipkart.zjsonpatch.JsonDiff;
-import com.flipkart.zjsonpatch.JsonPatch;
 import ix.core.controllers.EntityFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.utils.Util;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -24,12 +20,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-//import com.github.fge.jsonpatch.JsonPatch;
-//import com.github.fge.jsonpatch.JsonPatchException;
-//import com.github.fge.jsonpatch.diff.JsonDiff;
-
 
 /**
  * Author: Tyler Peryea
@@ -75,7 +65,7 @@ import java.util.stream.Stream;
  */
 
 public class PojoDiff {
-	public static ObjectMapper _mapper = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
+	public static EntityFactory.EntityMapper _mapper = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER();
 	
 	public static Function<Object, Optional<String>> IDGetter = (o)->{
 		EntityWrapper<?> ew = EntityWrapper.of(o);
@@ -146,7 +136,7 @@ public class PojoDiff {
 				JsonNode temp= getPlainOldJsonPatch();
 				EntityWrapper<T> newOld = EntityWrapper.of(old);
 				JsonNode json=newOld.toFullJsonNode();
-				T newtarget=newOld.getEntityInfo().fromJsonNode( JsonPatch.apply(temp, json));
+				T newtarget=newOld.getEntityInfo().fromJsonNode(applyJsonPatch(temp, json));
 
 				return new EnhancedObjectPatch<T>(old, newtarget).apply(old);
 			}
@@ -161,7 +151,7 @@ public class PojoDiff {
 		
 		private JsonNode getPlainOldJsonPatch(){
 			if(plainOldJsonPatch==null){
-				plainOldJsonPatch=	JsonDiff.asJson(EntityWrapper.of(oldV).toJsonDiffJsonNode(), EntityWrapper.of(newV).toJsonDiffJsonNode(),JSON_DIFF_FLAGS);
+				plainOldJsonPatch=	diffAsJson(EntityWrapper.of(oldV).toJsonDiffJsonNode(), EntityWrapper.of(newV).toJsonDiffJsonNode());
 			}
 			return plainOldJsonPatch;
 		}
@@ -184,9 +174,6 @@ public class PojoDiff {
 			return changes;
 		}
 	}
-	
-	private static EnumSet<DiffFlags> JSON_DIFF_FLAGS = DiffFlags.dontNormalizeOpIntoMoveAndCopy().clone(); 
-	
 	
 	/**
 	 * Return a {@link ix.utils.pojopatch.PojoPatch} which captures the 
@@ -259,9 +246,244 @@ public class PojoDiff {
 		return null;
 	}
 
+	private static JsonNode diffAsJson(JsonNode oldValue, JsonNode newValue) {
+		ArrayNode patch = _mapper.getJsonMapper().createArrayNode();
+		appendDiff("", nullNodeIfNeeded(oldValue), nullNodeIfNeeded(newValue), patch);
+		return patch;
+	}
+
+	private static void appendDiff(String path, JsonNode oldValue, JsonNode newValue, ArrayNode patch) {
+		if (Objects.equals(oldValue, newValue)) {
+			return;
+		}
+
+		if (oldValue.isObject() && newValue.isObject()) {
+			appendObjectDiff(path, (ObjectNode) oldValue, (ObjectNode) newValue, patch);
+			return;
+		}
+
+		if (oldValue.isArray() && newValue.isArray()) {
+			appendArrayDiff(path, (ArrayNode) oldValue, (ArrayNode) newValue, patch);
+			return;
+		}
+
+		patch.add(operation("replace", path, newValue));
+	}
+
+	private static void appendObjectDiff(String path, ObjectNode oldValue, ObjectNode newValue, ArrayNode patch) {
+		Set<String> oldNames = new LinkedHashSet<String>(oldValue.propertyNames());
+		Set<String> newNames = new LinkedHashSet<String>(newValue.propertyNames());
+
+		for (String name : oldNames) {
+			if (!newNames.contains(name)) {
+				patch.add(operation("remove", appendPath(path, name), null));
+			}
+		}
+
+		for (String name : newNames) {
+			String childPath = appendPath(path, name);
+			if (!oldNames.contains(name)) {
+				patch.add(operation("add", childPath, newValue.get(name)));
+			} else {
+				appendDiff(childPath, oldValue.get(name), newValue.get(name), patch);
+			}
+		}
+	}
+
+	private static void appendArrayDiff(String path, ArrayNode oldValue, ArrayNode newValue, ArrayNode patch) {
+		int commonSize = Math.min(oldValue.size(), newValue.size());
+		for (int i = 0; i < commonSize; i++) {
+			appendDiff(appendPath(path, Integer.toString(i)), oldValue.get(i), newValue.get(i), patch);
+		}
+
+		for (int i = oldValue.size() - 1; i >= newValue.size(); i--) {
+			patch.add(operation("remove", appendPath(path, Integer.toString(i)), null));
+		}
+
+		for (int i = commonSize; i < newValue.size(); i++) {
+			patch.add(operation("add", appendPath(path, Integer.toString(i)), newValue.get(i)));
+		}
+	}
+
+	private static ObjectNode operation(String op, String path, JsonNode value) {
+		ObjectNode node = _mapper.getJsonMapper().createObjectNode();
+		node.put("op", op);
+		node.put("path", path);
+		if (value != null) {
+			node.set("value", copyNode(value));
+		}
+		return node;
+	}
+
+	public static JsonNode applyJsonPatch(JsonNode patch, JsonNode target) {
+		JsonNode result = copyNode(target);
+		for (JsonNode change : patch) {
+			String op = change.get("op").asText();
+			String path = change.get("path").asText();
+
+			if ("add".equals(op)) {
+				result = addAt(result, path, copyNode(change.get("value")));
+			} else if ("replace".equals(op)) {
+				result = replaceAt(result, path, copyNode(change.get("value")));
+			} else if ("remove".equals(op)) {
+				result = removeAt(result, path);
+			} else if ("copy".equals(op)) {
+				JsonNode value = copyNode(result.at(change.get("from").asText()));
+				result = addAt(result, path, value);
+			} else if ("move".equals(op)) {
+				String from = change.get("from").asText();
+				JsonNode value = copyNode(result.at(from));
+				result = removeAt(result, from);
+				result = addAt(result, path, value);
+			}
+		}
+		return result;
+	}
+
+	private static JsonNode addAt(JsonNode root, String path, JsonNode value) {
+		if (path == null || path.isEmpty()) {
+			return value;
+		}
+		JsonNode parent = parentNode(root, path);
+		String segment = lastPathSegment(path);
+		if (parent.isObject()) {
+			((ObjectNode) parent).set(segment, value);
+			return root;
+		}
+		if (parent.isArray()) {
+			ArrayNode array = (ArrayNode) parent;
+			int index = arrayIndex(segment, array.size(), true);
+			if (index >= array.size()) {
+				array.add(value);
+			} else {
+				array.insert(index, value);
+			}
+			return root;
+		}
+		throw new IllegalArgumentException("Can not add to non-container path: " + path);
+	}
+
+	private static JsonNode replaceAt(JsonNode root, String path, JsonNode value) {
+		if (path == null || path.isEmpty()) {
+			return value;
+		}
+		JsonNode parent = parentNode(root, path);
+		String segment = lastPathSegment(path);
+		if (parent.isObject()) {
+			((ObjectNode) parent).set(segment, value);
+			return root;
+		}
+		if (parent.isArray()) {
+			ArrayNode array = (ArrayNode) parent;
+			array.set(arrayIndex(segment, array.size(), false), value);
+			return root;
+		}
+		throw new IllegalArgumentException("Can not replace non-container path: " + path);
+	}
+
+	private static JsonNode removeAt(JsonNode root, String path) {
+		if (path == null || path.isEmpty()) {
+			return _mapper.getJsonMapper().getNodeFactory().nullNode();
+		}
+		JsonNode parent = parentNode(root, path);
+		String segment = lastPathSegment(path);
+		if (parent.isObject()) {
+			((ObjectNode) parent).remove(segment);
+			return root;
+		}
+		if (parent.isArray()) {
+			ArrayNode array = (ArrayNode) parent;
+			array.remove(arrayIndex(segment, array.size(), false));
+			return root;
+		}
+		throw new IllegalArgumentException("Can not remove from non-container path: " + path);
+	}
+
+	private static JsonNode parentNode(JsonNode root, String path) {
+		List<String> segments = pathSegments(path);
+		JsonNode current = root;
+		for (int i = 0; i < segments.size() - 1; i++) {
+			current = childNode(current, segments.get(i));
+			if (current == null || current.isMissingNode()) {
+				throw new IllegalArgumentException("Path does not exist: " + path);
+			}
+		}
+		return current;
+	}
+
+	private static JsonNode childNode(JsonNode node, String segment) {
+		if (node.isObject()) {
+			return node.get(segment);
+		}
+		if (node.isArray()) {
+			return node.get(arrayIndex(segment, node.size(), false));
+		}
+		return null;
+	}
+
+	private static List<String> pathSegments(String path) {
+		if (path == null || path.isEmpty()) {
+			return Collections.emptyList();
+		}
+		if (!path.startsWith("/")) {
+			throw new IllegalArgumentException("Invalid JSON pointer path: " + path);
+		}
+		String[] rawSegments = path.substring(1).split("/", -1);
+		List<String> segments = new ArrayList<String>(rawSegments.length);
+		for (String rawSegment : rawSegments) {
+			segments.add(unescapePathSegment(rawSegment));
+		}
+		return segments;
+	}
+
+	private static String lastPathSegment(String path) {
+		List<String> segments = pathSegments(path);
+		if (segments.isEmpty()) {
+			return "";
+		}
+		return segments.get(segments.size() - 1);
+	}
+
+	private static int arrayIndex(String segment, int size, boolean allowEnd) {
+		if ("-".equals(segment)) {
+			if (allowEnd) {
+				return size;
+			}
+			throw new IllegalArgumentException("'-' is not a valid array index here");
+		}
+		int index = Integer.parseInt(segment);
+		if (index < 0 || (!allowEnd && index >= size)) {
+			throw new IndexOutOfBoundsException("Array index " + index + " out of bounds for size " + size);
+		}
+		return index;
+	}
+
+	private static String appendPath(String path, String segment) {
+		return path + "/" + escapePathSegment(segment);
+	}
+
+	private static String escapePathSegment(String segment) {
+		return segment.replace("~", "~0").replace("/", "~1");
+	}
+
+	private static String unescapePathSegment(String segment) {
+		return segment.replace("~1", "/").replace("~0", "~");
+	}
+
+	private static JsonNode nullNodeIfNeeded(JsonNode value) {
+		if (value == null || value.isMissingNode()) {
+			return _mapper.getJsonMapper().getNodeFactory().nullNode();
+		}
+		return value;
+	}
+
+	private static JsonNode copyNode(JsonNode value) {
+		return nullNodeIfNeeded(value).deepCopy();
+	}
+
 
 	private static ObjectNode mappify(ObjectNode m2){
-		Iterator<String> fields=m2.fieldNames();
+		Iterator<String> fields=m2.propertyNames().iterator();
 		List<String> fieldNames = new ArrayList<String>();
 		while(fields.hasNext()){
 			fieldNames.add(fields.next());
@@ -274,7 +496,7 @@ public class PojoDiff {
 			if(o.isArray()){
 				ArrayNode arr=((ArrayNode)o);
 				ObjectNode mnew=mappify(arr);
-				m2.put(key, mnew);
+				m2.set(key, mnew);
 			}else if(o.isObject()){
 				mappify((ObjectNode)o);
 			}
@@ -282,36 +504,10 @@ public class PojoDiff {
 		return m2;
 	}
 
-	/*
 	private static ObjectNode mappify(ArrayNode o){
-		ObjectMapper om=new ObjectMapper();
 		ArrayNode arr=((ArrayNode)o);
 
-		ObjectNode mnew=om.createObjectNode();
-		//Map mnew = new HashMap();
-		for(int i=0;i<arr.size();i++){
-			JsonNode o2=arr.get(i);
-			String id=getID(o2);
-			String ind=String.format("%05d", i);
-			String id_ind=String.format("%05d", 0);
-			if(id!=null){
-				mnew.set("$" + id + "_" + id_ind, o2);
-			}else{
-				mnew.set("_" + ind, o2);
-			}
-			if(o2.isObject()){
-				mappify((ObjectNode)o2);
-			}
-		}
-		return mnew;
-	}
-	*/
-
-	private static ObjectNode mappify(ArrayNode o){
-		ObjectMapper om=new ObjectMapper();
-		ArrayNode arr=((ArrayNode)o);
-
-		ObjectNode mnew=om.createObjectNode();
+		ObjectNode mnew=_mapper.getJsonMapper().createObjectNode();
 		//Map mnew = new HashMap();
 		for(int i=0;i<arr.size();i++){
 			JsonNode o2=arr.get(i);
@@ -385,7 +581,7 @@ public class PojoDiff {
 
 
 	public static JsonNode getEnhancedJsonDiff(Object oldValue, Object newValue, JsonNode[] oldAndNewValue){
-		ObjectMapper mapper = _mapper;
+		EntityFactory.EntityMapper mapper = _mapper;
 		JsonNode js1;
 		JsonNode js2;
 		if(oldValue instanceof JsonNode){
@@ -404,37 +600,34 @@ public class PojoDiff {
 		oldAndNewValue[0]=mappifyJson(js1);
 		oldAndNewValue[1]=mappifyJson(js2);
 
-		JsonNode diff= JsonDiff.asJson(
+		JsonNode diff= diffAsJson(
 				oldAndNewValue[0],
-				oldAndNewValue[1],
-				JSON_DIFF_FLAGS
+				oldAndNewValue[1]
     			);
 		List<JsonNode> reorderedDiffs= new ArrayList<JsonNode>();
 
 
 
-		JsonNode normalDiff= JsonDiff.asJson(
+		JsonNode normalDiff= diffAsJson(
 				js1,
-				js2,
-				JSON_DIFF_FLAGS
+				js2
     			);
 
 
 		JsonNode[] cdiffs= new JsonNode[normalDiff.size()];
 		HashMap<String,Integer> positions = new HashMap<String,Integer>();
 
-		Stream.of(normalDiff)
-		      .map(Util.toIndexedTuple())
-		      .forEach(jsnt->{
-		    	  	String path=jsnt.v().at("/path").asText();
-					path=path.replaceAll("[$][^_]*[_]", "").replaceAll("/_[0]*([0-9][0-9]*)","/$1");
-					if(path.endsWith("/-")){
-						int s=js1.at(path.replaceAll("/-$", "")).size();
-						path=path.replaceAll("/-$", "/"+s+"");
-					}
-					String op=jsnt.v().at("/op").asText();
-					positions.put(op + path, jsnt.k());
-		      });
+		int normalPosition = 0;
+		for(JsonNode jsnt:normalDiff){
+			String path=jsnt.at("/path").asText();
+			path=path.replaceAll("[$][^_]*[_]", "").replaceAll("/_[0]*([0-9][0-9]*)","/$1");
+			if(path.endsWith("/-")){
+				int s=js1.at(path.replaceAll("/-$", "")).size();
+				path=path.replaceAll("/-$", "/"+s+"");
+			}
+			String op=jsnt.at("/op").asText();
+			positions.put(op + path, normalPosition++);
+		}
 
 		for(JsonNode jsn:diff){
 			String path=jsn.at("/path").asText();
@@ -456,7 +649,7 @@ public class PojoDiff {
 		}
 
 		canonicalizeDiff(reorderedDiffs);
-		ArrayNode an=(new ObjectMapper()).createArrayNode();
+		ArrayNode an=_mapper.getJsonMapper().createArrayNode();
 		an.addAll(reorderedDiffs);
 		return an;
 		//return normalDiff;
@@ -465,12 +658,17 @@ public class PojoDiff {
 
 
 	public static JsonNode getJsonDiff(Object oldValue, Object newValue){
-			ObjectMapper mapper = _mapper;
-			return JsonDiff.asJson(
-	    			mapper.valueToTree(oldValue),
-	    			mapper.valueToTree(newValue),
-					JSON_DIFF_FLAGS
-	    			);
+			EntityFactory.EntityMapper mapper = _mapper;
+			JsonNode oldJson = oldValue instanceof JsonNode
+					? (JsonNode) oldValue
+					: mapper.valueToTree(oldValue);
+			JsonNode newJson = newValue instanceof JsonNode
+					? (JsonNode) newValue
+					: mapper.valueToTree(newValue);
+			return diffAsJson(
+					oldJson,
+					newJson
+					);
 	}
 	/**
 	 * Returns the unique path, with the embedded ID, and ignoring order
@@ -498,12 +696,11 @@ public class PojoDiff {
 	private static <T> Stack<?> applyChanges(T oldValue, T newValue, JsonNode jsonpatch, ChangeEventListener ... changeListener){
 			LinkedHashSet<Object> changedContainers = new LinkedHashSet<Object>();
 			if(jsonpatch==null){
-				ObjectMapper mapper = _mapper;
-				jsonpatch = JsonDiff.asJson(
-		    			mapper.valueToTree(oldValue),
-		    			mapper.valueToTree(newValue),
-						JSON_DIFF_FLAGS
-		    			);
+				EntityFactory.EntityMapper mapper = _mapper;
+				jsonpatch = diffAsJson(
+						mapper.valueToTree(oldValue),
+						mapper.valueToTree(newValue)
+						);
 			}
 
         	if(jsonpatch==null){

@@ -1,6 +1,7 @@
 package ix.core.util.pojopointer;
 
-import com.fasterxml.jackson.core.JsonPointer;
+
+import tools.jackson.core.JsonPointer;
 
 public final class IdentityPath extends AbstractPath{
 	final static JsonPointer jsonIdentity=JsonPointer.compile("");

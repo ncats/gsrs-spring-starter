@@ -1,25 +1,19 @@
 package gsrs.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.controller.GsrsRestResponseErrorHandler;
-
-import ix.core.models.Session;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -27,31 +21,24 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
-import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.json.JsonMapper;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(securedEnabled = true,
+@EnableMethodSecurity(securedEnabled = true,
         proxyTargetClass = true,
         prePostEnabled = true)
 @Configuration
 public class LegacyGsrsSecurityConfiguration {
 
-    private RequestMatcher permited = new AntPathRequestMatcher("/api/v1/whoami", HttpMethod.GET.toString());
+    private RequestMatcher permited = PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/api/v1/whoami");
 
     @Autowired
     private LogoutHandler logoutHandler;
@@ -72,15 +59,17 @@ public class LegacyGsrsSecurityConfiguration {
     @Autowired
     private SessionConfiguration sessionConfiguration;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     @Autowired
     public void setAuthenticationConfiguration(LegacyAuthenticationConfiguration authenticationConfiguration) {
         this.authenticationConfiguration = authenticationConfiguration;
         if(authenticationConfiguration.isAllownonauthenticated()){
-            List<RequestMatcher> secured = new ArrayList();
-            secured.add(new AntPathRequestMatcher("/api/**", HttpMethod.DELETE.toString()));
-            secured.add(new AntPathRequestMatcher("/logout", HttpMethod.GET.toString()));
+            List<RequestMatcher> secured = new ArrayList<>();
+            secured.add(PathPatternRequestMatcher.pathPattern(HttpMethod.DELETE, "/api/**"));
+            secured.add(PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/logout"));
             this.permited = new NegatedRequestMatcher(new OrRequestMatcher(secured));
         }
     }

@@ -1,5 +1,6 @@
 package gsrs.dataexchange.imports.indexers;
 
+import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.imports.indexers.MetadataValidationIndexValueMaker;
@@ -16,12 +17,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class MetadataValidationIndexValueMakerTest {
     @Test
-    public void createIndexableValuesTest() throws NoSuchFieldException, IllegalAccessException {
+    public void createIndexableValuesTest() throws Exception {
         ImportMetadata metadata = new ImportMetadata();
         metadata.setAccess( Collections.singleton(new Group("protected")));
         metadata.setReason("test");
@@ -30,9 +32,12 @@ public class MetadataValidationIndexValueMakerTest {
         metadata.setInstanceId(UUID.randomUUID());
         metadata.setEntityClassName("ix.ginas.models.v1.Substance");
         MetadataValidationIndexValueMaker indexValueMaker1 = new MetadataValidationIndexValueMaker();
-        Field serviceField = indexValueMaker1.getClass().getDeclaredField("stagingAreaService");
-        serviceField.setAccessible(true);
         StagingAreaService stagingAreaService = mock(StagingAreaService.class);
+        GsrsImportAdapterFactoryFactory importAdapterFactoryFactory = mock(GsrsImportAdapterFactoryFactory.class);
+        when(importAdapterFactoryFactory.getStagingAreaService(anyString())).thenReturn(stagingAreaService);
+        Field factoryField = indexValueMaker1.getClass().getDeclaredField("gsrsImportAdapterFactoryFactory");
+        factoryField.setAccessible(true);
+        factoryField.set(indexValueMaker1, importAdapterFactoryFactory);
 
         String tooManyAtomsMessage = "Warning! The structure contains too many atoms";
         ValidationResponse vr = new ValidationResponse();
@@ -54,7 +59,6 @@ public class MetadataValidationIndexValueMakerTest {
         };
         vr.addValidationMessage(vm);
         when(stagingAreaService.validateInstance(metadata.getInstanceId().toString())).thenReturn(vr);
-        serviceField.set(indexValueMaker1, stagingAreaService);
         List<IndexableValue> indexedValues = new ArrayList<>();
         indexValueMaker1.createIndexableValues(metadata, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().equals(MetadataValidationIndexValueMaker.IMPORT_METADATA_VALIDATION_TYPE_FACET)

@@ -1,10 +1,10 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.util.Date;
 
 public class GsrsDateSerializer extends StdSerializer<Date> {
@@ -19,8 +19,8 @@ public class GsrsDateSerializer extends StdSerializer<Date> {
     }
 
     @Override
-    public void serialize (Date value, JsonGenerator gen, SerializerProvider arg2)
-            throws IOException {
+    public void serialize (Date value, JsonGenerator gen, SerializationContext context)
+            throws JacksonException {
         if(value ==null){
             gen.writeNull();
         }else {

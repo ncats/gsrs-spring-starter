@@ -35,6 +35,7 @@ class ImportDataSearchTest extends AbstractGsrsJpaEntityJunit5Test {
     private TextIndexer indexer;
 
     private String objectName="gsrs.stagingarea.model.ImportMetadata";
+
     @BeforeEach
     public void setup() throws Exception {
         indexer = tif.getDefaultInstance();

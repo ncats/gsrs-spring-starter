@@ -23,7 +23,6 @@ import org.springframework.hateoas.server.EntityLinks;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.IxContext;
@@ -31,7 +30,9 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.cache.CacheStrategy;
 import ix.core.models.FieldedQueryFacet;
 import ix.core.models.FieldedQueryFacet.MATCH_TYPE;
+import ix.core.search.bulk.BulkSearchService.BulkQuerySummary;
 import ix.utils.Util;
+import tools.jackson.databind.json.JsonMapper;
 
 @CacheStrategy(evictable=false)
 public class SearchResultContext {
@@ -75,6 +76,10 @@ public class SearchResultContext {
     private String id = Util.randvar (10);
     private Integer total;
     private String key;
+    private BulkQuerySummary summary;
+    private Integer completedQueries;
+    private Integer totalQueries;
+    private Integer runningBulkSearchTotal;
 
 
 	private String originalRequest = null;
@@ -135,6 +140,7 @@ public class SearchResultContext {
     	if(result.getFieldFacets()!=null){
     		fieldFacets.addAll(result.getFieldFacets());
     	}
+        summary = result.getSummary();
         setStart(result.getTimestamp());
 
         if (result.finished()) {
@@ -253,6 +259,47 @@ public class SearchResultContext {
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Collection getResults () { return results; }
 
+    public BulkQuerySummary getSummary() {
+        return summary;
+    }
+ 
+    public void setSummary(BulkQuerySummary summary) {
+        this.summary = summary;
+        if (summary != null) {
+            this.completedQueries = summary.getQCompleted();
+            this.totalQueries = summary.getQTotal();
+            this.runningBulkSearchTotal = summary.getQRunningTotal();
+        } else {
+            this.completedQueries = null;
+            this.totalQueries = null;
+            this.runningBulkSearchTotal = null;
+        }
+    }
+ 
+    public Integer getCompletedQueries() {
+        return completedQueries;
+    }
+ 
+    public void setCompletedQueries(Integer completedQueries) {
+        this.completedQueries = completedQueries;
+    }
+ 
+    public Integer getTotalQueries() {
+        return totalQueries;
+    }
+ 
+    public void setTotalQueries(Integer totalQueries) {
+        this.totalQueries = totalQueries;
+    }
+
+    public Integer getRunningBulkSearchTotal() {
+        return runningBulkSearchTotal;
+    }
+
+    public void setRunningBulkSearchTotal(Integer runningBulkSearchTotal) {
+        this.runningBulkSearchTotal = runningBulkSearchTotal;
+    }
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     public List getResultsAsList() {
         if(results instanceof List)return (List)results;
@@ -315,7 +362,7 @@ public class SearchResultContext {
     }
     
     public String toJson(){
-    	ObjectMapper om = new ObjectMapper();
+    	JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
     	return om.valueToTree(this).toString();
     }
     

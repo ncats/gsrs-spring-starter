@@ -1,8 +1,8 @@
 package gsrs.startertests.validator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.controllers.EntityFactory;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -11,7 +11,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 public class ValidatorConfigTest{
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final EntityFactory.EntityMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
     @Test
     public void programmaticallyCreateConfigNoParams() throws ClassNotFoundException {

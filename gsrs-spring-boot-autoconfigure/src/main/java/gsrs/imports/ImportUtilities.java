@@ -1,11 +1,10 @@
 package gsrs.imports;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
@@ -37,12 +36,15 @@ import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +53,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -89,9 +92,16 @@ public class ImportUtilities<T> {
 
     private static final Pattern regExGuid= Pattern.compile("^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$");
 
-    private final static ExecutorService executor = Executors.newFixedThreadPool(1);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(1);
+
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     StagingAreaService stagingAreaService;
+
+    @Value("${gsrs.import.progress-update-interval:100}")
+    private int progressUpdateInterval = 100;
 
     public ImportUtilities(String contextName, Class<T> entityClass, StagingAreaService service) {
         this.contextName=contextName;
@@ -110,7 +120,6 @@ public class ImportUtilities<T> {
             entityClass));
 
     public static void enhanceWithMetadata(ObjectNode dataNode, ImportMetadata metadata, StagingAreaService service) {
-        ObjectMapper mapper = new ObjectMapper();
         if (metadata != null) {
             String metadataAsString;
             try {
@@ -156,7 +165,7 @@ public class ImportUtilities<T> {
             try {
                 config = AbstractImportSupportingGsrsEntityController.ImportTaskMetaData.fromText(c);
                 allImportConfigs.add(config);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error in getAllImportTasks", e);
             }
         });
@@ -164,7 +173,6 @@ public class ImportUtilities<T> {
     }
 
     public static String removeMetadataFromDomainObjectJson(String domainObjectJson) {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             JsonNode objectAsNode = mapper.readTree(domainObjectJson);
             if (objectAsNode.hasNonNull("_metadata") && objectAsNode.isObject()) {
@@ -174,7 +182,7 @@ public class ImportUtilities<T> {
                 ((ObjectNode) objectAsNode).remove("_matches");
             }
             return objectAsNode.toString();
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -205,7 +213,7 @@ public class ImportUtilities<T> {
             SpecificExporterSettings config = null;
             try {
                 config = SpecificExporterSettings.fromText(c);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 log.error("Error", e);
             }
             assert config != null;
@@ -216,7 +224,6 @@ public class ImportUtilities<T> {
     public ObjectNode handleAction(StagingAreaService stagingAreaService, String matchedEntityId, String stagingRecordId,
                                         int version, String persist, String processingJson, String contextName ) throws Exception {
         assert stagingAreaService != null;
-        ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         return processOneRecord(stagingAreaService, stagingRecordId, matchedEntityId, version, persist, configSet.getProcessingActions());
     }
@@ -224,7 +231,6 @@ public class ImportUtilities<T> {
     public List<ObjectNode> handleActions(StagingAreaService stagingAreaService,
                                    int version, String persist, String processingJson) throws Exception {
         assert stagingAreaService != null;
-        ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         List<ObjectNode> returnNodes = new ArrayList<>();
         for(int r =0; r<configSet.getStagingAreaRecords().size();r++) {
@@ -242,7 +248,6 @@ public class ImportUtilities<T> {
                                                   int version, String persist, String processingJson) throws Exception {
 
         assert stagingAreaService != null;
-        ObjectMapper mapper = new ObjectMapper();
         ProcessingActionConfigSet configSet = mapper.readValue(processingJson, ProcessingActionConfigSet.class);
         ImportProcessingJob job = new ImportProcessingJob();
         job.setId(UUID.randomUUID());
@@ -485,7 +490,6 @@ public class ImportUtilities<T> {
 
         if( currentObject!=null) {
             log.trace("currentObject not null");
-            //messageNode.put("object", mapper.writeValueAsString(currentObject));
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
             messageNode.put("status", "OK");
@@ -548,7 +552,6 @@ public class ImportUtilities<T> {
     public Stream<T> generateObjects(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData<T> task, Map<String, String> settingsMap) throws Exception {
         log.trace("starting in generateObjects. task: " + task.toString());
         log.trace("using encoding {}, looking for payload with ID {}", task.getFileEncoding(), task.getPayloadID());
-        ObjectMapper mapper = new ObjectMapper();
         ObjectNode settingsNode = mapper.convertValue(settingsMap, ObjectNode.class);
         if (!settingsNode.hasNonNull("Encoding")) {
             settingsNode.put("Encoding", task.getFileEncoding());
@@ -565,62 +568,47 @@ public class ImportUtilities<T> {
 
     public JsonNode handleObjectCreation(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
                                        Map<String, String> queryParameters) throws Exception {
-        Stream<T> objectStream = generateObjects(task, queryParameters);
+        try( Stream<T> objectStream = generateObjects(task, queryParameters) ) {
 
-        ObjectMapper mapper = new ObjectMapper();
-        AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
-        AtomicInteger recordCount = new AtomicInteger(0);
-        List<Integer> errorRecords = new ArrayList<>();
-        List<String> importDataRecordIds = new ArrayList<>();
-        ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
-        Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
-                ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
-                : null;
+            AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
+            AtomicInteger recordCount = new AtomicInteger(0);
+            List<Integer> errorRecords = new ArrayList<>();
+            List<String> importDataRecordIds = new ArrayList<>();
+            ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+            Principal importingUser = (GsrsSecurityUtils.getCurrentUsername() != null && GsrsSecurityUtils.getCurrentUsername().isPresent())
+                    ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
+                    : null;
 
-        objectStream.forEach(object -> {
-            recordCount.incrementAndGet();
-            log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
-            log.trace(object.toString());
-            try {
-                String newRecordId =saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
-                importDataRecordIds.add(newRecordId);
-                    /*if (recordCount.get() < limit) {
-                        if (object instanceof Supplier) {
-                            log.trace("going to invoke supplier on object");
-                            object = (T) ((Supplier) object).get();
-                        }
-                        //previewNode.add(mapper.writeValueAsString(object));
-                        ObjectNode singleRecord = JsonNodeFactory.instance.objectNode();
-                        JsonNode dataAsNode = mapper.readTree(mapper.writeValueAsString(object));
-                        singleRecord.set("data", dataAsNode);
-                        MatchedRecordSummary matchSummary = service.findMatchesForJson(itmd.entityType, mapper.writeValueAsString(object),
-                                newRecordId);
-                        JsonNode matchesAsNode = mapper.readTree(mapper.writeValueAsString(matchSummary));
-                        singleRecord.set("matches", matchesAsNode);
-                        previewNode.add(singleRecord);
-                    }*/
-            } catch (JsonProcessingException e) {
-                objectProcessingOK.set(false);
-                errorRecords.add(recordCount.get());
-                log.error("Error processing staging area record", e);
-            }
-        });
+            objectStream.forEach(object -> {
+                recordCount.incrementAndGet();
+                log.trace("going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+                log.trace(object.toString());
+                try {
+                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
+                    importDataRecordIds.add(newRecordId);
+                } catch (Exception e) {
+                    objectProcessingOK.set(false);
+                    errorRecords.add(recordCount.get());
+                    log.error("Error processing staging area record", e);
+                }
+            });
 
-        ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
-        returnNode.put("completeSuccess", objectProcessingOK.get());
-        ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
-        importDataRecordIds.forEach(recordIdListNode::add);
-        returnNode.set("stagingAreaRecordIds", recordIdListNode);
-        ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
-        errorRecords.forEach(problemRecords::add);
-        returnNode.set("recordsWithProcessingErrors", problemRecords);
-        returnNode.put("fileName", task.getFilename());
-        returnNode.put("adapter", task.getAdapter());
-        long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
-        returnNode.put("limit", limit);
-        log.trace("Attached limit to returnNode");
-        returnNode.set("dataPreview", previewNode);
-        return returnNode;
+            ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
+            returnNode.put("completeSuccess", objectProcessingOK.get());
+            ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
+            importDataRecordIds.forEach(recordIdListNode::add);
+            returnNode.set("stagingAreaRecordIds", recordIdListNode);
+            ArrayNode problemRecords = JsonNodeFactory.instance.arrayNode();
+            errorRecords.forEach(problemRecords::add);
+            returnNode.set("recordsWithProcessingErrors", problemRecords);
+            returnNode.put("fileName", task.getFilename());
+            returnNode.put("adapter", task.getAdapter());
+            long limit = Long.parseLong(queryParameters.getOrDefault("limit", "10"));
+            returnNode.put("limit", limit);
+            log.trace("Attached limit to returnNode");
+            returnNode.set("dataPreview", previewNode);
+            return returnNode;
+        }
     }
 
     public JsonNode handleObjectCreationAsync(AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
@@ -628,7 +616,6 @@ public class ImportUtilities<T> {
 
         log.trace("starting in handleObjectCreationAsync");
         log.trace("task: {}", task.toString());
-        ObjectMapper mapper = new ObjectMapper();
         AtomicBoolean objectProcessingOK = new AtomicBoolean(true);
         AtomicInteger recordCount = new AtomicInteger(0);
         List<Integer> errorRecords = new ArrayList<>();
@@ -673,31 +660,57 @@ public class ImportUtilities<T> {
         Principal importingUser = (GsrsSecurityUtils.getCurrentUsername()!=null && GsrsSecurityUtils.getCurrentUsername().isPresent())
             ? principalRepository.findDistinctByUsernameIgnoreCase(GsrsSecurityUtils.getCurrentUsername().get())
             : null;
-        executor.execute(()-> {
-            log.trace("starting in handleObjectCreationAsync execute lambda");
-            ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
-            Stream<T> objectStream;
-            try {
-                objectStream = generateObjects(task, queryParameters);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            objectStream.forEach(object -> {
-                recordCount.incrementAndGet();
-                log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
-                log.trace(object.toString());
-                try {
-                    String newRecordId = saveStagingAreaRecord(mapper.writeValueAsString(object), task, importingUser);
-                    importDataRecordIds.add(newRecordId);
-                } catch (JsonProcessingException e) {
-                    objectProcessingOK.set(false);
-                    errorRecords.add(recordCount.get());
-                    log.error("Error processing staging area record", e);
-                }
-                TransactionTemplate transactionTemplateUpDateCount = new TransactionTemplate(transactionManager);
-                transactionTemplateUpDateCount.executeWithoutResult(j->jobRepository.updateCompletedRecordCount(job.getId(), recordCount.get()));
-            });
+        ImportTimings timings = new ImportTimings();
+            executor.execute(()-> {
+                    log.trace("starting in handleObjectCreationAsync execute lambda");
+                    ArrayNode previewNode = JsonNodeFactory.instance.arrayNode();
+                    try (Stream<T> objectStream =generateObjects(task,queryParameters)){
+                        objectStream.forEach(object -> {
+                            int processedCount = recordCount.incrementAndGet();
+                            log.trace("handleObjectCreationAsync going to call saveStagingAreaRecord with data of type {}", object.getClass().getName());
+                            try {
+                                String json;
+                                long serializationStart = System.nanoTime();
+                                try {
+                                    json = mapper.writeValueAsString(object);
+                                } finally {
+                                    timings.recordSerialization(
+                                            System.nanoTime() - serializationStart);
+                                }
 
+                                long createRecordStart = System.nanoTime();
+                                try {
+                                    String newRecordId =
+                                        saveStagingAreaRecord(json, task, importingUser);
+
+                                    importDataRecordIds.add(newRecordId);
+                                } finally {
+                                    timings.recordCreateRecord(
+                                        System.nanoTime() - createRecordStart);
+                                }
+                            } catch (Exception e) {
+                                objectProcessingOK.set(false);
+                                errorRecords.add(processedCount);
+                                log.error("Error processing staging area record {}", processedCount, e);
+                            }
+
+                            timings.logIfNeeded(processedCount, progressUpdateInterval);
+                            if (progressUpdateInterval >0 && processedCount % progressUpdateInterval == 0) {
+                                TransactionTemplate progressTransaction =
+                                        new TransactionTemplate(transactionManager);
+
+                                progressTransaction.executeWithoutResult(status ->
+                                        jobRepository.updateCompletedRecordCount(
+                                                job.getId(),
+                                                processedCount));
+                            }
+
+                        });
+                        timings.logFinalIfNeeded(recordCount.get(), progressUpdateInterval);
+                    } catch(Exception e){
+                        log.error("Error handling object stream: ", e);
+                        throw new RuntimeException(e);
+                    }
             ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
             returnNode.put("completeSuccess", objectProcessingOK.get());
             ArrayNode recordIdListNode = JsonNodeFactory.instance.arrayNode();
@@ -724,16 +737,17 @@ public class ImportUtilities<T> {
                 updatedJob.setResults(overallResult);
                 updatedJob.setFinishDate(DateUtil.getCurrentDate());
                 updatedJob.setTotalRecords(recordCount.get());
+                updatedJob.setCompletedRecordCount(recordCount.get());
                 jobRepository.save(updatedJob);
                 log.trace("completed last save of job ({}) in handleObjectCreationAsync", job.getId());
             });
-
         });
+
         return job.toNode();
     }
 
     public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
-        log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter",
+        log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter: {}",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
          ImportRecordParameters.builder()
@@ -814,4 +828,58 @@ public class ImportUtilities<T> {
             log.warn("Error retrieving ImportMetadata with ID {}", metadataId);
         }
     }
+
+    private static final class ImportTimings {
+        private final LongAdder serialization = new LongAdder();
+        private final LongAdder serializationSamples = new LongAdder();
+        private final LongAdder createRecordTotal = new LongAdder();
+        private final LongAdder createRecordSamples = new LongAdder();
+
+        void recordSerialization(long nanos) {
+            serialization.add(nanos);
+            serializationSamples.increment();
+        }
+
+        void recordCreateRecord(long nanos) {
+            createRecordTotal.add(nanos);
+            createRecordSamples.increment();
+        }
+
+        void logIfNeeded(int processedCount, int interval) {
+            if (interval <= 0 || processedCount <= 0 || processedCount % interval != 0) {
+                return;
+            }
+            if(log.isTraceEnabled()) {
+                log(processedCount);
+            }
+        }
+
+        void logFinalIfNeeded(int processedCount, int interval) {
+            if (log.isTraceEnabled() && processedCount > 0 && (interval <= 0 || processedCount % interval != 0))  {
+                log(processedCount);
+            }
+        }
+
+        private void log(int processedCount) {
+            long serializationCount = serializationSamples.sum();
+            long createRecordCount = createRecordSamples.sum();
+            log.trace(
+                    "Import timing: processedRecords={}, serializationSamples={}, "
+                            + "serialization avg={} ms, createRecordSamples={}, "
+                            + "createRecord+commit avg={} ms",
+                    processedCount,
+                    serializationCount,
+                    nanosToAverageMillis(serialization.sum(), serializationCount),
+                    createRecordCount,
+                    nanosToAverageMillis(createRecordTotal.sum(), createRecordCount));
+        }
+
+        private static double nanosToAverageMillis(
+                long nanos,
+                long count) {
+
+            return count == 0 ? 0.0 : nanos / 1_000_000.0 / count;
+        }
+    }
+
 }

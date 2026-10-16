@@ -2,10 +2,11 @@ package gsrs.imports;
 
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
+
 import gsrs.util.ExtensionConfig;
 import ix.core.util.InheritanceTypeIdResolver;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public interface ImportAdapterFactoryConfig extends ExtensionConfig {
     List<String> getSupportedFileExtensions();
     void setSupportedFileExtensions(List<String> extensions);
 
-    ImportAdapterFactory newImportAdapterFactory(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
+    ImportAdapterFactory newImportAdapterFactory(JsonMapper mapper, ClassLoader classLoader) throws ClassNotFoundException;
 
     Class getStagingAreaServiceClass();
     void setStagingAreaServiceClass(Class stagingServiceClass);

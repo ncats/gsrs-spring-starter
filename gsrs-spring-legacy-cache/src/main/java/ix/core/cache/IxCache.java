@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.cache.GsrsCache;
