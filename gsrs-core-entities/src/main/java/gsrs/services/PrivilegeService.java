@@ -3,7 +3,6 @@ package gsrs.services;
 import gsrs.security.RoleConfiguration;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.security.GsrsSecurityUtils;
-import gsrs.security.UserRoleConfigurationLoader;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
@@ -15,8 +14,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Data
@@ -28,76 +25,14 @@ public class PrivilegeService {
     @Lazy
     private UserRoleConfiguration configuration;
 
-    @Autowired
-    private org.springframework.core.env.Environment env;
-
     private List<RoleConfiguration> configuredRoles;
 
-    private static Lock lock = new ReentrantLock();
     private static class Holder {
         static final PrivilegeService INSTANCE = new PrivilegeService();
     }
 
     public static PrivilegeService instance() {
         return Holder.INSTANCE;
-    }
-
-    private void setupConfig() {
-        try {
-            if( env == null) {
-                AutowireHelper.getInstance().autowireAndProxy(this);
-            }
-            String filePathReal = env.getProperty("gsrs.security.info.filepath");
-            log.trace("init filePathReal: {}", filePathReal);
-            UserRoleConfigurationLoader loader = new UserRoleConfigurationLoader();
-            log.info("loading configuration from real configured file path {}", filePathReal);
-            loader.loadConfigFromFile(filePathReal);
-            configuration = loader.getConfiguration();
-            configuredRoles = configuration.getRoles();
-            log.trace("loaded configuration from file. total: {}", configuredRoles.size());
-        } catch (Exception e) {
-            log.error("Error loading configuration from file {}", e.getMessage(), e);
-            log.warn("Will use default configuration");
-            setDefaultConfig();
-        }
-    }
-
-    private void setDefaultConfig() {
-        //bootstrap some configuration
-        configuration = new UserRoleConfiguration();
-        List<RoleConfiguration> roles = new ArrayList<>();
-        // we will read this from a file eventually
-        RoleConfiguration queryRole = new RoleConfiguration();
-        queryRole.setName("Query");
-        //search and Query are synonymous
-        String[] queryPrivileges ={"Login", CommonPrivileges.SEARCH, CommonPrivileges.BROWSE, CommonPrivileges.EXPORT_DATA };
-        queryRole.setPrivileges(Arrays.asList(queryPrivileges));
-        roles.add(queryRole);
-
-        RoleConfiguration editorRole = new RoleConfiguration();
-        editorRole.setName("DataEntry");
-        String[] editorPrivileges ={CommonPrivileges.CREATE, CommonPrivileges.EDIT};
-        editorRole.setPrivileges(Arrays.asList(editorPrivileges));
-        editorRole.setInclude(Collections.singletonList("Query"));
-        roles.add(editorRole);
-
-        RoleConfiguration approverRole = new RoleConfiguration();
-        approverRole.setName("Approver");
-        String[] approverPrivileges = { CommonPrivileges.APPROVE_RECORDS, CommonPrivileges.EDIT_PUBLIC_DATA,
-                CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.MAKE_RECORDS_PUBLIC, CommonPrivileges.EDIT_APPROVED_RECORDS };
-        approverRole.setPrivileges(Arrays.asList(approverPrivileges));
-        approverRole.setInclude(Collections.singletonList("DataEntry"));
-        roles.add(approverRole);
-
-        RoleConfiguration adminRole = new RoleConfiguration();
-        adminRole.setName("Admin");
-        String[] adminPrivileges = {CommonPrivileges.MANAGE_USERS, CommonPrivileges.CONFIGURE_SYSTEM, CommonPrivileges.MANAGE_VOCABULARIES, CommonPrivileges.IMPORT_DATA,
-                CommonPrivileges.MERGE_SUBCONCEPTS, CommonPrivileges.MODIFY_RELATIONSHIPS, CommonPrivileges.EDIT_APPROVAL_IDS, CommonPrivileges.VIEW_SERVER_FILES,
-                CommonPrivileges.VIEW_SERVICE_INFO};
-        adminRole.setPrivileges(Arrays.asList(adminPrivileges));
-        adminRole.setInclude(Collections.singletonList("Approver"));
-        roles.add(adminRole);
-        configuredRoles = roles;
     }
 
     public UserRoleConfiguration getConfiguration() {
@@ -179,10 +114,30 @@ public class PrivilegeService {
     }
 
     private void checkRoles() {
-        if( configuration == null || configuredRoles == null || configuredRoles.isEmpty()) {
-            setupConfig();
+        if( configuredRoles == null || configuredRoles.isEmpty()) {
+            if( configuration == null) {
+                AutowireHelper.getInstance().autowireAndProxy(this);
+            }
+            if( configuration != null && configuration.getRoles() != null) {
+                configuredRoles = new ArrayList<>();
+                configuration.getRoles().forEach((name, roleConfig) -> {
+                    // the role name is the map key; propagate it onto the value
+                    roleConfig.setName(name);
+                    configuredRoles.add(roleConfig);
+                });
+                log.trace("loaded configuration from properties. total: {}", configuredRoles.size());
+            }
         }
+    }
 
+    /**
+     * @return the configured roles keyed by role name, or an empty map if none are configured.
+     */
+    public Map<String, RoleConfiguration> getConfiguredRolesByName() {
+        checkRoles();
+        Map<String, RoleConfiguration> byName = new LinkedHashMap<>();
+        configuredRoles.forEach(r -> byName.put(r.getName(), r));
+        return byName;
     }
     public List<String> getAllRoleNames() {
         checkRoles();

@@ -6,7 +6,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Configuration
 @ConfigurationProperties("gsrs.security.info")
@@ -25,6 +26,12 @@ public class UserRoleConfiguration {
         MayPerform,
         MayNotPerform
     }
-    private List<RoleConfiguration> roles;
+
+    /**
+     * Role configurations keyed by role name. The map key is the role name, so a
+     * role entry no longer needs to repeat it, e.g.
+     * {@code gsrs.security.info.roles.DataEntry.privileges = ["Edit"]}.
+     */
+    private Map<String, RoleConfiguration> roles = new LinkedHashMap<>();
 
 }

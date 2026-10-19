@@ -555,8 +555,59 @@ The EntityScan and EnableJpaRepositories need to list all the base packages to s
  
  It doesn't matter what Authentication mechanism you use as long as your users have these defined Roles.
  
- ### Authentication
-  
+ ### Role and Privilege Configuration
+
+ The mapping of roles to privileges is defined in `gsrs-core.conf` under the `gsrs.security.info.roles` key and is
+bound by Spring's `@ConfigurationProperties` to `UserRoleConfiguration`. `roles` is a **map keyed by role name**,
+so each entry names its privileges and any roles it inherits from via `include`:
+
+```hocon
+gsrs.security.info {
+    roles = {
+        DataEntry = {
+            privileges = ["Change Display Name", "Create", "Edit"]
+            "include" = ["Query"]
+        }
+    }
+}
+```
+
+To customize a role without redefining the others, override just that key in your own `application.conf` /
+`application.properties`, e.g. `gsrs.security.info.roles.DataEntry.privileges[0]=Edit`. The default roles are
+`Query`, `DataEntry`, `Approver`, and `Admin`.
+
+> Note: The previous behavior of loading the role/privilege configuration from an external
+> `roles_config.json` file (via `gsrs.security.info.filepath`) has been removed. All role/privilege
+> configuration now comes from the Spring `Environment` (i.e. `gsrs-core.conf` and any overrides).
+>
+> If you kept your roles in a separate file and want to emulate the old external-file behavior, use a
+> HOCON `include` (JSON is valid HOCON). In your `application.conf`:
+>
+> ```hocon
+> include "gsrs-core.conf"
+>
+> gsrs.security.info {
+>     include file("roles_config.json")
+> }
+> ```
+>
+> where `roles_config.json` sits next to your `application.conf` and contains the roles as a
+> name-keyed map (matching the current format):
+>
+> ```json
+> {
+>   "roles": {
+>     "DataEntry": {
+>       "privileges": ["Change Display Name", "Create", "Edit"],
+>       "include": ["Query"]
+>     }
+>   }
+> }
+> ```
+>
+> Note: `roles` was previously a list where each entry repeated `name`. It is now a map keyed by role
+> name; the list form is no longer supported. Avoid `.` in role names (Spring treats it as a nesting
+> separator in map keys).
  
  #### Legacy Authentication
   The GSRS Starter supports the legacy GSRS 2 authentication mechanisms such as the GSRS User Profile table and 
