@@ -718,7 +718,8 @@ public class ImportUtilities<T> {
 
                 if (isChunkBoundary(currentRecord, chunkSize)) {
                     persistChunkWithFallback(
-                            chunk, task, importingUser, importDataRecordIds, errorRecords, timings);
+                            chunk, task, importingUser, job.getId(), importDataRecordIds,
+                            errorRecords, timings);
                     chunk.clear();
                     completedRecordCount = currentRecord;
                     lastProgressUpdate = updateProgressIfNeeded(
@@ -729,12 +730,11 @@ public class ImportUtilities<T> {
 
             if (completedRecordCount < recordCount.get()) {
                 persistChunkWithFallback(
-                        chunk, task, importingUser, importDataRecordIds, errorRecords, timings);
+                        chunk, task, importingUser, job.getId(), importDataRecordIds,
+                        errorRecords, timings);
                 completedRecordCount = recordCount.get();
                 updateProgressIfNeeded(job.getId(), completedRecordCount, lastProgressUpdate);
             }
-            timings.logFinalIfNeeded(recordCount.get(), progressUpdateInterval);
-
             if (!errorRecords.isEmpty()) {
                 objectProcessingOK.set(false);
                 finalStatus = "completed-with-errors";
@@ -745,6 +745,19 @@ public class ImportUtilities<T> {
             finalStatus = "failed";
             statusMessage = "Processing failed: " + safeExceptionMessage(e);
             log.error("Fatal error handling object stream for job {}", job.getId(), e);
+        }
+
+        long indexingDrainStart = System.nanoTime();
+        try {
+            stagingAreaService.awaitIndexingCompletion(job.getId());
+        } catch (RuntimeException indexingFailure) {
+            objectProcessingOK.set(false);
+            finalStatus = "failed";
+            statusMessage = "Processing failed: " + safeExceptionMessage(indexingFailure);
+            log.error("Indexing failed for staging import job {}", job.getId(), indexingFailure);
+        } finally {
+            timings.recordIndexingDrain(System.nanoTime() - indexingDrainStart);
+            timings.logFinal(recordCount.get());
         }
 
         ObjectNode returnNode = buildObjectCreationResult(
@@ -769,6 +782,7 @@ public class ImportUtilities<T> {
             List<PendingStagingRecord> chunk,
             AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
             Principal importingUser,
+            UUID indexingBatchId,
             List<String> importDataRecordIds,
             List<Integer> errorRecords,
             ImportTimings timings) {
@@ -779,12 +793,14 @@ public class ImportUtilities<T> {
 
         long createRecordsStart = System.nanoTime();
         try {
-            importDataRecordIds.addAll(persistChunk(chunk, task, importingUser));
+            importDataRecordIds.addAll(
+                    persistChunk(chunk, task, importingUser, indexingBatchId));
         } catch (RuntimeException chunkFailure) {
             log.warn("Staging chunk failed; retrying {} records individually", chunk.size(), chunkFailure);
             for (PendingStagingRecord record : chunk) {
                 try {
-                    importDataRecordIds.add(persistSingleRecord(record, task, importingUser));
+                    importDataRecordIds.add(
+                            persistSingleRecord(record, task, importingUser, indexingBatchId));
                 } catch (RuntimeException recordFailure) {
                     errorRecords.add(record.recordNumber());
                     log.error("Error processing staging area record {}", record.recordNumber(), recordFailure);
@@ -798,13 +814,15 @@ public class ImportUtilities<T> {
     private List<String> persistChunk(
             List<PendingStagingRecord> chunk,
             AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
-            Principal importingUser) {
+            Principal importingUser,
+            UUID indexingBatchId) {
 
         TransactionTemplate chunkTransaction = new TransactionTemplate(transactionManager);
         List<String> recordIds = chunkTransaction.execute(status -> {
             List<String> ids = new ArrayList<>(chunk.size());
             for (PendingStagingRecord record : chunk) {
-                ids.add(saveStagingAreaRecord(record.json(), task, importingUser));
+                ids.add(saveStagingAreaRecord(
+                        record.json(), task, importingUser, indexingBatchId));
             }
             flushAndClearPersistenceContext();
             return ids;
@@ -815,12 +833,14 @@ public class ImportUtilities<T> {
     private String persistSingleRecord(
             PendingStagingRecord record,
             AbstractImportSupportingGsrsEntityController.ImportTaskMetaData task,
-            Principal importingUser) {
+            Principal importingUser,
+            UUID indexingBatchId) {
 
         TransactionTemplate recordTransaction = new TransactionTemplate(transactionManager);
         recordTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return recordTransaction.execute(status -> {
-            String recordId = saveStagingAreaRecord(record.json(), task, importingUser);
+            String recordId = saveStagingAreaRecord(
+                    record.json(), task, importingUser, indexingBatchId);
             flushAndClearPersistenceContext();
             return recordId;
         });
@@ -918,6 +938,14 @@ public class ImportUtilities<T> {
     private record PendingStagingRecord(int recordNumber, String json) {}
 
     public String saveStagingAreaRecord(String json, AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData, Principal creatingUser) {
+        return saveStagingAreaRecord(json, importTaskMetaData, creatingUser, null);
+    }
+
+    private String saveStagingAreaRecord(
+            String json,
+            AbstractImportSupportingGsrsEntityController.ImportTaskMetaData importTaskMetaData,
+            Principal creatingUser,
+            UUID indexingBatchId) {
         log.trace("in saveStagingAreaRecord,importTaskMetaData.getEntityType(): {}, file name: {}, adapter: {}",
                 importTaskMetaData.getEntityType(), importTaskMetaData.getFilename(), importTaskMetaData.getAdapter());
         ImportRecordParameters.ImportRecordParametersBuilder builder=
@@ -927,7 +955,8 @@ public class ImportUtilities<T> {
                 .formatType(importTaskMetaData.getMimeType())
                 .source(importTaskMetaData.getFilename())
                 .adapterName(importTaskMetaData.getAdapter())
-                 .importingUser(creatingUser);
+                .importingUser(creatingUser)
+                .indexingBatchId(indexingBatchId);
         if(importTaskMetaData.getAdapterSettings().hasNonNull("rarelyUsedSettings")) {
             JsonNode rareSettings = importTaskMetaData.getAdapterSettings().get("rarelyUsedSettings");
             log.trace("processing rarelyUsedSettings {}", rareSettings.toPrettyString());
@@ -1005,6 +1034,7 @@ public class ImportUtilities<T> {
         private final LongAdder serializationSamples = new LongAdder();
         private final LongAdder createRecordTotal = new LongAdder();
         private final LongAdder createRecordSamples = new LongAdder();
+        private final LongAdder indexingDrain = new LongAdder();
 
         void recordSerialization(long nanos) {
             serialization.add(nanos);
@@ -1016,6 +1046,10 @@ public class ImportUtilities<T> {
             createRecordSamples.add(recordCount);
         }
 
+        void recordIndexingDrain(long nanos) {
+            indexingDrain.add(nanos);
+        }
+
         void logIfNeeded(int processedCount, int interval) {
             if (interval <= 0 || processedCount <= 0 || processedCount % interval != 0) {
                 return;
@@ -1025,10 +1059,8 @@ public class ImportUtilities<T> {
             }
         }
 
-        void logFinalIfNeeded(int processedCount, int interval) {
-            if (IMPORT_PERFORMANCE_LOG.isTraceEnabled()
-                    && processedCount > 0
-                    && (interval <= 0 || processedCount % interval != 0)) {
+        void logFinal(int processedCount) {
+            if (IMPORT_PERFORMANCE_LOG.isTraceEnabled() && processedCount > 0) {
                 log(processedCount);
             }
         }
@@ -1039,12 +1071,13 @@ public class ImportUtilities<T> {
             IMPORT_PERFORMANCE_LOG.trace(
                     "Import timing: processedRecords={}, serializationSamples={}, "
                             + "serialization avg={} ms, createRecordSamples={}, "
-                            + "createRecord+commit avg={} ms",
+                            + "createRecord+commit avg={} ms, indexing drain={} ms",
                     processedCount,
                     serializationCount,
                     nanosToAverageMillis(serialization.sum(), serializationCount),
                     createRecordCount,
-                    nanosToAverageMillis(createRecordTotal.sum(), createRecordCount));
+                    nanosToAverageMillis(createRecordTotal.sum(), createRecordCount),
+                    indexingDrain.sum() / 1_000_000.0);
         }
 
         private static double nanosToAverageMillis(

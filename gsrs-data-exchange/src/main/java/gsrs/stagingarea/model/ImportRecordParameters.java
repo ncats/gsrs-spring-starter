@@ -66,4 +66,10 @@ public class ImportRecordParameters {
      * The user performing the data load
      */
     private Principal importingUser;
+
+    /**
+     * Identifies records whose indexing must finish before an import job is
+     * reported as complete. Null keeps the traditional synchronous behavior.
+     */
+    private UUID indexingBatchId;
 }
