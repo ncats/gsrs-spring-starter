@@ -32,6 +32,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.annotation.PostConstruct;
@@ -182,6 +184,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 saveRawData(parameters.getRawDataSource(), recordId);
             } catch (IOException exception) {
                 log.error("Error processing raw data", exception);
+                throw new StagingRecordCreationException("Unable to persist raw staging data", exception);
             }
         }
 
@@ -193,13 +196,13 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             domainObject = deserializeObject(parameters.getEntityClassName(), parameters.getJsonData());
         } catch (Exception e) {
             log.error("Error deserializing imported object.", e);
-            return IMPORT_FAILURE;
+            throw new StagingRecordCreationException("Unable to deserialize imported object", e);
         } finally {
             deserializeNanos.add(System.nanoTime() - start);
         }
         if (domainObject == null) {
-            log.warn("null domainObject!");
-            return recordId.toString();
+            throw new StagingRecordCreationException(
+                    "Unable to deserialize imported object of type " + parameters.getEntityClassName());
         }
         log.trace("parameters.getEntityClassName(): {}; domainObject.getClass().getName(): {}",
                 parameters.getEntityClassName(), domainObject.getClass().getName());
@@ -249,6 +252,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                     log.trace("updating record after validation");
                 } catch (Exception e) {
                     log.error("Error serializing validated substance", e);
+                    throw new StagingRecordCreationException("Unable to serialize validated imported object", e);
                 }
             }
 
@@ -294,10 +298,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             //}
         }
         if( performIndexing ) {
-            log.trace("going to index");
-            long beforeIndexing = System.nanoTime();
-            handleIndexing(metadata);
-            indexingNanos.add(System.nanoTime() - beforeIndexing);
+            indexAfterCommit(metadata);
         }
 
         timingRecordCount.increment();
@@ -343,6 +344,34 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), true);
         applicationEventPublisher.publishEvent(event);
         log.trace("published event for metadata");
+    }
+
+    void indexAfterCommit(ImportMetadata importMetadata) {
+        Runnable indexing = () -> {
+            log.trace("going to index committed staging metadata");
+            long beforeIndexing = System.nanoTime();
+            try {
+                handleIndexing(importMetadata);
+            } catch (RuntimeException e) {
+                // The database transaction has already committed. Do not make the
+                // caller retry and create a duplicate staging record.
+                log.error("Unable to index committed staging metadata {}",
+                        importMetadata.getRecordId(), e);
+            } finally {
+                indexingNanos.add(System.nanoTime() - beforeIndexing);
+            }
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    indexing.run();
+                }
+            });
+        } else {
+            indexing.run();
+        }
     }
 
     @Override
@@ -712,7 +741,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
 
         rawImportData.setRawData(IOUtils.toByteArray(rawData));
         rawImportData.setRecordId(id);
-        RawImportData savedRawImportData = rawImportDataRepository.saveAndFlush(rawImportData);
+        RawImportData savedRawImportData = rawImportDataRepository.save(rawImportData);
         return savedRawImportData.getRecordId().toString();
     }
 
