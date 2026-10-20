@@ -227,7 +227,7 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
-        //if we get here we don't have a valid login
+        // If we get here we don't have a valid login and allow nonauthenticated is false
         if(auth==null && !authenticationConfiguration.isAllownonauthenticated()) {
             response.setStatus(403);
             String message = "You are not authorized to see this resource. Please contact an administrator to be granted access.";
@@ -240,13 +240,26 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
                 throw new NonAuthenticatedUserAllowedException("not authorized to see this resource");
             }
         }
+
+        // If we get here we don't have a valid login, and allow nonauthenticated is true,
+        // and it is a "whoami" request. This prevents the UI from showing the unauthorized
+        // message in this case (because response status is a 401 and not 403).
+
+        if (auth == null
+                && authenticationConfiguration.isAllownonauthenticated()
+                && "GET".equalsIgnoreCase(request.getMethod())
+                && isWhoamiRequest(request)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
         if(auth !=null) {
-            //add a new Session each time !?
+            // Add a new Session each time !?
             if (auth instanceof GsrsUserProfileDetails) {
                 userTokenCache.updateUserCache(((GsrsUserProfileDetails)auth).getPrincipal());
             }
 
-            //TODO: perhaps allow a short-circuit here if auth is outsourced
+            //TODO: perhaps allow a short-circuit here if auth is outsourced.
             request.getSession().setAttribute("username", auth.getName());
             // Check value to avoid error on UI login I think related to token
             // The error is "Cannot set this token to trusted - use constructor which takes a GrantedAuthority list instead"           
@@ -258,6 +271,13 @@ public class LegacyAuthenticationFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
 
+    }
+
+    private boolean isWhoamiRequest(HttpServletRequest request) {
+        String requestPath = request.getRequestURI()
+                .substring(request.getContextPath().length());
+
+        return "/api/v1/whoami".equals(requestPath);
     }
 
     private UserProfile autoregisterNewUser(String username ) {
