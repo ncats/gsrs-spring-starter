@@ -37,6 +37,8 @@ import ix.core.validator.ValidationMessage;
 import ix.ginas.exporters.SpecificExporterSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.util.DateUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,6 +66,9 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class ImportUtilities<T> {
+
+    private static final Logger IMPORT_PERFORMANCE_LOG =
+            LoggerFactory.getLogger("gsrs.import.performance");
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -1015,13 +1020,15 @@ public class ImportUtilities<T> {
             if (interval <= 0 || processedCount <= 0 || processedCount % interval != 0) {
                 return;
             }
-            if(log.isTraceEnabled()) {
+            if (IMPORT_PERFORMANCE_LOG.isTraceEnabled()) {
                 log(processedCount);
             }
         }
 
         void logFinalIfNeeded(int processedCount, int interval) {
-            if (log.isTraceEnabled() && processedCount > 0 && (interval <= 0 || processedCount % interval != 0))  {
+            if (IMPORT_PERFORMANCE_LOG.isTraceEnabled()
+                    && processedCount > 0
+                    && (interval <= 0 || processedCount % interval != 0)) {
                 log(processedCount);
             }
         }
@@ -1029,7 +1036,7 @@ public class ImportUtilities<T> {
         private void log(int processedCount) {
             long serializationCount = serializationSamples.sum();
             long createRecordCount = createRecordSamples.sum();
-            log.trace(
+            IMPORT_PERFORMANCE_LOG.trace(
                     "Import timing: processedRecords={}, serializationSamples={}, "
                             + "serialization avg={} ms, createRecordSamples={}, "
                             + "createRecord+commit avg={} ms",

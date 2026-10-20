@@ -25,6 +25,8 @@ import ix.core.validator.ValidationResponse;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,6 +50,9 @@ import static gsrs.stagingarea.model.ImportValidation.MAX_VALIDATION_MESSAGE_LEN
 
 @Slf4j
 public class DefaultStagingAreaService<T> implements StagingAreaService {
+
+    private static final Logger IMPORT_PERFORMANCE_LOG =
+            LoggerFactory.getLogger("gsrs.import.performance");
 
     public static String IMPORT_FAILURE = "ERROR";
 
@@ -316,7 +321,7 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
             return;
         }
 
-        log.trace(
+        IMPORT_PERFORMANCE_LOG.trace(
                 "Staging timing after {} records: saveData={} ms/record, "
                         + "saveMetadata={} ms/record, deserialize={} ms/record, "
                         + "validation={} ms/record, validationPersistence={} ms/record, "
