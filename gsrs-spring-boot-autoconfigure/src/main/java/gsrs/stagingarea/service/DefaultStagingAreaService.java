@@ -346,7 +346,11 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         log.trace("Here is where we index facets for the ImportMetadata object");
         EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(importMetadata);
         UUID reindexUuid = UUID.randomUUID();
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), true);
+        // createRecord assigns a new record UUID, so there is no prior index
+        // document to remove. Updates and explicit reindex operations continue
+        // to use delete-first events through their existing paths.
+        ReindexEntityEvent event = new ReindexEntityEvent(
+                reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), false);
         applicationEventPublisher.publishEvent(event);
         log.trace("published event for metadata");
     }

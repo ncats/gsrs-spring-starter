@@ -6,6 +6,7 @@ import gsrs.events.ReindexEntityEvent;
 import gsrs.stagingarea.model.ImportMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -44,7 +46,11 @@ class DefaultStagingAreaServiceIndexingTest {
         List<TransactionSynchronization> synchronizations =
                 TransactionSynchronizationManager.getSynchronizations();
         synchronizations.forEach(TransactionSynchronization::afterCommit);
-        verify(publisher).publishEvent(any(ReindexEntityEvent.class));
+        ArgumentCaptor<ReindexEntityEvent> eventCaptor =
+                ArgumentCaptor.forClass(ReindexEntityEvent.class);
+        verify(publisher).publishEvent(eventCaptor.capture());
+        assertFalse(eventCaptor.getValue().isRequiresDelete(),
+                "new staging records should be added without a redundant index delete");
     }
 
     @Test
