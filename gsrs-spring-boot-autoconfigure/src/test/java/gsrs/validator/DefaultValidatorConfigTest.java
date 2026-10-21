@@ -2,8 +2,10 @@ package gsrs.validator;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,5 +25,14 @@ class DefaultValidatorConfigTest {
                 new Object(), ValidatorConfig.METHOD_TYPE.UPDATE));
         assertTrue(config.meetsFilterCriteria(
                 new Object(), ValidatorConfig.METHOD_TYPE.BATCH));
+    }
+
+    @Test
+    void readsSpringBoundIndexedMapForExcludedMethodTypes() {
+        DefaultValidatorConfig config = new DefaultValidatorConfig();
+        config.setExcludedMethodTypes(Map.of("0", "STAGING"));
+
+        assertEquals(Set.of(ValidatorConfig.METHOD_TYPE.STAGING),
+                config.getExcludedMethodTypes());
     }
 }

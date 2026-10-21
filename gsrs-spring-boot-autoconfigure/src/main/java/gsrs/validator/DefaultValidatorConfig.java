@@ -7,7 +7,9 @@ import ix.ginas.utils.validation.ValidatorPlugin;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +48,34 @@ public class DefaultValidatorConfig implements ValidatorConfig {
      * complements methodType, which limits a validator to one operation.
      */
     private Set<METHOD_TYPE> excludedMethodTypes = Collections.emptySet();
+
+    /**
+     * Spring's configuration-properties binder represents a collection nested
+     * below a {@code Map<String, Object>} as an indexed map (for example,
+     * {@code {0=STAGING}}). Accept that representation as well as the normal
+     * JSON collection representation used by Jackson.
+     */
+    @JsonSetter("excludedMethodTypes")
+    public void setExcludedMethodTypes(Object excludedMethodTypes) {
+        if (excludedMethodTypes == null) {
+            this.excludedMethodTypes = Collections.emptySet();
+            return;
+        }
+
+        Collection<?> values = excludedMethodTypes instanceof Map<?, ?> map
+                ? map.values()
+                : excludedMethodTypes instanceof Collection<?> collection
+                        ? collection
+                        : Collections.singleton(excludedMethodTypes);
+
+        Set<METHOD_TYPE> methodTypes = new LinkedHashSet<>();
+        for (Object value : values) {
+            methodTypes.add(value instanceof METHOD_TYPE methodType
+                    ? methodType
+                    : METHOD_TYPE.valueOf(String.valueOf(value)));
+        }
+        this.excludedMethodTypes = methodTypes;
+    }
 
     /**
      * Catch all for additional JSON properties found will be assumed to be
