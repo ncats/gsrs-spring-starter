@@ -65,6 +65,25 @@ class DefaultStagingAreaServiceIndexingTest {
     }
 
     @Test
+    void publishesUpdateIndexEventOnlyAfterCommitAndDeletesPreviousDocument() {
+        ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
+        DefaultStagingAreaService<?> service = serviceWithPublisher(publisher);
+        ImportMetadata metadata = metadata();
+        TransactionSynchronizationManager.initSynchronization();
+
+        service.reindexAfterCommit(metadata);
+
+        verify(publisher, never()).publishEvent(any(Object.class));
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(TransactionSynchronization::afterCommit);
+        ArgumentCaptor<ReindexEntityEvent> eventCaptor =
+                ArgumentCaptor.forClass(ReindexEntityEvent.class);
+        verify(publisher).publishEvent(eventCaptor.capture());
+        assertTrue(eventCaptor.getValue().isRequiresDelete(),
+                "updated staging records must replace their previous index document");
+    }
+
+    @Test
     void indexingFailureAfterCommitDoesNotEscapeAndTriggerDatabaseRetry() {
         ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
         doThrow(new IllegalStateException("index unavailable"))

@@ -367,15 +367,12 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         return recordCount == 0 ? 0.0 : nanos.sum() / 1_000_000.0 / recordCount;
     }
 
-    private void handleIndexing(ImportMetadata importMetadata){
+    private void handleIndexing(ImportMetadata importMetadata, boolean requiresDelete){
         log.trace("Here is where we index facets for the ImportMetadata object");
         EntityUtils.EntityWrapper entityWrapper = EntityUtils.EntityWrapper.of(importMetadata);
         UUID reindexUuid = UUID.randomUUID();
-        // createRecord assigns a new record UUID, so there is no prior index
-        // document to remove. Updates and explicit reindex operations continue
-        // to use delete-first events through their existing paths.
         ReindexEntityEvent event = new ReindexEntityEvent(
-                reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), false);
+                reindexUuid, entityWrapper.getKey(), Optional.of(entityWrapper), requiresDelete);
         applicationEventPublisher.publishEvent(event);
         log.trace("published event for metadata");
     }
@@ -385,13 +382,22 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
     }
 
     void indexAfterCommit(ImportMetadata importMetadata, UUID indexingBatchId) {
+        indexAfterCommit(importMetadata, indexingBatchId, false);
+    }
+
+    void reindexAfterCommit(ImportMetadata importMetadata) {
+        indexAfterCommit(importMetadata, null, true);
+    }
+
+    private void indexAfterCommit(ImportMetadata importMetadata, UUID indexingBatchId,
+                                  boolean requiresDelete) {
         CompletableFuture<Void> completion = registerIndexing(indexingBatchId);
         Runnable indexing = () -> {
             log.trace("going to index committed staging metadata");
             long beforeIndexing = System.nanoTime();
             Throwable indexingFailure = null;
             try {
-                handleIndexing(importMetadata);
+                handleIndexing(importMetadata, requiresDelete);
             } catch (Throwable e) {
                 indexingFailure = e;
                 // The database transaction has already committed. Do not make the
@@ -562,13 +568,9 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
                 //change the instanceID _after_ handleUpdate that uses the old value to clean out related  data
                 updatedImportMetadata.setInstanceId(latestInstanceId);
                 metadataRepository.setInstanceIdForRecord(latestInstanceId, UUID.fromString(recordId));
-                //ImportMetadata saved=metadataRepository.save(updatedImportMetadata);
-                //metadataRepository.saveAndFlush(updatedImportMetadata);
-                //handleIndexing(updatedImportMetadata);
-                //log.trace("saved ImportMetadata with recordID {} and instanceId {}; latestInstanceId: {}; saved: {}", updatedImportMetadata.getRecordId(),
-                 //       updatedImportMetadata.getInstanceId(), latestInstanceId, saved.getInstanceId());
                 ImportMetadata reretrievedIM = metadataRepository.retrieveByRecordID(updatedImportMetadata.getRecordId());
                 log.trace("from reretrievedIM: {}", reretrievedIM.getInstanceId());
+                reindexAfterCommit(reretrievedIM);
             } catch (Exception e) {
                 log.error("Error updating import metadata!", e);
                 throw new RuntimeException(e);
