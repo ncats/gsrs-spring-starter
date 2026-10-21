@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
@@ -41,6 +42,12 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     private METHOD_TYPE methodType;
 
     /**
+     * Validation operations for which this validator should not run. This
+     * complements methodType, which limits a validator to one operation.
+     */
+    private Set<METHOD_TYPE> excludedMethodTypes = Collections.emptySet();
+
+    /**
      * Catch all for additional JSON properties found will be assumed to be
      * parameters to pass to the validator class similar to {@link #parameters}.
      * If both parameters and unknown parameters are both set then parameters takes
@@ -70,6 +77,9 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     @Override
     public final <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType){
         if(!newObjClass.isAssignableFrom(obj.getClass())){
+            return false;
+        }
+        if(excludedMethodTypes != null && excludedMethodTypes.contains(methodType)){
             return false;
         }
         if(this.methodType !=null && this.methodType != methodType){
