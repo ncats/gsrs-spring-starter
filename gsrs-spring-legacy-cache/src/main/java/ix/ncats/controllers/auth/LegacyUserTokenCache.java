@@ -14,8 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -93,8 +100,56 @@ public class LegacyUserTokenCache implements UserTokenCache {
 	@Transactional
 	public void evictUser(UserProfile up) {
 		updateIfNeeded();
-		tokenCache.remove(up.getComputedToken());
-		tokenCacheUserProfile.remove(up.user.username);
+		for (Object key : tokenCache.getKeys()) {
+			Element element = tokenCache.get(key);
+			if (element != null && element.getObjectValue() instanceof String
+					&& up.user.username.equalsIgnoreCase((String) element.getObjectValue())) {
+				tokenCache.remove(key);
+			}
+		}
+		removeUserProfileCacheKey(up.user.username);
+		removeUserProfileCacheKey(up.user.computeStandardizedName());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<String> getTokenFingerprints(UserProfile up) {
+		updateIfNeeded();
+		Set<String> fingerprints = new TreeSet<>();
+		for (Object key : tokenCache.getKeys()) {
+			Element element = tokenCache.get(key);
+			if (element != null && element.getObjectValue() instanceof String
+					&& up.user.username.equalsIgnoreCase((String) element.getObjectValue())) {
+				fingerprints.add(fingerprint(String.valueOf(key)));
+			}
+		}
+		return new ArrayList<>(fingerprints);
+	}
+
+	private String fingerprint(String token) {
+		try {
+			byte[] digest = MessageDigest.getInstance("SHA-256")
+					.digest(token.getBytes(StandardCharsets.UTF_8));
+			StringBuilder result = new StringBuilder();
+			for (byte byteValue : digest) {
+				result.append(String.format("%02x", byteValue));
+			}
+			return result.substring(0, 12);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 is unavailable", e);
+		}
+	}
+
+	private void removeToken(String token) {
+		if(token !=null) {
+			tokenCache.remove(token);
+		}
+	}
+
+	private void removeUserProfileCacheKey(String username) {
+		if(username !=null) {
+			tokenCacheUserProfile.remove(username);
+		}
 	}
 
 	@Override
