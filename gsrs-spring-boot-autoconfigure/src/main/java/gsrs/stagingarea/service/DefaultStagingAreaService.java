@@ -560,7 +560,10 @@ public class DefaultStagingAreaService<T> implements StagingAreaService {
         log.trace("retrieved importMetadata with {} mappings and {} validations", importMetadata.keyValueMappings.size(), importMetadata.validations.size());
         TransactionTemplate transactionDelete = new TransactionTemplate(transactionManager);
         transactionDelete.executeWithoutResult(r -> {
-            importDataRepository.save(newVersion);
+            // Persist the revision before propagateUpdate executes bulk repository
+            // updates that clear the persistence context. Otherwise the pending
+            // ImportData insert can be detached before Hibernate flushes it.
+            importDataRepository.saveAndFlush(newVersion);
             try {
                 propagateUpdate(importMetadata, jsonData, importMetadata.getEntityClassName(), latestInstanceId);
                 //retrieve importMetadata again because it has changed
