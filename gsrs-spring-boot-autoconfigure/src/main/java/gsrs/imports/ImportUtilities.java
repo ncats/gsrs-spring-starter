@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -293,7 +294,7 @@ public class ImportUtilities<T> {
                     log.error("error during import processing: ", e);
                     singleReturn[0] = JsonNodeFactory.instance.objectNode();
                     singleReturn[0].put("id", stagingAreaId);
-                    singleReturn[0].put("status", "INTERNAL_SERVER_ERROR");
+                    setActionStatus(singleReturn[0], HttpStatus.INTERNAL_SERVER_ERROR);
                     singleReturn[0].put("message", "error: " + e.getMessage());
                 }
                 int finalishRecord = r+1;
@@ -328,14 +329,18 @@ public class ImportUtilities<T> {
                     }
                 });
             }
-            job.setStatusMessage("Processing completed");
             log.trace("finished processing in handleActionsAsync");
+            boolean processingFailed = hasFailedResults(returnNodes);
+            String finalJobStatus = processingFailed ? "failed" : "completed";
+            String finalStatusMessage = processingFailed
+                    ? "Processing completed with errors"
+                    : "Processing completed";
             TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
             transactionTemplate2.executeWithoutResult(t->{
                 ImportProcessingJob updatedJob = jobRepository.findById(job.getId()).get();
                 log.trace("going to save job");
-                updatedJob.setJobStatus("completed");
-                updatedJob.setStatusMessage("Processing completed");
+                updatedJob.setJobStatus(finalJobStatus);
+                updatedJob.setStatusMessage(finalStatusMessage);
                 updatedJob.setResults(returnFromInnerLambda[0]);
                 updatedJob.setFinishDate(DateUtil.getCurrentDate());
                 jobRepository.save(updatedJob);
@@ -350,7 +355,11 @@ public class ImportUtilities<T> {
         log.trace("in getJobAsNode, jobId: {}", jobId);
         Optional<ImportProcessingJob> job = jobRepository.findById(UUID.fromString(jobId));
         if( job.isPresent()){
-            return job.get().toNode(includeJobData);
+            ObjectNode jobNode = job.get().toNode(includeJobData);
+            if ("failed".equalsIgnoreCase(job.get().getJobStatus())) {
+                jobNode.put("error", true);
+            }
+            return jobNode;
         }
         ObjectNode returnNode = JsonNodeFactory.instance.objectNode();
         returnNode.put("message", "No processing job found for input");
@@ -364,14 +373,14 @@ public class ImportUtilities<T> {
         ObjectNode messageNode = JsonNodeFactory.instance.objectNode();
         if(stagingRecordId==null || stagingRecordId.length()==0){
             messageNode.put("message", "blank input");
-            messageNode.put("status", "BAD_REQUEST");
+            setActionStatus(messageNode, HttpStatus.BAD_REQUEST);
             log.trace("processOneRecord going to return message node");
             return messageNode;
         }
         Matcher matcher = regExGuid.matcher(stagingRecordId);
         if(!matcher.find()){
             messageNode.put("message", "input is not a valid id");
-            messageNode.put("status", "BAD_REQUEST");
+            setActionStatus(messageNode, HttpStatus.BAD_REQUEST);
             log.trace("processOneRecord going to return message node");
             return messageNode;
         }
@@ -394,7 +403,7 @@ public class ImportUtilities<T> {
             if (metadata.getImportStatus() == ImportMetadata.RecordImportStatus.imported) {
                 messageNode.put("message", String.format("Error: staging area record with ID %s has already been imported",
                         stagingRecordId));
-                messageNode.put("status", "BAD_REQUEST");
+                setActionStatus(messageNode, HttpStatus.BAD_REQUEST);
                 messageNode.put("stagingAreaId", stagingRecordId);
                 log.trace("processOneRecord going to return message node");
                 return messageNode;
@@ -404,7 +413,7 @@ public class ImportUtilities<T> {
         if (objectJson == null || objectJson.length() == 0) {
             messageNode.put("message", String.format("Error retrieving staging area object of type %s with ID %s",
                     objectClass, stagingRecordId));
-            messageNode.put("status", "BAD_REQUEST");
+            setActionStatus(messageNode, HttpStatus.BAD_REQUEST);
             messageNode.put("stagingAreaId", stagingRecordId);
             log.trace("processOneRecord going to return message node");
             return messageNode;
@@ -421,7 +430,7 @@ public class ImportUtilities<T> {
         if (currentObject == null) {
             messageNode.put("message", String.format("Error retrieving imported object of type %s with ID %s",
                     objectClass, matchedEntityId));
-            messageNode.put("status", "BAD_REQUEST");
+            setActionStatus(messageNode, HttpStatus.BAD_REQUEST);
             messageNode.put("stagingAreaId", stagingRecordId);
             log.trace("processOneRecord going to return message node");
             return messageNode;
@@ -460,25 +469,10 @@ public class ImportUtilities<T> {
             //check whether we have something to save... otherwise, skip to the next step in the processing
             if(currentObject!=null ) {
                 GsrsEntityService.ProcessResult<T> result = stagingAreaService.saveEntity(objectClass, currentObject, savingNewItem);
-                if (!result.isSaved()) {
-                    log.error("Error! Saved object is null");
-                    String errorMessage;
-                    if(result.getThrowable()!=null ){
-                        errorMessage=result.getThrowable().getMessage();
-                    } else if( result.getValidationResponse().hasError()) {
-                        errorMessage = result.getValidationResponse().getValidationMessages().stream()
-                                .filter(m->m.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR)
-                                .map(m->m.getMessage())
-                                .collect(Collectors.joining("|"));
-                    } else {
-                        errorMessage= "Unknown error!";
-                    }
+                if (result == null || !result.isSaved()) {
+                    log.error("Error! Entity save failed");
                     updateMetadataState=false;
-                    messageNode.put("stagingAreaId", stagingRecordId);
-                    messageNode.put("message","Object failed to save");
-                    messageNode.put("error", errorMessage);
-                    messageNode.put("status","INTERNAL_SERVER_ERROR");
-                    return messageNode;
+                    return createSaveFailureResponse(stagingRecordId, result);
                 }
                 currentObject = result.getEntity();
                 messageNode.put("PersistedEntityId", result.getEntityId().toString());
@@ -506,16 +500,67 @@ public class ImportUtilities<T> {
             log.trace("currentObject not null");
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
-            messageNode.put("status", "OK");
+            setActionStatus(messageNode, HttpStatus.OK);
             log.trace("about to return message node {}", messageNode.toPrettyString());
             return messageNode;
         }else{
             messageNode.put("message", "Import record processed successfully");
             messageNode.put("stagingAreaId", stagingRecordId);
-            messageNode.put("status", "OK");
+            setActionStatus(messageNode, HttpStatus.OK);
             log.trace("about to return message node {}", messageNode.toPrettyString());
             return messageNode;
         }
+    }
+
+    static ObjectNode setActionStatus(ObjectNode response, HttpStatus status) {
+        response.put("status", status.name());
+        response.put("httpStatus", status.value());
+        return response;
+    }
+
+    static boolean hasFailedResults(ArrayNode results) {
+        if (results == null) {
+            return true;
+        }
+        for (JsonNode result : results) {
+            if (!result.hasNonNull("status")
+                    || !HttpStatus.OK.name().equalsIgnoreCase(result.get("status").asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static ObjectNode createSaveFailureResponse(String stagingRecordId,
+                                                GsrsEntityService.ProcessResult<?> result) {
+        ObjectNode response = JsonNodeFactory.instance.objectNode();
+        response.put("stagingAreaId", stagingRecordId);
+        response.put("message", "Object failed to save");
+        response.put("error", getSaveFailureMessage(result));
+        return setActionStatus(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private static String getSaveFailureMessage(GsrsEntityService.ProcessResult<?> result) {
+        if (result == null) {
+            return "Save operation returned no result";
+        }
+        if (result.getThrowable() != null) {
+            String throwableMessage = result.getThrowable().getMessage();
+            return throwableMessage == null || throwableMessage.isBlank()
+                    ? result.getThrowable().toString()
+                    : throwableMessage;
+        }
+        if (result.getValidationResponse() != null && result.getValidationResponse().hasError()) {
+            String validationErrors = result.getValidationResponse().getValidationMessages().stream()
+                    .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR)
+                    .map(ValidationMessage::getMessage)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("|"));
+            if (!validationErrors.isBlank()) {
+                return validationErrors;
+            }
+        }
+        return "Unknown error";
     }
 
     public static boolean isSaveNecessary(ImportMetadata.RecordImportStatus status) {
