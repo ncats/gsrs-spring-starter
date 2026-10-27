@@ -16,6 +16,14 @@ import java.util.UUID;
 public interface StagingAreaService {
     String createRecord(ImportRecordParameters parameters);
 
+    /**
+     * Wait for all indexing work associated with an import batch to finish.
+     * Implementations that index synchronously do not need to override this.
+     */
+    default void awaitIndexingCompletion(UUID indexingBatchId) {
+        // no-op
+    }
+
     String updateRecord(String recordId, String jsonData);
 
     ImportMetadata getImportMetaData(String recordId, int version);

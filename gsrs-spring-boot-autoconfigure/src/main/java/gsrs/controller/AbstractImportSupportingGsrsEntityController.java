@@ -858,7 +858,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
                 persist, processingJson, getEntityService().getContext());
         log.trace("received return from importUtilities.handleAction");
-        HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
+        HttpStatus returnStatus = resolveActionHttpStatus(resultNode);
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
 
@@ -885,7 +885,7 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         ObjectNode resultNode = importUtilities.handleAction(stagingAreaService, matchedEntityId, stagingRecordId, version,
                 persist, processingJson, getEntityService().getContext());
         log.trace("received return from importUtilities.handleAction");
-        HttpStatus returnStatus = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
+        HttpStatus returnStatus = resolveActionHttpStatus(resultNode);
         log.trace("resolved status: {}", returnStatus);
         if( resultNode.hasNonNull("object")) {
 
@@ -894,6 +894,14 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
         } else {
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(resultNode, queryParameters), returnStatus);
         }
+    }
+
+    static HttpStatus resolveActionHttpStatus(ObjectNode resultNode) {
+        if (resultNode == null || !resultNode.hasNonNull("httpStatus")) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        HttpStatus status = HttpStatus.resolve(resultNode.get("httpStatus").asInt());
+        return status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status;
     }
 
     @canImportData
@@ -937,11 +945,19 @@ public abstract class AbstractImportSupportingGsrsEntityController<C extends Abs
                 getDefaultStagingAreaService());
         importUtilities = AutowireHelper.getInstance().autowireAndProxy(importUtilities);
         JsonNode jobNode = importUtilities.getJobAsNode(processingJobId, includeJobInputData);
-        HttpStatus returnStatus = HttpStatus.OK;
-        if(jobNode.hasNonNull("error")) {
-            returnStatus= HttpStatus.BAD_REQUEST;
-        }
+        HttpStatus returnStatus = resolveProcessingJobHttpStatus(jobNode);
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(jobNode, queryParameters), returnStatus);
+    }
+
+    static HttpStatus resolveProcessingJobHttpStatus(JsonNode jobNode) {
+        if (jobNode != null && jobNode.hasNonNull("jobStatus")
+                && "failed".equalsIgnoreCase(jobNode.get("jobStatus").asText())) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        if (jobNode != null && jobNode.hasNonNull("error")) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        return HttpStatus.OK;
     }
 
     @canImportData

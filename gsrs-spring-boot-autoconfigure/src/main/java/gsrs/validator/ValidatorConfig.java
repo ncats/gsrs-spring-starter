@@ -41,6 +41,7 @@ public interface ValidatorConfig extends ExtensionConfig {
         UPDATE,
         APPROVE,
         BATCH,
+        STAGING,
         IGNORE
 
         ;
