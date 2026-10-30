@@ -1,7 +1,6 @@
 package gsrs.legacy;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,8 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gsrs.indexer.IndexerEntityListener;
 import gsrs.repository.GsrsRepository;
 import ix.core.EntityFetcher;
@@ -35,7 +32,6 @@ import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

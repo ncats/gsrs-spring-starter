@@ -18,15 +18,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Id;
-import javax.persistence.metamodel.Metamodel;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.Id;
+import jakarta.servlet.http.HttpServletRequest;
 
 import gsrs.security.canRunBackup;
 import gsrs.services.CommonPrivileges;
 import gsrs.services.PrivilegeService;
-import org.hibernate.metadata.ClassMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -41,8 +38,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.controller.hateoas.GsrsUnwrappedEntityModel;
@@ -60,9 +58,6 @@ import ix.core.util.EntityUtils.Key;
 import ix.core.util.pojopointer.PojoPointer;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
-//import org.hibernate.search.engine.search.predicate.dsl.BooleanPredicateClausesStep;
-//import org.hibernate.search.engine.search.predicate.dsl.PredicateFinalStep;
-//import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -381,20 +376,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
                     return new ResponseEntity<>(jsn, HttpStatus.OK);
                 }
             }
-//            boolean isPrimitiveOrWrapped = (value!=null)?
-//                    ClassUtils.isPrimitiveOrWrapper(value.getClass())|| value instanceof String:true;
-//            
-//            if(isPrimitiveOrWrapped){
-//                //just a plain String - no links?
-//                //if we pass it to the enhance view below it will error out
-//                Map<String,Object> wrapMap = new HashMap<>();
-//                wrapMap.put("value",value);
-//                JsonNode json;
-//                JsonNode jsonwrap = objectMapper.valueToTree(wrapMap);
-//                json = jsonwrap.get("value");
-//                return new ResponseEntity<>(json, HttpStatus.OK);
-//                //return new ResponseEntity<>(value, HttpStatus.OK);
-//            }
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(ewv.getValue(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
         }
     }
@@ -411,8 +392,6 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
     @GetGsrsRestApiMapping("/@keys")
     public List<Key> getKeys(){    	
     	List<I> IDs = getEntityService().getIDs();
-//    	System.out.println("GET IDS!");
-//    	IDs.forEach(id -> System.out.println("ID " + id.toString()));
     	List<Key> keys = IDs.stream().map(id->Key.ofStringId(getEntityService().getEntityClass(), id.toString())).collect(Collectors.toList());
         return keys;
     }

@@ -3,7 +3,7 @@ package gsrs.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import gsrs.GsrsManualDirtyMaker;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 

@@ -1,11 +1,9 @@
 package gsrs.validator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.GsrsFactoryConfiguration;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.ginas.utils.validation.ValidatorFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 
 import java.util.List;
 
@@ -15,19 +13,17 @@ import java.util.List;
  */
 public class ConfigBasedGsrsValidatorFactory implements GsrsValidatorFactory {
 
-
-
-
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
-
+    @Autowired
+    private GsrsJsonMapper gsrsJsonMapper;
 
     @Override
     public ValidatorFactory newFactory(String context) {
         List<? extends ValidatorConfig> configs = gsrsFactoryConfiguration.getValidatorConfigByContext(context);
         
-        return new ValidatorFactory(configs, new ObjectMapper());
+        return new ValidatorFactory(configs, gsrsJsonMapper);
     }
 
 }

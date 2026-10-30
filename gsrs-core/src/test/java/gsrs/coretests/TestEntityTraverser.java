@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

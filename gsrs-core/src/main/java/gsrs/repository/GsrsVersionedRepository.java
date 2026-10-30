@@ -9,11 +9,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.NoRepositoryBean;
 
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 
 @NoRepositoryBean
+@SuppressWarnings("NullableProblems")
 public interface GsrsVersionedRepository<T, ID> extends GsrsRepository<T, ID> {
 
     default Optional<T> findByKey(EntityUtils.Key key){

@@ -1,7 +1,7 @@
 package ix.core.models;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 /**
  * This is a fake subclass to trick Hibernate into

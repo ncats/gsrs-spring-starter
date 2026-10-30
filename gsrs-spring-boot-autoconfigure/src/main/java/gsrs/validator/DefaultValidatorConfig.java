@@ -1,25 +1,23 @@
 package gsrs.validator;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.util.InheritanceTypeIdResolver;
 import ix.ginas.utils.validation.ValidatorPlugin;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @InheritanceTypeIdResolver.DefaultInstance
 public class DefaultValidatorConfig implements ValidatorConfig {
-
 
     private Class validatorClass;
     /**
@@ -46,6 +44,40 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     private METHOD_TYPE methodType;
 
     /**
+     * Validation operations for which this validator should not run. This
+     * complements methodType, which limits a validator to one operation.
+     */
+    private Set<METHOD_TYPE> excludedMethodTypes = Collections.emptySet();
+
+    /**
+     * Spring's configuration-properties binder represents a collection nested
+     * below a {@code Map<String, Object>} as an indexed map (for example,
+     * {@code {0=STAGING}}). Accept that representation as well as the normal
+     * JSON collection representation used by Jackson.
+     */
+    @JsonSetter("excludedMethodTypes")
+    public void setExcludedMethodTypes(Object excludedMethodTypes) {
+        if (excludedMethodTypes == null) {
+            this.excludedMethodTypes = Collections.emptySet();
+            return;
+        }
+
+        Collection<?> values = excludedMethodTypes instanceof Map<?, ?> map
+                ? map.values()
+                : excludedMethodTypes instanceof Collection<?> collection
+                        ? collection
+                        : Collections.singleton(excludedMethodTypes);
+
+        Set<METHOD_TYPE> methodTypes = new LinkedHashSet<>();
+        for (Object value : values) {
+            methodTypes.add(value instanceof METHOD_TYPE methodType
+                    ? methodType
+                    : METHOD_TYPE.valueOf(String.valueOf(value)));
+        }
+        this.excludedMethodTypes = methodTypes;
+    }
+
+    /**
      * Catch all for additional JSON properties found will be assumed to be
      * parameters to pass to the validator class similar to {@link #parameters}.
      * If both parameters and unknown parameters are both set then parameters takes
@@ -59,7 +91,7 @@ public class DefaultValidatorConfig implements ValidatorConfig {
     }
 
     @Override
-    public ValidatorPlugin newValidatorPlugin(ObjectMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
+    public ValidatorPlugin newValidatorPlugin(GsrsJsonMapper mapper, ClassLoader classLoader) throws ClassNotFoundException {
 
         if(parameters !=null && !parameters.isEmpty()){
             return (ValidatorPlugin) mapper.convertValue(parameters, validatorClass);
@@ -73,26 +105,20 @@ public class DefaultValidatorConfig implements ValidatorConfig {
 
     }
     @Override
-    public final  <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType){
+    public final <T> boolean meetsFilterCriteria(T obj, METHOD_TYPE methodType){
         if(!newObjClass.isAssignableFrom(obj.getClass())){
             return false;
         }
-//            if(obj instanceof Substance){
-//                Substance s = (Substance) obj;
-//                if(substanceClass !=null && substanceClass != s.substanceClass){
-//                    return false;
-//                }
-//                if(type !=null && type != s.definitionType){
-//                    return false;
-//                }
-//
-//            }
-        if(methodType !=null && methodType != methodType){
+        if(excludedMethodTypes != null && excludedMethodTypes.contains(methodType)){
+            return false;
+        }
+        if(this.methodType !=null && this.methodType != methodType){
             return false;
         }
 
         return meetsFilterCriteria(obj);
     }
+
     protected <T> boolean meetsFilterCriteria(T obj){
         return true;
     }
