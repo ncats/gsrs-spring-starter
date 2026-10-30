@@ -1,1 +1,2 @@
 gsrs.autoconfigure.GsrsApiAutoConfiguration
+gsrs.autoconfigure.GsrsTaskExecutorAutoConfiguration
