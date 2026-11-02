@@ -2,16 +2,15 @@ package gsrs.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.models.Indexable;
 import ix.core.models.ParentReference;
 import lombok.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.persistence.Entity;
-import java.io.IOException;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -82,27 +81,27 @@ public class TestSetParentReferenceFromJSON {
         }
     }
 
+    private JsonMapper objectMapper;
 
-    private ObjectMapper objectMapper;
     @BeforeEach
-    public void setup() {
-        objectMapper = new ObjectMapper();
+    void setup() {
+        objectMapper = JsonMapper.builderWithJackson2Defaults().build();
     }
     @Test
-    public void serializeEmptyFoo() throws IOException {
+    void serializeEmptyFoo() {
         Foo foo = new Foo();
         String json = objectMapper.writeValueAsString(foo);
         assertEquals("{}", json);
     }
 
     @Test
-    public void serializeJustSetNameFoo() throws IOException {
+    void serializeJustSetNameFoo() {
         Foo foo = Foo.builder().fooName("name").build();
         String json = objectMapper.writeValueAsString(foo);
         assertEquals("{\"fooName\":\"name\"}", json);
     }
     @Test
-    public void serializeWithABazOwnerNotSerialized() throws IOException {
+    void serializeWithABazOwnerNotSerialized() {
         Foo foo = Foo.builder().baz(
                 Baz.builder()
                         .bazName("myBaz").build()).build();
@@ -114,7 +113,7 @@ public class TestSetParentReferenceFromJSON {
     }
 
     @Test
-    public void serializeWithABazAndSetFixOwner() throws IOException {
+    void serializeWithABazAndSetFixOwner() {
         Foo foo = Foo.builder().baz(
                 Baz.builder()
                         .bazName("myBaz").build()).build();
@@ -129,7 +128,7 @@ public class TestSetParentReferenceFromJSON {
     }
 
     @Test
-    public void serializeWithABars() throws IOException {
+    void serializeWithABars() {
         Foo foo = Foo.builder().bars(
                 Arrays.asList(Bar.builder().barName("myBar").build()))
                 .build();
@@ -145,7 +144,7 @@ public class TestSetParentReferenceFromJSON {
     }
 
     @Test
-    public void serializeWithMultipleBars() throws IOException {
+    void serializeWithMultipleBars() {
         Foo foo = Foo.builder().bars(
                 Arrays.asList(
                         Bar.builder().barName("myBar").build(),
@@ -167,7 +166,7 @@ public class TestSetParentReferenceFromJSON {
     }
 
     @Test
-    public void serializeWithBazAndFooMultipleBars() throws IOException {
+    void serializeWithBazAndFooMultipleBars(){
         Foo foo = Foo.builder().bars(
                 Arrays.asList(
                         Bar.builder().barName("myBar").build(),
@@ -192,7 +191,7 @@ public class TestSetParentReferenceFromJSON {
     }
 
     @Test
-    public void serializeWithABazAndSubBarsAndSetFixOwners() throws IOException {
+    void serializeWithABazAndSubBarsAndSetFixOwners() {
         Foo foo = Foo.builder().baz(
                 Baz.builder()
                         .bazName("myBaz")

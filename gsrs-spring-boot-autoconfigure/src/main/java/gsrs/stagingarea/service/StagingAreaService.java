@@ -65,7 +65,7 @@ public interface StagingAreaService {
 
     <T> T retrieveEntity(String entityType, String entityId);
 
-    <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException;
+    <T> T deserializeObject(String entityClassName, String objectJson);
 
     <T> GsrsEntityService.ProcessResult<T> saveEntity(String entityType, T entity, boolean brandNew);
 
