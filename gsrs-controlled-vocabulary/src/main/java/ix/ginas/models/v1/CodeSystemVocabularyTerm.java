@@ -2,9 +2,9 @@ package ix.ginas.models.v1;
 
 import ix.core.SingleParent;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.Inheritance;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Inheritance;
 
 /**
  * Created by peryeata on 2/17/16.

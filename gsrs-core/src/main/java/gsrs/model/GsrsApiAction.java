@@ -1,8 +1,5 @@
 package gsrs.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.core.annotation.AliasFor;
-
 import java.lang.annotation.*;
 
 /**

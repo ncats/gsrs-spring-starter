@@ -1,16 +1,13 @@
 package gsrs.coretests;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import ix.core.util.EntityUtils;
-import org.aspectj.weaver.TypeFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,7 +17,7 @@ import java.util.Map;
 public class ConvertConfigObjectTest {
 
     @Test
-    public void testConvertConfigObject() throws JsonProcessingException {
+    public void testConvertConfigObject() {
         ObjectNode action = JsonNodeFactory.instance.objectNode();
         action.put("actionName", "cas_import");
         action.put("actionClass", "gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory");
@@ -56,7 +53,7 @@ public class ConvertConfigObjectTest {
     }
 
     @Test
-    public void testConvertConfigComplexObject() throws JsonProcessingException {
+    public void testConvertConfigComplexObject() {
         Map<String, Object> action = new LinkedHashMap<>();
         action.put("actionName", "cas_import");
         action.put("actionClass", "gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory");

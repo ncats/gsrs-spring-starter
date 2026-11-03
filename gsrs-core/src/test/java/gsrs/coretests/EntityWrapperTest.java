@@ -7,7 +7,7 @@ import ix.core.util.EntityUtils.FieldMeta;
 import org.junit.jupiter.api.Test;
 
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;

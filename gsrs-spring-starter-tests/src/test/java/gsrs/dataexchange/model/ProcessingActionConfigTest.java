@@ -1,9 +1,8 @@
 package gsrs.dataexchange.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +10,7 @@ import java.util.Map;
 public class ProcessingActionConfigTest {
 
     @Test
-    public void ConfigSerializationTest() throws JsonProcessingException {
+    public void ConfigSerializationTest() {
         ProcessingActionConfigSet configSet= new ProcessingActionConfigSet();
         ProcessingActionConfig config = new ProcessingActionConfig();
         config.setProcessingActionName(BasicProcessingAction.class.getName());
@@ -28,7 +27,7 @@ public class ProcessingActionConfigTest {
         config2.setParameters(parms2);
         configSet.addAction(config2);
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         String json = mapper.writeValueAsString(configSet);
         System.out.println(json);
         Assertions.assertTrue(json.length()>0);
@@ -38,9 +37,9 @@ public class ProcessingActionConfigTest {
     /*
     testing deserialization
      */
-    public void ConfigDeserializationTest() throws JsonProcessingException {
+    public void ConfigDeserializationTest() {
         String inputJson ="{\"processingActions\":[{\"parameters\":{\"copyUuid\":false,\"copyAccess\":false},\"processingActionName\":\"gsrs.dataexchange.model.BasicProcessingAction\"},{\"parameters\":{\"returnStagingRecord\":false},\"processingActionName\":\"Original\"}]}";
-        ObjectMapper mapper= new ObjectMapper();
+        JsonMapper mapper= JsonMapper.builderWithJackson2Defaults().build();
         ProcessingActionConfigSet configSet =mapper.readValue(inputJson, ProcessingActionConfigSet.class);
         Assertions.assertEquals(2, configSet.processingActions.size());
         Assertions.assertTrue( configSet.getProcessingActions().stream().allMatch(c->c.getParameters().keySet().stream().allMatch(p->c.getParameters().get(p).getClass().getName().contains("Boolean"))));

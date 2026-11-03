@@ -1,6 +1,6 @@
 package gsrs.stagingarea.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.text.IndexValueMaker;

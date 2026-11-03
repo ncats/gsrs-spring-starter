@@ -1,22 +1,21 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import ix.core.models.Group;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
-
-
-public class GroupSerializer extends JsonSerializer<Group> {
+public class GroupSerializer extends ValueSerializer<Group> {
     public GroupSerializer () {}
 
     public void serialize (Group group, JsonGenerator jgen,
-                           SerializerProvider provider)
-            throws IOException, JsonProcessingException {
-        if(group!=null){
-        	provider.defaultSerializeValue(group.name, jgen);
+                           SerializationContext context)
+            throws JacksonException {
+        if(group == null || group.name == null){
+            jgen.writeNull();
+        } else {
+            jgen.writeString(group.name);
         }
     }
 }

@@ -1,6 +1,6 @@
 package ix.core.util.pojopointer;
 
-import com.fasterxml.jackson.core.JsonPointer;
+import tools.jackson.core.JsonPointer;
 
 public abstract class AbstractPath implements PojoPointer{
 	private PojoPointer child=null;

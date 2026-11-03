@@ -1,15 +1,18 @@
 package gsrs.startertests;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.ginas.utils.validation.ValidatorFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
 public class TestGsrsValidatorFactory implements GsrsValidatorFactory {
     private Map<String, List<ValidatorConfig>> validators;
-    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private GsrsJsonMapper jsonMapper;
 
     public TestGsrsValidatorFactory(){
         validators = new HashMap<>();
@@ -27,7 +30,7 @@ public class TestGsrsValidatorFactory implements GsrsValidatorFactory {
 
     @Override
     public ValidatorFactory newFactory(String context) {
-        return new ValidatorFactory(getValidatorsForContext(context), objectMapper);
+        return new ValidatorFactory(getValidatorsForContext(context), jsonMapper);
     }
 
     public TestGsrsValidatorFactory addValidator(String context, ValidatorConfig config){

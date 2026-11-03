@@ -1,6 +1,5 @@
 package gsrs.imports.indexers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.config.EntityContextLookup;
 import gsrs.imports.GsrsImportAdapterFactoryFactory;
 import gsrs.stagingarea.model.ImportMetadata;
@@ -22,8 +21,6 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
     @Autowired
     IndexValueMakerFactory realFactory;
 
-    StagingAreaService stagingAreaService = null;
-
     @Autowired
     ImportDataRepository importDataRepository;
 
@@ -35,7 +32,7 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
         return ImportMetadata.class;
     }
 
-    public RawDataImportMetadataIndexValueMaker(){
+    public  RawDataImportMetadataIndexValueMaker(){
     }
 
     @Override
@@ -45,47 +42,38 @@ public class RawDataImportMetadataIndexValueMaker implements IndexValueMaker<Imp
             //todo: consider removing the substance from the list of things indexed for the staging area
             return;
         }
-        if( stagingAreaService == null) {
-            try {
-                String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
-                log.trace("looking for a staging area service for context {}", contextName);
-                stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
-                        //AbstractImportSupportingGsrsEntityController.getStagingAreaServiceForExternal(contextName);
-                log.trace("got service {}", stagingAreaService);
-            } catch (Exception e) {
-                log.error("Error obtaining staging area service", e);
-                throw new RuntimeException(e);
-            }
-        }
+        StagingAreaService stagingAreaService;
         try {
-            String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
-            if( objectJson != null && objectJson.length()>0) {
-                Object dataObject= stagingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
-                if(dataObject== null){
-                    log.warn("deserialized object is null! (importMetadata.getInstanceId(): {}", importMetadata.getInstanceId());
-                    return;
-                }
-                log.trace("deserialized object of class {}", dataObject.getClass().getName());
-                IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
-                log.trace("instantiated IndexValueMaker");
-                //rawMaker.createIndexableValues(dataObject,consumer);
-                //based on suggestion from Tyler P:
-                rawMaker.createIndexableValues(dataObject,(iv)->{
-                    //don't daisy chain suggestion indexes
-                    if(!((IndexableValue)iv).suggest()){
-                        consumer.accept(((IndexableValue)iv).suggestable(false));
-                    }
-                });
-                log.trace("called createIndexableValues");
-            } else {
-                log.info("No import data found for instance ID: {}", importMetadata.getInstanceId() != null ? importMetadata.getInstanceId().toString()
-                        : "[null]");
-            }
-
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            String contextName = EntityContextLookup.getContextFromEntityClass(importMetadata.getEntityClassName());
+            log.trace("looking for a staging area service for context {}", contextName);
+            stagingAreaService =gsrsImportAdapterFactoryFactory.getStagingAreaService(contextName);
+            log.trace("got service {}", stagingAreaService);
+        } catch (Exception e) {
+             log.error("Error obtaining staging area service", e);
+             throw new RuntimeException(e);
         }
-
+        String objectJson = importDataRepository.retrieveByInstanceID(importMetadata.getInstanceId());
+        if( objectJson != null && objectJson.length()>0) {
+            Object dataObject= stagingAreaService.deserializeObject(importMetadata.getEntityClassName(), objectJson);
+            if(dataObject== null){
+                log.warn("deserialized object is null! (importMetadata.getInstanceId(): {}", importMetadata.getInstanceId());
+                return;
+            }
+            log.trace("deserialized object of class {}", dataObject.getClass().getName());
+            IndexValueMaker rawMaker = realFactory.createIndexValueMakerFor(EntityUtils.EntityWrapper.of(dataObject));
+            log.trace("instantiated IndexValueMaker");
+            //based on suggestion from Tyler P:
+            rawMaker.createIndexableValues(dataObject,(iv)->{
+                //don't daisy chain suggestion indexes
+                if(!((IndexableValue)iv).suggest()){
+                    consumer.accept(((IndexableValue)iv).suggestable(false));
+                }
+            });
+            log.trace("called createIndexableValues");
+        } else {
+            log.info("No import data found for instance ID: {}", importMetadata.getInstanceId() != null ? importMetadata.getInstanceId().toString()
+                    : "[null]");
+        }
     }
 
 }

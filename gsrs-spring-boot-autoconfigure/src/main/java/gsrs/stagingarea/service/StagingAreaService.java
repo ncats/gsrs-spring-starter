@@ -1,6 +1,5 @@
 package gsrs.stagingarea.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.stagingarea.model.*;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.SearchRequest;
@@ -15,6 +14,14 @@ import java.util.UUID;
 
 public interface StagingAreaService {
     String createRecord(ImportRecordParameters parameters);
+
+    /**
+     * Wait for all indexing work associated with an import batch to finish.
+     * Implementations that index synchronously do not need to override this.
+     */
+    default void awaitIndexingCompletion(UUID indexingBatchId) {
+        // no-op
+    }
 
     String updateRecord(String recordId, String jsonData);
 
@@ -45,7 +52,7 @@ public interface StagingAreaService {
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables,
                                      String startingRecordId) throws ClassNotFoundException;
 
-    MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException;
+    MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException;
 
     void setIndexer(TextIndexer indexer);
 
@@ -57,7 +64,7 @@ public interface StagingAreaService {
 
     <T> T retrieveEntity(String entityType, String entityId);
 
-    <T> T deserializeObject(String entityClassName, String objectJson) throws JsonProcessingException;
+    <T> T deserializeObject(String entityClassName, String objectJson);
 
     <T> GsrsEntityService.ProcessResult<T> saveEntity(String entityType, T entity, boolean brandNew);
 

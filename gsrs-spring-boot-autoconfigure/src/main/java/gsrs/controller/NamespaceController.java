@@ -5,8 +5,6 @@ import ix.core.models.Namespace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 
-import java.util.List;
-import java.util.Map;
 
 @ExposesResourceFor(Namespace.class)
 @GsrsRestApiController(context = NamespaceEntityService.CONTEXT, idHelper = IdHelpers.NUMBER)

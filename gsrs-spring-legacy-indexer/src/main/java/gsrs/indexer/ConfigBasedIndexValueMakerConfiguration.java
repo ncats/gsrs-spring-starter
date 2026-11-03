@@ -3,11 +3,13 @@ package gsrs.indexer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import gsrs.util.ExtensionConfig;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,11 +42,11 @@ public class ConfigBasedIndexValueMakerConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @Order
-    public IndexValueMakerFactory indexValueMakerFactory(){
+    public IndexValueMakerFactory indexValueMakerFactory(@Qualifier("legacyJsonMapper") JsonMapper mapper) {
         String reportTag = "IndexValueMakerConf";
         Map<String, IndexValueMakerConf> map = list;
         if(map==null){
-            return new ConfigBasedIndexValueMakerFactory(Collections.emptyList());
+            return new ConfigBasedIndexValueMakerFactory(Collections.emptyList(), mapper);
         }
         for (String k: map.keySet()) {
             map.get(k).setParentKey(k);
@@ -57,6 +59,6 @@ public class ConfigBasedIndexValueMakerConfiguration {
         for (IndexValueMakerConf config : configs) {
             System.out.printf("%s|%s|%s|%s|%s\n", reportTag, config.getIndexer(), config.getParentKey(), config.getOrder(), config.isDisabled());
         }
-        return new ConfigBasedIndexValueMakerFactory(configs);
+        return new ConfigBasedIndexValueMakerFactory(configs, mapper);
     }
 }

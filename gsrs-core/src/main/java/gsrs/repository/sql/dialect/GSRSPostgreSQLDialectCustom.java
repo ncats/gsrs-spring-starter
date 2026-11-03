@@ -1,29 +1,51 @@
 package gsrs.repository.sql.dialect;
 
-import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor;
-import org.hibernate.type.descriptor.sql.LongVarcharTypeDescriptor;
-import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
+import java.sql.Types;
+
+import org.hibernate.boot.model.TypeContributions;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.jdbc.BinaryJdbcType;
+import org.hibernate.type.descriptor.jdbc.LongVarcharJdbcType;
+import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 
 /*
 Designed by Tyler Peryea
 */
-public class GSRSPostgreSQLDialectCustom extends PostgreSQL9Dialect {
+public class GSRSPostgreSQLDialectCustom extends PostgreSQLDialect {
 
     public GSRSPostgreSQLDialectCustom() {
         super();
-
-        registerColumnType(java.sql.Types.BLOB, "bytea");
-        registerColumnType(java.sql.Types.CLOB, "text");
     }
 
     @Override
-    public SqlTypeDescriptor remapSqlTypeDescriptor(SqlTypeDescriptor sqlTypeDescriptor) {
-        if (sqlTypeDescriptor.getSqlType() == java.sql.Types.BLOB) {
-            return BinaryTypeDescriptor.INSTANCE;
-        }else if (sqlTypeDescriptor.getSqlType() == java.sql.Types.CLOB) {
-            return LongVarcharTypeDescriptor.INSTANCE;
+    protected String columnType(int sqlTypeCode) {
+        if (SqlTypes.BLOB == sqlTypeCode) {
+            return "bytea";
         }
-        return super.remapSqlTypeDescriptor(sqlTypeDescriptor);
+        if (SqlTypes.CLOB == sqlTypeCode) {
+            return "text";
+        }
+        return super.columnType(sqlTypeCode);
+    }
+
+    @Override
+    protected String castType(int sqlTypeCode) {
+        if (SqlTypes.BLOB == sqlTypeCode) {
+            return "bytea";
+        }
+        if (SqlTypes.CLOB == sqlTypeCode) {
+            return "text";
+        }
+        return super.castType(sqlTypeCode);
+    }
+
+    @Override
+    public void contributeTypes(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
+        super.contributeTypes(typeContributions, serviceRegistry);
+        JdbcTypeRegistry jdbcTypeRegistry = typeContributions.getTypeConfiguration().getJdbcTypeRegistry();
+        jdbcTypeRegistry.addDescriptor(Types.BLOB, BinaryJdbcType.INSTANCE);
+        jdbcTypeRegistry.addDescriptor(Types.CLOB, LongVarcharJdbcType.INSTANCE);
     }
 }

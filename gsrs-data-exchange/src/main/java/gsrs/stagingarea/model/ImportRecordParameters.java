@@ -1,6 +1,6 @@
 package gsrs.stagingarea.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import ix.core.models.Principal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,4 +66,10 @@ public class ImportRecordParameters {
      * The user performing the data load
      */
     private Principal importingUser;
+
+    /**
+     * Identifies records whose indexing must finish before an import job is
+     * reported as complete. Null keeps the traditional synchronous behavior.
+     */
+    private UUID indexingBatchId;
 }

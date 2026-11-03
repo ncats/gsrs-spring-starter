@@ -1,7 +1,7 @@
 package gsrs.api;
 
 import lombok.Data;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

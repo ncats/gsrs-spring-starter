@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-spring-boot</artifactId>
         <groupId>gov.nih.ncats</groupId>
-       <version>3.2.0</version>
+       <version>3.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -68,7 +68,6 @@
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
-            <version>5.8.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.hamcrest</groupId>
@@ -86,6 +85,11 @@
             <artifactId>lombok</artifactId>
             <version>1.18.30</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.github.vishwakarma</groupId>
+            <artifactId>zjsonpatch</artifactId>
+            <version>0.6.3</version>
         </dependency>
     </dependencies>
 </project>

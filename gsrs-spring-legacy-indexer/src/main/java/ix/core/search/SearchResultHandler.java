@@ -27,6 +27,7 @@ class SearchResultHandler extends AbstractActor {
             ctx.setStart(TimeUtil.getCurrentTimeMillis());
 
             int count = processor.process();
+            processor.afterProcess();
             if(count==0){
                 ctx.setStatus(SearchResultContext.Status.Done);
             }else{

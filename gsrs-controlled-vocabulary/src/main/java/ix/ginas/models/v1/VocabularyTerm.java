@@ -1,8 +1,6 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.models.IxModel;
@@ -13,7 +11,9 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Created by sheilstk on 6/29/15.
@@ -26,7 +26,11 @@ import javax.persistence.*;
 @SingleParent
 @Getter
 @Setter
-@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_ginas_vocabulary_term_seq", allocationSize = 1)
+@SequenceGenerator(
+		name = "LONG_SEQ_ID",
+		sequenceName = "ix_ginas_vocabulary_term_seq",
+		allocationSize = 1
+)
 public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	/**
 	 * 
@@ -75,8 +79,7 @@ public class VocabularyTerm extends IxModel implements ForceUpdatableModel{
 	public boolean hidden=false;
 	public boolean selected=false;
 
-	public VocabularyTerm(){};
-
+	public VocabularyTerm(){}
 
 	@Override
 	protected void preUpdate(){

@@ -1,8 +1,8 @@
 package ix.core;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ix.core.controllers.EntityFactory;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -45,9 +45,8 @@ public class FieldResourceReference<T> extends ResourceReference<T> {
         Objects.requireNonNull(field);
         Objects.requireNonNull(supplier);
         return new FieldResourceReference<JsonNode> (isRaw? "$"+field : field, ()->{
-            ObjectMapper om = new ObjectMapper();
             try {
-                return om.readTree(supplier.get());
+                return EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().readTree(supplier.get());
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }

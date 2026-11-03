@@ -1,35 +1,31 @@
 package gsrs.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import gsrs.api.internal.WithoutContentPagedResult;
-import gsrs.controller.GsrsEntityController;
-import ix.core.validator.ValidationResponse;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.hateoas.Link;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 
 public abstract class GsrsEntityRestTemplate<T, I> {
 
     private final RestTemplate restTemplate;
 
-    private ObjectMapper mapper;
+    private JsonMapper mapper;
+
     private String prefix;
 
-    public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, ObjectMapper mapper) {
+    public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context, JsonMapper mapper) {
         this.mapper = Objects.requireNonNull(mapper);
 
         StringBuilder builder = new StringBuilder(baseUrl);
@@ -39,15 +35,15 @@ public abstract class GsrsEntityRestTemplate<T, I> {
             builder.setLength(builder.length()-1);
         }
         this.prefix = builder.toString();
-        this.restTemplate = restTemplateBuilder.rootUri(baseUrl)
+        this.restTemplate = restTemplateBuilder.baseUri(baseUrl)
                 .errorHandler(RestTemplateResponseErrorHandler.INSTANCE)
                 .build();
     }
     public GsrsEntityRestTemplate(RestTemplateBuilder restTemplateBuilder, String baseUrl, String context) {
-        this(restTemplateBuilder, baseUrl, context, new ObjectMapper());
+        this(restTemplateBuilder, baseUrl, context, JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build());
     }
 
-    protected ObjectMapper getObjectMapper(){
+    protected JsonMapper getMapper(){
         return mapper;
     }
 
@@ -226,17 +222,16 @@ public abstract class GsrsEntityRestTemplate<T, I> {
     enum RestTemplateResponseErrorHandler
             implements ResponseErrorHandler {
         INSTANCE;
-
         @Override
         public boolean hasError(ClientHttpResponse httpResponse)
                 throws IOException {
 
-            HttpStatus.Series s = ((HttpStatus) httpResponse.getStatusCode()).series();
-            return (s == HttpStatus.Series.CLIENT_ERROR || s == HttpStatus.Series.SERVER_ERROR);
+            HttpStatusCode statusCode = httpResponse.getStatusCode();
+            return statusCode.is4xxClientError() || statusCode.is5xxServerError();
         }
 
         @Override
-        public void handleError(ClientHttpResponse httpResponse)
+        public void handleError(URI url, HttpMethod method, ClientHttpResponse httpResponse)
                 throws IOException {
 
             //do nothing we will handle it downstream
