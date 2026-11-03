@@ -1,6 +1,5 @@
 package gsrs.stagingarea.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.stagingarea.model.*;
 import gsrs.service.GsrsEntityService;
 import ix.core.search.SearchRequest;
@@ -53,7 +52,7 @@ public interface StagingAreaService {
     MatchedRecordSummary findMatches(String entityClass, List<gsrs.stagingarea.model.MatchableKeyValueTuple> recordMatchables,
                                      String startingRecordId) throws ClassNotFoundException;
 
-    MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException, JsonProcessingException;
+    MatchedRecordSummary findMatches(ImportMetadata importMetadata) throws ClassNotFoundException;
 
     void setIndexer(TextIndexer indexer);
 
