@@ -1,9 +1,9 @@
 package gsrs.entityProcessor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.util.ExtensionConfig;
 import ix.core.EntityProcessor;
 import lombok.Data;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
@@ -26,11 +26,12 @@ public class EntityProcessorConfig implements ExtensionConfig {
 
     public EntityProcessor createNewEntityProcessorInstance() throws Exception{
 
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         if(with!=null){
             Constructor c=processor.getConstructor(Map.class);
             return (EntityProcessor) c.newInstance(with);
         }else if(parameters !=null){
-            return (EntityProcessor) new ObjectMapper().convertValue(parameters, processor);
+            return (EntityProcessor) mapper.convertValue(parameters, processor);
         }else{
             return (EntityProcessor) processor.newInstance();
         }

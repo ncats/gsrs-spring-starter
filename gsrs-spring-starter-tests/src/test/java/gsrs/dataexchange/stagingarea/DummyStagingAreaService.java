@@ -1,7 +1,6 @@
 package gsrs.dataexchange.stagingarea;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 import gsrs.service.GsrsEntityService;
 import gsrs.stagingarea.model.*;
@@ -31,13 +30,9 @@ public class DummyStagingAreaService implements StagingAreaService {
             }
 
         }
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
-        try {
-            return mapper.writeValueAsString(dataObject);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return mapper.writeValueAsString(dataObject);
     }
 
     @Override
@@ -77,7 +72,6 @@ public class DummyStagingAreaService implements StagingAreaService {
 
     @Override
     public void deleteRecord(String recordId, int version) {
-
     }
 
     @Override
@@ -107,16 +101,6 @@ public class DummyStagingAreaService implements StagingAreaService {
 
     @Override
     public MatchedRecordSummary findMatches(String entityClass, List<MatchableKeyValueTuple> recordMatchables, String startingRecordId)  {
-//        MatchedRecordSummary matches = new MatchedRecordSummary();
-//        matches.setQuery(recordMatchables);
-//        MatchedKeyValue oneMatch= new MatchedKeyValue();
-//        //oneMatch.set
-//        //matches.setMatches();
-//        recordMatchables.forEach(r-> {
-//
-//            r.getKey()
-//        });
-//        matches.set
         return null;
     }
 
