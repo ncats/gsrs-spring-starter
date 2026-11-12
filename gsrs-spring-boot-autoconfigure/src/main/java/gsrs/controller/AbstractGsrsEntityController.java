@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import ix.core.controllers.EntityFactory;
 import jakarta.persistence.Id;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -445,16 +446,66 @@ public abstract class AbstractGsrsEntityController<C extends AbstractGsrsEntityC
         }
         return Sort.by(Sort.Direction.ASC, order);
     }
-
     @Override
     @GetGsrsRestApiMapping(value = {"({id})", "/{id}" })
-    public ResponseEntity<Object> getById(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
-        Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
-        if(obj.isPresent()){
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+    public ResponseEntity<Object> getById(
+            String id,
+            Map<String, String> queryParameters) {
+
+        Optional<T> obj =
+                getEntityService().getEntityBySomeIdentifier(id);
+
+        log.info("getById id={}, found={}", id, obj.isPresent());
+
+        if (obj.isPresent()) {
+            T entity = obj.get();
+
+            log.info("entityType={}", entity.getClass().getName());
+
+            EntityFactory.EntityMapper mapper =
+                    EntityFactory.EntityMapper.getByView("full");
+
+            try {
+                JsonNode json = mapper.valueToTree(entity);
+                log.info("mapped={}", json);
+            } catch (Exception e) {
+                log.error("full mapping failed", e);
+            }
+
+            GsrsUnwrappedEntityModel<T> model =
+                    GsrsControllerUtil.enhanceWithView(
+                            entity,
+                            queryParameters,
+                            currentModel -> addAdditionalLinks(currentModel)
+                    );
+
+            log.info(
+                    "wrapperType={}, keys={}",
+                    model.getObj() == null
+                            ? null
+                            : model.getObj().getClass().getName(),
+                    model.getOurLinks().keySet()
+            );
+
+            return new ResponseEntity<>(
+                    model,
+                    HttpStatus.OK
+            );
         }
+
         return gsrsControllerConfiguration.handleNotFound(queryParameters);
     }
+
+
+//    @Override
+//    @GetGsrsRestApiMapping(value = {"({id})", "/{id}" })
+//    public ResponseEntity<Object> getById_real(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
+//        Optional<T> obj = getEntityService().getEntityBySomeIdentifier(id);
+//        if(obj.isPresent()){
+//            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(obj.get(), queryParameters, this::addAdditionalLinks), HttpStatus.OK);
+//        }
+//        return gsrsControllerConfiguration.handleNotFound(queryParameters);
+//    }
     @Override
     @PreAuthorize("isAuthenticated()")
     @DeleteGsrsRestApiMapping(value = {"({id})", "/{id}"})
