@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import org.springframework.core.task.TaskExecutor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -115,7 +115,7 @@ public abstract class AbstractLegacyTextSearchGsrsEntityController<C extends Abs
     private JsonMapper mapper;
 
     @Autowired
-    private static ExecutorService executor;
+    private TaskExecutor executor;
     
     @Data
     private class ReindexStatus{
