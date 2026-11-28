@@ -32,6 +32,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -50,9 +55,18 @@ import java.util.stream.Stream;
 
 @Slf4j
 @ActiveProfiles("test")
+@Import(AbstractImportSupportingGsrsEntityControllerTest.ExecutorConfiguration.class)
 @GsrsJpaTest(classes = {GsrsSpringApplication.class, GsrsControllerConfiguration.class,
 GsrsEntityTestConfiguration.class, BulkSearchService.class})
 class AbstractImportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
+
+    @TestConfiguration
+    static class ExecutorConfiguration {
+        @Bean
+        TaskExecutor taskExecutor() {
+            return new SyncTaskExecutor();
+        }
+    }
 
     private final UUID uuid = UUID.randomUUID();
 
